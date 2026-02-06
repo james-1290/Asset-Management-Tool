@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-07 00:30 - Polish sidebar header + collapse behaviour
+
+- Moved collapse/expand toggle from sidebar footer to sidebar header
+- Toggle is now icon-only (ChevronLeft) next to "Asset Manager" title
+- Collapsed state shows circular "AM" brand badge (clickable to expand)
+- Fixed divider alignment: sidebar header now uses `h-14` to match main content header
+- Removed SidebarFooter entirely (toggle lives in header)
+- No changes to shadcn/ui primitives or layout.tsx
+
 ## 2026-02-06 21:00 - Stricter git workflow rules
 
 - Updated CLAUDE.md: Claude must never merge into main or push to main
