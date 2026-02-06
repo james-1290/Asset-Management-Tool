@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-07 05:30 - Assign user to asset
+
+- **Users API** (`GET /api/v1/users`): Read-only endpoint returning active users ordered by display name
+- **Asset assignment**: `AssignedUserId` and `AssignedUserName` added to Asset DTOs and API request/response
+- **Validation**: AssignedUserId (if provided) must reference an existing active user
+- **Frontend**: "Assigned To" dropdown in Add/Edit Asset form with auto-status logic — selecting a user auto-sets status to "Assigned"; clearing user reverts to "Available" (unless manually changed)
+- **DataTable**: "Assigned To" column showing assigned user's display name
+- No DB migration needed — `AssignedUserId` FK already exists on Assets table
+
 ## 2026-02-07 04:00 - Assets CRUD end-to-end + Audit logging
 
 - **Audit logging service**: Reusable `IAuditService` / `AuditService` — every controller write operation now creates an `AuditLog` record; asset writes also create per-asset `AssetHistory` entries

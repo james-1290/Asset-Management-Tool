@@ -35,7 +35,7 @@
 - [x] Locations management UI (wired to API)
 - [x] AssetTypes management UI
 - [x] Audit log recording on all write operations
-- [ ] Assign/unassign assets to users
+- [x] Assign/unassign assets to users
 - [ ] Check-in/check-out workflow
 - [ ] Asset history timeline (per-asset)
 - [ ] Audit log UI page
