@@ -14,6 +14,11 @@
 - [x] Frontend: Theme toggle (light/dark/system)
 - [x] Frontend: Placeholder pages (Dashboard, Assets, Certificates, Applications, Locations, Audit Log, Settings)
 - [x] Frontend: DataTable component placeholder (TanStack Table)
+- [x] Frontend: API client (fetch wrapper), React Query provider, Sonner toasts
+- [x] Frontend: Locations CRUD page wired to backend API (create, edit, delete, search, sort)
+- [x] Frontend: Reusable patterns — PageHeader, ConfirmDialog, DataTable with sorting/filtering/toolbar
+- [x] Frontend: Form pattern — react-hook-form + zod validation + shadcn Form components
+- [x] Fix: components.json aliases (src/ → @/) and Vite proxy port (5062 → 5115)
 - [x] Docker Compose for PostgreSQL
 - [x] .env.example files
 - [x] Documentation (setup, architecture, database, API, UX guidelines)
@@ -21,7 +26,7 @@
 ## Next (MVP)
 
 - [ ] Assets CRUD (full endpoint + UI)
-- [ ] Locations management UI (wired to API)
+- [x] Locations management UI (wired to API)
 - [ ] AssetTypes management UI
 - [ ] Assign/unassign assets to users
 - [ ] Check-in/check-out workflow
@@ -32,8 +37,8 @@
 - [ ] Custom fields: display in DataTable columns
 - [ ] User authentication (basic username/password login)
 - [ ] Dashboard: upcoming warranty/cert/licence expiries
-- [ ] DataTable: server-side pagination, sorting, filtering
-- [ ] DataTable: column visibility toggle
+- [ ] DataTable: server-side pagination, sorting, filtering (client-side sorting/filtering done)
+- [x] DataTable: column visibility toggle
 - [ ] DataTable: saved views per user
 
 ## Later
