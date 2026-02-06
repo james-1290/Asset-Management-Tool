@@ -78,3 +78,38 @@
 **Context**: Frontend and API run on different ports in development.
 
 **Decision**: Vite config proxies `/api/*` requests to `http://localhost:5062`. This avoids CORS issues in dev and mirrors production routing.
+
+---
+
+## ADR-008: Reusable audit logging via IAuditService
+
+**Date**: 2026-02-07
+**Status**: Accepted
+
+**Context**: CLAUDE.md requires audit log entries for every write operation and per-asset history timeline.
+
+**Decision**: Centralise audit logging in `IAuditService` / `AuditService` rather than inline in each controller. Controllers inject the service and call `LogAsync()` after successful writes. The service creates an `AuditLog` record for all entities, and additionally creates an `AssetHistory` record when the entity type is "Asset".
+
+**Consequence**: Every new controller gets audit logging for free by injecting `IAuditService`. No auth yet, so `ActorName` defaults to "System".
+
+---
+
+## ADR-009: Asset DTO flattens related entity names
+
+**Date**: 2026-02-07
+**Status**: Accepted
+
+**Context**: The Assets API response needs to include the asset type name and location name for display in the frontend table.
+
+**Decision**: `AssetDto` includes flattened `AssetTypeName` and `LocationName` string fields populated via EF Core navigation properties (Include). This avoids extra API calls from the frontend to resolve FK references.
+
+---
+
+## ADR-010: Status changes via general update endpoint
+
+**Date**: 2026-02-07
+**Status**: Accepted
+
+**Context**: Assets have a Status enum (Available, Assigned, CheckedOut, etc.). Dedicated endpoints for assign/sell/retire could be built.
+
+**Decision**: For MVP, status is changed through the standard PUT `/api/v1/assets/{id}` endpoint. Dedicated endpoints (e.g. POST `/assets/{id}/assign`) will be added later when workflow logic (e.g. validating user assignment) is needed.

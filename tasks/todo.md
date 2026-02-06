@@ -19,19 +19,25 @@
 - [x] Frontend: Reusable patterns — PageHeader, ConfirmDialog, DataTable with sorting/filtering/toolbar
 - [x] Frontend: Form pattern — react-hook-form + zod validation + shadcn Form components
 - [x] Fix: components.json aliases (src/ → @/) and Vite proxy port (5062 → 5115)
+- [x] Backend: Audit logging service (IAuditService + AuditService)
+- [x] Backend: Assets CRUD endpoint with validation (AssetType/Location FK, unique AssetTag, Status enum)
+- [x] Backend: Retrofit audit logging to Locations + AssetTypes controllers
+- [x] Frontend: Asset Types CRUD page (types, API, hooks, schema, DataTable, form dialog)
+- [x] Frontend: Assets CRUD page (complex form with selects, dates, cost, notes; status badges)
+- [x] Frontend: Sidebar nav item for Asset Types
 - [x] Docker Compose for PostgreSQL
 - [x] .env.example files
 - [x] Documentation (setup, architecture, database, API, UX guidelines)
 
 ## Next (MVP)
 
-- [ ] Assets CRUD (full endpoint + UI)
+- [x] Assets CRUD (full endpoint + UI)
 - [x] Locations management UI (wired to API)
-- [ ] AssetTypes management UI
+- [x] AssetTypes management UI
+- [x] Audit log recording on all write operations
 - [ ] Assign/unassign assets to users
 - [ ] Check-in/check-out workflow
 - [ ] Asset history timeline (per-asset)
-- [ ] Audit log recording on all write operations
 - [ ] Audit log UI page
 - [ ] Custom fields: define + render in forms
 - [ ] Custom fields: display in DataTable columns
