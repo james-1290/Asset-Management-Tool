@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-02-07 02:00 - Locations page: full CRUD with API integration
+
+- **Foundation layer**: API client (fetch wrapper with typed errors), React Query provider, Sonner toast notifications
+- **Locations API integration**: Types mirroring backend DTOs, API functions, React Query hooks (useLocations, useCreateLocation, useUpdateLocation, useArchiveLocation)
+- **Zod validation schema** for location forms (name required 1-200 chars, optional address/city/country)
+- **Shared components**: PageHeader (title + description + actions), ConfirmDialog (AlertDialog wrapper), enhanced DataTable (shadcn Table + sorting + filtering + column visibility + toolbar slot)
+- **Locations page**: Full CRUD — create/edit via form dialog, delete via confirmation dialog, filter-by-name search, sortable Name column, row action menus, loading skeleton, error state, toast feedback
+- **New shadcn/ui components**: dialog, form, label, table, sonner, badge, alert-dialog
+- **Dependencies added**: @tanstack/react-query, react-hook-form, zod, @hookform/resolvers, sonner
+- **Fixed**: components.json aliases from `src/` to `@/` so shadcn imports resolve during Vite build
+
 ## 2026-02-07 00:30 - Polish sidebar header + collapse behaviour
 
 - Moved collapse/expand toggle from sidebar footer to sidebar header
