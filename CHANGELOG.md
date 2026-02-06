@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-02-06 23:53 - Asset detail page + date bug fix
+
+- **Bug fix**: Creating/editing assets with dates (Purchase Date, Warranty Expiry) now works — frontend converts `"YYYY-MM-DD"` to `"YYYY-MM-DDT00:00:00"` before sending to API
+- **History endpoint**: `GET /api/v1/assets/{id}/history` — returns `AssetHistoryDto` list ordered by timestamp descending, includes performer display name
+- **Asset detail page** (`/assets/:id`): Shows asset info in two-column card layout + history timeline sidebar. Edit button opens existing form dialog. Back button returns to list.
+- **History timeline component**: Vertical timeline with colour-coded dots per event type (Created, Edited, Assigned, etc.)
+- **Clickable table links**: Asset Tag and Name columns in the assets DataTable are now links to the detail page
+- **New shadcn component**: Card
+- No DB migration needed
+
 ## 2026-02-06 23:24 - Asset assignment: User → Person + searchable combobox
 
 - **Breaking DB change**: `Asset.AssignedUserId` (FK to Users) replaced with `Asset.AssignedPersonId` (FK to People). Migration `ChangeAssetAssignmentToPersonFromUser` drops old column and adds new one.

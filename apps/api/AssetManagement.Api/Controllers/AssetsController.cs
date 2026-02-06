@@ -195,6 +195,27 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         return Ok(ToDto(asset));
     }
 
+    [HttpGet("{id:guid}/history")]
+    public async Task<ActionResult<List<AssetHistoryDto>>> GetHistory(Guid id)
+    {
+        var assetExists = await db.Assets.AnyAsync(a => a.Id == id);
+        if (!assetExists) return NotFound();
+
+        var history = await db.AssetHistory
+            .Where(h => h.AssetId == id)
+            .Include(h => h.PerformedByUser)
+            .OrderByDescending(h => h.Timestamp)
+            .Select(h => new AssetHistoryDto(
+                h.Id,
+                h.EventType.ToString(),
+                h.Details,
+                h.Timestamp,
+                h.PerformedByUser != null ? h.PerformedByUser.DisplayName : null))
+            .ToListAsync();
+
+        return Ok(history);
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Archive(Guid id)
     {

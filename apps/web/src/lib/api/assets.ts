@@ -4,6 +4,7 @@ import type {
   CreateAssetRequest,
   UpdateAssetRequest,
 } from "../../types/asset";
+import type { AssetHistory } from "../../types/asset-history";
 
 export const assetsApi = {
   getAll(): Promise<Asset[]> {
@@ -12,6 +13,10 @@ export const assetsApi = {
 
   getById(id: string): Promise<Asset> {
     return apiClient.get<Asset>(`/assets/${id}`);
+  },
+
+  getHistory(id: string): Promise<AssetHistory[]> {
+    return apiClient.get<AssetHistory[]>(`/assets/${id}/history`);
   },
 
   create(data: CreateAssetRequest): Promise<Asset> {

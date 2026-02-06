@@ -48,3 +48,11 @@ public record UpdateAssetRequest(
     DateTime? WarrantyExpiryDate,
     string? Notes
 );
+
+public record AssetHistoryDto(
+    Guid Id,
+    string EventType,
+    string? Details,
+    DateTime Timestamp,
+    string? PerformedByUserName
+);

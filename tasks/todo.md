@@ -25,6 +25,10 @@
 - [x] Frontend: Asset Types CRUD page (types, API, hooks, schema, DataTable, form dialog)
 - [x] Frontend: Assets CRUD page (complex form with selects, dates, cost, notes; status badges)
 - [x] Frontend: Sidebar nav item for Asset Types
+- [x] Bug fix: Asset date serialisation (YYYY-MM-DD → YYYY-MM-DDT00:00:00)
+- [x] Backend: Asset history endpoint (GET /api/v1/assets/{id}/history)
+- [x] Frontend: Asset detail page (/assets/:id) with info card + history timeline
+- [x] Frontend: Clickable asset tag/name links in DataTable → detail page
 - [x] Docker Compose for PostgreSQL
 - [x] .env.example files
 - [x] Documentation (setup, architecture, database, API, UX guidelines)
@@ -39,7 +43,7 @@
 - [x] People management (CRUD page + API)
 - [ ] Migrate asset assignment from User → Person
 - [ ] Check-in/check-out workflow
-- [ ] Asset history timeline (per-asset)
+- [x] Asset history timeline (per-asset)
 - [ ] Audit log UI page
 - [ ] Custom fields: define + render in forms
 - [ ] Custom fields: display in DataTable columns
