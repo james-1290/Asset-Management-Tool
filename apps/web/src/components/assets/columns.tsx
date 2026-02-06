@@ -56,9 +56,9 @@ export function getAssetColumns({
       cell: ({ row }) => row.getValue("locationName") || "—",
     },
     {
-      accessorKey: "assignedUserName",
+      accessorKey: "assignedPersonName",
       header: "Assigned To",
-      cell: ({ row }) => row.getValue("assignedUserName") || "—",
+      cell: ({ row }) => row.getValue("assignedPersonName") || "—",
     },
     {
       accessorKey: "status",

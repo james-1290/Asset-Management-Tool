@@ -28,3 +28,8 @@ public record UpdatePersonRequest(
     string? JobTitle,
     Guid? LocationId
 );
+
+public record PersonSearchResult(
+    Guid Id,
+    string FullName
+);

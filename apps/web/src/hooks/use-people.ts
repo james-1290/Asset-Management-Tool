@@ -1,4 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { peopleApi } from "../lib/api/people";
 import type {
   CreatePersonRequest,
@@ -8,12 +13,21 @@ import type {
 const personKeys = {
   all: ["people"] as const,
   detail: (id: string) => ["people", id] as const,
+  search: (q: string) => ["people", "search", q] as const,
 };
 
 export function usePeople() {
   return useQuery({
     queryKey: personKeys.all,
     queryFn: peopleApi.getAll,
+  });
+}
+
+export function usePeopleSearch(query: string) {
+  return useQuery({
+    queryKey: personKeys.search(query),
+    queryFn: () => peopleApi.search(query),
+    placeholderData: keepPreviousData,
   });
 }
 

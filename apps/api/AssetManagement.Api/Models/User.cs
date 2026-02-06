@@ -12,5 +12,4 @@ public class User
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<UserRole> UserRoles { get; set; } = [];
-    public ICollection<Asset> AssignedAssets { get; set; } = [];
 }
