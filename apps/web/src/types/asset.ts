@@ -17,6 +17,8 @@ export interface Asset {
   assetTypeName: string;
   locationId: string | null;
   locationName: string | null;
+  assignedUserId: string | null;
+  assignedUserName: string | null;
   purchaseDate: string | null;
   purchaseCost: number | null;
   warrantyExpiryDate: string | null;
@@ -33,6 +35,7 @@ export interface CreateAssetRequest {
   status?: string | null;
   assetTypeId: string;
   locationId?: string | null;
+  assignedUserId?: string | null;
   purchaseDate?: string | null;
   purchaseCost?: number | null;
   warrantyExpiryDate?: string | null;
@@ -46,6 +49,7 @@ export interface UpdateAssetRequest {
   status?: string | null;
   assetTypeId: string;
   locationId?: string | null;
+  assignedUserId?: string | null;
   purchaseDate?: string | null;
   purchaseCost?: number | null;
   warrantyExpiryDate?: string | null;

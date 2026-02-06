@@ -13,6 +13,7 @@ export const assetSchema = z.object({
   status: z.string().optional(),
   assetTypeId: z.string().min(1, "Asset type is required"),
   locationId: z.string().optional().or(z.literal("")),
+  assignedUserId: z.string().optional().or(z.literal("")),
   purchaseDate: z.string().optional().or(z.literal("")),
   purchaseCost: z
     .string()

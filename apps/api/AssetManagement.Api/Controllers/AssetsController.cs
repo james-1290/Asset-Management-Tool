@@ -19,12 +19,14 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             .Where(a => !a.IsArchived)
             .Include(a => a.AssetType)
             .Include(a => a.Location)
+            .Include(a => a.AssignedUser)
             .OrderBy(a => a.Name)
             .Select(a => new AssetDto(
                 a.Id, a.Name, a.AssetTag, a.SerialNumber,
                 a.Status.ToString(),
                 a.AssetTypeId, a.AssetType.Name,
                 a.LocationId, a.Location != null ? a.Location.Name : null,
+                a.AssignedUserId, a.AssignedUser != null ? a.AssignedUser.DisplayName : null,
                 a.PurchaseDate, a.PurchaseCost, a.WarrantyExpiryDate,
                 a.Notes, a.IsArchived, a.CreatedAt, a.UpdatedAt))
             .ToListAsync();
@@ -38,6 +40,7 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         var asset = await db.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Location)
+            .Include(a => a.AssignedUser)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (asset is null) return NotFound();
@@ -59,6 +62,14 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             var locationExists = await db.Locations.AnyAsync(l => l.Id == request.LocationId && !l.IsArchived);
             if (!locationExists)
                 return BadRequest(new { error = "Location not found." });
+        }
+
+        // Validate AssignedUser exists (if provided)
+        if (request.AssignedUserId is not null)
+        {
+            var userExists = await db.Users.AnyAsync(u => u.Id == request.AssignedUserId && u.IsActive);
+            if (!userExists)
+                return BadRequest(new { error = "Assigned user not found." });
         }
 
         // Validate AssetTag unique
@@ -83,6 +94,7 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             Status = status,
             AssetTypeId = request.AssetTypeId,
             LocationId = request.LocationId,
+            AssignedUserId = request.AssignedUserId,
             PurchaseDate = request.PurchaseDate,
             PurchaseCost = request.PurchaseCost,
             WarrantyExpiryDate = request.WarrantyExpiryDate,
@@ -102,6 +114,8 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
         if (asset.LocationId is not null)
             await db.Entry(asset).Reference(a => a.Location).LoadAsync();
+        if (asset.AssignedUserId is not null)
+            await db.Entry(asset).Reference(a => a.AssignedUser).LoadAsync();
 
         return CreatedAtAction(nameof(GetById), new { id = asset.Id }, ToDto(asset));
     }
@@ -112,6 +126,7 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         var asset = await db.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Location)
+            .Include(a => a.AssignedUser)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (asset is null) return NotFound();
@@ -127,6 +142,14 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             var locationExists = await db.Locations.AnyAsync(l => l.Id == request.LocationId && !l.IsArchived);
             if (!locationExists)
                 return BadRequest(new { error = "Location not found." });
+        }
+
+        // Validate AssignedUser exists (if provided)
+        if (request.AssignedUserId is not null)
+        {
+            var userExists = await db.Users.AnyAsync(u => u.Id == request.AssignedUserId && u.IsActive);
+            if (!userExists)
+                return BadRequest(new { error = "Assigned user not found." });
         }
 
         // Validate AssetTag unique (excluding self)
@@ -147,6 +170,7 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         asset.SerialNumber = request.SerialNumber;
         asset.AssetTypeId = request.AssetTypeId;
         asset.LocationId = request.LocationId;
+        asset.AssignedUserId = request.AssignedUserId;
         asset.PurchaseDate = request.PurchaseDate;
         asset.PurchaseCost = request.PurchaseCost;
         asset.WarrantyExpiryDate = request.WarrantyExpiryDate;
@@ -165,6 +189,8 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
         if (asset.LocationId is not null)
             await db.Entry(asset).Reference(a => a.Location).LoadAsync();
+        if (asset.AssignedUserId is not null)
+            await db.Entry(asset).Reference(a => a.AssignedUser).LoadAsync();
 
         return Ok(ToDto(asset));
     }
@@ -193,6 +219,7 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         a.Status.ToString(),
         a.AssetTypeId, a.AssetType.Name,
         a.LocationId, a.Location?.Name,
+        a.AssignedUserId, a.AssignedUser?.DisplayName,
         a.PurchaseDate, a.PurchaseCost, a.WarrantyExpiryDate,
         a.Notes, a.IsArchived, a.CreatedAt, a.UpdatedAt);
 }

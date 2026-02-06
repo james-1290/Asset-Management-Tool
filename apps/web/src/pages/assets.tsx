@@ -17,6 +17,7 @@ import {
 } from "../hooks/use-assets";
 import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
+import { useUsers } from "../hooks/use-users";
 import type { Asset } from "../types/asset";
 import type { AssetFormValues } from "../lib/schemas/asset";
 
@@ -24,6 +25,7 @@ export default function AssetsPage() {
   const { data: assets, isLoading, isError } = useAssets();
   const { data: assetTypes } = useAssetTypes();
   const { data: locations } = useLocations();
+  const { data: users } = useUsers();
   const createMutation = useCreateAsset();
   const updateMutation = useUpdateAsset();
   const archiveMutation = useArchiveAsset();
@@ -56,6 +58,10 @@ export default function AssetsPage() {
       locationId:
         values.locationId && values.locationId !== "none"
           ? values.locationId
+          : null,
+      assignedUserId:
+        values.assignedUserId && values.assignedUserId !== "none"
+          ? values.assignedUserId
           : null,
       purchaseDate: values.purchaseDate || null,
       purchaseCost: values.purchaseCost
@@ -162,6 +168,7 @@ export default function AssetsPage() {
         asset={editingAsset}
         assetTypes={assetTypes ?? []}
         locations={locations ?? []}
+        users={users ?? []}
         onSubmit={handleFormSubmit}
         loading={createMutation.isPending || updateMutation.isPending}
       />

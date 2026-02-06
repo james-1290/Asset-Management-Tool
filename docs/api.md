@@ -53,6 +53,23 @@ Base URL: `http://localhost:5062/api/v1`
 }
 ```
 
+### Users
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/users` | List all active users (ordered by display name) |
+
+**Response DTO:**
+```json
+{
+  "id": "guid",
+  "username": "string",
+  "displayName": "string",
+  "email": "string",
+  "isActive": true
+}
+```
+
 ### Assets
 
 | Method | Path | Description |
@@ -72,6 +89,7 @@ Base URL: `http://localhost:5062/api/v1`
   "status": "Available | Assigned | CheckedOut | InMaintenance | Retired | Sold",
   "assetTypeId": "guid",
   "locationId": "guid | null",
+  "assignedUserId": "guid | null",
   "purchaseDate": "date | null",
   "purchaseCost": "decimal | null",
   "warrantyExpiryDate": "date | null",
@@ -82,10 +100,11 @@ Base URL: `http://localhost:5062/api/v1`
 **Validation:**
 - `assetTypeId` must reference an existing, non-archived asset type (400)
 - `locationId`, if provided, must reference an existing, non-archived location (400)
+- `assignedUserId`, if provided, must reference an existing, active user (400)
 - `assetTag` must be unique across all assets (409 Conflict)
 - `status` must be a valid `AssetStatus` enum value (400)
 
-**Response DTO** includes flattened `assetTypeName` and `locationName` fields.
+**Response DTO** includes flattened `assetTypeName`, `locationName`, `assignedUserId`, and `assignedUserName` fields.
 
 ## Audit Logging
 

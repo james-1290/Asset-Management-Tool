@@ -56,6 +56,11 @@ export function getAssetColumns({
       cell: ({ row }) => row.getValue("locationName") || "—",
     },
     {
+      accessorKey: "assignedUserName",
+      header: "Assigned To",
+      cell: ({ row }) => row.getValue("assignedUserName") || "—",
+    },
+    {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => <AssetStatusBadge status={row.original.status} />,

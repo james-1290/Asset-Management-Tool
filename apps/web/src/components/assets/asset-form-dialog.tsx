@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -30,6 +30,7 @@ import { assetSchema, type AssetFormValues } from "../../lib/schemas/asset";
 import type { Asset } from "../../types/asset";
 import type { AssetType } from "../../types/asset-type";
 import type { Location } from "../../types/location";
+import type { User } from "../../types/user";
 
 const ASSET_STATUSES = [
   { value: "Available", label: "Available" },
@@ -46,6 +47,7 @@ interface AssetFormDialogProps {
   asset?: Asset | null;
   assetTypes: AssetType[];
   locations: Location[];
+  users: User[];
   onSubmit: (values: AssetFormValues) => void;
   loading?: boolean;
 }
@@ -56,10 +58,12 @@ export function AssetFormDialog({
   asset,
   assetTypes,
   locations,
+  users,
   onSubmit,
   loading,
 }: AssetFormDialogProps) {
   const isEditing = !!asset;
+  const statusManuallySet = useRef(false);
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
@@ -70,6 +74,7 @@ export function AssetFormDialog({
       status: "Available",
       assetTypeId: "",
       locationId: "",
+      assignedUserId: "",
       purchaseDate: "",
       purchaseCost: "",
       warrantyExpiryDate: "",
@@ -79,6 +84,7 @@ export function AssetFormDialog({
 
   useEffect(() => {
     if (open) {
+      statusManuallySet.current = false;
       form.reset({
         name: asset?.name ?? "",
         assetTag: asset?.assetTag ?? "",
@@ -86,6 +92,7 @@ export function AssetFormDialog({
         status: asset?.status ?? "Available",
         assetTypeId: asset?.assetTypeId ?? "",
         locationId: asset?.locationId ?? "",
+        assignedUserId: asset?.assignedUserId ?? "",
         purchaseDate: asset?.purchaseDate
           ? asset.purchaseDate.substring(0, 10)
           : "",
@@ -98,6 +105,25 @@ export function AssetFormDialog({
       });
     }
   }, [open, asset, form]);
+
+  function handleAssignedUserChange(userId: string) {
+    form.setValue("assignedUserId", userId);
+    if (isEditing) return;
+
+    const currentStatus = form.getValues("status");
+    const isNone = !userId || userId === "none";
+
+    if (!isNone && currentStatus === "Available" && !statusManuallySet.current) {
+      form.setValue("status", "Assigned");
+    } else if (isNone && currentStatus === "Assigned" && !statusManuallySet.current) {
+      form.setValue("status", "Available");
+    }
+  }
+
+  function handleStatusChange(status: string) {
+    statusManuallySet.current = true;
+    form.setValue("status", status);
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -173,7 +199,7 @@ export function AssetFormDialog({
                   <FormItem>
                     <FormLabel>Status</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
+                      onValueChange={handleStatusChange}
                       value={field.value}
                     >
                       <FormControl>
@@ -211,12 +237,12 @@ export function AssetFormDialog({
               />
               <FormField
                 control={form.control}
-                name="locationId"
+                name="assignedUserId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Location</FormLabel>
+                    <FormLabel>Assigned To</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
+                      onValueChange={handleAssignedUserChange}
                       value={field.value}
                     >
                       <FormControl>
@@ -226,9 +252,9 @@ export function AssetFormDialog({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">None</SelectItem>
-                        {locations.map((l) => (
-                          <SelectItem key={l.id} value={l.id}>
-                            {l.name}
+                        {users.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.displayName}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -238,6 +264,35 @@ export function AssetFormDialog({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="locationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="None" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {locations.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-3 gap-4">
               <FormField
