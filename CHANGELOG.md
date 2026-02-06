@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-02-06 21:00 - Stricter git workflow rules
+
+- Updated CLAUDE.md: Claude must never merge into main or push to main
+- Merging to main is only via GitHub PR or by the user manually
+- Only feature/fix/docs/chore/spike branches may be pushed to origin
+
 ## 2026-02-06 20:40 - Initial project scaffold
 
 - Created monorepo structure: `apps/web`, `apps/api`, `infra`, `docs`, `tasks`
