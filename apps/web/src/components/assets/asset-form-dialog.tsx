@@ -26,11 +26,11 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Button } from "../ui/button";
+import { PersonCombobox } from "../person-combobox";
 import { assetSchema, type AssetFormValues } from "../../lib/schemas/asset";
 import type { Asset } from "../../types/asset";
 import type { AssetType } from "../../types/asset-type";
 import type { Location } from "../../types/location";
-import type { User } from "../../types/user";
 
 const ASSET_STATUSES = [
   { value: "Available", label: "Available" },
@@ -47,7 +47,6 @@ interface AssetFormDialogProps {
   asset?: Asset | null;
   assetTypes: AssetType[];
   locations: Location[];
-  users: User[];
   onSubmit: (values: AssetFormValues) => void;
   loading?: boolean;
 }
@@ -58,7 +57,6 @@ export function AssetFormDialog({
   asset,
   assetTypes,
   locations,
-  users,
   onSubmit,
   loading,
 }: AssetFormDialogProps) {
@@ -74,7 +72,7 @@ export function AssetFormDialog({
       status: "Available",
       assetTypeId: "",
       locationId: "",
-      assignedUserId: "",
+      assignedPersonId: "",
       purchaseDate: "",
       purchaseCost: "",
       warrantyExpiryDate: "",
@@ -92,7 +90,7 @@ export function AssetFormDialog({
         status: asset?.status ?? "Available",
         assetTypeId: asset?.assetTypeId ?? "",
         locationId: asset?.locationId ?? "",
-        assignedUserId: asset?.assignedUserId ?? "",
+        assignedPersonId: asset?.assignedPersonId ?? "",
         purchaseDate: asset?.purchaseDate
           ? asset.purchaseDate.substring(0, 10)
           : "",
@@ -106,12 +104,12 @@ export function AssetFormDialog({
     }
   }, [open, asset, form]);
 
-  function handleAssignedUserChange(userId: string) {
-    form.setValue("assignedUserId", userId);
+  function handleAssignedPersonChange(personId: string) {
+    form.setValue("assignedPersonId", personId);
     if (isEditing) return;
 
     const currentStatus = form.getValues("status");
-    const isNone = !userId || userId === "none";
+    const isNone = !personId || personId === "none";
 
     if (!isNone && currentStatus === "Available" && !statusManuallySet.current) {
       form.setValue("status", "Assigned");
@@ -237,28 +235,15 @@ export function AssetFormDialog({
               />
               <FormField
                 control={form.control}
-                name="assignedUserId"
+                name="assignedPersonId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Assigned To</FormLabel>
-                    <Select
-                      onValueChange={handleAssignedUserChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="None" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {users.map((u) => (
-                          <SelectItem key={u.id} value={u.id}>
-                            {u.displayName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <PersonCombobox
+                      value={field.value ?? ""}
+                      displayName={asset?.assignedPersonName ?? undefined}
+                      onValueChange={handleAssignedPersonChange}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}

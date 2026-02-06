@@ -11,6 +11,25 @@ namespace AssetManagement.Api.Controllers;
 [Route("api/v1/[controller]")]
 public class PeopleController(AppDbContext db, IAuditService audit) : ControllerBase
 {
+    [HttpGet("search")]
+    public async Task<ActionResult<List<PersonSearchResult>>> Search(
+        [FromQuery] string? q = null,
+        [FromQuery] int limit = 5)
+    {
+        var query = db.People.Where(p => !p.IsArchived);
+
+        if (!string.IsNullOrWhiteSpace(q))
+            query = query.Where(p => EF.Functions.ILike(p.FullName, $"%{q}%"));
+
+        var results = await query
+            .OrderBy(p => p.FullName)
+            .Take(limit)
+            .Select(p => new PersonSearchResult(p.Id, p.FullName))
+            .ToListAsync();
+
+        return Ok(results);
+    }
+
     [HttpGet]
     public async Task<ActionResult<List<PersonDto>>> GetAll()
     {

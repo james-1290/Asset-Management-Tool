@@ -97,13 +97,14 @@ Claude should follow an explore → plan → implement → verify loop.
 - If something breaks, stop and re-plan (don’t “push through” blindly).
 - Always define success criteria (tests passing, endpoint works, UI renders).
 
-## Verification before “done”
+## Verification before "done"
 
 - Never mark complete without proof:
   - run tests/build
   - run lint/format
   - exercise the feature (API call + UI path)
 - Prefer automated verification over manual claims.
+- **After any backend code change**: restart the API server (`dotnet run`) and verify new/changed endpoints respond correctly with `curl` before declaring done. The API does NOT hot-reload new endpoints.
 
 ## Claude input (encouraged, bounded)
 

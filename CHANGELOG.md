@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-07 00:00 - Asset assignment: User → Person + searchable combobox
+
+- **Breaking DB change**: `Asset.AssignedUserId` (FK to Users) replaced with `Asset.AssignedPersonId` (FK to People). Migration `ChangeAssetAssignmentToPersonFromUser` drops old column and adds new one.
+- **People search endpoint**: `GET /api/v1/people/search?q=&limit=5` — lightweight `{id, fullName}` results, ILike filtering, returns first 5 by default
+- **PersonCombobox component**: Searchable combobox (Popover + Command) replaces static Select for "Assigned To" field. Shows 5 people initially, narrows as user types, includes "None" option.
+- **Frontend types/schema**: `assignedUserId`/`assignedUserName` → `assignedPersonId`/`assignedPersonName` across types, schema, columns, form, and page
+- **Removed `useUsers` dependency** from assets page — combobox handles its own data fetching via `usePeopleSearch` hook
+- **New shadcn components**: popover, command (with cmdk dependency)
+
 ## 2026-02-06 12:00 - People management (CRUD)
 
 - **People model**: New `Person` entity (FullName, Email, Department, JobTitle, LocationId FK) with soft delete via `IsArchived`

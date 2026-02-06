@@ -26,3 +26,8 @@ export interface UpdatePersonRequest {
   jobTitle?: string | null;
   locationId?: string | null;
 }
+
+export interface PersonSearchResult {
+  id: string;
+  fullName: string;
+}

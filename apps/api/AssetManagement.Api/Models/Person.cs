@@ -12,4 +12,6 @@ public class Person
     public bool IsArchived { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public ICollection<Asset> AssignedAssets { get; set; } = [];
 }

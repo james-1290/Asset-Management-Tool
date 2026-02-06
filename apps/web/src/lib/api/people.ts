@@ -1,6 +1,7 @@
 import { apiClient } from "../api-client";
 import type {
   Person,
+  PersonSearchResult,
   CreatePersonRequest,
   UpdatePersonRequest,
 } from "../../types/person";
@@ -24,5 +25,11 @@ export const peopleApi = {
 
   archive(id: string): Promise<void> {
     return apiClient.delete(`/people/${id}`);
+  },
+
+  search(q: string, limit = 5): Promise<PersonSearchResult[]> {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (q) params.set("q", q);
+    return apiClient.get<PersonSearchResult[]>(`/people/search?${params}`);
   },
 };

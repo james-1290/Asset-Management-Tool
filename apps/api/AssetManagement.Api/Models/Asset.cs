@@ -16,8 +16,8 @@ public class Asset
     public Guid? LocationId { get; set; }
     public Location? Location { get; set; }
 
-    public Guid? AssignedUserId { get; set; }
-    public User? AssignedUser { get; set; }
+    public Guid? AssignedPersonId { get; set; }
+    public Person? AssignedPerson { get; set; }
 
     public DateTime? WarrantyExpiryDate { get; set; }
     public DateTime? PurchaseDate { get; set; }

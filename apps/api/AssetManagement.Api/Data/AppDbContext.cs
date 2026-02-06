@@ -77,9 +77,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Asset>()
-            .HasOne(a => a.AssignedUser)
-            .WithMany(u => u.AssignedAssets)
-            .HasForeignKey(a => a.AssignedUserId)
+            .HasOne(a => a.AssignedPerson)
+            .WithMany(p => p.AssignedAssets)
+            .HasForeignKey(a => a.AssignedPersonId)
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Asset>()

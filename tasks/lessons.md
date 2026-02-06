@@ -21,3 +21,9 @@
 **What happened**: Added new `AssetsController` and `IAuditService`, verified `dotnet build` passed, but didn't restart the running API process. The user navigated to `/assets` and got "Failed to load assets" because the old process didn't have the new controller.
 
 **Rule**: After any backend code change (new controllers, modified endpoints, DI registration changes), always restart the running API. Kill the old process and run `dotnet run` again. Don't assume `dotnet build` alone is enough — the running process uses the old binary.
+
+## 2026-02-07: Restart API — repeat offence (people search endpoint)
+
+**What happened**: Added `GET /api/v1/people/search` endpoint but only ran `dotnet build` — didn't restart the API. The combobox showed no results because the endpoint returned 404. Same mistake as the Assets controller incident above.
+
+**Reinforced rule**: After ANY backend C# change, the verification loop MUST be: `dotnet build` → kill API → `dotnet run` → `curl` the new/changed endpoint → confirm correct response. Never skip the restart + curl steps.
