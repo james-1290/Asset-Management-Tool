@@ -83,7 +83,7 @@
 
 ## ADR-008: Reusable audit logging via IAuditService
 
-**Date**: 2026-02-07
+**Date**: 2026-02-06
 **Status**: Accepted
 
 **Context**: CLAUDE.md requires audit log entries for every write operation and per-asset history timeline.
@@ -96,7 +96,7 @@
 
 ## ADR-009: Asset DTO flattens related entity names
 
-**Date**: 2026-02-07
+**Date**: 2026-02-06
 **Status**: Accepted
 
 **Context**: The Assets API response needs to include the asset type name and location name for display in the frontend table.
@@ -107,7 +107,7 @@
 
 ## ADR-010: Status changes via general update endpoint
 
-**Date**: 2026-02-07
+**Date**: 2026-02-06
 **Status**: Accepted
 
 **Context**: Assets have a Status enum (Available, Assigned, CheckedOut, etc.). Dedicated endpoints for assign/sell/retire could be built.
