@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026-02-07 00:00 - Asset assignment: User → Person + searchable combobox
+## 2026-02-06 23:24 - Asset assignment: User → Person + searchable combobox
 
 - **Breaking DB change**: `Asset.AssignedUserId` (FK to Users) replaced with `Asset.AssignedPersonId` (FK to People). Migration `ChangeAssetAssignmentToPersonFromUser` drops old column and adds new one.
 - **People search endpoint**: `GET /api/v1/people/search?q=&limit=5` — lightweight `{id, fullName}` results, ILike filtering, returns first 5 by default
@@ -9,7 +9,7 @@
 - **Removed `useUsers` dependency** from assets page — combobox handles its own data fetching via `usePeopleSearch` hook
 - **New shadcn components**: popover, command (with cmdk dependency)
 
-## 2026-02-06 12:00 - People management (CRUD)
+## 2026-02-06 23:03 - People management (CRUD)
 
 - **People model**: New `Person` entity (FullName, Email, Department, JobTitle, LocationId FK) with soft delete via `IsArchived`
 - **People API** (`/api/v1/people`): Full CRUD — list active people (with location name), get by ID, create, update, soft delete. LocationId validated against active locations. All writes audit-logged.
@@ -17,7 +17,7 @@
 - **Sidebar**: Added "People" nav item with Users icon after Locations
 - **DB migration**: `AddPeopleTable` — creates `People` table with FK to `Locations` (SetNull on delete)
 
-## 2026-02-07 05:30 - Assign user to asset
+## 2026-02-06 22:45 - Assign user to asset
 
 - **Users API** (`GET /api/v1/users`): Read-only endpoint returning active users ordered by display name
 - **Asset assignment**: `AssignedUserId` and `AssignedUserName` added to Asset DTOs and API request/response
@@ -26,7 +26,7 @@
 - **DataTable**: "Assigned To" column showing assigned user's display name
 - No DB migration needed — `AssignedUserId` FK already exists on Assets table
 
-## 2026-02-07 04:00 - Assets CRUD end-to-end + Audit logging
+## 2026-02-06 22:28 - Assets CRUD end-to-end + Audit logging
 
 - **Audit logging service**: Reusable `IAuditService` / `AuditService` — every controller write operation now creates an `AuditLog` record; asset writes also create per-asset `AssetHistory` entries
 - **Assets API** (`/api/v1/assets`): Full CRUD with validation (AssetType exists, Location exists, unique AssetTag, valid Status enum). Returns flattened DTOs with `assetTypeName` and `locationName`. Soft delete via `IsArchived` flag.
@@ -37,7 +37,7 @@
 - **shadcn/ui**: Added Select and Textarea components
 - No DB migration needed — all tables already existed from initial scaffold
 
-## 2026-02-07 02:00 - Locations page: full CRUD with API integration
+## 2026-02-06 21:57 - Locations page: full CRUD with API integration
 
 - **Foundation layer**: API client (fetch wrapper with typed errors), React Query provider, Sonner toast notifications
 - **Locations API integration**: Types mirroring backend DTOs, API functions, React Query hooks (useLocations, useCreateLocation, useUpdateLocation, useArchiveLocation)
@@ -48,7 +48,7 @@
 - **Dependencies added**: @tanstack/react-query, react-hook-form, zod, @hookform/resolvers, sonner
 - **Fixed**: components.json aliases from `src/` to `@/` so shadcn imports resolve during Vite build
 
-## 2026-02-07 00:30 - Polish sidebar header + collapse behaviour
+## 2026-02-06 21:26 - Polish sidebar header + collapse behaviour
 
 - Moved collapse/expand toggle from sidebar footer to sidebar header
 - Toggle is now icon-only (ChevronLeft) next to "Asset Manager" title
@@ -57,13 +57,13 @@
 - Removed SidebarFooter entirely (toggle lives in header)
 - No changes to shadcn/ui primitives or layout.tsx
 
-## 2026-02-06 21:00 - Stricter git workflow rules
+## 2026-02-06 20:56 - Stricter git workflow rules
 
 - Updated CLAUDE.md: Claude must never merge into main or push to main
 - Merging to main is only via GitHub PR or by the user manually
 - Only feature/fix/docs/chore/spike branches may be pushed to origin
 
-## 2026-02-06 20:40 - Initial project scaffold
+## 2026-02-06 20:42 - Initial project scaffold
 
 - Created monorepo structure: `apps/web`, `apps/api`, `infra`, `docs`, `tasks`
 - **Backend** (apps/api): ASP.NET Core Web API (.NET 10)

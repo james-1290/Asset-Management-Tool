@@ -22,7 +22,13 @@
 
 **Rule**: After any backend code change (new controllers, modified endpoints, DI registration changes), always restart the running API. Kill the old process and run `dotnet run` again. Don't assume `dotnet build` alone is enough — the running process uses the old binary.
 
-## 2026-02-07: Restart API — repeat offence (people search endpoint)
+## 2026-02-06: CHANGELOG timestamps were wrong
+
+**What happened**: Multiple CHANGELOG entries had incorrect dates (2026-02-07 instead of 2026-02-06) and made-up times. The system-provided date was used instead of checking the actual system clock. All work was done on 2026-02-06 but 6 out of 8 entries showed 2026-02-07.
+
+**Rule**: NEVER use the system-provided date for CHANGELOG timestamps. Always run `date '+%Y-%m-%d %H:%M'` to get the real current date and time before writing a CHANGELOG entry.
+
+## 2026-02-06: Restart API — repeat offence (people search endpoint)
 
 **What happened**: Added `GET /api/v1/people/search` endpoint but only ran `dotnet build` — didn't restart the API. The combobox showed no results because the endpoint returned 404. Same mistake as the Assets controller incident above.
 
