@@ -147,6 +147,8 @@ Claude should follow an explore → plan → implement → verify loop.
 ## Git workflow (strict)
 
 - NEVER commit directly to `main`.
+- NEVER merge into `main` (including fast-forward merges). Merging to main must be done via GitHub PR or by the user manually.
+- NEVER push to `main`. Only push feature/fix/docs/chore/spike branches to origin.
 - ALWAYS create a new branch for any change.
 - Branch naming conventions:
   - feature/<kebab-name>
