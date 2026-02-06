@@ -53,6 +53,47 @@ Base URL: `http://localhost:5062/api/v1`
 }
 ```
 
+### People
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/people` | List all active people (includes location name) |
+| GET | `/api/v1/people/{id}` | Get person by ID |
+| POST | `/api/v1/people` | Create a person |
+| PUT | `/api/v1/people/{id}` | Update a person |
+| DELETE | `/api/v1/people/{id}` | Archive a person (soft delete) |
+
+**Create/Update request body:**
+```json
+{
+  "fullName": "string",
+  "email": "string | null",
+  "department": "string | null",
+  "jobTitle": "string | null",
+  "locationId": "guid | null"
+}
+```
+
+**Response DTO:**
+```json
+{
+  "id": "guid",
+  "fullName": "string",
+  "email": "string | null",
+  "department": "string | null",
+  "jobTitle": "string | null",
+  "locationId": "guid | null",
+  "locationName": "string | null",
+  "isArchived": false,
+  "createdAt": "datetime",
+  "updatedAt": "datetime"
+}
+```
+
+**Validation:**
+- `fullName` is required
+- `locationId`, if provided, must reference an existing, non-archived location (400)
+
 ### Users
 
 | Method | Path | Description |

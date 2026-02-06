@@ -36,6 +36,8 @@
 - [x] AssetTypes management UI
 - [x] Audit log recording on all write operations
 - [x] Assign/unassign assets to users
+- [x] People management (CRUD page + API)
+- [ ] Migrate asset assignment from User → Person
 - [ ] Check-in/check-out workflow
 - [ ] Asset history timeline (per-asset)
 - [ ] Audit log UI page

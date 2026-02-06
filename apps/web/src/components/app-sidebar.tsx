@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   AppWindow,
   MapPin,
+  Users,
   ScrollText,
   Settings,
   ChevronLeft,
@@ -36,6 +37,7 @@ const navItems = [
   { title: "Certificates", url: "/certificates", icon: ShieldCheck },
   { title: "Applications / Licences", url: "/applications", icon: AppWindow },
   { title: "Locations", url: "/locations", icon: MapPin },
+  { title: "People", url: "/people", icon: Users },
   { title: "Audit Log", url: "/audit-log", icon: ScrollText },
   { title: "Settings", url: "/settings", icon: Settings },
 ]

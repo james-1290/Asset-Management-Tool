@@ -113,3 +113,16 @@
 **Context**: Assets have a Status enum (Available, Assigned, CheckedOut, etc.). Dedicated endpoints for assign/sell/retire could be built.
 
 **Decision**: For MVP, status is changed through the standard PUT `/api/v1/assets/{id}` endpoint. Dedicated endpoints (e.g. POST `/assets/{id}/assign`) will be added later when workflow logic (e.g. validating user assignment) is needed.
+
+---
+
+## ADR-011: "People" entity separate from auth "Users"
+
+**Date**: 2026-02-06
+**Status**: Accepted
+
+**Context**: Assets are assigned to auth `User` records, but the product needs a directory of people (name, email, department, job title, location) that is separate from authentication. Not everyone who receives an asset needs a login.
+
+**Decision**: Create a `Person` model with its own `People` DB table and `/api/v1/people` API route. This avoids collision with the existing auth `Users` table and `GET /api/v1/users` endpoint. The sidebar label is "People" with a `Users` lucide icon.
+
+**Follow-up**: Migrate asset assignment from `User` → `Person` in a future task. The current `AssignedUserId` FK on Assets will be replaced with `AssignedPersonId`.
