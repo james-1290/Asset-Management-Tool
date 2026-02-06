@@ -57,6 +57,19 @@ PostgreSQL 16, managed via EF Core migrations. Connection string configured in `
 | CreatedAt | timestamp | UTC |
 | UpdatedAt | timestamp | UTC |
 
+### People
+| Column | Type | Notes |
+|--------|------|-------|
+| Id | UUID | PK |
+| FullName | text | Required |
+| Email | text | Nullable |
+| Department | text | Nullable |
+| JobTitle | text | Nullable |
+| LocationId | UUID | FK → Locations, nullable, SET NULL on delete |
+| IsArchived | boolean | Soft delete |
+| CreatedAt | timestamp | UTC |
+| UpdatedAt | timestamp | UTC |
+
 ### AssetTypes
 | Column | Type | Notes |
 |--------|------|-------|

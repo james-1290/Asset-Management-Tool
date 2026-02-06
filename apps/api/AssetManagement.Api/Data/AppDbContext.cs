@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<CustomFieldDefinition> CustomFieldDefinitions => Set<CustomFieldDefinition>();
     public DbSet<CustomFieldValue> CustomFieldValues => Set<CustomFieldValue>();
+    public DbSet<Person> People => Set<Person>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -141,5 +142,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<CustomFieldDefinition>()
             .Property(d => d.FieldType)
             .HasConversion<string>();
+
+        // Person
+        modelBuilder.Entity<Person>()
+            .HasOne(p => p.Location)
+            .WithMany()
+            .HasForeignKey(p => p.LocationId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

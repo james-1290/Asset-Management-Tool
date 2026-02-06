@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-02-06 12:00 - People management (CRUD)
+
+- **People model**: New `Person` entity (FullName, Email, Department, JobTitle, LocationId FK) with soft delete via `IsArchived`
+- **People API** (`/api/v1/people`): Full CRUD — list active people (with location name), get by ID, create, update, soft delete. LocationId validated against active locations. All writes audit-logged.
+- **People frontend**: Full CRUD page at `/people` — DataTable with sortable Full Name column, filter-by-name toolbar, form dialog with Location dropdown, confirm dialog for delete, toast feedback
+- **Sidebar**: Added "People" nav item with Users icon after Locations
+- **DB migration**: `AddPeopleTable` — creates `People` table with FK to `Locations` (SetNull on delete)
+
 ## 2026-02-07 05:30 - Assign user to asset
 
 - **Users API** (`GET /api/v1/users`): Read-only endpoint returning active users ordered by display name

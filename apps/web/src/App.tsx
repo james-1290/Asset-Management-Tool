@@ -6,6 +6,7 @@ import CertificatesPage from "@/pages/certificates"
 import ApplicationsPage from "@/pages/applications"
 import AssetTypesPage from "@/pages/asset-types"
 import LocationsPage from "@/pages/locations"
+import PeoplePage from "@/pages/people"
 import AuditLogPage from "@/pages/audit-log"
 import SettingsPage from "@/pages/settings"
 
@@ -20,6 +21,7 @@ function App() {
           <Route path="/applications" element={<ApplicationsPage />} />
           <Route path="/asset-types" element={<AssetTypesPage />} />
           <Route path="/locations" element={<LocationsPage />} />
+          <Route path="/people" element={<PeoplePage />} />
           <Route path="/audit-log" element={<AuditLogPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>

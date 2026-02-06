@@ -1,0 +1,52 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { peopleApi } from "../lib/api/people";
+import type {
+  CreatePersonRequest,
+  UpdatePersonRequest,
+} from "../types/person";
+
+const personKeys = {
+  all: ["people"] as const,
+  detail: (id: string) => ["people", id] as const,
+};
+
+export function usePeople() {
+  return useQuery({
+    queryKey: personKeys.all,
+    queryFn: peopleApi.getAll,
+  });
+}
+
+export function useCreatePerson() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreatePersonRequest) => peopleApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: personKeys.all });
+    },
+  });
+}
+
+export function useUpdatePerson() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdatePersonRequest }) =>
+      peopleApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: personKeys.all });
+    },
+  });
+}
+
+export function useArchivePerson() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => peopleApi.archive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: personKeys.all });
+    },
+  });
+}
