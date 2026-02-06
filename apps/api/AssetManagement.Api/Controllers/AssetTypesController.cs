@@ -1,6 +1,7 @@
 using AssetManagement.Api.Data;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
+using AssetManagement.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,7 @@ namespace AssetManagement.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class AssetTypesController(AppDbContext db) : ControllerBase
+public class AssetTypesController(AppDbContext db, IAuditService audit) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<AssetTypeDto>>> GetAll()
@@ -48,6 +49,12 @@ public class AssetTypesController(AppDbContext db) : ControllerBase
         db.AssetTypes.Add(type);
         await db.SaveChangesAsync();
 
+        await audit.LogAsync(new AuditEntry(
+            Action: "Created",
+            EntityType: "AssetType",
+            EntityId: type.Id.ToString(),
+            Details: $"Created asset type \"{type.Name}\""));
+
         var dto = new AssetTypeDto(
             type.Id, type.Name, type.Description,
             type.IsArchived, type.CreatedAt, type.UpdatedAt);
@@ -67,6 +74,12 @@ public class AssetTypesController(AppDbContext db) : ControllerBase
 
         await db.SaveChangesAsync();
 
+        await audit.LogAsync(new AuditEntry(
+            Action: "Updated",
+            EntityType: "AssetType",
+            EntityId: type.Id.ToString(),
+            Details: $"Updated asset type \"{type.Name}\""));
+
         return Ok(new AssetTypeDto(
             type.Id, type.Name, type.Description,
             type.IsArchived, type.CreatedAt, type.UpdatedAt));
@@ -81,6 +94,12 @@ public class AssetTypesController(AppDbContext db) : ControllerBase
         type.IsArchived = true;
         type.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
+
+        await audit.LogAsync(new AuditEntry(
+            Action: "Archived",
+            EntityType: "AssetType",
+            EntityId: type.Id.ToString(),
+            Details: $"Archived asset type \"{type.Name}\""));
 
         return NoContent();
     }

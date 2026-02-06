@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-02-07 04:00 - Assets CRUD end-to-end + Audit logging
+
+- **Audit logging service**: Reusable `IAuditService` / `AuditService` — every controller write operation now creates an `AuditLog` record; asset writes also create per-asset `AssetHistory` entries
+- **Assets API** (`/api/v1/assets`): Full CRUD with validation (AssetType exists, Location exists, unique AssetTag, valid Status enum). Returns flattened DTOs with `assetTypeName` and `locationName`. Soft delete via `IsArchived` flag.
+- **Retrofit audit logging**: LocationsController and AssetTypesController now log Created/Updated/Archived events via `IAuditService`
+- **Asset Types frontend**: Full CRUD page at `/asset-types` — mirrors Locations pattern (types, API client, React Query hooks, Zod schema, DataTable with sorting/filtering, form dialog, confirm dialog, toasts)
+- **Assets frontend**: Full CRUD page at `/assets` — complex form with Select dropdowns for AssetType, Location, Status; date inputs for PurchaseDate and WarrantyExpiry; cost field; notes textarea. Status badge component with colour-coded labels.
+- **Sidebar**: Added "Asset Types" nav item with Tag icon
+- **shadcn/ui**: Added Select and Textarea components
+- No DB migration needed — all tables already existed from initial scaffold
+
 ## 2026-02-07 02:00 - Locations page: full CRUD with API integration
 
 - **Foundation layer**: API client (fetch wrapper with typed errors), React Query provider, Sonner toast notifications

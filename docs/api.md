@@ -53,6 +53,44 @@ Base URL: `http://localhost:5062/api/v1`
 }
 ```
 
+### Assets
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/assets` | List all active assets (includes type/location names) |
+| GET | `/api/v1/assets/{id}` | Get asset by ID |
+| POST | `/api/v1/assets` | Create an asset |
+| PUT | `/api/v1/assets/{id}` | Update an asset |
+| DELETE | `/api/v1/assets/{id}` | Archive an asset (soft delete) |
+
+**Create/Update request body:**
+```json
+{
+  "name": "string",
+  "assetTag": "string",
+  "serialNumber": "string | null",
+  "status": "Available | Assigned | CheckedOut | InMaintenance | Retired | Sold",
+  "assetTypeId": "guid",
+  "locationId": "guid | null",
+  "purchaseDate": "date | null",
+  "purchaseCost": "decimal | null",
+  "warrantyExpiryDate": "date | null",
+  "notes": "string | null"
+}
+```
+
+**Validation:**
+- `assetTypeId` must reference an existing, non-archived asset type (400)
+- `locationId`, if provided, must reference an existing, non-archived location (400)
+- `assetTag` must be unique across all assets (409 Conflict)
+- `status` must be a valid `AssetStatus` enum value (400)
+
+**Response DTO** includes flattened `assetTypeName` and `locationName` fields.
+
+## Audit Logging
+
+All write operations (create, update, archive) across all controllers automatically create entries in the `AuditLogs` table. Asset writes additionally create `AssetHistory` entries for per-asset timeline tracking.
+
 ## Error Format
 
 Standard HTTP status codes. Error responses follow the ASP.NET Core ProblemDetails format:

@@ -1,6 +1,7 @@
 using AssetManagement.Api.Data;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
+using AssetManagement.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,7 @@ namespace AssetManagement.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class LocationsController(AppDbContext db) : ControllerBase
+public class LocationsController(AppDbContext db, IAuditService audit) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<LocationDto>>> GetAll()
@@ -50,6 +51,12 @@ public class LocationsController(AppDbContext db) : ControllerBase
         db.Locations.Add(location);
         await db.SaveChangesAsync();
 
+        await audit.LogAsync(new AuditEntry(
+            Action: "Created",
+            EntityType: "Location",
+            EntityId: location.Id.ToString(),
+            Details: $"Created location \"{location.Name}\""));
+
         var dto = new LocationDto(
             location.Id, location.Name, location.Address, location.City,
             location.Country, location.IsArchived, location.CreatedAt, location.UpdatedAt);
@@ -71,6 +78,12 @@ public class LocationsController(AppDbContext db) : ControllerBase
 
         await db.SaveChangesAsync();
 
+        await audit.LogAsync(new AuditEntry(
+            Action: "Updated",
+            EntityType: "Location",
+            EntityId: location.Id.ToString(),
+            Details: $"Updated location \"{location.Name}\""));
+
         return Ok(new LocationDto(
             location.Id, location.Name, location.Address, location.City,
             location.Country, location.IsArchived, location.CreatedAt, location.UpdatedAt));
@@ -85,6 +98,12 @@ public class LocationsController(AppDbContext db) : ControllerBase
         location.IsArchived = true;
         location.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
+
+        await audit.LogAsync(new AuditEntry(
+            Action: "Archived",
+            EntityType: "Location",
+            EntityId: location.Id.ToString(),
+            Details: $"Archived location \"{location.Name}\""));
 
         return NoContent();
     }

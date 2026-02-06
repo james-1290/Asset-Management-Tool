@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom"
 import {
   LayoutDashboard,
   Monitor,
+  Tag,
   ShieldCheck,
   AppWindow,
   MapPin,
@@ -31,6 +32,7 @@ import {
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Assets", url: "/assets", icon: Monitor },
+  { title: "Asset Types", url: "/asset-types", icon: Tag },
   { title: "Certificates", url: "/certificates", icon: ShieldCheck },
   { title: "Applications / Licences", url: "/applications", icon: AppWindow },
   { title: "Locations", url: "/locations", icon: MapPin },

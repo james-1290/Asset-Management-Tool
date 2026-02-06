@@ -1,0 +1,52 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { assetsApi } from "../lib/api/assets";
+import type {
+  CreateAssetRequest,
+  UpdateAssetRequest,
+} from "../types/asset";
+
+const assetKeys = {
+  all: ["assets"] as const,
+  detail: (id: string) => ["assets", id] as const,
+};
+
+export function useAssets() {
+  return useQuery({
+    queryKey: assetKeys.all,
+    queryFn: assetsApi.getAll,
+  });
+}
+
+export function useCreateAsset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateAssetRequest) => assetsApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assetKeys.all });
+    },
+  });
+}
+
+export function useUpdateAsset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateAssetRequest }) =>
+      assetsApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assetKeys.all });
+    },
+  });
+}
+
+export function useArchiveAsset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => assetsApi.archive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assetKeys.all });
+    },
+  });
+}

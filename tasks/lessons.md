@@ -15,3 +15,9 @@
 **What happened**: Completed the Locations UI milestone but forgot to update `tasks/todo.md` to mark items done and reflect new completed work.
 
 **Rule**: Before committing, always update `tasks/todo.md` — check off completed items and add new "Done" entries for work that was finished.
+
+## 2026-02-07: Restart API after backend changes
+
+**What happened**: Added new `AssetsController` and `IAuditService`, verified `dotnet build` passed, but didn't restart the running API process. The user navigated to `/assets` and got "Failed to load assets" because the old process didn't have the new controller.
+
+**Rule**: After any backend code change (new controllers, modified endpoints, DI registration changes), always restart the running API. Kill the old process and run `dotnet run` again. Don't assume `dotnet build` alone is enough — the running process uses the old binary.
