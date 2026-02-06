@@ -8,15 +8,15 @@
 
 **Rule**: When configuring shadcn/ui with Vite + path aliases, use relative paths (e.g., `src/components`) in `components.json`, not the tsconfig alias (`@/components`).
 
-**Update (2026-02-07)**: Reversed — now using `@/` aliases in `components.json` since Vite resolves them correctly at dev time. The `src/` paths broke production builds (`vite build`) because Rollup couldn't resolve them. After `npx shadcn@latest add`, always check new files for `from "src/..."` imports and replace with `from "@/..."`.
+**Update (2026-02-06)**: Reversed — now using `@/` aliases in `components.json` since Vite resolves them correctly at dev time. The `src/` paths broke production builds (`vite build`) because Rollup couldn't resolve them. After `npx shadcn@latest add`, always check new files for `from "src/..."` imports and replace with `from "@/..."`.
 
-## 2026-02-07: Always update tasks/todo.md before committing
+## 2026-02-06: Always update tasks/todo.md before committing
 
 **What happened**: Completed the Locations UI milestone but forgot to update `tasks/todo.md` to mark items done and reflect new completed work.
 
 **Rule**: Before committing, always update `tasks/todo.md` — check off completed items and add new "Done" entries for work that was finished.
 
-## 2026-02-07: Restart API after backend changes
+## 2026-02-06: Restart API after backend changes
 
 **What happened**: Added new `AssetsController` and `IAuditService`, verified `dotnet build` passed, but didn't restart the running API process. The user navigated to `/assets` and got "Failed to load assets" because the old process didn't have the new controller.
 
