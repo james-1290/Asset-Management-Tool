@@ -7,6 +7,7 @@ import {
   MapPin,
   ScrollText,
   Settings,
+  ChevronLeft,
 } from "lucide-react"
 import {
   Sidebar,
@@ -18,7 +19,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -31,10 +39,41 @@ const navItems = [
 ]
 
 export function AppSidebar() {
+  const { toggleSidebar } = useSidebar()
+
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b px-4 py-3">
-        <span className="text-lg font-semibold">Asset Manager</span>
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b h-14 px-3 !flex-row items-center">
+        {/* Expanded: title + collapse chevron */}
+        <div className="flex flex-1 items-center gap-2 overflow-hidden group-data-[collapsible=icon]:hidden">
+          <span className="text-lg font-semibold truncate">Asset Manager</span>
+          <div className="ml-auto">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={toggleSidebar}
+            >
+              <ChevronLeft className="size-4" />
+              <span className="sr-only">Collapse sidebar</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Collapsed: AM badge + expand chevron */}
+        <div className="hidden flex-col items-center gap-1 group-data-[collapsible=icon]:flex">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={toggleSidebar}
+                className="size-8 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center hover:bg-primary/90 transition-colors"
+              >
+                AM
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Expand sidebar</TooltipContent>
+          </Tooltip>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -43,7 +82,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild tooltip={item.title}>
                     <NavLink
                       to={item.url}
                       className={({ isActive }) =>
