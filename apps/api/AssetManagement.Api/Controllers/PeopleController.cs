@@ -88,6 +88,7 @@ public class PeopleController(AppDbContext db, IAuditService audit) : Controller
             Action: "Created",
             EntityType: "Person",
             EntityId: person.Id.ToString(),
+            EntityName: person.FullName,
             Details: $"Created person \"{person.FullName}\""));
 
         // Reload with Location for response
@@ -127,6 +128,7 @@ public class PeopleController(AppDbContext db, IAuditService audit) : Controller
             Action: "Updated",
             EntityType: "Person",
             EntityId: person.Id.ToString(),
+            EntityName: person.FullName,
             Details: $"Updated person \"{person.FullName}\""));
 
         await db.Entry(person).Reference(p => p.Location).LoadAsync();
@@ -151,6 +153,7 @@ public class PeopleController(AppDbContext db, IAuditService audit) : Controller
             Action: "Archived",
             EntityType: "Person",
             EntityId: person.Id.ToString(),
+            EntityName: person.FullName,
             Details: $"Archived person \"{person.FullName}\""));
 
         return NoContent();

@@ -26,7 +26,8 @@ public class AuditLogsController(AppDbContext db) : ControllerBase
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(l =>
                 (l.Details != null && l.Details.Contains(search)) ||
-                l.ActorName.Contains(search));
+                l.ActorName.Contains(search) ||
+                (l.EntityName != null && l.EntityName.Contains(search)));
 
         var logs = await query
             .OrderByDescending(l => l.Timestamp)
@@ -36,6 +37,7 @@ public class AuditLogsController(AppDbContext db) : ControllerBase
                 l.Action,
                 l.EntityType,
                 l.EntityId,
+                l.EntityName,
                 l.Source.ToString(),
                 l.Details,
                 l.Timestamp))

@@ -53,6 +53,7 @@ public class AssetTypesController(AppDbContext db, IAuditService audit) : Contro
             Action: "Created",
             EntityType: "AssetType",
             EntityId: type.Id.ToString(),
+            EntityName: type.Name,
             Details: $"Created asset type \"{type.Name}\""));
 
         var dto = new AssetTypeDto(
@@ -78,6 +79,7 @@ public class AssetTypesController(AppDbContext db, IAuditService audit) : Contro
             Action: "Updated",
             EntityType: "AssetType",
             EntityId: type.Id.ToString(),
+            EntityName: type.Name,
             Details: $"Updated asset type \"{type.Name}\""));
 
         return Ok(new AssetTypeDto(
@@ -99,6 +101,7 @@ public class AssetTypesController(AppDbContext db, IAuditService audit) : Contro
             Action: "Archived",
             EntityType: "AssetType",
             EntityId: type.Id.ToString(),
+            EntityName: type.Name,
             Details: $"Archived asset type \"{type.Name}\""));
 
         return NoContent();

@@ -16,6 +16,7 @@ public class AuditService(AppDbContext db) : IAuditService
             Action = entry.Action,
             EntityType = entry.EntityType,
             EntityId = entry.EntityId,
+            EntityName = entry.EntityName,
             Source = AuditSource.API,
             Details = entry.Details,
         };

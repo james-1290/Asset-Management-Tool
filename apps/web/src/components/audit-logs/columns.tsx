@@ -66,24 +66,27 @@ export const auditLogColumns: ColumnDef<AuditLogEntry, unknown>[] = [
     ),
   },
   {
-    accessorKey: "entityId",
-    header: "Entity ID",
+    accessorKey: "entityName",
+    header: "Entity",
     cell: ({ row }) => {
       const entityType = row.original.entityType;
       const entityId = row.original.entityId;
+      const entityName = row.original.entityName;
+      const displayText = entityName ?? `${entityId.substring(0, 8)}...`;
+
       if (entityType === "Asset") {
         return (
           <Link
             to={`/assets/${entityId}`}
             className="font-medium text-primary hover:underline"
           >
-            {entityId.substring(0, 8)}...
+            {displayText}
           </Link>
         );
       }
       return (
-        <span className="text-muted-foreground">
-          {entityId.substring(0, 8)}...
+        <span className="text-foreground">
+          {displayText}
         </span>
       );
     },
