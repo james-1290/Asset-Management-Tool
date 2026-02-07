@@ -38,6 +38,7 @@ const navItems = [
   { title: "Certificates", url: "/certificates", icon: ShieldCheck },
   { title: "Certificate Types", url: "/certificate-types", icon: FileKey },
   { title: "Applications / Licences", url: "/applications", icon: AppWindow },
+  { title: "Application Types", url: "/application-types", icon: Tag },
   { title: "Locations", url: "/locations", icon: MapPin },
   { title: "People", url: "/people", icon: Users },
   { title: "Audit Log", url: "/audit-log", icon: ScrollText },

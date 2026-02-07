@@ -14,6 +14,9 @@ public class CustomFieldDefinition
     public Guid? CertificateTypeId { get; set; }
     public CertificateType? CertificateType { get; set; }
 
+    public Guid? ApplicationTypeId { get; set; }
+    public ApplicationType? ApplicationType { get; set; }
+
     public required string Name { get; set; }
     public CustomFieldType FieldType { get; set; }
     public string? Options { get; set; }

@@ -9,36 +9,30 @@ import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
 import { ConfirmDialog } from "../components/confirm-dialog";
-import { ApplicationFormDialog } from "../components/applications/application-form-dialog";
-import { ApplicationsToolbar } from "../components/applications/applications-toolbar";
-import { getApplicationColumns } from "../components/applications/columns";
+import { ApplicationTypeFormDialog } from "../components/application-types/application-type-form-dialog";
+import { ApplicationTypesToolbar } from "../components/application-types/application-types-toolbar";
+import { getApplicationTypeColumns } from "../components/application-types/columns";
 import {
-  usePagedApplications,
-  useCreateApplication,
-  useUpdateApplication,
-  useArchiveApplication,
-} from "../hooks/use-applications";
-import { useApplicationTypes } from "../hooks/use-application-types";
-import { useLocations } from "../hooks/use-locations";
-import type { Application } from "../types/application";
-import type { ApplicationFormValues } from "../lib/schemas/application";
+  usePagedApplicationTypes,
+  useCreateApplicationType,
+  useUpdateApplicationType,
+  useArchiveApplicationType,
+} from "../hooks/use-application-types";
+import type { ApplicationType } from "../types/application-type";
+import type { ApplicationTypeFormValues } from "../lib/schemas/application-type";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
-  applicationTypeName: "applicationTypeName",
-  publisher: "publisher",
-  licenceType: "licenceType",
-  expiryDate: "expiryDate",
-  status: "status",
+  description: "description",
+  createdAt: "createdAt",
 };
 
-export default function ApplicationsPage() {
+export default function ApplicationTypesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const page = Number(searchParams.get("page")) || 1;
   const pageSize = Number(searchParams.get("pageSize")) || 25;
   const searchParam = searchParams.get("search") ?? "";
-  const statusParam = searchParams.get("status") ?? "";
   const sortByParam = searchParams.get("sortBy") ?? "name";
   const sortDirParam = searchParams.get("sortDir") ?? "asc";
 
@@ -67,53 +61,35 @@ export default function ApplicationsPage() {
     setSearchInput(searchParam);
   }, [searchParam]);
 
-  const handleStatusFilterChange = useCallback(
-    (value: string) => {
-      setSearchParams((prev) => {
-        if (value) {
-          prev.set("status", value);
-        } else {
-          prev.delete("status");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
   const queryParams = useMemo(
     () => ({
       page,
       pageSize,
       search: searchParam || undefined,
-      status: statusParam || undefined,
       sortBy: sortByParam,
       sortDir: sortDirParam,
     }),
-    [page, pageSize, searchParam, statusParam, sortByParam, sortDirParam],
+    [page, pageSize, searchParam, sortByParam, sortDirParam],
   );
 
-  const { data: pagedResult, isLoading, isError } = usePagedApplications(queryParams);
-  const { data: applicationTypes } = useApplicationTypes();
-  const { data: locations } = useLocations();
-  const createMutation = useCreateApplication();
-  const updateMutation = useUpdateApplication();
-  const archiveMutation = useArchiveApplication();
+  const { data: pagedResult, isLoading, isError } = usePagedApplicationTypes(queryParams);
+  const createMutation = useCreateApplicationType();
+  const updateMutation = useUpdateApplicationType();
+  const archiveMutation = useArchiveApplicationType();
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editingApplication, setEditingApplication] = useState<Application | null>(null);
-  const [archivingApplication, setArchivingApplication] = useState<Application | null>(null);
+  const [editingApplicationType, setEditingApplicationType] = useState<ApplicationType | null>(null);
+  const [archivingApplicationType, setArchivingApplicationType] = useState<ApplicationType | null>(null);
 
   const columns = useMemo(
     () =>
-      getApplicationColumns({
-        onEdit: (application) => {
-          setEditingApplication(application);
+      getApplicationTypeColumns({
+        onEdit: (applicationType) => {
+          setEditingApplicationType(applicationType);
           setFormOpen(true);
         },
-        onArchive: (application) => {
-          setArchivingApplication(application);
+        onArchive: (applicationType) => {
+          setArchivingApplicationType(applicationType);
         },
       }),
     [],
@@ -168,71 +144,58 @@ export default function ApplicationsPage() {
     [setSearchParams],
   );
 
-  function handleFormSubmit(values: ApplicationFormValues) {
-    const customFieldValues = Object.entries(values.customFieldValues ?? {})
-      .filter(([, v]) => v != null && v !== "" && v !== "__none__")
-      .map(([fieldDefinitionId, value]) => ({
-        fieldDefinitionId,
-        value: value!,
-      }));
+  function handleFormSubmit(values: ApplicationTypeFormValues) {
+    const customFields = (values.customFields ?? []).map((cf, i) => ({
+      id: cf.id || undefined,
+      name: cf.name,
+      fieldType: cf.fieldType,
+      options: cf.options || null,
+      isRequired: cf.isRequired,
+      sortOrder: i,
+    }));
 
     const data = {
       name: values.name,
-      applicationTypeId: values.applicationTypeId,
-      publisher: values.publisher || null,
-      version: values.version || null,
-      licenceKey: values.licenceKey || null,
-      licenceType: values.licenceType && values.licenceType !== "none" ? values.licenceType : null,
-      maxSeats: values.maxSeats ? parseInt(values.maxSeats, 10) : null,
-      usedSeats: values.usedSeats ? parseInt(values.usedSeats, 10) : null,
-      purchaseDate: values.purchaseDate ? `${values.purchaseDate}T00:00:00Z` : null,
-      expiryDate: values.expiryDate ? `${values.expiryDate}T00:00:00Z` : null,
-      purchaseCost: values.purchaseCost ? parseFloat(values.purchaseCost) : null,
-      autoRenewal: values.autoRenewal ?? false,
-      status: values.status || "Active",
-      notes: values.notes || null,
-      assetId: values.assetId && values.assetId !== "none" ? values.assetId : null,
-      personId: values.personId && values.personId !== "none" ? values.personId : null,
-      locationId: values.locationId && values.locationId !== "none" ? values.locationId : null,
-      customFieldValues,
+      description: values.description || null,
+      customFields,
     };
 
-    if (editingApplication) {
+    if (editingApplicationType) {
       updateMutation.mutate(
-        { id: editingApplication.id, data },
+        { id: editingApplicationType.id, data },
         {
           onSuccess: () => {
-            toast.success("Application updated");
+            toast.success("Application type updated");
             setFormOpen(false);
-            setEditingApplication(null);
+            setEditingApplicationType(null);
           },
           onError: () => {
-            toast.error("Failed to update application");
+            toast.error("Failed to update application type");
           },
         },
       );
     } else {
       createMutation.mutate(data, {
         onSuccess: () => {
-          toast.success("Application created");
+          toast.success("Application type created");
           setFormOpen(false);
         },
         onError: () => {
-          toast.error("Failed to create application");
+          toast.error("Failed to create application type");
         },
       });
     }
   }
 
   function handleArchive() {
-    if (!archivingApplication) return;
-    archiveMutation.mutate(archivingApplication.id, {
+    if (!archivingApplicationType) return;
+    archiveMutation.mutate(archivingApplicationType.id, {
       onSuccess: () => {
-        toast.success("Application deleted");
-        setArchivingApplication(null);
+        toast.success("Application type deleted");
+        setArchivingApplicationType(null);
       },
       onError: () => {
-        toast.error("Failed to delete application");
+        toast.error("Failed to delete application type");
       },
     });
   }
@@ -240,7 +203,7 @@ export default function ApplicationsPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Applications / Licences" />
+        <PageHeader title="Application Types" />
         <div className="space-y-2">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -253,9 +216,9 @@ export default function ApplicationsPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Applications / Licences" />
+        <PageHeader title="Application Types" />
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
-          Failed to load applications. Is the API running?
+          Failed to load application types. Is the API running?
         </div>
       </div>
     );
@@ -267,17 +230,17 @@ export default function ApplicationsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Applications / Licences"
-        description="Track software applications, licence keys, and renewal dates."
+        title="Application Types"
+        description="Manage categories for your applications and licences."
         actions={
           <Button
             onClick={() => {
-              setEditingApplication(null);
+              setEditingApplicationType(null);
               setFormOpen(true);
             }}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add Application
+            Add Application Type
           </Button>
         }
       />
@@ -292,12 +255,10 @@ export default function ApplicationsPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
-          <ApplicationsToolbar
+          <ApplicationTypesToolbar
             table={table}
             search={searchInput}
             onSearchChange={setSearchInput}
-            statusFilter={statusParam}
-            onStatusFilterChange={handleStatusFilterChange}
           />
         )}
         paginationControls={
@@ -311,26 +272,24 @@ export default function ApplicationsPage() {
         }
       />
 
-      <ApplicationFormDialog
+      <ApplicationTypeFormDialog
         open={formOpen}
         onOpenChange={(open) => {
           setFormOpen(open);
-          if (!open) setEditingApplication(null);
+          if (!open) setEditingApplicationType(null);
         }}
-        application={editingApplication}
-        applicationTypes={applicationTypes ?? []}
-        locations={locations ?? []}
+        applicationType={editingApplicationType}
         onSubmit={handleFormSubmit}
         loading={createMutation.isPending || updateMutation.isPending}
       />
 
       <ConfirmDialog
-        open={!!archivingApplication}
+        open={!!archivingApplicationType}
         onOpenChange={(open) => {
-          if (!open) setArchivingApplication(null);
+          if (!open) setArchivingApplicationType(null);
         }}
-        title="Delete application"
-        description={`Are you sure you want to delete "${archivingApplication?.name}"? This action can be undone later.`}
+        title="Delete application type"
+        description={`Are you sure you want to delete "${archivingApplicationType?.name}"? This action can be undone later.`}
         confirmLabel="Delete"
         onConfirm={handleArchive}
         loading={archiveMutation.isPending}

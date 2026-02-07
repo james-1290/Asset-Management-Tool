@@ -23,6 +23,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Certificate> Certificates => Set<Certificate>();
     public DbSet<CertificateHistory> CertificateHistory => Set<CertificateHistory>();
     public DbSet<CertificateHistoryChange> CertificateHistoryChanges => Set<CertificateHistoryChange>();
+    public DbSet<ApplicationType> ApplicationTypes => Set<ApplicationType>();
+    public DbSet<Application> Applications => Set<Application>();
+    public DbSet<ApplicationHistory> ApplicationHistory => Set<ApplicationHistory>();
+    public DbSet<ApplicationHistoryChange> ApplicationHistoryChanges => Set<ApplicationHistoryChange>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -225,6 +229,72 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(c => c.CertificateHistory)
             .WithMany(h => h.Changes)
             .HasForeignKey(c => c.CertificateHistoryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ApplicationType
+        modelBuilder.Entity<ApplicationType>()
+            .HasMany(at => at.CustomFieldDefinitions)
+            .WithOne(d => d.ApplicationType)
+            .HasForeignKey(d => d.ApplicationTypeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Application
+        modelBuilder.Entity<Application>()
+            .HasOne(a => a.ApplicationType)
+            .WithMany(at => at.Applications)
+            .HasForeignKey(a => a.ApplicationTypeId);
+
+        modelBuilder.Entity<Application>()
+            .HasOne(a => a.Asset)
+            .WithMany()
+            .HasForeignKey(a => a.AssetId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Application>()
+            .HasOne(a => a.Person)
+            .WithMany()
+            .HasForeignKey(a => a.PersonId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Application>()
+            .HasOne(a => a.Location)
+            .WithMany()
+            .HasForeignKey(a => a.LocationId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Application>()
+            .Ignore(a => a.CustomFieldValues);
+
+        modelBuilder.Entity<Application>()
+            .Property(a => a.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Application>()
+            .Property(a => a.LicenceType)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Application>()
+            .Property(a => a.PurchaseCost)
+            .HasPrecision(18, 2);
+
+        // ApplicationHistory
+        modelBuilder.Entity<ApplicationHistory>()
+            .HasOne(h => h.Application)
+            .WithMany(a => a.History)
+            .HasForeignKey(h => h.ApplicationId);
+
+        modelBuilder.Entity<ApplicationHistory>()
+            .HasIndex(h => h.ApplicationId);
+
+        modelBuilder.Entity<ApplicationHistory>()
+            .Property(h => h.EventType)
+            .HasConversion<string>();
+
+        // ApplicationHistoryChange
+        modelBuilder.Entity<ApplicationHistoryChange>()
+            .HasOne(c => c.ApplicationHistory)
+            .WithMany(h => h.Changes)
+            .HasForeignKey(c => c.ApplicationHistoryId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -11,6 +11,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { StatusBreakdownChart } from "@/components/dashboard/status-breakdown-chart";
 import { WarrantyExpiriesList } from "@/components/dashboard/warranty-expiries-list";
 import { CertificateExpiriesList } from "@/components/dashboard/certificate-expiries-list";
+import { LicenceExpiriesList } from "@/components/dashboard/licence-expiries-list";
 import { AssetsByTypeChart } from "@/components/dashboard/assets-by-type-chart";
 import { AssetsByLocationChart } from "@/components/dashboard/assets-by-location-chart";
 import { RecentActivityList } from "@/components/dashboard/recent-activity-list";
@@ -34,6 +35,7 @@ import {
   useUnassignedAssets,
   useValueByLocation,
   useCertificateExpiries,
+  useLicenceExpiries,
 } from "@/hooks/use-dashboard";
 import { useDashboardPreferences } from "@/hooks/use-dashboard-preferences";
 import { preferencesStore } from "@/lib/dashboard-preferences";
@@ -53,6 +55,7 @@ export default function DashboardPage() {
     useDashboardPreferences();
   const [warrantyDays, setWarrantyDays] = useState(30);
   const [certExpiryDays, setCertExpiryDays] = useState(30);
+  const [licenceExpiryDays, setLicenceExpiryDays] = useState(30);
 
   const { width, containerRef } = useContainerWidth();
 
@@ -75,6 +78,10 @@ export default function DashboardPage() {
   const certificateExpiries = useCertificateExpiries(
     certExpiryDays,
     isVisible("certificateExpiries")
+  );
+  const licenceExpiries = useLicenceExpiries(
+    licenceExpiryDays,
+    isVisible("licenceExpiries")
   );
 
   // Apply min sizes to all layouts for react-grid-layout constraints
@@ -189,6 +196,15 @@ export default function DashboardPage() {
             isLoading={certificateExpiries.isLoading}
             days={certExpiryDays}
             onDaysChange={setCertExpiryDays}
+          />
+        );
+      case "licenceExpiries":
+        return (
+          <LicenceExpiriesList
+            data={licenceExpiries.data}
+            isLoading={licenceExpiries.isLoading}
+            days={licenceExpiryDays}
+            onDaysChange={setLicenceExpiryDays}
           />
         );
     }

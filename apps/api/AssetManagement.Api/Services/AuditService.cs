@@ -105,6 +105,47 @@ public class AuditService(AppDbContext db) : IAuditService
             }
         }
 
+        if (entry.EntityType == "Application" && Guid.TryParse(entry.EntityId, out var applicationId))
+        {
+            var appEventType = entry.Action switch
+            {
+                "Created" => ApplicationHistoryEventType.Created,
+                "Updated" => ApplicationHistoryEventType.Edited,
+                "Archived" => ApplicationHistoryEventType.Archived,
+                "Renewed" => ApplicationHistoryEventType.Renewed,
+                "Suspended" => ApplicationHistoryEventType.Suspended,
+                _ => (ApplicationHistoryEventType?)null,
+            };
+
+            if (appEventType is not null)
+            {
+                var appHistory = new ApplicationHistory
+                {
+                    Id = Guid.NewGuid(),
+                    ApplicationId = applicationId,
+                    EventType = appEventType.Value,
+                    PerformedByUserId = entry.ActorId,
+                    Details = entry.Details,
+                };
+
+                if (entry.Changes is { Count: > 0 })
+                {
+                    foreach (var change in entry.Changes)
+                    {
+                        appHistory.Changes.Add(new ApplicationHistoryChange
+                        {
+                            Id = Guid.NewGuid(),
+                            FieldName = change.FieldName,
+                            OldValue = change.OldValue,
+                            NewValue = change.NewValue,
+                        });
+                    }
+                }
+
+                db.ApplicationHistory.Add(appHistory);
+            }
+        }
+
         await db.SaveChangesAsync();
     }
 }
