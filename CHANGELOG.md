@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-07 14:29 - Audit log UI page
+
+- **Backend**: New read-only `GET /api/v1/auditlogs` endpoint with optional `entityType`, `action`, and `search` query filters
+- **Frontend**: Full audit log page with DataTable showing timestamp, actor, action, entity type, entity ID, source, and details
+- **Frontend**: Client-side filtering toolbar — text search on details, entity type select, action select
+- **Frontend**: Asset entity IDs link to asset detail page
+
 ## 2026-02-07 14:14 - Check-in / check-out workflow
 
 - **Backend**: New `POST /api/v1/assets/{id}/checkout` and `POST /api/v1/assets/{id}/checkin` endpoints
