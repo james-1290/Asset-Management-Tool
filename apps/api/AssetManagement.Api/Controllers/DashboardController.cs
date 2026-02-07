@@ -1,0 +1,138 @@
+using AssetManagement.Api.Data;
+using AssetManagement.Api.DTOs;
+using AssetManagement.Api.Models.Enums;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace AssetManagement.Api.Controllers;
+
+[ApiController]
+[Route("api/v1/[controller]")]
+public class DashboardController(AppDbContext db) : ControllerBase
+{
+    [HttpGet("summary")]
+    public async Task<ActionResult<DashboardSummaryDto>> GetSummary()
+    {
+        var totalAssets = await db.Assets.CountAsync(a => !a.IsArchived);
+        var totalValue = await db.Assets
+            .Where(a => !a.IsArchived && a.PurchaseCost != null)
+            .SumAsync(a => a.PurchaseCost!.Value);
+
+        return Ok(new DashboardSummaryDto(totalAssets, totalValue));
+    }
+
+    [HttpGet("status-breakdown")]
+    public async Task<ActionResult<List<StatusBreakdownItemDto>>> GetStatusBreakdown()
+    {
+        var breakdown = await db.Assets
+            .Where(a => !a.IsArchived)
+            .GroupBy(a => a.Status)
+            .Select(g => new StatusBreakdownItemDto(g.Key.ToString(), g.Count()))
+            .ToListAsync();
+
+        return Ok(breakdown);
+    }
+
+    [HttpGet("warranty-expiries")]
+    public async Task<ActionResult<List<WarrantyExpiryItemDto>>> GetWarrantyExpiries(
+        [FromQuery] int days = 30)
+    {
+        var now = DateTime.UtcNow.Date;
+        var cutoff = now.AddDays(days);
+
+        var raw = await db.Assets
+            .Where(a => !a.IsArchived
+                && a.WarrantyExpiryDate != null
+                && a.WarrantyExpiryDate.Value >= now
+                && a.WarrantyExpiryDate.Value <= cutoff)
+            .Include(a => a.AssetType)
+            .OrderBy(a => a.WarrantyExpiryDate)
+            .Select(a => new {
+                a.Id,
+                a.Name,
+                a.AssetTag,
+                AssetTypeName = a.AssetType.Name,
+                WarrantyExpiryDate = a.WarrantyExpiryDate!.Value
+            })
+            .ToListAsync();
+
+        var expiries = raw.Select(a => new WarrantyExpiryItemDto(
+            a.Id, a.Name, a.AssetTag, a.AssetTypeName,
+            a.WarrantyExpiryDate,
+            (a.WarrantyExpiryDate - now).Days
+        )).ToList();
+
+        return Ok(expiries);
+    }
+
+    [HttpGet("assets-by-type")]
+    public async Task<ActionResult<List<AssetsByGroupItemDto>>> GetAssetsByType()
+    {
+        var groups = await db.Assets
+            .Where(a => !a.IsArchived)
+            .GroupBy(a => a.AssetTypeId)
+            .Select(g => new { AssetTypeId = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var typeNames = await db.AssetTypes
+            .Where(t => groups.Select(g => g.AssetTypeId).Contains(t.Id))
+            .ToDictionaryAsync(t => t.Id, t => t.Name);
+
+        var result = groups
+            .Select(g => new AssetsByGroupItemDto(
+                typeNames.GetValueOrDefault(g.AssetTypeId, "Unknown"),
+                g.Count))
+            .OrderByDescending(g => g.Count)
+            .ToList();
+
+        return Ok(result);
+    }
+
+    [HttpGet("assets-by-location")]
+    public async Task<ActionResult<List<AssetsByGroupItemDto>>> GetAssetsByLocation()
+    {
+        var groups = await db.Assets
+            .Where(a => !a.IsArchived)
+            .GroupBy(a => a.LocationId)
+            .Select(g => new { LocationId = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var locationIds = groups
+            .Where(g => g.LocationId != null)
+            .Select(g => g.LocationId!.Value)
+            .ToList();
+
+        var locationNames = await db.Locations
+            .Where(l => locationIds.Contains(l.Id))
+            .ToDictionaryAsync(l => l.Id, l => l.Name);
+
+        var result = groups
+            .Select(g => new AssetsByGroupItemDto(
+                g.LocationId != null
+                    ? locationNames.GetValueOrDefault(g.LocationId.Value, "Unknown")
+                    : "Unassigned",
+                g.Count))
+            .OrderByDescending(g => g.Count)
+            .ToList();
+
+        return Ok(result);
+    }
+
+    [HttpGet("checked-out")]
+    public async Task<ActionResult<List<CheckedOutAssetDto>>> GetCheckedOut()
+    {
+        var assets = await db.Assets
+            .Where(a => !a.IsArchived && a.Status == AssetStatus.CheckedOut)
+            .Include(a => a.AssignedPerson)
+            .OrderByDescending(a => a.UpdatedAt)
+            .Select(a => new CheckedOutAssetDto(
+                a.Id,
+                a.Name,
+                a.AssetTag,
+                a.AssignedPerson != null ? a.AssignedPerson.FullName : null,
+                a.UpdatedAt))
+            .ToListAsync();
+
+        return Ok(assets);
+    }
+}

@@ -48,7 +48,7 @@
 - [ ] Custom fields: define + render in forms
 - [ ] Custom fields: display in DataTable columns
 - [ ] User authentication (basic username/password login)
-- [ ] Dashboard: upcoming warranty/cert/licence expiries
+- [x] Dashboard: upcoming warranty/cert/licence expiries + full dashboard with widgets
 - [ ] DataTable: server-side pagination, sorting, filtering (client-side sorting/filtering done)
 - [x] DataTable: column visibility toggle
 - [ ] DataTable: saved views per user

@@ -13,7 +13,8 @@ public class AuditLogsController(AppDbContext db) : ControllerBase
     public async Task<ActionResult<List<AuditLogDto>>> GetAll(
         [FromQuery] string? entityType,
         [FromQuery] string? action,
-        [FromQuery] string? search)
+        [FromQuery] string? search,
+        [FromQuery] int? limit)
     {
         var query = db.AuditLogs.AsQueryable();
 
@@ -29,8 +30,10 @@ public class AuditLogsController(AppDbContext db) : ControllerBase
                 l.ActorName.Contains(search) ||
                 (l.EntityName != null && l.EntityName.Contains(search)));
 
-        var logs = await query
-            .OrderByDescending(l => l.Timestamp)
+        var orderedQuery = query.OrderByDescending(l => l.Timestamp);
+        var finalQuery = limit.HasValue ? orderedQuery.Take(limit.Value) : orderedQuery;
+
+        var logs = await finalQuery
             .Select(l => new AuditLogDto(
                 l.Id,
                 l.ActorName,
