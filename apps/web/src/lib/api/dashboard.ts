@@ -5,6 +5,10 @@ import type {
   WarrantyExpiryItem,
   AssetsByGroupItem,
   CheckedOutAsset,
+  RecentlyAddedAsset,
+  AssetsByAgeBucket,
+  UnassignedAsset,
+  ValueByLocation,
 } from "../../types/dashboard";
 import type { AuditLogEntry } from "../../types/audit-log";
 
@@ -37,5 +41,23 @@ export const dashboardApi = {
 
   getRecentActivity(limit: number = 10): Promise<AuditLogEntry[]> {
     return apiClient.get<AuditLogEntry[]>(`/auditlogs?limit=${limit}`);
+  },
+
+  getRecentlyAdded(limit: number = 5): Promise<RecentlyAddedAsset[]> {
+    return apiClient.get<RecentlyAddedAsset[]>(
+      `/dashboard/recently-added?limit=${limit}`
+    );
+  },
+
+  getAssetsByAge(): Promise<AssetsByAgeBucket[]> {
+    return apiClient.get<AssetsByAgeBucket[]>("/dashboard/assets-by-age");
+  },
+
+  getUnassigned(): Promise<UnassignedAsset[]> {
+    return apiClient.get<UnassignedAsset[]>("/dashboard/unassigned");
+  },
+
+  getValueByLocation(): Promise<ValueByLocation[]> {
+    return apiClient.get<ValueByLocation[]>("/dashboard/value-by-location");
   },
 };

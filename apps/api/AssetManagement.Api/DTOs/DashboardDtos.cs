@@ -31,3 +31,28 @@ public record CheckedOutAssetDto(
     string? AssignedPersonName,
     DateTime UpdatedAt
 );
+
+public record RecentlyAddedAssetDto(
+    Guid Id,
+    string Name,
+    string AssetTag,
+    string AssetTypeName,
+    DateTime CreatedAt
+);
+
+public record AssetsByAgeBucketDto(
+    string Bucket,
+    int Count
+);
+
+public record UnassignedAssetDto(
+    Guid Id,
+    string Name,
+    string AssetTag,
+    string AssetTypeName
+);
+
+public record ValueByLocationDto(
+    string LocationName,
+    decimal TotalValue
+);

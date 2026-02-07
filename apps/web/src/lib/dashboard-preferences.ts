@@ -5,7 +5,11 @@ export type WidgetId =
   | "assetsByType"
   | "assetsByLocation"
   | "recentActivity"
-  | "checkedOut";
+  | "checkedOut"
+  | "recentlyAdded"
+  | "assetsByAge"
+  | "unassignedAssets"
+  | "valueByLocation";
 
 export interface DashboardPreferences {
   visibleWidgets: WidgetId[];
@@ -22,6 +26,10 @@ const DEFAULT_PREFERENCES: DashboardPreferences = {
     "assetsByLocation",
     "recentActivity",
     "checkedOut",
+    "recentlyAdded",
+    "assetsByAge",
+    "unassignedAssets",
+    "valueByLocation",
   ],
 };
 
@@ -33,6 +41,10 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   assetsByLocation: "Assets by Location",
   recentActivity: "Recent Activity",
   checkedOut: "Checked Out Assets",
+  recentlyAdded: "Recently Added",
+  assetsByAge: "Assets by Age",
+  unassignedAssets: "Unassigned Assets",
+  valueByLocation: "Value by Location",
 };
 
 export const ALL_WIDGET_IDS: WidgetId[] = Object.keys(
@@ -46,7 +58,15 @@ export const preferencesStore = {
       if (!raw) return DEFAULT_PREFERENCES;
       const parsed = JSON.parse(raw) as DashboardPreferences;
       if (!Array.isArray(parsed.visibleWidgets)) return DEFAULT_PREFERENCES;
-      return parsed;
+      // Filter out any widget IDs that no longer exist
+      const valid = parsed.visibleWidgets.filter((id) =>
+        ALL_WIDGET_IDS.includes(id)
+      );
+      // Append any new widget IDs that weren't in the saved prefs
+      const newIds = ALL_WIDGET_IDS.filter(
+        (id) => !parsed.visibleWidgets.includes(id)
+      );
+      return { ...parsed, visibleWidgets: [...valid, ...newIds] };
     } catch {
       return DEFAULT_PREFERENCES;
     }

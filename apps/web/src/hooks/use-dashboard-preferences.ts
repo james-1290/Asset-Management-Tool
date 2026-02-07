@@ -29,5 +29,16 @@ export function useDashboardPreferences() {
     []
   );
 
-  return { prefs, isVisible, toggleWidget };
+  const reorderWidgets = useCallback(
+    (newOrder: WidgetId[]) => {
+      setPrefs((prev) => {
+        const next = { ...prev, visibleWidgets: newOrder };
+        preferencesStore.save(next);
+        return next;
+      });
+    },
+    []
+  );
+
+  return { prefs, isVisible, toggleWidget, reorderWidgets };
 }

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-02-07 17:24 - Dashboard reflow, drag-and-drop reordering, 4 new widgets
+
+- **Frontend**: Dashboard grid now reflows — hiding widgets no longer leaves empty gaps (flat single grid replaces paired 2-column rows)
+- **Frontend**: Drag-and-drop widget reordering via @dnd-kit — drag handle appears on hover, order persisted to localStorage
+- **Frontend**: Accessible drag support (pointer + keyboard sensors)
+- **Backend**: 4 new dashboard endpoints: `GET /api/v1/dashboard/recently-added?limit=N`, `assets-by-age`, `unassigned`, `value-by-location`
+- **Frontend**: 4 new widgets — Recently Added (list), Assets by Age (horizontal bar chart), Unassigned Assets (list), Value by Location (bar chart with £ formatting)
+- **Frontend**: New widgets appear in Customize popover and can be toggled/reordered
+- **Frontend**: Existing user preferences auto-merge new widget IDs on load
+- **Dependencies**: Added `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
+
 ## 2026-02-07 17:13 - Dashboard widget polish
 
 - **Frontend**: Status breakdown pie chart — removed segment labels (legend+tooltip remain), clicking a segment navigates to `/assets?status=X`
