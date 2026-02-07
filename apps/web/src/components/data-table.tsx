@@ -23,15 +23,17 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   toolbar?: (table: ReturnType<typeof useReactTable<TData>>) => ReactNode;
+  initialColumnFilters?: ColumnFiltersState;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   toolbar,
+  initialColumnFilters,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialColumnFilters ?? []);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const table = useReactTable({

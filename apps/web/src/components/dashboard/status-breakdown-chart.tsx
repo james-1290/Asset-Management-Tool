@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, Legend, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +24,12 @@ export function StatusBreakdownChart({
   data,
   isLoading,
 }: StatusBreakdownChartProps) {
+  const navigate = useNavigate();
+
+  function handlePieClick(entry: StatusBreakdownItem) {
+    navigate(`/assets?status=${entry.status}`);
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -49,10 +56,9 @@ export function StatusBreakdownChart({
                 innerRadius={60}
                 outerRadius={90}
                 paddingAngle={2}
-                label={({ payload }) => {
-                  const s = (payload as StatusBreakdownItem).status;
-                  const c = (payload as StatusBreakdownItem).count;
-                  return `${STATUS_LABELS[s] ?? s}: ${c}`;
+                style={{ cursor: "pointer" }}
+                onClick={(_data, index) => {
+                  if (data[index]) handlePieClick(data[index]);
                 }}
               >
                 {data.map((entry) => (

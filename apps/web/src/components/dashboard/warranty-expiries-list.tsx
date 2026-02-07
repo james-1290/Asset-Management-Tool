@@ -1,13 +1,24 @@
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Settings } from "lucide-react";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { WarrantyExpiryItem } from "@/types/dashboard";
 
 interface WarrantyExpiriesListProps {
   data: WarrantyExpiryItem[] | undefined;
   isLoading: boolean;
+  days: number;
+  onDaysChange: (days: number) => void;
 }
+
+const DAY_OPTIONS = [7, 14, 30, 60, 90] as const;
 
 function urgencyBadge(days: number) {
   if (days <= 7)
@@ -30,11 +41,38 @@ function urgencyBadge(days: number) {
 export function WarrantyExpiriesList({
   data,
   isLoading,
+  days,
+  onDaysChange,
 }: WarrantyExpiriesListProps) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Warranty Expiries</CardTitle>
+        <CardAction>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Settings className="h-4 w-4" />
+                <span className="sr-only">Timeframe settings</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-auto p-2">
+              <div className="flex gap-1">
+                {DAY_OPTIONS.map((d) => (
+                  <Button
+                    key={d}
+                    variant={days === d ? "default" : "outline"}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => onDaysChange(d)}
+                  >
+                    {d}d
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </CardAction>
       </CardHeader>
       <CardContent>
         {isLoading ? (
