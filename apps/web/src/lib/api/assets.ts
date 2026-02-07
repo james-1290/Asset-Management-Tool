@@ -3,6 +3,8 @@ import type {
   Asset,
   CreateAssetRequest,
   UpdateAssetRequest,
+  CheckoutAssetRequest,
+  CheckinAssetRequest,
 } from "../../types/asset";
 import type { AssetHistory } from "../../types/asset-history";
 
@@ -26,6 +28,14 @@ export const assetsApi = {
 
   update(id: string, data: UpdateAssetRequest): Promise<Asset> {
     return apiClient.put<Asset>(`/assets/${id}`, data);
+  },
+
+  checkout(id: string, data: CheckoutAssetRequest): Promise<Asset> {
+    return apiClient.post<Asset>(`/assets/${id}/checkout`, data);
+  },
+
+  checkin(id: string, data: CheckinAssetRequest): Promise<Asset> {
+    return apiClient.post<Asset>(`/assets/${id}/checkin`, data);
   },
 
   archive(id: string): Promise<void> {

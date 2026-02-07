@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil, LogOut, LogIn } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import {
@@ -14,10 +14,14 @@ import { AssetStatusBadge } from "../components/assets/asset-status-badge";
 import { AssetHistoryTimeline } from "../components/assets/asset-history-timeline";
 import { AssetHistoryDialog } from "../components/assets/asset-history-dialog";
 import { AssetFormDialog } from "../components/assets/asset-form-dialog";
+import { CheckoutDialog } from "../components/assets/checkout-dialog";
+import { CheckinDialog } from "../components/assets/checkin-dialog";
 import {
   useAsset,
   useAssetHistory,
   useUpdateAsset,
+  useCheckoutAsset,
+  useCheckinAsset,
 } from "../hooks/use-assets";
 import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
@@ -59,9 +63,13 @@ export default function AssetDetailPage() {
   const { data: assetTypes } = useAssetTypes();
   const { data: locations } = useLocations();
   const updateMutation = useUpdateAsset();
+  const checkoutMutation = useCheckoutAsset();
+  const checkinMutation = useCheckinAsset();
 
   const [formOpen, setFormOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkinOpen, setCheckinOpen] = useState(false);
 
   function handleFormSubmit(values: AssetFormValues) {
     if (!asset) return;
@@ -149,10 +157,24 @@ export default function AssetDetailPage() {
             <p className="text-sm text-muted-foreground">{asset.assetTag}</p>
           </div>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <Pencil className="mr-2 h-4 w-4" />
-          Edit
-        </Button>
+        <div className="flex items-center gap-2">
+          {(asset.status === "Available" || asset.status === "Assigned") && (
+            <Button variant="outline" onClick={() => setCheckoutOpen(true)}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Check Out
+            </Button>
+          )}
+          {asset.status === "CheckedOut" && (
+            <Button variant="outline" onClick={() => setCheckinOpen(true)}>
+              <LogIn className="mr-2 h-4 w-4" />
+              Check In
+            </Button>
+          )}
+          <Button onClick={() => setFormOpen(true)}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -222,6 +244,49 @@ export default function AssetDetailPage() {
         assetName={asset.name}
         open={historyOpen}
         onOpenChange={setHistoryOpen}
+      />
+
+      <CheckoutDialog
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+        assetName={asset.name}
+        onSubmit={(personId, notes) => {
+          checkoutMutation.mutate(
+            { id: asset.id, data: { personId, notes } },
+            {
+              onSuccess: () => {
+                toast.success("Asset checked out");
+                setCheckoutOpen(false);
+              },
+              onError: () => {
+                toast.error("Failed to check out asset");
+              },
+            },
+          );
+        }}
+        loading={checkoutMutation.isPending}
+      />
+
+      <CheckinDialog
+        open={checkinOpen}
+        onOpenChange={setCheckinOpen}
+        assetName={asset.name}
+        assignedPersonName={asset.assignedPersonName}
+        onSubmit={(notes) => {
+          checkinMutation.mutate(
+            { id: asset.id, data: { notes } },
+            {
+              onSuccess: () => {
+                toast.success("Asset checked in");
+                setCheckinOpen(false);
+              },
+              onError: () => {
+                toast.error("Failed to check in asset");
+              },
+            },
+          );
+        }}
+        loading={checkinMutation.isPending}
       />
     </div>
   );

@@ -41,8 +41,8 @@
 - [x] Audit log recording on all write operations
 - [x] Assign/unassign assets to users
 - [x] People management (CRUD page + API)
-- [ ] Migrate asset assignment from User → Person
-- [ ] Check-in/check-out workflow
+- [x] Migrate asset assignment from User → Person
+- [x] Check-in/check-out workflow
 - [x] Asset history timeline (per-asset)
 - [ ] Audit log UI page
 - [ ] Custom fields: define + render in forms

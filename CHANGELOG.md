@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-02-07 14:14 - Check-in / check-out workflow
+
+- **Backend**: New `POST /api/v1/assets/{id}/checkout` and `POST /api/v1/assets/{id}/checkin` endpoints
+- **Checkout**: Validates asset is Available or Assigned, sets status to CheckedOut and assigns person
+- **Checkin**: Validates asset is CheckedOut, sets status to Available and clears assignment
+- **Audit**: Both actions log field-level changes (Status, Assigned To) to asset history timeline
+- **Frontend**: Checkout dialog with person combobox + optional notes
+- **Frontend**: Checkin dialog with confirmation + optional notes
+- **Frontend**: Check Out / Check In buttons on asset detail page (shown contextually based on status)
+- No DB migration needed — existing enums and fields already supported CheckedOut/CheckedIn
+
 ## 2026-02-07 13:39 - Fix date bug + history improvements
 
 - **Bug fix**: Dates now sent with UTC `Z` suffix (e.g. `2025-01-15T00:00:00Z`) — fixes Npgsql rejection of `DateTime(Kind=Unspecified)` for `timestamp with time zone` columns
