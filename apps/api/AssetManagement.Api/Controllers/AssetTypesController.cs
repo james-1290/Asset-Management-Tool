@@ -3,6 +3,7 @@ using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Models.Enums;
 using AssetManagement.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EntityTypeEnum = AssetManagement.Api.Models.Enums.EntityType;
@@ -10,8 +11,9 @@ using EntityTypeEnum = AssetManagement.Api.Models.Enums.EntityType;
 namespace AssetManagement.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/v1/[controller]")]
-public class AssetTypesController(AppDbContext db, IAuditService audit) : ControllerBase
+public class AssetTypesController(AppDbContext db, IAuditService audit, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PagedResponse<AssetTypeDto>>> GetAll(
@@ -129,7 +131,9 @@ public class AssetTypesController(AppDbContext db, IAuditService audit) : Contro
             EntityId: type.Id.ToString(),
             EntityName: type.Name,
             Details: $"Created asset type \"{type.Name}\"" +
-                (request.CustomFields is { Count: > 0 } ? $" with {request.CustomFields.Count} custom field(s)" : "")));
+                (request.CustomFields is { Count: > 0 } ? $" with {request.CustomFields.Count} custom field(s)" : ""),
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         // Reload with custom fields
         await db.Entry(type).Collection(t => t.CustomFieldDefinitions).LoadAsync();
@@ -211,7 +215,9 @@ public class AssetTypesController(AppDbContext db, IAuditService audit) : Contro
             EntityType: "AssetType",
             EntityId: type.Id.ToString(),
             EntityName: type.Name,
-            Details: $"Updated asset type \"{type.Name}\""));
+            Details: $"Updated asset type \"{type.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         // Reload to get fresh state
         await db.Entry(type).Collection(t => t.CustomFieldDefinitions).LoadAsync();
@@ -234,7 +240,9 @@ public class AssetTypesController(AppDbContext db, IAuditService audit) : Contro
             EntityType: "AssetType",
             EntityId: type.Id.ToString(),
             EntityName: type.Name,
-            Details: $"Archived asset type \"{type.Name}\""));
+            Details: $"Archived asset type \"{type.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         return NoContent();
     }

@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { Layout } from "@/components/layout"
+import { ProtectedRoute } from "@/components/protected-route"
+import LoginPage from "@/pages/login"
 import DashboardPage from "@/pages/dashboard"
 import AssetsPage from "@/pages/assets"
 import AssetDetailPage from "@/pages/asset-detail"
@@ -19,21 +21,24 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/assets" element={<AssetsPage />} />
-          <Route path="/assets/:id" element={<AssetDetailPage />} />
-          <Route path="/certificates" element={<CertificatesPage />} />
-          <Route path="/certificates/:id" element={<CertificateDetailPage />} />
-          <Route path="/certificate-types" element={<CertificateTypesPage />} />
-          <Route path="/applications" element={<ApplicationsPage />} />
-          <Route path="/applications/:id" element={<ApplicationDetailPage />} />
-          <Route path="/application-types" element={<ApplicationTypesPage />} />
-          <Route path="/asset-types" element={<AssetTypesPage />} />
-          <Route path="/locations" element={<LocationsPage />} />
-          <Route path="/people" element={<PeoplePage />} />
-          <Route path="/audit-log" element={<AuditLogPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/assets" element={<AssetsPage />} />
+            <Route path="/assets/:id" element={<AssetDetailPage />} />
+            <Route path="/certificates" element={<CertificatesPage />} />
+            <Route path="/certificates/:id" element={<CertificateDetailPage />} />
+            <Route path="/certificate-types" element={<CertificateTypesPage />} />
+            <Route path="/applications" element={<ApplicationsPage />} />
+            <Route path="/applications/:id" element={<ApplicationDetailPage />} />
+            <Route path="/application-types" element={<ApplicationTypesPage />} />
+            <Route path="/asset-types" element={<AssetTypesPage />} />
+            <Route path="/locations" element={<LocationsPage />} />
+            <Route path="/people" element={<PeoplePage />} />
+            <Route path="/audit-log" element={<AuditLogPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

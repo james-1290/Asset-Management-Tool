@@ -14,7 +14,19 @@ export class ApiError extends Error {
   }
 }
 
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
+  if (response.status === 401) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/login";
+    throw new ApiError(401, "Unauthorized");
+  }
+
   if (!response.ok) {
     let body: unknown;
     try {
@@ -42,13 +54,13 @@ export const apiClient = {
       const qs = searchParams.toString();
       if (qs) url += `?${qs}`;
     }
-    return fetch(url).then(handleResponse<T>);
+    return fetch(url, { headers: { ...getAuthHeaders() } }).then(handleResponse<T>);
   },
 
   post<T>(path: string, body: unknown): Promise<T> {
     return fetch(`${BASE_URL}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(body),
     }).then(handleResponse<T>);
   },
@@ -56,7 +68,7 @@ export const apiClient = {
   put<T>(path: string, body: unknown): Promise<T> {
     return fetch(`${BASE_URL}${path}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(body),
     }).then(handleResponse<T>);
   },
@@ -64,6 +76,7 @@ export const apiClient = {
   delete<T = void>(path: string): Promise<T> {
     return fetch(`${BASE_URL}${path}`, {
       method: "DELETE",
+      headers: { ...getAuthHeaders() },
     }).then(handleResponse<T>);
   },
 };

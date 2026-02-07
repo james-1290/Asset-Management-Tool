@@ -3,14 +3,16 @@ using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Models.Enums;
 using AssetManagement.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AssetManagement.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/v1/[controller]")]
-public class ApplicationsController(AppDbContext db, IAuditService audit) : ControllerBase
+public class ApplicationsController(AppDbContext db, IAuditService audit, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PagedResponse<ApplicationDto>>> GetAll(
@@ -195,7 +197,9 @@ public class ApplicationsController(AppDbContext db, IAuditService audit) : Cont
             EntityType: "Application",
             EntityId: app.Id.ToString(),
             EntityName: app.Name,
-            Details: $"Created application \"{app.Name}\""));
+            Details: $"Created application \"{app.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         await db.Entry(app).Reference(a => a.ApplicationType).LoadAsync();
         if (app.AssetId is not null)
@@ -402,6 +406,8 @@ public class ApplicationsController(AppDbContext db, IAuditService audit) : Cont
             EntityId: app.Id.ToString(),
             EntityName: app.Name,
             Details: $"Updated application \"{app.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName,
             Changes: changes.Count > 0 ? changes : null));
 
         await db.Entry(app).Reference(a => a.ApplicationType).LoadAsync();
@@ -460,7 +466,9 @@ public class ApplicationsController(AppDbContext db, IAuditService audit) : Cont
             EntityType: "Application",
             EntityId: app.Id.ToString(),
             EntityName: app.Name,
-            Details: $"Archived application \"{app.Name}\""));
+            Details: $"Archived application \"{app.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         return NoContent();
     }
