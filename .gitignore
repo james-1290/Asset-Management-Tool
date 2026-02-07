@@ -31,3 +31,6 @@ obj/
 # Logs
 *.log
 logs/
+
+# Playwright MCP
+.playwright-mcp/
