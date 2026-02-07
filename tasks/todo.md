@@ -64,7 +64,7 @@
 
 ## Next (MVP)
 
-- [ ] User authentication (basic username/password login)
+- [x] User authentication (JWT login, protected routes, user identity in audit logs, admin seed, frontend login page + user menu)
 - [x] DataTable: server-side pagination, sorting, filtering for all list pages (Assets, Locations, Asset Types, People, Audit Logs)
 - [ ] DataTable: saved views per user
 
