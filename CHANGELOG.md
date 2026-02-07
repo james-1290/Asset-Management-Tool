@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-02-07 16:20 - Dashboard with customizable widgets
+
+- **Backend**: New `DashboardController` with 6 endpoints: `GET /api/v1/dashboard/summary`, `status-breakdown`, `warranty-expiries?days=N`, `assets-by-type`, `assets-by-location`, `checked-out`
+- **Backend**: Added `limit` query parameter to `GET /api/v1/auditlogs` for recent activity widget
+- **Frontend**: Full dashboard page with 7 widgets — stat cards (total assets + total value), status breakdown pie chart, warranty expiries list, assets by type/location bar charts, recent activity feed, checked out assets list
+- **Frontend**: Widget customization — Settings popover with checkboxes to toggle widgets on/off, preferences persisted to localStorage
+- **Frontend**: Each widget fetches independently via React Query (own loading/error states, disabled widgets skip API calls)
+- **Frontend**: Charts via recharts library; colour-coded urgency badges on warranty expiries (red <=7d, amber <=14d)
+- **Dependencies**: Added `recharts`, shadcn `checkbox` component
+
 ## 2026-02-07 14:56 - Add entity name to audit log
 
 - **Backend**: Added `EntityName` column to `AuditLog` model (nullable, for backwards-compatibility)
