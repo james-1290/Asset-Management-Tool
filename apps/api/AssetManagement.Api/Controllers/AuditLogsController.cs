@@ -10,12 +10,18 @@ namespace AssetManagement.Api.Controllers;
 public class AuditLogsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<AuditLogDto>>> GetAll(
-        [FromQuery] string? entityType,
-        [FromQuery] string? action,
-        [FromQuery] string? search,
-        [FromQuery] int? limit)
+    public async Task<ActionResult<PagedResponse<AuditLogDto>>> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 25,
+        [FromQuery] string? entityType = null,
+        [FromQuery] string? action = null,
+        [FromQuery] string? search = null,
+        [FromQuery] string sortBy = "timestamp",
+        [FromQuery] string sortDir = "desc")
     {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
         var query = db.AuditLogs.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(entityType))
@@ -26,14 +32,25 @@ public class AuditLogsController(AppDbContext db) : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(l =>
-                (l.Details != null && l.Details.Contains(search)) ||
-                l.ActorName.Contains(search) ||
-                (l.EntityName != null && l.EntityName.Contains(search)));
+                (l.Details != null && EF.Functions.ILike(l.Details, $"%{search}%")) ||
+                EF.Functions.ILike(l.ActorName, $"%{search}%") ||
+                (l.EntityName != null && EF.Functions.ILike(l.EntityName, $"%{search}%")));
 
-        var orderedQuery = query.OrderByDescending(l => l.Timestamp);
-        var finalQuery = limit.HasValue ? orderedQuery.Take(limit.Value) : orderedQuery;
+        var totalCount = await query.CountAsync();
 
-        var logs = await finalQuery
+        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        query = sortBy.ToLowerInvariant() switch
+        {
+            "action" => desc ? query.OrderByDescending(l => l.Action) : query.OrderBy(l => l.Action),
+            "entitytype" => desc ? query.OrderByDescending(l => l.EntityType) : query.OrderBy(l => l.EntityType),
+            "entityname" => desc ? query.OrderByDescending(l => l.EntityName) : query.OrderBy(l => l.EntityName),
+            "actorname" => desc ? query.OrderByDescending(l => l.ActorName) : query.OrderBy(l => l.ActorName),
+            _ => desc ? query.OrderByDescending(l => l.Timestamp) : query.OrderBy(l => l.Timestamp),
+        };
+
+        var logs = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(l => new AuditLogDto(
                 l.Id,
                 l.ActorName,
@@ -46,6 +63,6 @@ public class AuditLogsController(AppDbContext db) : ControllerBase
                 l.Timestamp))
             .ToListAsync();
 
-        return Ok(logs);
+        return Ok(new PagedResponse<AuditLogDto>(logs, page, pageSize, totalCount));
     }
 }

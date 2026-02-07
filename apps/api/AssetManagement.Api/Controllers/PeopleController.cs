@@ -31,19 +31,51 @@ public class PeopleController(AppDbContext db, IAuditService audit) : Controller
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<PersonDto>>> GetAll()
+    public async Task<ActionResult<PagedResponse<PersonDto>>> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 25,
+        [FromQuery] string? search = null,
+        [FromQuery] string sortBy = "fullname",
+        [FromQuery] string sortDir = "asc")
     {
-        var people = await db.People
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = db.People
             .Where(p => !p.IsArchived)
             .Include(p => p.Location)
-            .OrderBy(p => p.FullName)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(p =>
+                EF.Functions.ILike(p.FullName, $"%{search}%") ||
+                (p.Email != null && EF.Functions.ILike(p.Email, $"%{search}%")));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        query = sortBy.ToLowerInvariant() switch
+        {
+            "email" => desc ? query.OrderByDescending(p => p.Email) : query.OrderBy(p => p.Email),
+            "department" => desc ? query.OrderByDescending(p => p.Department) : query.OrderBy(p => p.Department),
+            "jobtitle" => desc ? query.OrderByDescending(p => p.JobTitle) : query.OrderBy(p => p.JobTitle),
+            "locationname" => desc ? query.OrderByDescending(p => p.Location!.Name) : query.OrderBy(p => p.Location!.Name),
+            "createdat" => desc ? query.OrderByDescending(p => p.CreatedAt) : query.OrderBy(p => p.CreatedAt),
+            _ => desc ? query.OrderByDescending(p => p.FullName) : query.OrderBy(p => p.FullName),
+        };
+
+        var people = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(p => new PersonDto(
                 p.Id, p.FullName, p.Email, p.Department, p.JobTitle,
                 p.LocationId, p.Location != null ? p.Location.Name : null,
                 p.IsArchived, p.CreatedAt, p.UpdatedAt))
             .ToListAsync();
 
-        return Ok(people);
+        return Ok(new PagedResponse<PersonDto>(people, page, pageSize, totalCount));
     }
 
     [HttpGet("{id:guid}")]

@@ -7,36 +7,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { ColumnToggle } from "../column-toggle";
 import type { AuditLogEntry } from "../../types/audit-log";
 
 interface AuditLogsToolbarProps {
   table: Table<AuditLogEntry>;
+  search: string;
+  onSearchChange: (value: string) => void;
+  entityType: string;
+  onEntityTypeChange: (value: string) => void;
+  action: string;
+  onActionChange: (value: string) => void;
 }
 
 const entityTypes = ["Asset", "Location", "AssetType", "Person"];
 const actions = ["Created", "Updated", "Archived", "CheckedOut", "CheckedIn"];
 
-export function AuditLogsToolbar({ table }: AuditLogsToolbarProps) {
+export function AuditLogsToolbar({
+  table,
+  search,
+  onSearchChange,
+  entityType,
+  onEntityTypeChange,
+  action,
+  onActionChange,
+}: AuditLogsToolbarProps) {
   return (
     <div className="flex items-center gap-2">
       <Input
-        placeholder="Filter by details..."
-        value={(table.getColumn("details")?.getFilterValue() as string) ?? ""}
-        onChange={(e) =>
-          table.getColumn("details")?.setFilterValue(e.target.value)
-        }
+        placeholder="Search audit logs…"
+        value={search}
+        onChange={(e) => onSearchChange(e.target.value)}
         className="max-w-sm"
       />
-      <Select
-        value={
-          (table.getColumn("entityType")?.getFilterValue() as string) ?? "all"
-        }
-        onValueChange={(value) =>
-          table
-            .getColumn("entityType")
-            ?.setFilterValue(value === "all" ? "" : value)
-        }
-      >
+      <Select value={entityType || "all"} onValueChange={onEntityTypeChange}>
         <SelectTrigger className="w-[160px]">
           <SelectValue placeholder="Entity Type" />
         </SelectTrigger>
@@ -49,28 +53,20 @@ export function AuditLogsToolbar({ table }: AuditLogsToolbarProps) {
           ))}
         </SelectContent>
       </Select>
-      <Select
-        value={
-          (table.getColumn("action")?.getFilterValue() as string) ?? "all"
-        }
-        onValueChange={(value) =>
-          table
-            .getColumn("action")
-            ?.setFilterValue(value === "all" ? "" : value)
-        }
-      >
+      <Select value={action || "all"} onValueChange={onActionChange}>
         <SelectTrigger className="w-[160px]">
           <SelectValue placeholder="Action" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Actions</SelectItem>
-          {actions.map((action) => (
-            <SelectItem key={action} value={action}>
-              {action}
+          {actions.map((a) => (
+            <SelectItem key={a} value={a}>
+              {a}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
+      <ColumnToggle table={table} />
     </div>
   );
 }

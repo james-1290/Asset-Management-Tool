@@ -5,10 +5,25 @@ import type {
   CreatePersonRequest,
   UpdatePersonRequest,
 } from "../../types/person";
+import type { PagedResponse } from "../../types/paged-response";
+
+export interface PersonQueryParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  sortBy?: string;
+  sortDir?: string;
+}
 
 export const peopleApi = {
   getAll(): Promise<Person[]> {
-    return apiClient.get<Person[]>("/people");
+    return apiClient
+      .get<PagedResponse<Person>>("/people", { pageSize: 1000 })
+      .then((r) => r.items);
+  },
+
+  getPaged(params: PersonQueryParams): Promise<PagedResponse<Person>> {
+    return apiClient.get<PagedResponse<Person>>("/people", params as Record<string, string | number | undefined>);
   },
 
   getById(id: string): Promise<Person> {

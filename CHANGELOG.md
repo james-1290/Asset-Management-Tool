@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-02-07 20:01 - Server-side pagination for Locations, Asset Types, People & Audit Logs
+
+- **Backend**: `GET /api/v1/locations` now accepts `page`, `pageSize`, `search`, `sortBy`, `sortDir` query params; returns `PagedResponse<LocationDto>`
+- **Backend**: `GET /api/v1/assettypes` now accepts `page`, `pageSize`, `search`, `sortBy`, `sortDir` query params; returns `PagedResponse<AssetTypeDto>`
+- **Backend**: `GET /api/v1/people` now accepts `page`, `pageSize`, `search`, `sortBy`, `sortDir` query params; returns `PagedResponse<PersonDto>`. Search filters on fullName + email
+- **Backend**: `GET /api/v1/auditlogs` now accepts `page`, `pageSize`, `search`, `entityType`, `action`, `sortBy`, `sortDir` query params; returns `PagedResponse<AuditLogDto>`. Removed `limit` param. Upgraded search to case-insensitive ILike
+- **Frontend**: All four list pages now use URL-driven state (page/pageSize/search/sort), debounced search, `<DataTablePagination>`, column toggle, and server-side sorting
+- **Frontend**: `getAll()` wrappers updated to use `pageSize=1000` so form dropdowns (locations, asset types in asset form) continue to work unchanged
+- **Frontend**: New hooks: `usePagedLocations()`, `usePagedAssetTypes()`, `usePagedPeople()`, `usePagedAuditLogs()` — all with `keepPreviousData`
+
 ## 2026-02-07 19:38 - Server-side pagination, sorting & filtering for Assets
 
 - **Backend**: New `PagedResponse<T>` generic DTO for paged API responses
