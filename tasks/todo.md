@@ -54,7 +54,7 @@
 ## Next (MVP)
 
 - [ ] User authentication (basic username/password login)
-- [ ] DataTable: server-side pagination, sorting, filtering (client-side sorting/filtering done)
+- [x] DataTable: server-side pagination, sorting, filtering for all list pages (Assets, Locations, Asset Types, People, Audit Logs)
 - [ ] DataTable: saved views per user
 
 ## Later
