@@ -12,6 +12,7 @@ import {
 } from "../components/ui/card";
 import { AssetStatusBadge } from "../components/assets/asset-status-badge";
 import { AssetHistoryTimeline } from "../components/assets/asset-history-timeline";
+import { AssetHistoryDialog } from "../components/assets/asset-history-dialog";
 import { AssetFormDialog } from "../components/assets/asset-form-dialog";
 import {
   useAsset,
@@ -48,16 +49,19 @@ function formatCurrency(value: number | null): string | null {
   }).format(value);
 }
 
+const HISTORY_PREVIEW_LIMIT = 5;
+
 export default function AssetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: asset, isLoading, isError } = useAsset(id!);
-  const { data: history, isLoading: historyLoading } = useAssetHistory(id!);
+  const { data: history, isLoading: historyLoading } = useAssetHistory(id!, HISTORY_PREVIEW_LIMIT);
   const { data: assetTypes } = useAssetTypes();
   const { data: locations } = useLocations();
   const updateMutation = useUpdateAsset();
 
   const [formOpen, setFormOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   function handleFormSubmit(values: AssetFormValues) {
     if (!asset) return;
@@ -77,13 +81,13 @@ export default function AssetDetailPage() {
           ? values.assignedPersonId
           : null,
       purchaseDate: values.purchaseDate
-        ? `${values.purchaseDate}T00:00:00`
+        ? `${values.purchaseDate}T00:00:00Z`
         : null,
       purchaseCost: values.purchaseCost
         ? parseFloat(values.purchaseCost)
         : null,
       warrantyExpiryDate: values.warrantyExpiryDate
-        ? `${values.warrantyExpiryDate}T00:00:00`
+        ? `${values.warrantyExpiryDate}T00:00:00Z`
         : null,
       notes: values.notes || null,
     };
@@ -124,6 +128,8 @@ export default function AssetDetailPage() {
       </div>
     );
   }
+
+  const hasMoreHistory = history && history.length >= HISTORY_PREVIEW_LIMIT;
 
   return (
     <div className="space-y-6">
@@ -187,6 +193,16 @@ export default function AssetDetailPage() {
               history={history}
               isLoading={historyLoading}
             />
+            {hasMoreHistory && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full mt-2"
+                onClick={() => setHistoryOpen(true)}
+              >
+                View All History
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -199,6 +215,13 @@ export default function AssetDetailPage() {
         locations={locations ?? []}
         onSubmit={handleFormSubmit}
         loading={updateMutation.isPending}
+      />
+
+      <AssetHistoryDialog
+        assetId={asset.id}
+        assetName={asset.name}
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
       />
     </div>
   );

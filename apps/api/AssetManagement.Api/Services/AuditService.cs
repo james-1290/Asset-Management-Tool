@@ -43,6 +43,20 @@ public class AuditService(AppDbContext db) : IAuditService
                     Details = entry.Details,
                 };
 
+                if (entry.Changes is { Count: > 0 })
+                {
+                    foreach (var change in entry.Changes)
+                    {
+                        history.Changes.Add(new AssetHistoryChange
+                        {
+                            Id = Guid.NewGuid(),
+                            FieldName = change.FieldName,
+                            OldValue = change.OldValue,
+                            NewValue = change.NewValue,
+                        });
+                    }
+                }
+
                 db.AssetHistory.Add(history);
             }
         }

@@ -49,10 +49,17 @@ public record UpdateAssetRequest(
     string? Notes
 );
 
+public record AssetHistoryChangeDto(
+    string FieldName,
+    string? OldValue,
+    string? NewValue
+);
+
 public record AssetHistoryDto(
     Guid Id,
     string EventType,
     string? Details,
     DateTime Timestamp,
-    string? PerformedByUserName
+    string? PerformedByUserName,
+    List<AssetHistoryChangeDto> Changes
 );

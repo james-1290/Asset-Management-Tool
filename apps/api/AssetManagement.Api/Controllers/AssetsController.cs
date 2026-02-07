@@ -158,13 +158,54 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             return Conflict(new { error = "An asset with this tag already exists." });
 
         // Parse status
+        AssetStatus? newStatus = null;
         if (!string.IsNullOrEmpty(request.Status))
         {
-            if (!Enum.TryParse<AssetStatus>(request.Status, out var status))
+            if (!Enum.TryParse<AssetStatus>(request.Status, out var parsedStatus))
                 return BadRequest(new { error = $"Invalid status: {request.Status}" });
-            asset.Status = status;
+            newStatus = parsedStatus;
         }
 
+        // Detect changes before applying
+        var changes = new List<AuditChange>();
+
+        Track(changes, "Name", asset.Name, request.Name);
+        Track(changes, "Asset Tag", asset.AssetTag, request.AssetTag);
+        Track(changes, "Serial Number", asset.SerialNumber, request.SerialNumber);
+        Track(changes, "Notes", asset.Notes, request.Notes);
+
+        if (newStatus is not null && newStatus != asset.Status)
+            changes.Add(new AuditChange("Status", asset.Status.ToString(), newStatus.ToString()!));
+
+        if (request.AssetTypeId != asset.AssetTypeId)
+        {
+            var newTypeName = await db.AssetTypes.Where(t => t.Id == request.AssetTypeId).Select(t => t.Name).FirstAsync();
+            changes.Add(new AuditChange("Type", asset.AssetType.Name, newTypeName));
+        }
+
+        if (request.LocationId != asset.LocationId)
+        {
+            var oldName = asset.Location?.Name;
+            string? newName = null;
+            if (request.LocationId is not null)
+                newName = await db.Locations.Where(l => l.Id == request.LocationId).Select(l => l.Name).FirstAsync();
+            changes.Add(new AuditChange("Location", oldName, newName));
+        }
+
+        if (request.AssignedPersonId != asset.AssignedPersonId)
+        {
+            var oldName = asset.AssignedPerson?.FullName;
+            string? newName = null;
+            if (request.AssignedPersonId is not null)
+                newName = await db.People.Where(p => p.Id == request.AssignedPersonId).Select(p => p.FullName).FirstAsync();
+            changes.Add(new AuditChange("Assigned To", oldName, newName));
+        }
+
+        TrackDate(changes, "Purchase Date", asset.PurchaseDate, request.PurchaseDate);
+        TrackDecimal(changes, "Purchase Cost", asset.PurchaseCost, request.PurchaseCost);
+        TrackDate(changes, "Warranty Expiry", asset.WarrantyExpiryDate, request.WarrantyExpiryDate);
+
+        // Apply changes
         asset.Name = request.Name;
         asset.AssetTag = request.AssetTag;
         asset.SerialNumber = request.SerialNumber;
@@ -175,6 +216,7 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         asset.PurchaseCost = request.PurchaseCost;
         asset.WarrantyExpiryDate = request.WarrantyExpiryDate;
         asset.Notes = request.Notes;
+        if (newStatus is not null) asset.Status = newStatus.Value;
         asset.UpdatedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
@@ -183,7 +225,8 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             Action: "Updated",
             EntityType: "Asset",
             EntityId: asset.Id.ToString(),
-            Details: $"Updated asset \"{asset.Name}\" ({asset.AssetTag})"));
+            Details: $"Updated asset \"{asset.Name}\" ({asset.AssetTag})",
+            Changes: changes.Count > 0 ? changes : null));
 
         // Reload navigation properties
         await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
@@ -196,21 +239,28 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
     }
 
     [HttpGet("{id:guid}/history")]
-    public async Task<ActionResult<List<AssetHistoryDto>>> GetHistory(Guid id)
+    public async Task<ActionResult<List<AssetHistoryDto>>> GetHistory(Guid id, [FromQuery] int? limit = null)
     {
         var assetExists = await db.Assets.AnyAsync(a => a.Id == id);
         if (!assetExists) return NotFound();
 
-        var history = await db.AssetHistory
+        var query = db.AssetHistory
             .Where(h => h.AssetId == id)
             .Include(h => h.PerformedByUser)
-            .OrderByDescending(h => h.Timestamp)
+            .Include(h => h.Changes)
+            .OrderByDescending(h => h.Timestamp);
+
+        var historyQuery = limit.HasValue ? query.Take(limit.Value) : query;
+
+        var history = await historyQuery
             .Select(h => new AssetHistoryDto(
                 h.Id,
                 h.EventType.ToString(),
                 h.Details,
                 h.Timestamp,
-                h.PerformedByUser != null ? h.PerformedByUser.DisplayName : null))
+                h.PerformedByUser != null ? h.PerformedByUser.DisplayName : null,
+                h.Changes.Select(c => new AssetHistoryChangeDto(
+                    c.FieldName, c.OldValue, c.NewValue)).ToList()))
             .ToListAsync();
 
         return Ok(history);
@@ -243,4 +293,22 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         a.AssignedPersonId, a.AssignedPerson?.FullName,
         a.PurchaseDate, a.PurchaseCost, a.WarrantyExpiryDate,
         a.Notes, a.IsArchived, a.CreatedAt, a.UpdatedAt);
+
+    private static void Track(List<AuditChange> changes, string field, string? oldVal, string? newVal)
+    {
+        if (oldVal != newVal)
+            changes.Add(new AuditChange(field, oldVal, newVal));
+    }
+
+    private static void TrackDate(List<AuditChange> changes, string field, DateTime? oldVal, DateTime? newVal)
+    {
+        if (oldVal?.Date != newVal?.Date)
+            changes.Add(new AuditChange(field, oldVal?.ToString("yyyy-MM-dd"), newVal?.ToString("yyyy-MM-dd")));
+    }
+
+    private static void TrackDecimal(List<AuditChange> changes, string field, decimal? oldVal, decimal? newVal)
+    {
+        if (oldVal != newVal)
+            changes.Add(new AuditChange(field, oldVal?.ToString("F2"), newVal?.ToString("F2")));
+    }
 }

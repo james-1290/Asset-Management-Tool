@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AssetType> AssetTypes => Set<AssetType>();
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<AssetHistory> AssetHistory => Set<AssetHistory>();
+    public DbSet<AssetHistoryChange> AssetHistoryChanges => Set<AssetHistoryChange>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<CustomFieldDefinition> CustomFieldDefinitions => Set<CustomFieldDefinition>();
     public DbSet<CustomFieldValue> CustomFieldValues => Set<CustomFieldValue>();
@@ -98,6 +99,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<AssetHistory>()
             .HasIndex(h => h.AssetId);
+
+        // AssetHistoryChange
+        modelBuilder.Entity<AssetHistoryChange>()
+            .HasOne(c => c.AssetHistory)
+            .WithMany(h => h.Changes)
+            .HasForeignKey(c => c.AssetHistoryId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // AuditLog
         modelBuilder.Entity<AuditLog>()
