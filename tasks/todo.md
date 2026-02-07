@@ -44,7 +44,7 @@
 - [x] Migrate asset assignment from User → Person
 - [x] Check-in/check-out workflow
 - [x] Asset history timeline (per-asset)
-- [ ] Audit log UI page
+- [x] Audit log UI page
 - [ ] Custom fields: define + render in forms
 - [ ] Custom fields: display in DataTable columns
 - [ ] User authentication (basic username/password login)
