@@ -46,11 +46,13 @@
 - [x] Dashboard: free-form grid via react-grid-layout v2 (drag to any cell, resize by edges, vertical compaction)
 - [x] Dashboard: Total Assets and Total Value as independent resizable widgets
 - [x] Dashboard: colourful 10-colour palette for bar charts
+- [x] Custom fields: define per asset type (inline editor in asset type dialog)
+- [x] Custom fields: render dynamically in asset create/edit forms (Text, Number, Date, Boolean, SingleSelect, MultiSelect, URL)
+- [x] Custom fields: toggleable columns in assets DataTable
+- [x] Custom fields: display values on asset detail page
 
 ## Next (MVP)
 
-- [ ] Custom fields: define + render in forms
-- [ ] Custom fields: display in DataTable columns
 - [ ] User authentication (basic username/password login)
 - [ ] DataTable: server-side pagination, sorting, filtering (client-side sorting/filtering done)
 - [ ] DataTable: saved views per user
