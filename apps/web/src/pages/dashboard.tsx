@@ -1,4 +1,5 @@
-import { Package, DollarSign } from "lucide-react";
+import { useState } from "react";
+import { Package, PoundSterling } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { StatusBreakdownChart } from "@/components/dashboard/status-breakdown-chart";
@@ -30,10 +31,11 @@ function formatCurrency(value: number): string {
 
 export default function DashboardPage() {
   const { isVisible, toggleWidget } = useDashboardPreferences();
+  const [warrantyDays, setWarrantyDays] = useState(30);
 
   const summary = useDashboardSummary(isVisible("summary"));
   const statusBreakdown = useStatusBreakdown(isVisible("statusBreakdown"));
-  const warrantyExpiries = useWarrantyExpiries(30, isVisible("warrantyExpiries"));
+  const warrantyExpiries = useWarrantyExpiries(warrantyDays, isVisible("warrantyExpiries"));
   const assetsByType = useAssetsByType(isVisible("assetsByType"));
   const assetsByLocation = useAssetsByLocation(isVisible("assetsByLocation"));
   const checkedOut = useCheckedOutAssets(isVisible("checkedOut"));
@@ -63,7 +65,7 @@ export default function DashboardPage() {
           <StatCard
             title="Total Value"
             value={formatCurrency(summary.data?.totalValue ?? 0)}
-            icon={DollarSign}
+            icon={PoundSterling}
             isLoading={summary.isLoading}
           />
         </div>
@@ -95,6 +97,8 @@ export default function DashboardPage() {
           <WarrantyExpiriesList
             data={warrantyExpiries.data}
             isLoading={warrantyExpiries.isLoading}
+            days={warrantyDays}
+            onDaysChange={setWarrantyDays}
           />
         )}
       </div>

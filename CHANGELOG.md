@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-02-07 17:13 - Dashboard widget polish
+
+- **Frontend**: Status breakdown pie chart — removed segment labels (legend+tooltip remain), clicking a segment navigates to `/assets?status=X`
+- **Frontend**: Assets page reads `?status=` URL param and pre-filters the table; status dropdown in toolbar syncs with URL
+- **Frontend**: Total Value card icon changed from $ to £ (PoundSterling)
+- **Frontend**: Warranty expiries widget — added settings cog with timeframe popover (7d/14d/30d/60d/90d)
+- **Frontend**: DataTable now accepts `initialColumnFilters` prop
+
 ## 2026-02-07 16:20 - Dashboard with customizable widgets
 
 - **Backend**: New `DashboardController` with 6 endpoints: `GET /api/v1/dashboard/summary`, `status-breakdown`, `warranty-expiries?days=N`, `assets-by-type`, `assets-by-location`, `checked-out`

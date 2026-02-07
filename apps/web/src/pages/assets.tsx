@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -18,9 +19,18 @@ import {
 import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
 import type { Asset } from "../types/asset";
+import type { ColumnFiltersState } from "@tanstack/react-table";
 import type { AssetFormValues } from "../lib/schemas/asset";
 
 export default function AssetsPage() {
+  const [searchParams] = useSearchParams();
+  const statusParam = searchParams.get("status");
+
+  const initialColumnFilters: ColumnFiltersState = useMemo(() => {
+    if (statusParam) return [{ id: "status", value: statusParam }];
+    return [];
+  }, [statusParam]);
+
   const { data: assets, isLoading, isError } = useAssets();
   const { data: assetTypes } = useAssetTypes();
   const { data: locations } = useLocations();
@@ -158,6 +168,7 @@ export default function AssetsPage() {
       <DataTable
         columns={columns}
         data={assets ?? []}
+        initialColumnFilters={initialColumnFilters}
         toolbar={(table) => <AssetsToolbar table={table} />}
       />
 
