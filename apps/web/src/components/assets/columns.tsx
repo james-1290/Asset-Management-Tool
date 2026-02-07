@@ -1,4 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import { Link } from "react-router-dom";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -32,6 +33,14 @@ export function getAssetColumns({
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
+      cell: ({ row }) => (
+        <Link
+          to={`/assets/${row.original.id}`}
+          className="font-medium text-primary hover:underline"
+        >
+          {row.original.assetTag}
+        </Link>
+      ),
     },
     {
       accessorKey: "name",
@@ -44,6 +53,14 @@ export function getAssetColumns({
           Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
+      ),
+      cell: ({ row }) => (
+        <Link
+          to={`/assets/${row.original.id}`}
+          className="hover:underline"
+        >
+          {row.original.name}
+        </Link>
       ),
     },
     {

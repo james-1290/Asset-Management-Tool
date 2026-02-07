@@ -8,12 +8,29 @@ import type {
 const assetKeys = {
   all: ["assets"] as const,
   detail: (id: string) => ["assets", id] as const,
+  history: (id: string) => ["assets", id, "history"] as const,
 };
 
 export function useAssets() {
   return useQuery({
     queryKey: assetKeys.all,
     queryFn: assetsApi.getAll,
+  });
+}
+
+export function useAsset(id: string) {
+  return useQuery({
+    queryKey: assetKeys.detail(id),
+    queryFn: () => assetsApi.getById(id),
+    enabled: !!id,
+  });
+}
+
+export function useAssetHistory(id: string) {
+  return useQuery({
+    queryKey: assetKeys.history(id),
+    queryFn: () => assetsApi.getHistory(id),
+    enabled: !!id,
   });
 }
 
@@ -34,8 +51,10 @@ export function useUpdateAsset() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateAssetRequest }) =>
       assetsApi.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
+      queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: assetKeys.history(variables.id) });
     },
   });
 }
