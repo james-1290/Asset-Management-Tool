@@ -13,19 +13,71 @@ namespace AssetManagement.Api.Controllers;
 public class AssetsController(AppDbContext db, IAuditService audit) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<AssetDto>>> GetAll()
+    public async Task<ActionResult<PagedResponse<AssetDto>>> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 25,
+        [FromQuery] string? search = null,
+        [FromQuery] string? status = null,
+        [FromQuery] string sortBy = "name",
+        [FromQuery] string sortDir = "asc")
     {
-        var assets = await db.Assets
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = db.Assets
             .Where(a => !a.IsArchived)
             .Include(a => a.AssetType)
             .Include(a => a.Location)
             .Include(a => a.AssignedPerson)
             .Include(a => a.CustomFieldValues)
                 .ThenInclude(v => v.CustomFieldDefinition)
-            .OrderBy(a => a.Name)
+            .AsQueryable();
+
+        // Filter by search
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(a =>
+                EF.Functions.ILike(a.Name, $"%{search}%") ||
+                EF.Functions.ILike(a.AssetTag, $"%{search}%"));
+        }
+
+        // Filter by status
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            if (!Enum.TryParse<AssetStatus>(status, out var parsedStatus))
+                return BadRequest(new { error = $"Invalid status: {status}" });
+            query = query.Where(a => a.Status == parsedStatus);
+        }
+
+        var totalCount = await query.CountAsync();
+
+        // Sort
+        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        query = sortBy.ToLowerInvariant() switch
+        {
+            "assettag" => desc ? query.OrderByDescending(a => a.AssetTag) : query.OrderBy(a => a.AssetTag),
+            "status" => desc ? query.OrderByDescending(a => a.Status) : query.OrderBy(a => a.Status),
+            "assettypename" => desc ? query.OrderByDescending(a => a.AssetType.Name) : query.OrderBy(a => a.AssetType.Name),
+            "locationname" => desc ? query.OrderByDescending(a => a.Location!.Name) : query.OrderBy(a => a.Location!.Name),
+            "purchasedate" => desc ? query.OrderByDescending(a => a.PurchaseDate) : query.OrderBy(a => a.PurchaseDate),
+            "purchasecost" => desc ? query.OrderByDescending(a => a.PurchaseCost) : query.OrderBy(a => a.PurchaseCost),
+            "warrantyexpirydate" => desc ? query.OrderByDescending(a => a.WarrantyExpiryDate) : query.OrderBy(a => a.WarrantyExpiryDate),
+            "createdat" => desc ? query.OrderByDescending(a => a.CreatedAt) : query.OrderBy(a => a.CreatedAt),
+            _ => desc ? query.OrderByDescending(a => a.Name) : query.OrderBy(a => a.Name),
+        };
+
+        var assets = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return Ok(assets.Select(ToDto).ToList());
+        var result = new PagedResponse<AssetDto>(
+            assets.Select(ToDto).ToList(),
+            page,
+            pageSize,
+            totalCount);
+
+        return Ok(result);
     }
 
     [HttpGet("{id:guid}")]

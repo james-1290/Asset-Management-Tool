@@ -7,10 +7,26 @@ import type {
   CheckinAssetRequest,
 } from "../../types/asset";
 import type { AssetHistory } from "../../types/asset-history";
+import type { PagedResponse } from "../../types/paged-response";
+
+export interface AssetQueryParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: string;
+  sortBy?: string;
+  sortDir?: string;
+}
 
 export const assetsApi = {
   getAll(): Promise<Asset[]> {
-    return apiClient.get<Asset[]>("/assets");
+    return apiClient
+      .get<PagedResponse<Asset>>("/assets", { pageSize: 1000 })
+      .then((r) => r.items);
+  },
+
+  getPaged(params: AssetQueryParams): Promise<PagedResponse<Asset>> {
+    return apiClient.get<PagedResponse<Asset>>("/assets", params as Record<string, string | number | undefined>);
   },
 
   getById(id: string): Promise<Asset> {

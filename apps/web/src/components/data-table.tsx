@@ -4,6 +4,7 @@ import {
   type ColumnFiltersState,
   type SortingState,
   type VisibilityState,
+  type OnChangeFn,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -25,6 +26,13 @@ interface DataTableProps<TData, TValue> {
   toolbar?: (table: ReturnType<typeof useReactTable<TData>>) => ReactNode;
   initialColumnFilters?: ColumnFiltersState;
   initialColumnVisibility?: VisibilityState;
+  manualPagination?: boolean;
+  manualSorting?: boolean;
+  pageCount?: number;
+  rowCount?: number;
+  sorting?: SortingState;
+  onSortingChange?: OnChangeFn<SortingState>;
+  paginationControls?: ReactNode;
 }
 
 export function DataTable<TData, TValue>({
@@ -33,20 +41,32 @@ export function DataTable<TData, TValue>({
   toolbar,
   initialColumnFilters,
   initialColumnVisibility,
+  manualPagination,
+  manualSorting,
+  pageCount,
+  rowCount,
+  sorting: externalSorting,
+  onSortingChange: externalOnSortingChange,
+  paginationControls,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [internalSorting, setInternalSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialColumnFilters ?? []);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(initialColumnVisibility ?? {});
+
+  const sorting = manualSorting && externalSorting ? externalSorting : internalSorting;
+  const onSortingChange = manualSorting && externalOnSortingChange ? externalOnSortingChange : setInternalSorting;
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onSortingChange: setSorting,
+    ...(!manualSorting ? { getSortedRowModel: getSortedRowModel() } : {}),
+    ...(!manualPagination ? { getFilteredRowModel: getFilteredRowModel() } : {}),
+    onSortingChange,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
+    ...(manualPagination ? { manualPagination: true, pageCount, rowCount } : {}),
+    ...(manualSorting ? { manualSorting: true } : {}),
     state: {
       sorting,
       columnFilters,
@@ -102,6 +122,7 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
+      {paginationControls}
     </div>
   );
 }

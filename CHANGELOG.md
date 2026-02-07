@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-02-07 19:38 - Server-side pagination, sorting & filtering for Assets
+
+- **Backend**: New `PagedResponse<T>` generic DTO for paged API responses
+- **Backend**: `GET /api/v1/assets` now accepts `page`, `pageSize`, `search`, `status`, `sortBy`, `sortDir` query params
+- **Backend**: Search filters on name and asset tag (case-insensitive), status filters by enum value
+- **Backend**: Supports sorting by name, assetTag, status, assetTypeName, locationName, purchaseDate, purchaseCost, warrantyExpiryDate, createdAt
+- **Frontend**: `apiClient.get()` now accepts optional `params` arg for query string building
+- **Frontend**: New `PagedResponse<T>` TypeScript type, new `AssetQueryParams` interface
+- **Frontend**: New `usePagedAssets()` hook with `keepPreviousData` for smooth page transitions
+- **Frontend**: New reusable `<DataTablePagination>` component (page nav, rows-per-page selector, total count)
+- **Frontend**: `<DataTable>` now supports optional server-side mode via `manualPagination`, `manualSorting`, `paginationControls` props
+- **Frontend**: `<AssetsToolbar>` switched from column-filter-based to callback-based search/status filtering
+- **Frontend**: Assets page orchestrates all state via URL search params (bookmarkable, back-button friendly)
+- **Frontend**: Debounced search input (300ms) prevents excessive API calls
+- No DB migrations. Locations, AssetTypes, and Dashboard pages unaffected.
+
 ## 2026-02-07 19:12 - Column visibility toggle for DataTable
 
 - **Frontend**: New reusable `<ColumnToggle>` component — dropdown with checkboxes to show/hide columns
