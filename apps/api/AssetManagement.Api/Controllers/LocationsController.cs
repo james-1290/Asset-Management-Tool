@@ -55,6 +55,7 @@ public class LocationsController(AppDbContext db, IAuditService audit) : Control
             Action: "Created",
             EntityType: "Location",
             EntityId: location.Id.ToString(),
+            EntityName: location.Name,
             Details: $"Created location \"{location.Name}\""));
 
         var dto = new LocationDto(
@@ -82,6 +83,7 @@ public class LocationsController(AppDbContext db, IAuditService audit) : Control
             Action: "Updated",
             EntityType: "Location",
             EntityId: location.Id.ToString(),
+            EntityName: location.Name,
             Details: $"Updated location \"{location.Name}\""));
 
         return Ok(new LocationDto(
@@ -103,6 +105,7 @@ public class LocationsController(AppDbContext db, IAuditService audit) : Control
             Action: "Archived",
             EntityType: "Location",
             EntityId: location.Id.ToString(),
+            EntityName: location.Name,
             Details: $"Archived location \"{location.Name}\""));
 
         return NoContent();

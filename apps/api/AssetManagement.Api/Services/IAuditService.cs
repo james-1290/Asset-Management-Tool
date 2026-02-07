@@ -6,6 +6,7 @@ public record AuditEntry(
     string Action,
     string EntityType,
     string EntityId,
+    string? EntityName = null,
     string? Details = null,
     Guid? ActorId = null,
     string ActorName = "System",

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-02-07 14:56 - Add entity name to audit log
+
+- **Backend**: Added `EntityName` column to `AuditLog` model (nullable, for backwards-compatibility)
+- **Backend**: All controllers now pass entity name when logging audit entries (denormalized at write time)
+- **Backend**: Audit log search also matches on entity name
+- **Frontend**: Renamed "Entity ID" column to "Entity" — shows entity name, falls back to truncated ID for old records
+- **DB Migration**: `AddEntityNameToAuditLog` — adds nullable `EntityName` column
+
 ## 2026-02-07 14:40 - Audit log UI polish
 
 - **Frontend**: Colour-coded action badges (green=Created/CheckedIn, blue=Updated, gray=Archived, amber=CheckedOut)

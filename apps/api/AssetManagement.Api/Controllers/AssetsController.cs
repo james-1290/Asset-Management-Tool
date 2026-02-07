@@ -108,6 +108,7 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             Action: "Created",
             EntityType: "Asset",
             EntityId: asset.Id.ToString(),
+            EntityName: asset.Name,
             Details: $"Created asset \"{asset.Name}\" ({asset.AssetTag})"));
 
         // Reload with navigation properties
@@ -225,6 +226,7 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             Action: "Updated",
             EntityType: "Asset",
             EntityId: asset.Id.ToString(),
+            EntityName: asset.Name,
             Details: $"Updated asset \"{asset.Name}\" ({asset.AssetTag})",
             Changes: changes.Count > 0 ? changes : null));
 
@@ -301,6 +303,7 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             Action: "CheckedOut",
             EntityType: "Asset",
             EntityId: asset.Id.ToString(),
+            EntityName: asset.Name,
             Details: $"Checked out \"{asset.Name}\" to {person.FullName}" + (request.Notes is not null ? $" — {request.Notes}" : ""),
             Changes: changes));
 
@@ -350,6 +353,7 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             Action: "CheckedIn",
             EntityType: "Asset",
             EntityId: asset.Id.ToString(),
+            EntityName: asset.Name,
             Details: detailParts,
             Changes: changes));
 
@@ -374,6 +378,7 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             Action: "Archived",
             EntityType: "Asset",
             EntityId: asset.Id.ToString(),
+            EntityName: asset.Name,
             Details: $"Archived asset \"{asset.Name}\" ({asset.AssetTag})"));
 
         return NoContent();

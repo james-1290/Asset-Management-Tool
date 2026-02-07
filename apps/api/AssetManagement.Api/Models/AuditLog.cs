@@ -10,6 +10,7 @@ public class AuditLog
     public required string Action { get; set; }
     public required string EntityType { get; set; }
     public required string EntityId { get; set; }
+    public string? EntityName { get; set; }
     public AuditSource Source { get; set; }
     public string? Details { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;

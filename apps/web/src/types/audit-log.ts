@@ -4,6 +4,7 @@ export interface AuditLogEntry {
   action: string;
   entityType: string;
   entityId: string;
+  entityName: string | null;
   source: string;
   details: string | null;
   timestamp: string;
