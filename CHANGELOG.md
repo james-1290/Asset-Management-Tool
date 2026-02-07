@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-02-07 14:40 - Audit log UI polish
+
+- **Frontend**: Colour-coded action badges (green=Created/CheckedIn, blue=Updated, gray=Archived, amber=CheckedOut)
+- **Frontend**: Tooltip on truncated details column to reveal full text on hover
+
 ## 2026-02-07 14:29 - Audit log UI page
 
 - **Backend**: New read-only `GET /api/v1/auditlogs` endpoint with optional `entityType`, `action`, and `search` query filters
