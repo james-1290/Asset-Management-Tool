@@ -56,3 +56,20 @@ public record ValueByLocationDto(
     string LocationName,
     decimal TotalValue
 );
+
+public record CertificateExpiryItemDto(
+    Guid Id,
+    string Name,
+    string CertificateTypeName,
+    DateTime ExpiryDate,
+    int DaysUntilExpiry,
+    string Status
+);
+
+public record CertificateSummaryDto(
+    int TotalCertificates,
+    int Active,
+    int Expired,
+    int PendingRenewal,
+    int Revoked
+);

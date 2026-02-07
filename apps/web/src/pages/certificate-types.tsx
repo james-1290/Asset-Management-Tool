@@ -9,35 +9,30 @@ import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
 import { ConfirmDialog } from "../components/confirm-dialog";
-import { CertificateFormDialog } from "../components/certificates/certificate-form-dialog";
-import { CertificatesToolbar } from "../components/certificates/certificates-toolbar";
-import { getCertificateColumns } from "../components/certificates/columns";
+import { CertificateTypeFormDialog } from "../components/certificate-types/certificate-type-form-dialog";
+import { CertificateTypesToolbar } from "../components/certificate-types/certificate-types-toolbar";
+import { getCertificateTypeColumns } from "../components/certificate-types/columns";
 import {
-  usePagedCertificates,
-  useCreateCertificate,
-  useUpdateCertificate,
-  useArchiveCertificate,
-} from "../hooks/use-certificates";
-import { useCertificateTypes } from "../hooks/use-certificate-types";
-import { useLocations } from "../hooks/use-locations";
-import type { Certificate } from "../types/certificate";
-import type { CertificateFormValues } from "../lib/schemas/certificate";
+  usePagedCertificateTypes,
+  useCreateCertificateType,
+  useUpdateCertificateType,
+  useArchiveCertificateType,
+} from "../hooks/use-certificate-types";
+import type { CertificateType } from "../types/certificate-type";
+import type { CertificateTypeFormValues } from "../lib/schemas/certificate-type";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
-  certificateTypeName: "certificateTypeName",
-  issuer: "issuer",
-  expiryDate: "expiryDate",
-  status: "status",
+  description: "description",
+  createdAt: "createdAt",
 };
 
-export default function CertificatesPage() {
+export default function CertificateTypesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const page = Number(searchParams.get("page")) || 1;
   const pageSize = Number(searchParams.get("pageSize")) || 25;
   const searchParam = searchParams.get("search") ?? "";
-  const statusParam = searchParams.get("status") ?? "";
   const sortByParam = searchParams.get("sortBy") ?? "name";
   const sortDirParam = searchParams.get("sortDir") ?? "asc";
 
@@ -66,53 +61,35 @@ export default function CertificatesPage() {
     setSearchInput(searchParam);
   }, [searchParam]);
 
-  const handleStatusFilterChange = useCallback(
-    (value: string) => {
-      setSearchParams((prev) => {
-        if (value) {
-          prev.set("status", value);
-        } else {
-          prev.delete("status");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
   const queryParams = useMemo(
     () => ({
       page,
       pageSize,
       search: searchParam || undefined,
-      status: statusParam || undefined,
       sortBy: sortByParam,
       sortDir: sortDirParam,
     }),
-    [page, pageSize, searchParam, statusParam, sortByParam, sortDirParam],
+    [page, pageSize, searchParam, sortByParam, sortDirParam],
   );
 
-  const { data: pagedResult, isLoading, isError } = usePagedCertificates(queryParams);
-  const { data: certificateTypes } = useCertificateTypes();
-  const { data: locations } = useLocations();
-  const createMutation = useCreateCertificate();
-  const updateMutation = useUpdateCertificate();
-  const archiveMutation = useArchiveCertificate();
+  const { data: pagedResult, isLoading, isError } = usePagedCertificateTypes(queryParams);
+  const createMutation = useCreateCertificateType();
+  const updateMutation = useUpdateCertificateType();
+  const archiveMutation = useArchiveCertificateType();
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null);
-  const [archivingCertificate, setArchivingCertificate] = useState<Certificate | null>(null);
+  const [editingCertificateType, setEditingCertificateType] = useState<CertificateType | null>(null);
+  const [archivingCertificateType, setArchivingCertificateType] = useState<CertificateType | null>(null);
 
   const columns = useMemo(
     () =>
-      getCertificateColumns({
-        onEdit: (certificate) => {
-          setEditingCertificate(certificate);
+      getCertificateTypeColumns({
+        onEdit: (certificateType) => {
+          setEditingCertificateType(certificateType);
           setFormOpen(true);
         },
-        onArchive: (certificate) => {
-          setArchivingCertificate(certificate);
+        onArchive: (certificateType) => {
+          setArchivingCertificateType(certificateType);
         },
       }),
     [],
@@ -167,68 +144,58 @@ export default function CertificatesPage() {
     [setSearchParams],
   );
 
-  function handleFormSubmit(values: CertificateFormValues) {
-    const customFieldValues = Object.entries(values.customFieldValues ?? {})
-      .filter(([, v]) => v != null && v !== "" && v !== "__none__")
-      .map(([fieldDefinitionId, value]) => ({
-        fieldDefinitionId,
-        value: value!,
-      }));
+  function handleFormSubmit(values: CertificateTypeFormValues) {
+    const customFields = (values.customFields ?? []).map((cf, i) => ({
+      id: cf.id || undefined,
+      name: cf.name,
+      fieldType: cf.fieldType,
+      options: cf.options || null,
+      isRequired: cf.isRequired,
+      sortOrder: i,
+    }));
 
     const data = {
       name: values.name,
-      certificateTypeId: values.certificateTypeId,
-      issuer: values.issuer || null,
-      subject: values.subject || null,
-      thumbprint: values.thumbprint || null,
-      serialNumber: values.serialNumber || null,
-      issuedDate: values.issuedDate ? `${values.issuedDate}T00:00:00Z` : null,
-      expiryDate: values.expiryDate ? `${values.expiryDate}T00:00:00Z` : null,
-      status: values.status || "Active",
-      autoRenewal: values.autoRenewal ?? false,
-      notes: values.notes || null,
-      assetId: values.assetId && values.assetId !== "none" ? values.assetId : null,
-      personId: values.personId && values.personId !== "none" ? values.personId : null,
-      locationId: values.locationId && values.locationId !== "none" ? values.locationId : null,
-      customFieldValues,
+      description: values.description || null,
+      customFields,
     };
 
-    if (editingCertificate) {
+    if (editingCertificateType) {
       updateMutation.mutate(
-        { id: editingCertificate.id, data },
+        { id: editingCertificateType.id, data },
         {
           onSuccess: () => {
-            toast.success("Certificate updated");
+            toast.success("Certificate type updated");
             setFormOpen(false);
-            setEditingCertificate(null);
+            setEditingCertificateType(null);
           },
           onError: () => {
-            toast.error("Failed to update certificate");
+            toast.error("Failed to update certificate type");
           },
         },
       );
     } else {
       createMutation.mutate(data, {
         onSuccess: () => {
-          toast.success("Certificate created");
+          toast.success("Certificate type created");
           setFormOpen(false);
         },
         onError: () => {
-          toast.error("Failed to create certificate");
+          toast.error("Failed to create certificate type");
         },
       });
     }
   }
 
   function handleArchive() {
-    if (!archivingCertificate) return;
-    archiveMutation.mutate(archivingCertificate.id, {
+    if (!archivingCertificateType) return;
+    archiveMutation.mutate(archivingCertificateType.id, {
       onSuccess: () => {
-        toast.success("Certificate deleted");
-        setArchivingCertificate(null);
+        toast.success("Certificate type deleted");
+        setArchivingCertificateType(null);
       },
       onError: () => {
-        toast.error("Failed to delete certificate");
+        toast.error("Failed to delete certificate type");
       },
     });
   }
@@ -236,7 +203,7 @@ export default function CertificatesPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Certificates" />
+        <PageHeader title="Certificate Types" />
         <div className="space-y-2">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -249,9 +216,9 @@ export default function CertificatesPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Certificates" />
+        <PageHeader title="Certificate Types" />
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
-          Failed to load certificates. Is the API running?
+          Failed to load certificate types. Is the API running?
         </div>
       </div>
     );
@@ -263,17 +230,17 @@ export default function CertificatesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Certificates"
-        description="Track SSL/TLS certificates, secrets, and renewal dates."
+        title="Certificate Types"
+        description="Manage categories for your certificates."
         actions={
           <Button
             onClick={() => {
-              setEditingCertificate(null);
+              setEditingCertificateType(null);
               setFormOpen(true);
             }}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add Certificate
+            Add Certificate Type
           </Button>
         }
       />
@@ -288,12 +255,10 @@ export default function CertificatesPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
-          <CertificatesToolbar
+          <CertificateTypesToolbar
             table={table}
             search={searchInput}
             onSearchChange={setSearchInput}
-            statusFilter={statusParam}
-            onStatusFilterChange={handleStatusFilterChange}
           />
         )}
         paginationControls={
@@ -307,26 +272,24 @@ export default function CertificatesPage() {
         }
       />
 
-      <CertificateFormDialog
+      <CertificateTypeFormDialog
         open={formOpen}
         onOpenChange={(open) => {
           setFormOpen(open);
-          if (!open) setEditingCertificate(null);
+          if (!open) setEditingCertificateType(null);
         }}
-        certificate={editingCertificate}
-        certificateTypes={certificateTypes ?? []}
-        locations={locations ?? []}
+        certificateType={editingCertificateType}
         onSubmit={handleFormSubmit}
         loading={createMutation.isPending || updateMutation.isPending}
       />
 
       <ConfirmDialog
-        open={!!archivingCertificate}
+        open={!!archivingCertificateType}
         onOpenChange={(open) => {
-          if (!open) setArchivingCertificate(null);
+          if (!open) setArchivingCertificateType(null);
         }}
-        title="Delete certificate"
-        description={`Are you sure you want to delete "${archivingCertificate?.name}"? This action can be undone later.`}
+        title="Delete certificate type"
+        description={`Are you sure you want to delete "${archivingCertificateType?.name}"? This action can be undone later.`}
         confirmLabel="Delete"
         onConfirm={handleArchive}
         loading={archiveMutation.isPending}
