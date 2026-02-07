@@ -51,6 +51,17 @@
 - [x] Custom fields: toggleable columns in assets DataTable
 - [x] Custom fields: display values on asset detail page
 
+- [x] Certificates module: backend models, enums, DB migration (CertificateType, Certificate, CertificateHistory, CertificateHistoryChange)
+- [x] Certificates module: CertificateTypesController + CertificatesController with paged CRUD, search, status filter
+- [x] Certificates module: custom fields per certificate type (CertificateTypeId on CustomFieldDefinition)
+- [x] Certificates module: audit history + change tracking via AuditService
+- [x] Certificates module: dashboard endpoints (certificate-expiries, certificate-summary)
+- [x] Certificates module: frontend Certificate Types page (CRUD, custom field editor)
+- [x] Certificates module: frontend Certificates page (CRUD, status filter, custom fields)
+- [x] Certificates module: Certificate detail page (info card, custom fields, history timeline)
+- [x] Certificates module: Certificate Expiries dashboard widget
+- [x] Certificates module: sidebar nav + routes for Certificate Types and Certificate detail
+
 ## Next (MVP)
 
 - [ ] User authentication (basic username/password login)
@@ -59,7 +70,6 @@
 
 ## Later
 
-- [ ] Certificates module (models + CRUD + UI)
 - [ ] Applications/Licences module (models + CRUD + UI)
 - [ ] Retire + sold workflow
 - [ ] Bulk actions (checkbox selection + action bar)
