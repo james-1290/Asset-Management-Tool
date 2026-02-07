@@ -3,14 +3,16 @@ using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Models.Enums;
 using AssetManagement.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AssetManagement.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/v1/[controller]")]
-public class AssetsController(AppDbContext db, IAuditService audit) : ControllerBase
+public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PagedResponse<AssetDto>>> GetAll(
@@ -182,7 +184,9 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             EntityType: "Asset",
             EntityId: asset.Id.ToString(),
             EntityName: asset.Name,
-            Details: $"Created asset \"{asset.Name}\" ({asset.AssetTag})"));
+            Details: $"Created asset \"{asset.Name}\" ({asset.AssetTag})",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         // Reload with navigation properties
         await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
@@ -352,6 +356,8 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             EntityId: asset.Id.ToString(),
             EntityName: asset.Name,
             Details: $"Updated asset \"{asset.Name}\" ({asset.AssetTag})",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName,
             Changes: changes.Count > 0 ? changes : null));
 
         // Reload navigation properties
@@ -434,6 +440,8 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             EntityId: asset.Id.ToString(),
             EntityName: asset.Name,
             Details: $"Checked out \"{asset.Name}\" to {person.FullName}" + (request.Notes is not null ? $" — {request.Notes}" : ""),
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName,
             Changes: changes));
 
         await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
@@ -486,6 +494,8 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             EntityId: asset.Id.ToString(),
             EntityName: asset.Name,
             Details: detailParts,
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName,
             Changes: changes));
 
         await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
@@ -510,7 +520,9 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             EntityType: "Asset",
             EntityId: asset.Id.ToString(),
             EntityName: asset.Name,
-            Details: $"Archived asset \"{asset.Name}\" ({asset.AssetTag})"));
+            Details: $"Archived asset \"{asset.Name}\" ({asset.AssetTag})",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         return NoContent();
     }

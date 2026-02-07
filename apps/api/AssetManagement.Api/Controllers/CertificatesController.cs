@@ -3,14 +3,16 @@ using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Models.Enums;
 using AssetManagement.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AssetManagement.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/v1/[controller]")]
-public class CertificatesController(AppDbContext db, IAuditService audit) : ControllerBase
+public class CertificatesController(AppDbContext db, IAuditService audit, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PagedResponse<CertificateDto>>> GetAll(
@@ -186,7 +188,9 @@ public class CertificatesController(AppDbContext db, IAuditService audit) : Cont
             EntityType: "Certificate",
             EntityId: cert.Id.ToString(),
             EntityName: cert.Name,
-            Details: $"Created certificate \"{cert.Name}\""));
+            Details: $"Created certificate \"{cert.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         // Reload with navigation properties
         await db.Entry(cert).Reference(c => c.CertificateType).LoadAsync();
@@ -371,6 +375,8 @@ public class CertificatesController(AppDbContext db, IAuditService audit) : Cont
             EntityId: cert.Id.ToString(),
             EntityName: cert.Name,
             Details: $"Updated certificate \"{cert.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName,
             Changes: changes.Count > 0 ? changes : null));
 
         // Reload navigation properties
@@ -430,7 +436,9 @@ public class CertificatesController(AppDbContext db, IAuditService audit) : Cont
             EntityType: "Certificate",
             EntityId: cert.Id.ToString(),
             EntityName: cert.Name,
-            Details: $"Archived certificate \"{cert.Name}\""));
+            Details: $"Archived certificate \"{cert.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         return NoContent();
     }

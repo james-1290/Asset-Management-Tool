@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-02-07 22:32 - User Authentication (JWT)
+
+- **Backend**: Added JWT Bearer authentication with BCrypt password hashing
+- **Backend**: New `AuthController` — `POST /api/v1/auth/login` (returns JWT + user profile), `GET /api/v1/auth/me`
+- **Backend**: New services — `ITokenService`/`TokenService`, `ICurrentUserService`/`CurrentUserService`
+- **Backend**: All controllers (except Health) now require `[Authorize]` attribute
+- **Backend**: Audit logging now captures `ActorId` and `ActorName` from JWT claims (was always "System")
+- **Backend**: Admin user seeded on startup (`admin`/`admin123`) with "Admin" role
+- **Backend**: JWT config in `appsettings.json` (Key, Issuer, Audience, ExpiryHours)
+- **Frontend**: Login page with zod-validated form, centered card layout
+- **Frontend**: `AuthProvider` context — manages token, user profile, login/logout
+- **Frontend**: `ProtectedRoute` wrapper — redirects to `/login` if unauthenticated
+- **Frontend**: API client sends `Authorization: Bearer` header; auto-redirects to `/login` on 401
+- **Frontend**: User menu in header — shows initials, display name, email, logout option
+- **Default dev credentials**: `admin` / `admin123`
+
 ## 2026-02-07 22:06 - Applications/Licences Module (full stack)
 
 - **Backend**: New models — `ApplicationType`, `Application`, `ApplicationHistory`, `ApplicationHistoryChange`

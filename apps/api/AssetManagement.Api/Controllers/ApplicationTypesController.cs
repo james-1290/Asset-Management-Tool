@@ -3,6 +3,7 @@ using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Models.Enums;
 using AssetManagement.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EntityTypeEnum = AssetManagement.Api.Models.Enums.EntityType;
@@ -10,8 +11,9 @@ using EntityTypeEnum = AssetManagement.Api.Models.Enums.EntityType;
 namespace AssetManagement.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/v1/[controller]")]
-public class ApplicationTypesController(AppDbContext db, IAuditService audit) : ControllerBase
+public class ApplicationTypesController(AppDbContext db, IAuditService audit, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PagedResponse<ApplicationTypeDto>>> GetAll(
@@ -128,7 +130,9 @@ public class ApplicationTypesController(AppDbContext db, IAuditService audit) : 
             EntityId: type.Id.ToString(),
             EntityName: type.Name,
             Details: $"Created application type \"{type.Name}\"" +
-                (request.CustomFields is { Count: > 0 } ? $" with {request.CustomFields.Count} custom field(s)" : "")));
+                (request.CustomFields is { Count: > 0 } ? $" with {request.CustomFields.Count} custom field(s)" : ""),
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         await db.Entry(type).Collection(t => t.CustomFieldDefinitions).LoadAsync();
 
@@ -206,7 +210,9 @@ public class ApplicationTypesController(AppDbContext db, IAuditService audit) : 
             EntityType: "ApplicationType",
             EntityId: type.Id.ToString(),
             EntityName: type.Name,
-            Details: $"Updated application type \"{type.Name}\""));
+            Details: $"Updated application type \"{type.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         await db.Entry(type).Collection(t => t.CustomFieldDefinitions).LoadAsync();
 
@@ -228,7 +234,9 @@ public class ApplicationTypesController(AppDbContext db, IAuditService audit) : 
             EntityType: "ApplicationType",
             EntityId: type.Id.ToString(),
             EntityName: type.Name,
-            Details: $"Archived application type \"{type.Name}\""));
+            Details: $"Archived application type \"{type.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         return NoContent();
     }

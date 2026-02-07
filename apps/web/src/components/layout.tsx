@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { UserMenu } from "@/components/user-menu"
 
 export function Layout() {
   return (
@@ -11,6 +12,7 @@ export function Layout() {
         <header className="flex h-14 items-center gap-2 border-b px-4">
           <div className="flex-1" />
           <ThemeToggle />
+          <UserMenu />
         </header>
         <main className="flex-1 p-6">
           <Outlet />

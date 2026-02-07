@@ -2,14 +2,16 @@ using AssetManagement.Api.Data;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AssetManagement.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/v1/[controller]")]
-public class LocationsController(AppDbContext db, IAuditService audit) : ControllerBase
+public class LocationsController(AppDbContext db, IAuditService audit, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PagedResponse<LocationDto>>> GetAll(
@@ -85,7 +87,9 @@ public class LocationsController(AppDbContext db, IAuditService audit) : Control
             EntityType: "Location",
             EntityId: location.Id.ToString(),
             EntityName: location.Name,
-            Details: $"Created location \"{location.Name}\""));
+            Details: $"Created location \"{location.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         var dto = new LocationDto(
             location.Id, location.Name, location.Address, location.City,
@@ -113,7 +117,9 @@ public class LocationsController(AppDbContext db, IAuditService audit) : Control
             EntityType: "Location",
             EntityId: location.Id.ToString(),
             EntityName: location.Name,
-            Details: $"Updated location \"{location.Name}\""));
+            Details: $"Updated location \"{location.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         return Ok(new LocationDto(
             location.Id, location.Name, location.Address, location.City,
@@ -135,7 +141,9 @@ public class LocationsController(AppDbContext db, IAuditService audit) : Control
             EntityType: "Location",
             EntityId: location.Id.ToString(),
             EntityName: location.Name,
-            Details: $"Archived location \"{location.Name}\""));
+            Details: $"Archived location \"{location.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         return NoContent();
     }

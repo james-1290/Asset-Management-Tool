@@ -2,14 +2,16 @@ using AssetManagement.Api.Data;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AssetManagement.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/v1/[controller]")]
-public class PeopleController(AppDbContext db, IAuditService audit) : ControllerBase
+public class PeopleController(AppDbContext db, IAuditService audit, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet("search")]
     public async Task<ActionResult<List<PersonSearchResult>>> Search(
@@ -121,7 +123,9 @@ public class PeopleController(AppDbContext db, IAuditService audit) : Controller
             EntityType: "Person",
             EntityId: person.Id.ToString(),
             EntityName: person.FullName,
-            Details: $"Created person \"{person.FullName}\""));
+            Details: $"Created person \"{person.FullName}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         // Reload with Location for response
         await db.Entry(person).Reference(p => p.Location).LoadAsync();
@@ -161,7 +165,9 @@ public class PeopleController(AppDbContext db, IAuditService audit) : Controller
             EntityType: "Person",
             EntityId: person.Id.ToString(),
             EntityName: person.FullName,
-            Details: $"Updated person \"{person.FullName}\""));
+            Details: $"Updated person \"{person.FullName}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         await db.Entry(person).Reference(p => p.Location).LoadAsync();
 
@@ -186,7 +192,9 @@ public class PeopleController(AppDbContext db, IAuditService audit) : Controller
             EntityType: "Person",
             EntityId: person.Id.ToString(),
             EntityName: person.FullName,
-            Details: $"Archived person \"{person.FullName}\""));
+            Details: $"Archived person \"{person.FullName}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
 
         return NoContent();
     }

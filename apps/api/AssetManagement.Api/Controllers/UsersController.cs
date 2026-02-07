@@ -1,11 +1,13 @@
 using AssetManagement.Api.Data;
 using AssetManagement.Api.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AssetManagement.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/v1/[controller]")]
 public class UsersController(AppDbContext db) : ControllerBase
 {
