@@ -25,6 +25,9 @@ obj/
 *.userosscache
 *.sln.docstates
 
+# Claude Code
+.claude/
+
 # Logs
 *.log
 logs/
