@@ -4,6 +4,7 @@ import type {
   CreateAssetTypeRequest,
   UpdateAssetTypeRequest,
 } from "../../types/asset-type";
+import type { CustomFieldDefinition } from "../../types/custom-field";
 
 export const assetTypesApi = {
   getAll(): Promise<AssetType[]> {
@@ -24,5 +25,9 @@ export const assetTypesApi = {
 
   archive(id: string): Promise<void> {
     return apiClient.delete(`/assettypes/${id}`);
+  },
+
+  getCustomFields(assetTypeId: string): Promise<CustomFieldDefinition[]> {
+    return apiClient.get<CustomFieldDefinition[]>(`/assettypes/${assetTypeId}/customfields`);
   },
 };

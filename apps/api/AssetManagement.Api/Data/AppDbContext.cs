@@ -127,6 +127,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany(d => d.Values)
             .HasForeignKey(v => v.CustomFieldDefinitionId);
 
+        modelBuilder.Entity<Asset>()
+            .HasMany(a => a.CustomFieldValues)
+            .WithOne()
+            .HasForeignKey(v => v.EntityId);
+
         modelBuilder.Entity<CustomFieldValue>()
             .HasIndex(v => new { v.CustomFieldDefinitionId, v.EntityId });
 

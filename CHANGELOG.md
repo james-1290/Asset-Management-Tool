@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-02-07 18:41 - Custom Fields (define per asset type, render in forms, DataTable columns)
+
+- **Backend**: New DTOs (`CustomFieldDto.cs`), endpoints for custom field CRUD
+- **Backend**: `GET /api/v1/assettypes` and `GET /api/v1/assettypes/{id}` now return `customFields` array
+- **Backend**: `GET /api/v1/assettypes/{id}/customfields` returns active definitions ordered by sortOrder
+- **Backend**: Create/update asset type reconciles custom field definitions (add/update/archive)
+- **Backend**: Create/update asset accepts `customFieldValues` array, validates against asset type definitions
+- **Backend**: Audit log tracks custom field value changes (prefixed `Custom:`)
+- **Frontend**: Custom field editor in Asset Type create/edit dialog (add/remove/reorder fields, set type/options/required)
+- **Frontend**: Dynamic custom fields section in Asset form (renders Text, Number, Date, Boolean, SingleSelect, MultiSelect, URL inputs based on definitions)
+- **Frontend**: Custom field columns in Assets DataTable (hidden by default, toggleable via column visibility)
+- **DB Migration**: `ConfigureCustomFieldValueEntityFK` — maps `Asset.CustomFieldValues` via `EntityId` FK, drops shadow `AssetId` column
+- Supported field types: Text, Number, Date, Boolean, SingleSelect, MultiSelect, URL
+
 ## 2026-02-07 17:49 - Replace @dnd-kit with react-grid-layout for free-form dashboard grid
 
 - **Frontend**: Replaced @dnd-kit (list-based reordering) with react-grid-layout v2 (true free-form grid)

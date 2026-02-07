@@ -8,6 +8,7 @@ import type {
 const assetTypeKeys = {
   all: ["assetTypes"] as const,
   detail: (id: string) => ["assetTypes", id] as const,
+  customFields: (id: string) => ["assetTypes", id, "customFields"] as const,
 };
 
 export function useAssetTypes() {
@@ -48,5 +49,13 @@ export function useArchiveAssetType() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assetTypeKeys.all });
     },
+  });
+}
+
+export function useCustomFieldDefinitions(assetTypeId: string | undefined) {
+  return useQuery({
+    queryKey: assetTypeKeys.customFields(assetTypeId ?? ""),
+    queryFn: () => assetTypesApi.getCustomFields(assetTypeId!),
+    enabled: !!assetTypeId,
   });
 }
