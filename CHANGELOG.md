@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-02-07 22:06 - Applications/Licences Module (full stack)
+
+- **Backend**: New models — `ApplicationType`, `Application`, `ApplicationHistory`, `ApplicationHistoryChange`
+- **Backend**: New enums — `ApplicationStatus` (Active, Expired, Suspended, PendingRenewal), `ApplicationHistoryEventType`, `LicenceType` (PerSeat, Site, Volume, OpenSource, Trial, Freeware, Subscription, Perpetual)
+- **Backend**: Extended `CustomFieldDefinition` with `ApplicationTypeId` for application-type-scoped custom fields
+- **Backend**: New `ApplicationTypesController` — full CRUD with paging, sorting, search, custom field definitions
+- **Backend**: New `ApplicationsController` — full CRUD with paging, sorting, search, status filter, custom field values, change-tracked history
+- **Backend**: `AuditService` extended to create `ApplicationHistory` records on Application entity changes
+- **Backend**: Dashboard endpoints — `GET /api/v1/dashboard/licence-expiries?days=30`, `GET /api/v1/dashboard/application-summary`
+- **Backend**: DB migration `AddApplicationsModule` applied
+- **Frontend**: Application Types page — full CRUD with custom field editor, paging, sorting, search
+- **Frontend**: Applications page — full CRUD with paging, sorting, search, status filter, form with licence fields and custom fields
+- **Frontend**: Application detail page — info card, custom fields display, history timeline, edit dialog
+- **Frontend**: Licence Expiries dashboard widget with configurable timeframe
+- **Frontend**: Routes added: `/application-types`, `/applications/:id`
+- **Frontend**: Sidebar nav: added Application Types item
+
 ## 2026-02-07 21:25 - Certificates Module (full stack)
 
 - **Backend**: New models — `CertificateType`, `Certificate`, `CertificateHistory`, `CertificateHistoryChange`

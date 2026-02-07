@@ -68,9 +68,18 @@
 - [x] DataTable: server-side pagination, sorting, filtering for all list pages (Assets, Locations, Asset Types, People, Audit Logs)
 - [ ] DataTable: saved views per user
 
-## Later
+- [x] Applications/Licences module: backend models, enums, DB migration (ApplicationType, Application, ApplicationHistory, ApplicationHistoryChange)
+- [x] Applications/Licences module: ApplicationTypesController + ApplicationsController with paged CRUD, search, status filter
+- [x] Applications/Licences module: custom fields per application type (ApplicationTypeId on CustomFieldDefinition)
+- [x] Applications/Licences module: audit history + change tracking via AuditService
+- [x] Applications/Licences module: dashboard endpoints (licence-expiries, application-summary)
+- [x] Applications/Licences module: frontend Application Types page (CRUD, custom field editor)
+- [x] Applications/Licences module: frontend Applications page (CRUD, status filter, licence fields, custom fields)
+- [x] Applications/Licences module: Application detail page (info card, custom fields, history timeline)
+- [x] Applications/Licences module: Licence Expiries dashboard widget
+- [x] Applications/Licences module: sidebar nav + routes for Application Types and Application detail
 
-- [ ] Applications/Licences module (models + CRUD + UI)
+## Later
 - [ ] Retire + sold workflow
 - [ ] Bulk actions (checkbox selection + action bar)
 - [ ] Email alerts (warranty/cert/licence expiry)

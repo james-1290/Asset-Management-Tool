@@ -11,6 +11,8 @@ import type {
   ValueByLocation,
   CertificateExpiryItem,
   CertificateSummary,
+  LicenceExpiryItem,
+  ApplicationSummary,
 } from "../../types/dashboard";
 import type { AuditLogEntry } from "../../types/audit-log";
 
@@ -74,5 +76,15 @@ export const dashboardApi = {
 
   getCertificateSummary(): Promise<CertificateSummary> {
     return apiClient.get<CertificateSummary>("/dashboard/certificate-summary");
+  },
+
+  getLicenceExpiries(days: number = 30): Promise<LicenceExpiryItem[]> {
+    return apiClient.get<LicenceExpiryItem[]>(
+      `/dashboard/licence-expiries?days=${days}`
+    );
+  },
+
+  getApplicationSummary(): Promise<ApplicationSummary> {
+    return apiClient.get<ApplicationSummary>("/dashboard/application-summary");
   },
 };

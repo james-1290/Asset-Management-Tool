@@ -13,7 +13,8 @@ export type WidgetId =
   | "assetsByAge"
   | "unassignedAssets"
   | "valueByLocation"
-  | "certificateExpiries";
+  | "certificateExpiries"
+  | "licenceExpiries";
 
 export interface DashboardPreferences {
   visibleWidgets: WidgetId[];
@@ -36,6 +37,7 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   unassignedAssets: "Unassigned Assets",
   valueByLocation: "Value by Location",
   certificateExpiries: "Certificate Expiries",
+  licenceExpiries: "Licence Expiries",
 };
 
 export const ALL_WIDGET_IDS: WidgetId[] = Object.keys(
@@ -56,6 +58,7 @@ export const WIDGET_MIN_SIZES: Record<WidgetId, { minW: number; minH: number }> 
   unassignedAssets: { minW: 3, minH: 3 },
   valueByLocation: { minW: 4, minH: 4 },
   certificateExpiries: { minW: 3, minH: 3 },
+  licenceExpiries: { minW: 3, minH: 3 },
 };
 
 const DEFAULT_LG_LAYOUT: LayoutItem[] = [
@@ -72,6 +75,7 @@ const DEFAULT_LG_LAYOUT: LayoutItem[] = [
   { i: "unassignedAssets", x: 0, y: 22, w: 6, h: 5 },
   { i: "valueByLocation", x: 6, y: 22, w: 6, h: 5 },
   { i: "certificateExpiries", x: 0, y: 27, w: 6, h: 5 },
+  { i: "licenceExpiries", x: 6, y: 27, w: 6, h: 5 },
 ];
 
 const DEFAULT_MD_LAYOUT: LayoutItem[] = [
@@ -88,6 +92,7 @@ const DEFAULT_MD_LAYOUT: LayoutItem[] = [
   { i: "unassignedAssets", x: 0, y: 42, w: 6, h: 5 },
   { i: "valueByLocation", x: 0, y: 47, w: 6, h: 5 },
   { i: "certificateExpiries", x: 0, y: 52, w: 6, h: 5 },
+  { i: "licenceExpiries", x: 0, y: 57, w: 6, h: 5 },
 ];
 
 const DEFAULT_SM_LAYOUT: LayoutItem[] = ALL_WIDGET_IDS.map((id, index) => ({

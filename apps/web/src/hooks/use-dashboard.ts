@@ -19,6 +19,9 @@ const dashboardKeys = {
   certificateExpiries: (days: number) =>
     ["dashboard", "certificate-expiries", days] as const,
   certificateSummary: ["dashboard", "certificate-summary"] as const,
+  licenceExpiries: (days: number) =>
+    ["dashboard", "licence-expiries", days] as const,
+  applicationSummary: ["dashboard", "application-summary"] as const,
 };
 
 export function useDashboardSummary(enabled: boolean = true) {
@@ -145,6 +148,27 @@ export function useCertificateSummary(enabled: boolean = true) {
   return useQuery({
     queryKey: dashboardKeys.certificateSummary,
     queryFn: dashboardApi.getCertificateSummary,
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
+export function useLicenceExpiries(
+  days: number = 30,
+  enabled: boolean = true
+) {
+  return useQuery({
+    queryKey: dashboardKeys.licenceExpiries(days),
+    queryFn: () => dashboardApi.getLicenceExpiries(days),
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
+export function useApplicationSummary(enabled: boolean = true) {
+  return useQuery({
+    queryKey: dashboardKeys.applicationSummary,
+    queryFn: dashboardApi.getApplicationSummary,
     staleTime: 60_000,
     enabled,
   });

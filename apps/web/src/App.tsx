@@ -7,6 +7,8 @@ import CertificatesPage from "@/pages/certificates"
 import CertificateDetailPage from "@/pages/certificate-detail"
 import CertificateTypesPage from "@/pages/certificate-types"
 import ApplicationsPage from "@/pages/applications"
+import ApplicationDetailPage from "@/pages/application-detail"
+import ApplicationTypesPage from "@/pages/application-types"
 import AssetTypesPage from "@/pages/asset-types"
 import LocationsPage from "@/pages/locations"
 import PeoplePage from "@/pages/people"
@@ -25,6 +27,8 @@ function App() {
           <Route path="/certificates/:id" element={<CertificateDetailPage />} />
           <Route path="/certificate-types" element={<CertificateTypesPage />} />
           <Route path="/applications" element={<ApplicationsPage />} />
+          <Route path="/applications/:id" element={<ApplicationDetailPage />} />
+          <Route path="/application-types" element={<ApplicationTypesPage />} />
           <Route path="/asset-types" element={<AssetTypesPage />} />
           <Route path="/locations" element={<LocationsPage />} />
           <Route path="/people" element={<PeoplePage />} />

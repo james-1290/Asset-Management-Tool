@@ -71,3 +71,20 @@ export interface CertificateSummary {
   pendingRenewal: number;
   revoked: number;
 }
+
+export interface LicenceExpiryItem {
+  id: string;
+  name: string;
+  applicationTypeName: string;
+  expiryDate: string;
+  daysUntilExpiry: number;
+  status: string;
+}
+
+export interface ApplicationSummary {
+  totalApplications: number;
+  active: number;
+  expired: number;
+  pendingRenewal: number;
+  suspended: number;
+}

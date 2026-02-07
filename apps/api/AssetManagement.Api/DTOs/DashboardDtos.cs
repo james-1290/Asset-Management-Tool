@@ -73,3 +73,20 @@ public record CertificateSummaryDto(
     int PendingRenewal,
     int Revoked
 );
+
+public record LicenceExpiryItemDto(
+    Guid Id,
+    string Name,
+    string ApplicationTypeName,
+    DateTime ExpiryDate,
+    int DaysUntilExpiry,
+    string Status
+);
+
+public record ApplicationSummaryDto(
+    int TotalApplications,
+    int Active,
+    int Expired,
+    int PendingRenewal,
+    int Suspended
+);

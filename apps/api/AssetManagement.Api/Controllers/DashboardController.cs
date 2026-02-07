@@ -284,4 +284,58 @@ public class DashboardController(AppDbContext db) : ControllerBase
             StatusCount(CertificateStatus.Revoked)
         ));
     }
+
+    [HttpGet("licence-expiries")]
+    public async Task<ActionResult<List<LicenceExpiryItemDto>>> GetLicenceExpiries(
+        [FromQuery] int days = 30)
+    {
+        var now = DateTime.UtcNow.Date;
+        var cutoff = now.AddDays(days);
+
+        var raw = await db.Applications
+            .Where(a => !a.IsArchived
+                && a.ExpiryDate != null
+                && a.ExpiryDate.Value >= now
+                && a.ExpiryDate.Value <= cutoff)
+            .Include(a => a.ApplicationType)
+            .OrderBy(a => a.ExpiryDate)
+            .Select(a => new {
+                a.Id,
+                a.Name,
+                ApplicationTypeName = a.ApplicationType.Name,
+                ExpiryDate = a.ExpiryDate!.Value,
+                a.Status
+            })
+            .ToListAsync();
+
+        var expiries = raw.Select(a => new LicenceExpiryItemDto(
+            a.Id, a.Name, a.ApplicationTypeName,
+            a.ExpiryDate,
+            (a.ExpiryDate - now).Days,
+            a.Status.ToString()
+        )).ToList();
+
+        return Ok(expiries);
+    }
+
+    [HttpGet("application-summary")]
+    public async Task<ActionResult<ApplicationSummaryDto>> GetApplicationSummary()
+    {
+        var apps = await db.Applications
+            .Where(a => !a.IsArchived)
+            .GroupBy(a => a.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var total = apps.Sum(a => a.Count);
+        int StatusCount(ApplicationStatus s) => apps.FirstOrDefault(a => a.Status == s)?.Count ?? 0;
+
+        return Ok(new ApplicationSummaryDto(
+            total,
+            StatusCount(ApplicationStatus.Active),
+            StatusCount(ApplicationStatus.Expired),
+            StatusCount(ApplicationStatus.PendingRenewal),
+            StatusCount(ApplicationStatus.Suspended)
+        ));
+    }
 }
