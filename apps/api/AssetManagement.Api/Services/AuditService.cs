@@ -64,6 +64,47 @@ public class AuditService(AppDbContext db) : IAuditService
             }
         }
 
+        if (entry.EntityType == "Certificate" && Guid.TryParse(entry.EntityId, out var certificateId))
+        {
+            var certEventType = entry.Action switch
+            {
+                "Created" => CertificateHistoryEventType.Created,
+                "Updated" => CertificateHistoryEventType.Edited,
+                "Archived" => CertificateHistoryEventType.Archived,
+                "Renewed" => CertificateHistoryEventType.Renewed,
+                "Revoked" => CertificateHistoryEventType.Revoked,
+                _ => (CertificateHistoryEventType?)null,
+            };
+
+            if (certEventType is not null)
+            {
+                var certHistory = new CertificateHistory
+                {
+                    Id = Guid.NewGuid(),
+                    CertificateId = certificateId,
+                    EventType = certEventType.Value,
+                    PerformedByUserId = entry.ActorId,
+                    Details = entry.Details,
+                };
+
+                if (entry.Changes is { Count: > 0 })
+                {
+                    foreach (var change in entry.Changes)
+                    {
+                        certHistory.Changes.Add(new CertificateHistoryChange
+                        {
+                            Id = Guid.NewGuid(),
+                            FieldName = change.FieldName,
+                            OldValue = change.OldValue,
+                            NewValue = change.NewValue,
+                        });
+                    }
+                }
+
+                db.CertificateHistory.Add(certHistory);
+            }
+        }
+
         await db.SaveChangesAsync();
     }
 }

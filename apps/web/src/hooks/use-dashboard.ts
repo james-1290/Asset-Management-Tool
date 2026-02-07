@@ -16,6 +16,9 @@ const dashboardKeys = {
   assetsByAge: ["dashboard", "assets-by-age"] as const,
   unassigned: ["dashboard", "unassigned"] as const,
   valueByLocation: ["dashboard", "value-by-location"] as const,
+  certificateExpiries: (days: number) =>
+    ["dashboard", "certificate-expiries", days] as const,
+  certificateSummary: ["dashboard", "certificate-summary"] as const,
 };
 
 export function useDashboardSummary(enabled: boolean = true) {
@@ -121,6 +124,27 @@ export function useValueByLocation(enabled: boolean = true) {
   return useQuery({
     queryKey: dashboardKeys.valueByLocation,
     queryFn: dashboardApi.getValueByLocation,
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
+export function useCertificateExpiries(
+  days: number = 30,
+  enabled: boolean = true
+) {
+  return useQuery({
+    queryKey: dashboardKeys.certificateExpiries(days),
+    queryFn: () => dashboardApi.getCertificateExpiries(days),
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
+export function useCertificateSummary(enabled: boolean = true) {
+  return useQuery({
+    queryKey: dashboardKeys.certificateSummary,
+    queryFn: dashboardApi.getCertificateSummary,
     staleTime: 60_000,
     enabled,
   });

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-02-07 21:25 - Certificates Module (full stack)
+
+- **Backend**: New models — `CertificateType`, `Certificate`, `CertificateHistory`, `CertificateHistoryChange`
+- **Backend**: New enums — `CertificateStatus` (Active, Expired, Revoked, PendingRenewal), `CertificateHistoryEventType`
+- **Backend**: Extended `CustomFieldDefinition` with `CertificateTypeId` for certificate-type-scoped custom fields
+- **Backend**: New `CertificateTypesController` — full CRUD with paging, sorting, search, custom field definitions
+- **Backend**: New `CertificatesController` — full CRUD with paging, sorting, search, status filter, custom field values, change-tracked history
+- **Backend**: `AuditService` extended to create `CertificateHistory` records on Certificate entity changes
+- **Backend**: Dashboard endpoints — `GET /api/v1/dashboard/certificate-expiries?days=30`, `GET /api/v1/dashboard/certificate-summary`
+- **Backend**: DB migration `AddCertificatesModule` applied
+- **Frontend**: Certificate Types page — full CRUD with custom field editor, paging, sorting, search
+- **Frontend**: Certificates page — full CRUD with paging, sorting, search, status filter, form with custom fields
+- **Frontend**: Certificate detail page — info card, custom fields display, history timeline, edit dialog
+- **Frontend**: Certificate Expiries dashboard widget with configurable timeframe
+- **Frontend**: Routes added: `/certificate-types`, `/certificates/:id`
+- **Frontend**: Sidebar nav: added Certificate Types item
+
 ## 2026-02-07 20:01 - Server-side pagination for Locations, Asset Types, People & Audit Logs
 
 - **Backend**: `GET /api/v1/locations` now accepts `page`, `pageSize`, `search`, `sortBy`, `sortDir` query params; returns `PagedResponse<LocationDto>`

@@ -19,6 +19,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CustomFieldDefinition> CustomFieldDefinitions => Set<CustomFieldDefinition>();
     public DbSet<CustomFieldValue> CustomFieldValues => Set<CustomFieldValue>();
     public DbSet<Person> People => Set<Person>();
+    public DbSet<CertificateType> CertificateTypes => Set<CertificateType>();
+    public DbSet<Certificate> Certificates => Set<Certificate>();
+    public DbSet<CertificateHistory> CertificateHistory => Set<CertificateHistory>();
+    public DbSet<CertificateHistoryChange> CertificateHistoryChanges => Set<CertificateHistoryChange>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -162,5 +166,65 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(p => p.LocationId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // CertificateType
+        modelBuilder.Entity<CertificateType>()
+            .HasMany(ct => ct.CustomFieldDefinitions)
+            .WithOne(d => d.CertificateType)
+            .HasForeignKey(d => d.CertificateTypeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Certificate
+        modelBuilder.Entity<Certificate>()
+            .HasOne(c => c.CertificateType)
+            .WithMany(ct => ct.Certificates)
+            .HasForeignKey(c => c.CertificateTypeId);
+
+        modelBuilder.Entity<Certificate>()
+            .HasOne(c => c.Asset)
+            .WithMany()
+            .HasForeignKey(c => c.AssetId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Certificate>()
+            .HasOne(c => c.Person)
+            .WithMany()
+            .HasForeignKey(c => c.PersonId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Certificate>()
+            .HasOne(c => c.Location)
+            .WithMany()
+            .HasForeignKey(c => c.LocationId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // Certificate.CustomFieldValues: polymorphic via EntityId (shared with Asset).
+        // No FK constraint — we ignore the navigation so EF doesn't create a second FK on EntityId.
+        modelBuilder.Entity<Certificate>()
+            .Ignore(c => c.CustomFieldValues);
+
+        modelBuilder.Entity<Certificate>()
+            .Property(c => c.Status)
+            .HasConversion<string>();
+
+        // CertificateHistory
+        modelBuilder.Entity<CertificateHistory>()
+            .HasOne(h => h.Certificate)
+            .WithMany(c => c.History)
+            .HasForeignKey(h => h.CertificateId);
+
+        modelBuilder.Entity<CertificateHistory>()
+            .HasIndex(h => h.CertificateId);
+
+        modelBuilder.Entity<CertificateHistory>()
+            .Property(h => h.EventType)
+            .HasConversion<string>();
+
+        // CertificateHistoryChange
+        modelBuilder.Entity<CertificateHistoryChange>()
+            .HasOne(c => c.CertificateHistory)
+            .WithMany(h => h.Changes)
+            .HasForeignKey(c => c.CertificateHistoryId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

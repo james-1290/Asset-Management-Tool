@@ -230,4 +230,58 @@ public class DashboardController(AppDbContext db) : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpGet("certificate-expiries")]
+    public async Task<ActionResult<List<CertificateExpiryItemDto>>> GetCertificateExpiries(
+        [FromQuery] int days = 30)
+    {
+        var now = DateTime.UtcNow.Date;
+        var cutoff = now.AddDays(days);
+
+        var raw = await db.Certificates
+            .Where(c => !c.IsArchived
+                && c.ExpiryDate != null
+                && c.ExpiryDate.Value >= now
+                && c.ExpiryDate.Value <= cutoff)
+            .Include(c => c.CertificateType)
+            .OrderBy(c => c.ExpiryDate)
+            .Select(c => new {
+                c.Id,
+                c.Name,
+                CertificateTypeName = c.CertificateType.Name,
+                ExpiryDate = c.ExpiryDate!.Value,
+                c.Status
+            })
+            .ToListAsync();
+
+        var expiries = raw.Select(c => new CertificateExpiryItemDto(
+            c.Id, c.Name, c.CertificateTypeName,
+            c.ExpiryDate,
+            (c.ExpiryDate - now).Days,
+            c.Status.ToString()
+        )).ToList();
+
+        return Ok(expiries);
+    }
+
+    [HttpGet("certificate-summary")]
+    public async Task<ActionResult<CertificateSummaryDto>> GetCertificateSummary()
+    {
+        var certs = await db.Certificates
+            .Where(c => !c.IsArchived)
+            .GroupBy(c => c.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var total = certs.Sum(c => c.Count);
+        int StatusCount(CertificateStatus s) => certs.FirstOrDefault(c => c.Status == s)?.Count ?? 0;
+
+        return Ok(new CertificateSummaryDto(
+            total,
+            StatusCount(CertificateStatus.Active),
+            StatusCount(CertificateStatus.Expired),
+            StatusCount(CertificateStatus.PendingRenewal),
+            StatusCount(CertificateStatus.Revoked)
+        ));
+    }
 }

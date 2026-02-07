@@ -54,3 +54,20 @@ export interface ValueByLocation {
   locationName: string;
   totalValue: number;
 }
+
+export interface CertificateExpiryItem {
+  id: string;
+  name: string;
+  certificateTypeName: string;
+  expiryDate: string;
+  daysUntilExpiry: number;
+  status: string;
+}
+
+export interface CertificateSummary {
+  totalCertificates: number;
+  active: number;
+  expired: number;
+  pendingRenewal: number;
+  revoked: number;
+}

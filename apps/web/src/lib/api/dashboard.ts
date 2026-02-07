@@ -9,6 +9,8 @@ import type {
   AssetsByAgeBucket,
   UnassignedAsset,
   ValueByLocation,
+  CertificateExpiryItem,
+  CertificateSummary,
 } from "../../types/dashboard";
 import type { AuditLogEntry } from "../../types/audit-log";
 
@@ -39,8 +41,11 @@ export const dashboardApi = {
     return apiClient.get<CheckedOutAsset[]>("/dashboard/checked-out");
   },
 
-  getRecentActivity(limit: number = 10): Promise<AuditLogEntry[]> {
-    return apiClient.get<AuditLogEntry[]>(`/auditlogs?limit=${limit}`);
+  async getRecentActivity(limit: number = 10): Promise<AuditLogEntry[]> {
+    const result = await apiClient.get<{ items: AuditLogEntry[] }>(
+      `/auditlogs?page=1&pageSize=${limit}&sortBy=timestamp&sortDir=desc`
+    );
+    return result.items;
   },
 
   getRecentlyAdded(limit: number = 5): Promise<RecentlyAddedAsset[]> {
@@ -59,5 +64,15 @@ export const dashboardApi = {
 
   getValueByLocation(): Promise<ValueByLocation[]> {
     return apiClient.get<ValueByLocation[]>("/dashboard/value-by-location");
+  },
+
+  getCertificateExpiries(days: number = 30): Promise<CertificateExpiryItem[]> {
+    return apiClient.get<CertificateExpiryItem[]>(
+      `/dashboard/certificate-expiries?days=${days}`
+    );
+  },
+
+  getCertificateSummary(): Promise<CertificateSummary> {
+    return apiClient.get<CertificateSummary>("/dashboard/certificate-summary");
   },
 };

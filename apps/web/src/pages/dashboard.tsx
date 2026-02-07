@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { StatusBreakdownChart } from "@/components/dashboard/status-breakdown-chart";
 import { WarrantyExpiriesList } from "@/components/dashboard/warranty-expiries-list";
+import { CertificateExpiriesList } from "@/components/dashboard/certificate-expiries-list";
 import { AssetsByTypeChart } from "@/components/dashboard/assets-by-type-chart";
 import { AssetsByLocationChart } from "@/components/dashboard/assets-by-location-chart";
 import { RecentActivityList } from "@/components/dashboard/recent-activity-list";
@@ -32,6 +33,7 @@ import {
   useAssetsByAge,
   useUnassignedAssets,
   useValueByLocation,
+  useCertificateExpiries,
 } from "@/hooks/use-dashboard";
 import { useDashboardPreferences } from "@/hooks/use-dashboard-preferences";
 import { preferencesStore } from "@/lib/dashboard-preferences";
@@ -50,6 +52,7 @@ export default function DashboardPage() {
   const { prefs, isVisible, toggleWidget, updateLayouts } =
     useDashboardPreferences();
   const [warrantyDays, setWarrantyDays] = useState(30);
+  const [certExpiryDays, setCertExpiryDays] = useState(30);
 
   const { width, containerRef } = useContainerWidth();
 
@@ -69,6 +72,10 @@ export default function DashboardPage() {
   const assetsByAge = useAssetsByAge(isVisible("assetsByAge"));
   const unassignedAssets = useUnassignedAssets(isVisible("unassignedAssets"));
   const valueByLocation = useValueByLocation(isVisible("valueByLocation"));
+  const certificateExpiries = useCertificateExpiries(
+    certExpiryDays,
+    isVisible("certificateExpiries")
+  );
 
   // Apply min sizes to all layouts for react-grid-layout constraints
   const layoutsWithMinSizes = useMemo(() => {
@@ -173,6 +180,15 @@ export default function DashboardPage() {
           <ValueByLocationChart
             data={valueByLocation.data}
             isLoading={valueByLocation.isLoading}
+          />
+        );
+      case "certificateExpiries":
+        return (
+          <CertificateExpiriesList
+            data={certificateExpiries.data}
+            isLoading={certificateExpiries.isLoading}
+            days={certExpiryDays}
+            onDaysChange={setCertExpiryDays}
           />
         );
     }
