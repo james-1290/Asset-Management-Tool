@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-02-07 17:49 - Replace @dnd-kit with react-grid-layout for free-form dashboard grid
+
+- **Frontend**: Replaced @dnd-kit (list-based reordering) with react-grid-layout v2 (true free-form grid)
+- Widgets now have explicit `{x, y, w, h}` positions on a 12-column grid
+- Drag widgets to any open cell; other widgets reflow with vertical compaction
+- Resize widgets by dragging edges/corners (per-widget minimum sizes enforced)
+- Responsive breakpoints: lg (12 cols), md (6 cols), sm (1 col)
+- Layout persists to localStorage across sessions
+- All widget components updated with flex sizing to fill their grid cells
+- Removed @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities dependencies
+- Deleted sortable-widget.tsx, replaced with dashboard-widget.tsx wrapper
+- Total Assets and Total Value are now independent widgets (can be resized separately)
+- Warranty Expiries settings icon aligned inline with drag handle
+- Bar charts now use a 10-colour palette instead of monochrome black/primary bars
+
+## 2026-02-07 17:24 - Dashboard reflow, drag-and-drop reordering, 4 new widgets
+
+- **Frontend**: Dashboard grid now reflows — hiding widgets no longer leaves empty gaps (flat single grid replaces paired 2-column rows)
+- **Frontend**: Drag-and-drop widget reordering via @dnd-kit — drag handle appears on hover, order persisted to localStorage
+- **Frontend**: Accessible drag support (pointer + keyboard sensors)
+- **Backend**: 4 new dashboard endpoints: `GET /api/v1/dashboard/recently-added?limit=N`, `assets-by-age`, `unassigned`, `value-by-location`
+- **Frontend**: 4 new widgets — Recently Added (list), Assets by Age (horizontal bar chart), Unassigned Assets (list), Value by Location (bar chart with £ formatting)
+- **Frontend**: New widgets appear in Customize popover and can be toggled/reordered
+- **Frontend**: Existing user preferences auto-merge new widget IDs on load
+- **Dependencies**: Added `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
+
 ## 2026-02-07 17:13 - Dashboard widget polish
 
 - **Frontend**: Status breakdown pie chart — removed segment labels (legend+tooltip remain), clicking a segment navigates to `/assets?status=X`

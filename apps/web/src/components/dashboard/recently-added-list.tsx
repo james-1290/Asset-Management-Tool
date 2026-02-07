@@ -1,18 +1,18 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { CheckedOutAsset } from "@/types/dashboard";
+import type { RecentlyAddedAsset } from "@/types/dashboard";
 
-interface CheckedOutListProps {
-  data: CheckedOutAsset[] | undefined;
+interface RecentlyAddedListProps {
+  data: RecentlyAddedAsset[] | undefined;
   isLoading: boolean;
 }
 
-export function CheckedOutList({ data, isLoading }: CheckedOutListProps) {
+export function RecentlyAddedList({ data, isLoading }: RecentlyAddedListProps) {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle>Checked Out Assets</CardTitle>
+        <CardTitle>Recently Added</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 flex flex-col">
         {isLoading ? (
@@ -23,7 +23,7 @@ export function CheckedOutList({ data, isLoading }: CheckedOutListProps) {
           </div>
         ) : !data || data.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-6">
-            No checked out assets.
+            No assets added yet.
           </p>
         ) : (
           <div className="overflow-y-auto flex-1 space-y-2">
@@ -40,13 +40,11 @@ export function CheckedOutList({ data, isLoading }: CheckedOutListProps) {
                     {asset.name}
                   </Link>
                   <p className="text-xs text-muted-foreground truncate">
-                    {asset.assetTag}
-                    {asset.assignedPersonName &&
-                      ` \u00B7 ${asset.assignedPersonName}`}
+                    {asset.assetTag} &middot; {asset.assetTypeName}
                   </p>
                 </div>
                 <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                  {new Date(asset.updatedAt).toLocaleDateString()}
+                  {new Date(asset.createdAt).toLocaleDateString()}
                 </span>
               </div>
             ))}

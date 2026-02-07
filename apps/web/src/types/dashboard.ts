@@ -29,3 +29,28 @@ export interface CheckedOutAsset {
   assignedPersonName: string | null;
   updatedAt: string;
 }
+
+export interface RecentlyAddedAsset {
+  id: string;
+  name: string;
+  assetTag: string;
+  assetTypeName: string;
+  createdAt: string;
+}
+
+export interface AssetsByAgeBucket {
+  bucket: string;
+  count: number;
+}
+
+export interface UnassignedAsset {
+  id: string;
+  name: string;
+  assetTag: string;
+  assetTypeName: string;
+}
+
+export interface ValueByLocation {
+  locationName: string;
+  totalValue: number;
+}

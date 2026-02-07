@@ -135,4 +135,99 @@ public class DashboardController(AppDbContext db) : ControllerBase
 
         return Ok(assets);
     }
+
+    [HttpGet("recently-added")]
+    public async Task<ActionResult<List<RecentlyAddedAssetDto>>> GetRecentlyAdded(
+        [FromQuery] int limit = 5)
+    {
+        var assets = await db.Assets
+            .Where(a => !a.IsArchived)
+            .OrderByDescending(a => a.CreatedAt)
+            .Take(limit)
+            .Include(a => a.AssetType)
+            .Select(a => new RecentlyAddedAssetDto(
+                a.Id,
+                a.Name,
+                a.AssetTag,
+                a.AssetType.Name,
+                a.CreatedAt))
+            .ToListAsync();
+
+        return Ok(assets);
+    }
+
+    [HttpGet("assets-by-age")]
+    public async Task<ActionResult<List<AssetsByAgeBucketDto>>> GetAssetsByAge()
+    {
+        var now = DateTime.UtcNow;
+
+        var assets = await db.Assets
+            .Where(a => !a.IsArchived && a.PurchaseDate != null)
+            .Select(a => a.PurchaseDate!.Value)
+            .ToListAsync();
+
+        var buckets = new[]
+        {
+            new { Label = "<1 yr", Min = 0, Max = 365 },
+            new { Label = "1–3 yr", Min = 365, Max = 365 * 3 },
+            new { Label = "3–5 yr", Min = 365 * 3, Max = 365 * 5 },
+            new { Label = "5+ yr", Min = 365 * 5, Max = int.MaxValue },
+        };
+
+        var result = buckets.Select(b => new AssetsByAgeBucketDto(
+            b.Label,
+            assets.Count(d => (now - d).TotalDays >= b.Min && (now - d).TotalDays < b.Max)
+        )).ToList();
+
+        return Ok(result);
+    }
+
+    [HttpGet("unassigned")]
+    public async Task<ActionResult<List<UnassignedAssetDto>>> GetUnassigned()
+    {
+        var assets = await db.Assets
+            .Where(a => !a.IsArchived
+                && a.Status == AssetStatus.Available
+                && a.AssignedPersonId == null)
+            .Include(a => a.AssetType)
+            .OrderByDescending(a => a.CreatedAt)
+            .Select(a => new UnassignedAssetDto(
+                a.Id,
+                a.Name,
+                a.AssetTag,
+                a.AssetType.Name))
+            .ToListAsync();
+
+        return Ok(assets);
+    }
+
+    [HttpGet("value-by-location")]
+    public async Task<ActionResult<List<ValueByLocationDto>>> GetValueByLocation()
+    {
+        var groups = await db.Assets
+            .Where(a => !a.IsArchived && a.PurchaseCost != null)
+            .GroupBy(a => a.LocationId)
+            .Select(g => new { LocationId = g.Key, TotalValue = g.Sum(a => a.PurchaseCost!.Value) })
+            .ToListAsync();
+
+        var locationIds = groups
+            .Where(g => g.LocationId != null)
+            .Select(g => g.LocationId!.Value)
+            .ToList();
+
+        var locationNames = await db.Locations
+            .Where(l => locationIds.Contains(l.Id))
+            .ToDictionaryAsync(l => l.Id, l => l.Name);
+
+        var result = groups
+            .Select(g => new ValueByLocationDto(
+                g.LocationId != null
+                    ? locationNames.GetValueOrDefault(g.LocationId.Value, "Unknown")
+                    : "Unassigned",
+                g.TotalValue))
+            .OrderByDescending(g => g.TotalValue)
+            .ToList();
+
+        return Ok(result);
+    }
 }

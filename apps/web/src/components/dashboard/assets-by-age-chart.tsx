@@ -4,42 +4,45 @@ import {
   Cell,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CHART_PALETTE } from "@/lib/chart-colors";
-import type { AssetsByGroupItem } from "@/types/dashboard";
+import type { AssetsByAgeBucket } from "@/types/dashboard";
 
-interface AssetsByTypeChartProps {
-  data: AssetsByGroupItem[] | undefined;
+interface AssetsByAgeChartProps {
+  data: AssetsByAgeBucket[] | undefined;
   isLoading: boolean;
 }
 
-export function AssetsByTypeChart({
-  data,
-  isLoading,
-}: AssetsByTypeChartProps) {
+export function AssetsByAgeChart({ data, isLoading }: AssetsByAgeChartProps) {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle>Assets by Type</CardTitle>
+        <CardTitle>Assets by Age</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 min-h-0">
         {isLoading ? (
           <Skeleton className="h-full w-full" />
         ) : !data || data.length === 0 ? (
-          <p className="text-muted-foreground text-sm text-center py-12">
-            No assets to display.
+          <p className="text-muted-foreground text-sm text-center py-6">
+            No age data available.
           </p>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
-              <XAxis dataKey="label" fontSize={12} tickLine={false} />
-              <YAxis allowDecimals={false} fontSize={12} tickLine={false} />
+            <BarChart
+              data={data}
+              layout="vertical"
+              margin={{ top: 5, right: 20, left: 40, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <XAxis type="number" allowDecimals={false} />
+              <YAxis type="category" dataKey="bucket" width={50} />
               <Tooltip />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                 {data.map((_, i) => (
                   <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />
                 ))}

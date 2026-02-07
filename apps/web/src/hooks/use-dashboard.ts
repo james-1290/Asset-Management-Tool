@@ -11,6 +11,11 @@ const dashboardKeys = {
   checkedOut: ["dashboard", "checked-out"] as const,
   recentActivity: (limit: number) =>
     ["dashboard", "recent-activity", limit] as const,
+  recentlyAdded: (limit: number) =>
+    ["dashboard", "recently-added", limit] as const,
+  assetsByAge: ["dashboard", "assets-by-age"] as const,
+  unassigned: ["dashboard", "unassigned"] as const,
+  valueByLocation: ["dashboard", "value-by-location"] as const,
 };
 
 export function useDashboardSummary(enabled: boolean = true) {
@@ -78,6 +83,45 @@ export function useRecentActivity(
     queryKey: dashboardKeys.recentActivity(limit),
     queryFn: () => dashboardApi.getRecentActivity(limit),
     staleTime: 30_000,
+    enabled,
+  });
+}
+
+export function useRecentlyAdded(
+  limit: number = 5,
+  enabled: boolean = true
+) {
+  return useQuery({
+    queryKey: dashboardKeys.recentlyAdded(limit),
+    queryFn: () => dashboardApi.getRecentlyAdded(limit),
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
+export function useAssetsByAge(enabled: boolean = true) {
+  return useQuery({
+    queryKey: dashboardKeys.assetsByAge,
+    queryFn: dashboardApi.getAssetsByAge,
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
+export function useUnassignedAssets(enabled: boolean = true) {
+  return useQuery({
+    queryKey: dashboardKeys.unassigned,
+    queryFn: dashboardApi.getUnassigned,
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
+export function useValueByLocation(enabled: boolean = true) {
+  return useQuery({
+    queryKey: dashboardKeys.valueByLocation,
+    queryFn: dashboardApi.getValueByLocation,
+    staleTime: 60_000,
     enabled,
   });
 }

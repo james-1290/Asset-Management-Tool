@@ -31,13 +31,13 @@ export function StatusBreakdownChart({
   }
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle>Asset Status Breakdown</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 min-h-0">
         {isLoading ? (
-          <div className="flex items-center justify-center h-[250px]">
+          <div className="flex items-center justify-center h-full">
             <Skeleton className="h-[200px] w-[200px] rounded-full" />
           </div>
         ) : !data || data.length === 0 ? (
@@ -45,7 +45,7 @@ export function StatusBreakdownChart({
             No assets to display.
           </p>
         ) : (
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={data}
