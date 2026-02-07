@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-07 13:39 - Fix date bug + history improvements
+
+- **Bug fix**: Dates now sent with UTC `Z` suffix (e.g. `2025-01-15T00:00:00Z`) — fixes Npgsql rejection of `DateTime(Kind=Unspecified)` for `timestamp with time zone` columns
+- **Field-level change tracking**: Edit history now records exactly which fields changed, with old and new values. New `AssetHistoryChanges` table + `AssetHistoryChange` model.
+- **History timeline shows changes**: "Edited" entries display inline list of changed fields (e.g. `Name: "MacBook" → "MacBook Pro"`)
+- **History limit + View All**: Asset detail sidebar caps history at 5 entries. "View All History" button opens a scrollable dialog with the full timeline.
+- **New endpoint param**: `GET /api/v1/assets/{id}/history?limit=N` — optional limit query parameter
+- **DB migration**: `AddAssetHistoryChanges` — creates `AssetHistoryChanges` table with FK to `AssetHistory`
+
 ## 2026-02-06 23:53 - Asset detail page + date bug fix
 
 - **Bug fix**: Creating/editing assets with dates (Purchase Date, Warranty Expiry) now works — frontend converts `"YYYY-MM-DD"` to `"YYYY-MM-DDT00:00:00"` before sending to API

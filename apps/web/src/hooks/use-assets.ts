@@ -8,7 +8,7 @@ import type {
 const assetKeys = {
   all: ["assets"] as const,
   detail: (id: string) => ["assets", id] as const,
-  history: (id: string) => ["assets", id, "history"] as const,
+  history: (id: string, limit?: number) => ["assets", id, "history", limit] as const,
 };
 
 export function useAssets() {
@@ -26,10 +26,10 @@ export function useAsset(id: string) {
   });
 }
 
-export function useAssetHistory(id: string) {
+export function useAssetHistory(id: string, limit?: number) {
   return useQuery({
-    queryKey: assetKeys.history(id),
-    queryFn: () => assetsApi.getHistory(id),
+    queryKey: assetKeys.history(id, limit),
+    queryFn: () => assetsApi.getHistory(id, limit),
     enabled: !!id,
   });
 }
@@ -54,7 +54,7 @@ export function useUpdateAsset() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
       queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: assetKeys.history(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
     },
   });
 }

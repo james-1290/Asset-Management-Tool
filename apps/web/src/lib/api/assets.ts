@@ -15,8 +15,9 @@ export const assetsApi = {
     return apiClient.get<Asset>(`/assets/${id}`);
   },
 
-  getHistory(id: string): Promise<AssetHistory[]> {
-    return apiClient.get<AssetHistory[]>(`/assets/${id}/history`);
+  getHistory(id: string, limit?: number): Promise<AssetHistory[]> {
+    const params = limit ? `?limit=${limit}` : "";
+    return apiClient.get<AssetHistory[]>(`/assets/${id}/history${params}`);
   },
 
   create(data: CreateAssetRequest): Promise<Asset> {

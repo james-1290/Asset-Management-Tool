@@ -62,13 +62,13 @@ export default function AssetsPage() {
           ? values.assignedPersonId
           : null,
       purchaseDate: values.purchaseDate
-        ? `${values.purchaseDate}T00:00:00`
+        ? `${values.purchaseDate}T00:00:00Z`
         : null,
       purchaseCost: values.purchaseCost
         ? parseFloat(values.purchaseCost)
         : null,
       warrantyExpiryDate: values.warrantyExpiryDate
-        ? `${values.warrantyExpiryDate}T00:00:00`
+        ? `${values.warrantyExpiryDate}T00:00:00Z`
         : null,
       notes: values.notes || null,
     };

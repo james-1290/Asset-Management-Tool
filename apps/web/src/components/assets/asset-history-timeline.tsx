@@ -25,6 +25,10 @@ function formatTimestamp(iso: string): string {
   }).format(date);
 }
 
+function truncate(value: string, max = 30): string {
+  return value.length > max ? value.slice(0, max) + "..." : value;
+}
+
 interface AssetHistoryTimelineProps {
   history: AssetHistory[] | undefined;
   isLoading: boolean;
@@ -76,10 +80,22 @@ export function AssetHistoryTimeline({
               className={`h-[11px] w-[11px] rounded-full mt-1.5 shrink-0 ${config.color}`}
             />
             {/* Content */}
-            <div className="pb-5">
+            <div className="pb-5 min-w-0">
               <p className="text-sm font-medium">{config.label}</p>
               {entry.details && (
                 <p className="text-sm text-muted-foreground">{entry.details}</p>
+              )}
+              {entry.changes && entry.changes.length > 0 && (
+                <ul className="mt-1 space-y-0.5">
+                  {entry.changes.map((change, i) => (
+                    <li key={i} className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground/70">{change.fieldName}:</span>{" "}
+                      {change.oldValue ? truncate(change.oldValue) : "(empty)"}{" "}
+                      <span className="text-foreground/50">&rarr;</span>{" "}
+                      {change.newValue ? truncate(change.newValue) : "(empty)"}
+                    </li>
+                  ))}
+                </ul>
               )}
               <p className="text-xs text-muted-foreground mt-0.5">
                 {formatTimestamp(entry.timestamp)}

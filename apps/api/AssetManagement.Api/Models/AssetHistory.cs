@@ -16,4 +16,6 @@ public class AssetHistory
 
     public string? Details { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    public List<AssetHistoryChange> Changes { get; set; } = [];
 }
