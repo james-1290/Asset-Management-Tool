@@ -27,7 +27,9 @@ import {
 } from "../ui/select";
 import { Button } from "../ui/button";
 import { PersonCombobox } from "../person-combobox";
+import { CustomFieldsSection } from "./custom-fields-section";
 import { assetSchema, type AssetFormValues } from "../../lib/schemas/asset";
+import { useCustomFieldDefinitions } from "../../hooks/use-asset-types";
 import type { Asset } from "../../types/asset";
 import type { AssetType } from "../../types/asset-type";
 import type { Location } from "../../types/location";
@@ -77,12 +79,25 @@ export function AssetFormDialog({
       purchaseCost: "",
       warrantyExpiryDate: "",
       notes: "",
+      customFieldValues: {},
     },
   });
+
+  const watchedAssetTypeId = form.watch("assetTypeId");
+  const { data: customFieldDefs } =
+    useCustomFieldDefinitions(watchedAssetTypeId || undefined);
 
   useEffect(() => {
     if (open) {
       statusManuallySet.current = false;
+
+      const cfValues: Record<string, string> = {};
+      if (asset?.customFieldValues) {
+        for (const v of asset.customFieldValues) {
+          cfValues[v.fieldDefinitionId] = v.value ?? "";
+        }
+      }
+
       form.reset({
         name: asset?.name ?? "",
         assetTag: asset?.assetTag ?? "",
@@ -100,6 +115,7 @@ export function AssetFormDialog({
           ? asset.warrantyExpiryDate.substring(0, 10)
           : "",
         notes: asset?.notes ?? "",
+        customFieldValues: cfValues,
       });
     }
   }, [open, asset, form]);
@@ -125,7 +141,7 @@ export function AssetFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Edit Asset" : "Add Asset"}
@@ -326,6 +342,12 @@ export function AssetFormDialog({
                 )}
               />
             </div>
+
+            {customFieldDefs && customFieldDefs.length > 0 && (
+              <div className="border-t pt-4">
+                <CustomFieldsSection definitions={customFieldDefs} />
+              </div>
+            )}
 
             <FormField
               control={form.control}

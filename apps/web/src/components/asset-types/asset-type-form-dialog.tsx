@@ -18,6 +18,7 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { CustomFieldEditor } from "./custom-field-editor";
 import {
   assetTypeSchema,
   type AssetTypeFormValues,
@@ -46,6 +47,7 @@ export function AssetTypeFormDialog({
     defaultValues: {
       name: "",
       description: "",
+      customFields: [],
     },
   });
 
@@ -54,13 +56,22 @@ export function AssetTypeFormDialog({
       form.reset({
         name: assetType?.name ?? "",
         description: assetType?.description ?? "",
+        customFields:
+          assetType?.customFields?.map((cf, i) => ({
+            id: cf.id,
+            name: cf.name,
+            fieldType: cf.fieldType,
+            options: cf.options ?? "",
+            isRequired: cf.isRequired,
+            sortOrder: cf.sortOrder ?? i,
+          })) ?? [],
       });
     }
   }, [open, assetType, form]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Edit Asset Type" : "Add Asset Type"}
@@ -97,6 +108,11 @@ export function AssetTypeFormDialog({
                 </FormItem>
               )}
             />
+
+            <div className="border-t pt-4">
+              <CustomFieldEditor />
+            </div>
+
             <DialogFooter>
               <Button
                 type="button"

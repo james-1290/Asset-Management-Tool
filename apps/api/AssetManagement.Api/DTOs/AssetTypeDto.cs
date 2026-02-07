@@ -6,15 +6,18 @@ public record AssetTypeDto(
     string? Description,
     bool IsArchived,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    List<CustomFieldDefinitionDto> CustomFields
 );
 
 public record CreateAssetTypeRequest(
     string Name,
-    string? Description
+    string? Description,
+    List<CustomFieldDefinitionInput>? CustomFields
 );
 
 public record UpdateAssetTypeRequest(
     string Name,
-    string? Description
+    string? Description,
+    List<CustomFieldDefinitionInput>? CustomFields
 );

@@ -20,18 +20,12 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             .Include(a => a.AssetType)
             .Include(a => a.Location)
             .Include(a => a.AssignedPerson)
+            .Include(a => a.CustomFieldValues)
+                .ThenInclude(v => v.CustomFieldDefinition)
             .OrderBy(a => a.Name)
-            .Select(a => new AssetDto(
-                a.Id, a.Name, a.AssetTag, a.SerialNumber,
-                a.Status.ToString(),
-                a.AssetTypeId, a.AssetType.Name,
-                a.LocationId, a.Location != null ? a.Location.Name : null,
-                a.AssignedPersonId, a.AssignedPerson != null ? a.AssignedPerson.FullName : null,
-                a.PurchaseDate, a.PurchaseCost, a.WarrantyExpiryDate,
-                a.Notes, a.IsArchived, a.CreatedAt, a.UpdatedAt))
             .ToListAsync();
 
-        return Ok(assets);
+        return Ok(assets.Select(ToDto).ToList());
     }
 
     [HttpGet("{id:guid}")]
@@ -41,6 +35,8 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             .Include(a => a.AssetType)
             .Include(a => a.Location)
             .Include(a => a.AssignedPerson)
+            .Include(a => a.CustomFieldValues)
+                .ThenInclude(v => v.CustomFieldDefinition)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (asset is null) return NotFound();
@@ -102,6 +98,31 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         };
 
         db.Assets.Add(asset);
+
+        // Create custom field values
+        if (request.CustomFieldValues is { Count: > 0 })
+        {
+            var validDefIds = await db.CustomFieldDefinitions
+                .Where(d => d.AssetTypeId == request.AssetTypeId && !d.IsArchived)
+                .Select(d => d.Id)
+                .ToListAsync();
+            var validDefIdSet = validDefIds.ToHashSet();
+
+            foreach (var cfv in request.CustomFieldValues)
+            {
+                if (!validDefIdSet.Contains(cfv.FieldDefinitionId))
+                    return BadRequest(new { error = $"Custom field definition {cfv.FieldDefinitionId} not found for this asset type." });
+
+                db.CustomFieldValues.Add(new CustomFieldValue
+                {
+                    Id = Guid.NewGuid(),
+                    CustomFieldDefinitionId = cfv.FieldDefinitionId,
+                    EntityId = asset.Id,
+                    Value = cfv.Value
+                });
+            }
+        }
+
         await db.SaveChangesAsync();
 
         await audit.LogAsync(new AuditEntry(
@@ -117,6 +138,9 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             await db.Entry(asset).Reference(a => a.Location).LoadAsync();
         if (asset.AssignedPersonId is not null)
             await db.Entry(asset).Reference(a => a.AssignedPerson).LoadAsync();
+        await db.Entry(asset).Collection(a => a.CustomFieldValues).LoadAsync();
+        foreach (var v in asset.CustomFieldValues)
+            await db.Entry(v).Reference(v2 => v2.CustomFieldDefinition).LoadAsync();
 
         return CreatedAtAction(nameof(GetById), new { id = asset.Id }, ToDto(asset));
     }
@@ -128,6 +152,8 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             .Include(a => a.AssetType)
             .Include(a => a.Location)
             .Include(a => a.AssignedPerson)
+            .Include(a => a.CustomFieldValues)
+                .ThenInclude(v => v.CustomFieldDefinition)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (asset is null) return NotFound();
@@ -220,6 +246,52 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         if (newStatus is not null) asset.Status = newStatus.Value;
         asset.UpdatedAt = DateTime.UtcNow;
 
+        // Upsert custom field values
+        if (request.CustomFieldValues is not null)
+        {
+            var existingValues = asset.CustomFieldValues.ToDictionary(v => v.CustomFieldDefinitionId);
+
+            var validDefIds = await db.CustomFieldDefinitions
+                .Where(d => d.AssetTypeId == request.AssetTypeId && !d.IsArchived)
+                .Select(d => d.Id)
+                .ToListAsync();
+            var validDefIdSet = validDefIds.ToHashSet();
+
+            foreach (var cfv in request.CustomFieldValues)
+            {
+                if (!validDefIdSet.Contains(cfv.FieldDefinitionId))
+                    continue;
+
+                if (existingValues.TryGetValue(cfv.FieldDefinitionId, out var existing))
+                {
+                    if (existing.Value != cfv.Value)
+                    {
+                        var defName = existing.CustomFieldDefinition.Name;
+                        changes.Add(new AuditChange($"Custom: {defName}", existing.Value, cfv.Value));
+                        existing.Value = cfv.Value;
+                        existing.UpdatedAt = DateTime.UtcNow;
+                    }
+                }
+                else
+                {
+                    db.CustomFieldValues.Add(new CustomFieldValue
+                    {
+                        Id = Guid.NewGuid(),
+                        CustomFieldDefinitionId = cfv.FieldDefinitionId,
+                        EntityId = asset.Id,
+                        Value = cfv.Value
+                    });
+
+                    var defName = await db.CustomFieldDefinitions
+                        .Where(d => d.Id == cfv.FieldDefinitionId)
+                        .Select(d => d.Name)
+                        .FirstAsync();
+                    if (!string.IsNullOrEmpty(cfv.Value))
+                        changes.Add(new AuditChange($"Custom: {defName}", null, cfv.Value));
+                }
+            }
+        }
+
         await db.SaveChangesAsync();
 
         await audit.LogAsync(new AuditEntry(
@@ -236,6 +308,9 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             await db.Entry(asset).Reference(a => a.Location).LoadAsync();
         if (asset.AssignedPersonId is not null)
             await db.Entry(asset).Reference(a => a.AssignedPerson).LoadAsync();
+        await db.Entry(asset).Collection(a => a.CustomFieldValues).LoadAsync();
+        foreach (var v in asset.CustomFieldValues)
+            await db.Entry(v).Reference(v2 => v2.CustomFieldDefinition).LoadAsync();
 
         return Ok(ToDto(asset));
     }
@@ -275,6 +350,8 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             .Include(a => a.AssetType)
             .Include(a => a.Location)
             .Include(a => a.AssignedPerson)
+            .Include(a => a.CustomFieldValues)
+                .ThenInclude(v => v.CustomFieldDefinition)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (asset is null) return NotFound();
@@ -322,6 +399,8 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
             .Include(a => a.AssetType)
             .Include(a => a.Location)
             .Include(a => a.AssignedPerson)
+            .Include(a => a.CustomFieldValues)
+                .ThenInclude(v => v.CustomFieldDefinition)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (asset is null) return NotFound();
@@ -391,7 +470,15 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         a.LocationId, a.Location?.Name,
         a.AssignedPersonId, a.AssignedPerson?.FullName,
         a.PurchaseDate, a.PurchaseCost, a.WarrantyExpiryDate,
-        a.Notes, a.IsArchived, a.CreatedAt, a.UpdatedAt);
+        a.Notes, a.IsArchived, a.CreatedAt, a.UpdatedAt,
+        a.CustomFieldValues
+            .Where(v => !v.CustomFieldDefinition.IsArchived)
+            .Select(v => new CustomFieldValueDto(
+                v.CustomFieldDefinitionId,
+                v.CustomFieldDefinition.Name,
+                v.CustomFieldDefinition.FieldType.ToString(),
+                v.Value))
+            .ToList());
 
     private static void Track(List<AuditChange> changes, string field, string? oldVal, string? newVal)
     {

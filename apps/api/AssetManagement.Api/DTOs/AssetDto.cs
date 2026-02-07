@@ -18,7 +18,8 @@ public record AssetDto(
     string? Notes,
     bool IsArchived,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    List<CustomFieldValueDto> CustomFieldValues
 );
 
 public record CreateAssetRequest(
@@ -32,7 +33,8 @@ public record CreateAssetRequest(
     DateTime? PurchaseDate,
     decimal? PurchaseCost,
     DateTime? WarrantyExpiryDate,
-    string? Notes
+    string? Notes,
+    List<CustomFieldValueInput>? CustomFieldValues
 );
 
 public record CheckoutAssetRequest(
@@ -55,7 +57,8 @@ public record UpdateAssetRequest(
     DateTime? PurchaseDate,
     decimal? PurchaseCost,
     DateTime? WarrantyExpiryDate,
-    string? Notes
+    string? Notes,
+    List<CustomFieldValueInput>? CustomFieldValues
 );
 
 public record AssetHistoryChangeDto(

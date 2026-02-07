@@ -21,6 +21,7 @@ export const assetSchema = z.object({
     .or(z.literal("")),
   warrantyExpiryDate: z.string().optional().or(z.literal("")),
   notes: z.string().max(2000).optional().or(z.literal("")),
+  customFieldValues: z.record(z.string(), z.string().optional()).optional(),
 });
 
 export type AssetFormValues = z.infer<typeof assetSchema>;

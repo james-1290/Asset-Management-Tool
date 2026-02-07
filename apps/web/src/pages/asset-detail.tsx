@@ -45,6 +45,25 @@ function formatDate(iso: string | null): string | null {
   });
 }
 
+function formatCustomFieldValue(value: string | null, fieldType: string): string | null {
+  if (!value) return null;
+  switch (fieldType) {
+    case "Boolean":
+      return value === "true" ? "Yes" : "No";
+    case "Date":
+      return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    case "MultiSelect": {
+      try {
+        const arr = JSON.parse(value);
+        if (Array.isArray(arr)) return arr.join(", ");
+      } catch { /* fall through */ }
+      return value;
+    }
+    default:
+      return value;
+  }
+}
+
 function formatCurrency(value: number | null): string | null {
   if (value == null) return null;
   return new Intl.NumberFormat("en-GB", {
@@ -74,6 +93,13 @@ export default function AssetDetailPage() {
   function handleFormSubmit(values: AssetFormValues) {
     if (!asset) return;
 
+    const customFieldValues = Object.entries(values.customFieldValues ?? {})
+      .filter(([, v]) => v != null && v !== "" && v !== "__none__")
+      .map(([fieldDefinitionId, value]) => ({
+        fieldDefinitionId,
+        value: value!,
+      }));
+
     const data = {
       name: values.name,
       assetTag: values.assetTag,
@@ -98,6 +124,7 @@ export default function AssetDetailPage() {
         ? `${values.warrantyExpiryDate}T00:00:00Z`
         : null,
       notes: values.notes || null,
+      customFieldValues,
     };
 
     updateMutation.mutate(
@@ -196,6 +223,20 @@ export default function AssetDetailPage() {
               <InfoItem label="Warranty Expiry" value={formatDate(asset.warrantyExpiryDate)} />
               <InfoItem label="Status" value={asset.status} />
             </dl>
+            {asset.customFieldValues && asset.customFieldValues.length > 0 && (
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-sm text-muted-foreground mb-3">Custom Fields</p>
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
+                  {asset.customFieldValues.map((cfv) => (
+                    <InfoItem
+                      key={cfv.fieldDefinitionId}
+                      label={cfv.fieldName}
+                      value={formatCustomFieldValue(cfv.value, cfv.fieldType)}
+                    />
+                  ))}
+                </dl>
+              </div>
+            )}
             {asset.notes && (
               <div className="mt-4 pt-4 border-t">
                 <dt className="text-sm text-muted-foreground">Notes</dt>

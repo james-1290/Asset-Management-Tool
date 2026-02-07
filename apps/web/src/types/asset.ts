@@ -7,6 +7,8 @@ export type AssetStatus =
   | "Sold"
   | "Archived";
 
+import type { CustomFieldValueDto, CustomFieldValueInput } from "./custom-field";
+
 export interface Asset {
   id: string;
   name: string;
@@ -26,6 +28,7 @@ export interface Asset {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+  customFieldValues: CustomFieldValueDto[];
 }
 
 export interface CreateAssetRequest {
@@ -40,6 +43,7 @@ export interface CreateAssetRequest {
   purchaseCost?: number | null;
   warrantyExpiryDate?: string | null;
   notes?: string | null;
+  customFieldValues?: CustomFieldValueInput[];
 }
 
 export interface CheckoutAssetRequest {
@@ -63,4 +67,5 @@ export interface UpdateAssetRequest {
   purchaseCost?: number | null;
   warrantyExpiryDate?: string | null;
   notes?: string | null;
+  customFieldValues?: CustomFieldValueInput[];
 }

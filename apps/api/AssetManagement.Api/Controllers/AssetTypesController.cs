@@ -1,9 +1,11 @@
 using AssetManagement.Api.Data;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
+using AssetManagement.Api.Models.Enums;
 using AssetManagement.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using EntityTypeEnum = AssetManagement.Api.Models.Enums.EntityType;
 
 namespace AssetManagement.Api.Controllers;
 
@@ -16,24 +18,40 @@ public class AssetTypesController(AppDbContext db, IAuditService audit) : Contro
     {
         var types = await db.AssetTypes
             .Where(t => !t.IsArchived)
+            .Include(t => t.CustomFieldDefinitions)
             .OrderBy(t => t.Name)
-            .Select(t => new AssetTypeDto(
-                t.Id, t.Name, t.Description,
-                t.IsArchived, t.CreatedAt, t.UpdatedAt))
             .ToListAsync();
 
-        return Ok(types);
+        var dtos = types.Select(t => ToDto(t)).ToList();
+        return Ok(dtos);
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<AssetTypeDto>> GetById(Guid id)
     {
-        var type = await db.AssetTypes.FindAsync(id);
+        var type = await db.AssetTypes
+            .Include(t => t.CustomFieldDefinitions)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
         if (type is null) return NotFound();
 
-        return Ok(new AssetTypeDto(
-            type.Id, type.Name, type.Description,
-            type.IsArchived, type.CreatedAt, type.UpdatedAt));
+        return Ok(ToDto(type));
+    }
+
+    [HttpGet("{id:guid}/customfields")]
+    public async Task<ActionResult<List<CustomFieldDefinitionDto>>> GetCustomFields(Guid id)
+    {
+        var typeExists = await db.AssetTypes.AnyAsync(t => t.Id == id);
+        if (!typeExists) return NotFound();
+
+        var definitions = await db.CustomFieldDefinitions
+            .Where(d => d.AssetTypeId == id && !d.IsArchived)
+            .OrderBy(d => d.SortOrder)
+            .Select(d => new CustomFieldDefinitionDto(
+                d.Id, d.Name, d.FieldType.ToString(), d.Options, d.IsRequired, d.SortOrder))
+            .ToListAsync();
+
+        return Ok(definitions);
     }
 
     [HttpPost]
@@ -47,6 +65,30 @@ public class AssetTypesController(AppDbContext db, IAuditService audit) : Contro
         };
 
         db.AssetTypes.Add(type);
+
+        // Create custom field definitions
+        if (request.CustomFields is { Count: > 0 })
+        {
+            foreach (var field in request.CustomFields)
+            {
+                if (!Enum.TryParse<CustomFieldType>(field.FieldType, out var fieldType))
+                    return BadRequest(new { error = $"Invalid field type: {field.FieldType}" });
+
+                var definition = new CustomFieldDefinition
+                {
+                    Id = Guid.NewGuid(),
+                    EntityType = EntityTypeEnum.Asset,
+                    AssetTypeId = type.Id,
+                    Name = field.Name,
+                    FieldType = fieldType,
+                    Options = field.Options,
+                    IsRequired = field.IsRequired,
+                    SortOrder = field.SortOrder
+                };
+                db.CustomFieldDefinitions.Add(definition);
+            }
+        }
+
         await db.SaveChangesAsync();
 
         await audit.LogAsync(new AuditEntry(
@@ -54,24 +96,81 @@ public class AssetTypesController(AppDbContext db, IAuditService audit) : Contro
             EntityType: "AssetType",
             EntityId: type.Id.ToString(),
             EntityName: type.Name,
-            Details: $"Created asset type \"{type.Name}\""));
+            Details: $"Created asset type \"{type.Name}\"" +
+                (request.CustomFields is { Count: > 0 } ? $" with {request.CustomFields.Count} custom field(s)" : "")));
 
-        var dto = new AssetTypeDto(
-            type.Id, type.Name, type.Description,
-            type.IsArchived, type.CreatedAt, type.UpdatedAt);
+        // Reload with custom fields
+        await db.Entry(type).Collection(t => t.CustomFieldDefinitions).LoadAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = type.Id }, dto);
+        return CreatedAtAction(nameof(GetById), new { id = type.Id }, ToDto(type));
     }
 
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<AssetTypeDto>> Update(Guid id, UpdateAssetTypeRequest request)
     {
-        var type = await db.AssetTypes.FindAsync(id);
+        var type = await db.AssetTypes
+            .Include(t => t.CustomFieldDefinitions)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
         if (type is null) return NotFound();
 
         type.Name = request.Name;
         type.Description = request.Description;
         type.UpdatedAt = DateTime.UtcNow;
+
+        // Reconcile custom field definitions
+        if (request.CustomFields is not null)
+        {
+            var existing = type.CustomFieldDefinitions.Where(d => !d.IsArchived).ToList();
+            var requestIds = request.CustomFields
+                .Where(f => f.Id.HasValue)
+                .Select(f => f.Id!.Value)
+                .ToHashSet();
+
+            // Archive definitions not in the request
+            foreach (var def in existing)
+            {
+                if (!requestIds.Contains(def.Id))
+                {
+                    def.IsArchived = true;
+                }
+            }
+
+            // Update existing / create new
+            foreach (var field in request.CustomFields)
+            {
+                if (!Enum.TryParse<CustomFieldType>(field.FieldType, out var fieldType))
+                    return BadRequest(new { error = $"Invalid field type: {field.FieldType}" });
+
+                if (field.Id.HasValue)
+                {
+                    var def = existing.FirstOrDefault(d => d.Id == field.Id.Value);
+                    if (def is not null)
+                    {
+                        def.Name = field.Name;
+                        def.FieldType = fieldType;
+                        def.Options = field.Options;
+                        def.IsRequired = field.IsRequired;
+                        def.SortOrder = field.SortOrder;
+                    }
+                }
+                else
+                {
+                    var definition = new CustomFieldDefinition
+                    {
+                        Id = Guid.NewGuid(),
+                        EntityType = EntityTypeEnum.Asset,
+                        AssetTypeId = type.Id,
+                        Name = field.Name,
+                        FieldType = fieldType,
+                        Options = field.Options,
+                        IsRequired = field.IsRequired,
+                        SortOrder = field.SortOrder
+                    };
+                    db.CustomFieldDefinitions.Add(definition);
+                }
+            }
+        }
 
         await db.SaveChangesAsync();
 
@@ -82,9 +181,10 @@ public class AssetTypesController(AppDbContext db, IAuditService audit) : Contro
             EntityName: type.Name,
             Details: $"Updated asset type \"{type.Name}\""));
 
-        return Ok(new AssetTypeDto(
-            type.Id, type.Name, type.Description,
-            type.IsArchived, type.CreatedAt, type.UpdatedAt));
+        // Reload to get fresh state
+        await db.Entry(type).Collection(t => t.CustomFieldDefinitions).LoadAsync();
+
+        return Ok(ToDto(type));
     }
 
     [HttpDelete("{id:guid}")]
@@ -106,4 +206,14 @@ public class AssetTypesController(AppDbContext db, IAuditService audit) : Contro
 
         return NoContent();
     }
+
+    private static AssetTypeDto ToDto(AssetType t) => new(
+        t.Id, t.Name, t.Description,
+        t.IsArchived, t.CreatedAt, t.UpdatedAt,
+        t.CustomFieldDefinitions
+            .Where(d => !d.IsArchived)
+            .OrderBy(d => d.SortOrder)
+            .Select(d => new CustomFieldDefinitionDto(
+                d.Id, d.Name, d.FieldType.ToString(), d.Options, d.IsRequired, d.SortOrder))
+            .ToList());
 }

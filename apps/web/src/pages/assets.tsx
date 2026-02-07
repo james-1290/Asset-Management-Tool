@@ -21,6 +21,8 @@ import { useLocations } from "../hooks/use-locations";
 import type { Asset } from "../types/asset";
 import type { ColumnFiltersState } from "@tanstack/react-table";
 import type { AssetFormValues } from "../lib/schemas/asset";
+import type { CustomFieldDefinition } from "../types/custom-field";
+import type { VisibilityState } from "@tanstack/react-table";
 
 export default function AssetsPage() {
   const [searchParams] = useSearchParams();
@@ -42,6 +44,22 @@ export default function AssetsPage() {
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [archivingAsset, setArchivingAsset] = useState<Asset | null>(null);
 
+  // Gather all unique custom field definitions from loaded asset types
+  const allCustomFieldDefs = useMemo(() => {
+    if (!assetTypes) return [];
+    const seen = new Set<string>();
+    const defs: CustomFieldDefinition[] = [];
+    for (const at of assetTypes) {
+      for (const cf of at.customFields ?? []) {
+        if (!seen.has(cf.id)) {
+          seen.add(cf.id);
+          defs.push(cf);
+        }
+      }
+    }
+    return defs;
+  }, [assetTypes]);
+
   const columns = useMemo(
     () =>
       getAssetColumns({
@@ -52,11 +70,28 @@ export default function AssetsPage() {
         onArchive: (asset) => {
           setArchivingAsset(asset);
         },
+        customFieldDefinitions: allCustomFieldDefs,
       }),
-    [],
+    [allCustomFieldDefs],
   );
 
+  // Hide custom field columns by default
+  const initialColumnVisibility = useMemo<VisibilityState>(() => {
+    const vis: VisibilityState = {};
+    for (const cf of allCustomFieldDefs) {
+      vis[`cf_${cf.id}`] = false;
+    }
+    return vis;
+  }, [allCustomFieldDefs]);
+
   function handleFormSubmit(values: AssetFormValues) {
+    const customFieldValues = Object.entries(values.customFieldValues ?? {})
+      .filter(([, v]) => v != null && v !== "" && v !== "__none__")
+      .map(([fieldDefinitionId, value]) => ({
+        fieldDefinitionId,
+        value: value!,
+      }));
+
     const data = {
       name: values.name,
       assetTag: values.assetTag,
@@ -81,6 +116,7 @@ export default function AssetsPage() {
         ? `${values.warrantyExpiryDate}T00:00:00Z`
         : null,
       notes: values.notes || null,
+      customFieldValues,
     };
 
     if (editingAsset) {
@@ -169,6 +205,7 @@ export default function AssetsPage() {
         columns={columns}
         data={assets ?? []}
         initialColumnFilters={initialColumnFilters}
+        initialColumnVisibility={initialColumnVisibility}
         toolbar={(table) => <AssetsToolbar table={table} />}
       />
 

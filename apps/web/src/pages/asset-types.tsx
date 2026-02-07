@@ -45,9 +45,19 @@ export default function AssetTypesPage() {
   );
 
   function handleFormSubmit(values: AssetTypeFormValues) {
+    const customFields = (values.customFields ?? []).map((cf, i) => ({
+      id: cf.id || undefined,
+      name: cf.name,
+      fieldType: cf.fieldType,
+      options: cf.options || null,
+      isRequired: cf.isRequired,
+      sortOrder: i,
+    }));
+
     const data = {
       name: values.name,
       description: values.description || null,
+      customFields,
     };
 
     if (editingAssetType) {

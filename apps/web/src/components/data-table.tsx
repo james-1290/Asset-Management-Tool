@@ -24,6 +24,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   toolbar?: (table: ReturnType<typeof useReactTable<TData>>) => ReactNode;
   initialColumnFilters?: ColumnFiltersState;
+  initialColumnVisibility?: VisibilityState;
 }
 
 export function DataTable<TData, TValue>({
@@ -31,10 +32,11 @@ export function DataTable<TData, TValue>({
   data,
   toolbar,
   initialColumnFilters,
+  initialColumnVisibility,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialColumnFilters ?? []);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(initialColumnVisibility ?? {});
 
   const table = useReactTable({
     data,

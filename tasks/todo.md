@@ -32,25 +32,27 @@
 - [x] Docker Compose for PostgreSQL
 - [x] .env.example files
 - [x] Documentation (setup, architecture, database, API, UX guidelines)
+- [x] Bug fix: Dates sent with UTC Z suffix for timestamp with time zone columns
+- [x] Field-level change tracking in asset history (AssetHistoryChanges table, old/new values shown inline)
+- [x] Asset history limit + "View All History" dialog on asset detail page
+- [x] Backend: EntityName column on AuditLog (denormalized at write time)
+- [x] Frontend: Audit log UI polish (colour-coded action badges, tooltip on truncated details)
+- [x] Frontend: Assets page reads ?status= URL param and pre-filters DataTable
+- [x] Dashboard: 7 initial widgets (stat cards, status breakdown pie, warranty expiries, assets by type/location, recent activity, checked out)
+- [x] Dashboard: widget customization popover (toggle widgets on/off, persisted to localStorage)
+- [x] Dashboard: clickable pie chart segments → filtered assets page
+- [x] Dashboard: £ icon on Total Value card, warranty timeframe selector (7/14/30/60/90d)
+- [x] Dashboard: 4 additional widgets (Recently Added, Assets by Age, Unassigned Assets, Value by Location)
+- [x] Dashboard: free-form grid via react-grid-layout v2 (drag to any cell, resize by edges, vertical compaction)
+- [x] Dashboard: Total Assets and Total Value as independent resizable widgets
+- [x] Dashboard: colourful 10-colour palette for bar charts
 
 ## Next (MVP)
 
-- [x] Assets CRUD (full endpoint + UI)
-- [x] Locations management UI (wired to API)
-- [x] AssetTypes management UI
-- [x] Audit log recording on all write operations
-- [x] Assign/unassign assets to users
-- [x] People management (CRUD page + API)
-- [x] Migrate asset assignment from User → Person
-- [x] Check-in/check-out workflow
-- [x] Asset history timeline (per-asset)
-- [x] Audit log UI page
 - [ ] Custom fields: define + render in forms
 - [ ] Custom fields: display in DataTable columns
 - [ ] User authentication (basic username/password login)
-- [x] Dashboard: upcoming warranty/cert/licence expiries + full dashboard with widgets
 - [ ] DataTable: server-side pagination, sorting, filtering (client-side sorting/filtering done)
-- [x] DataTable: column visibility toggle
 - [ ] DataTable: saved views per user
 
 ## Later
