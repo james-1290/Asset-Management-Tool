@@ -10,11 +10,11 @@ interface UnassignedAssetsListProps {
 
 export function UnassignedAssetsList({ data, isLoading }: UnassignedAssetsListProps) {
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle>Unassigned Assets</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 min-h-0 flex flex-col">
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -26,7 +26,7 @@ export function UnassignedAssetsList({ data, isLoading }: UnassignedAssetsListPr
             All assets are assigned.
           </p>
         ) : (
-          <div className="max-h-[280px] overflow-y-auto space-y-2">
+          <div className="overflow-y-auto flex-1 space-y-2">
             {data.map((asset) => (
               <div
                 key={asset.id}

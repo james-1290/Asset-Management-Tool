@@ -1,6 +1,7 @@
 import {
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
@@ -8,7 +9,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BAR_CHART_COLOR } from "@/lib/chart-colors";
+import { CHART_PALETTE } from "@/lib/chart-colors";
 import type { AssetsByGroupItem } from "@/types/dashboard";
 
 interface AssetsByTypeChartProps {
@@ -21,24 +22,28 @@ export function AssetsByTypeChart({
   isLoading,
 }: AssetsByTypeChartProps) {
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle>Assets by Type</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 min-h-0">
         {isLoading ? (
-          <Skeleton className="h-[250px] w-full" />
+          <Skeleton className="h-full w-full" />
         ) : !data || data.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-12">
             No assets to display.
           </p>
         ) : (
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data}>
               <XAxis dataKey="label" fontSize={12} tickLine={false} />
               <YAxis allowDecimals={false} fontSize={12} tickLine={false} />
               <Tooltip />
-              <Bar dataKey="count" fill={BAR_CHART_COLOR} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                {data.map((_, i) => (
+                  <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         )}

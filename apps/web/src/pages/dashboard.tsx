@@ -1,19 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import type { DragEndEvent } from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  rectSortingStrategy,
-  sortableKeyboardCoordinates,
-} from "@dnd-kit/sortable";
+  ResponsiveGridLayout,
+  useContainerWidth,
+  verticalCompactor,
+} from "react-grid-layout";
+import type { Layout, ResponsiveLayouts } from "react-grid-layout";
 import { Package, PoundSterling } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -28,7 +19,7 @@ import { AssetsByAgeChart } from "@/components/dashboard/assets-by-age-chart";
 import { UnassignedAssetsList } from "@/components/dashboard/unassigned-assets-list";
 import { ValueByLocationChart } from "@/components/dashboard/value-by-location-chart";
 import { WidgetSettingsPopover } from "@/components/dashboard/widget-settings-popover";
-import { SortableWidget } from "@/components/dashboard/sortable-widget";
+import { DashboardWidget } from "@/components/dashboard/dashboard-widget";
 import {
   useDashboardSummary,
   useStatusBreakdown,
@@ -43,6 +34,7 @@ import {
   useValueByLocation,
 } from "@/hooks/use-dashboard";
 import { useDashboardPreferences } from "@/hooks/use-dashboard-preferences";
+import { preferencesStore } from "@/lib/dashboard-preferences";
 import type { WidgetId } from "@/lib/dashboard-preferences";
 
 function formatCurrency(value: number): string {
@@ -55,11 +47,15 @@ function formatCurrency(value: number): string {
 }
 
 export default function DashboardPage() {
-  const { prefs, isVisible, toggleWidget, reorderWidgets } =
+  const { prefs, isVisible, toggleWidget, updateLayouts } =
     useDashboardPreferences();
   const [warrantyDays, setWarrantyDays] = useState(30);
 
-  const summary = useDashboardSummary(isVisible("summary"));
+  const { width, containerRef } = useContainerWidth();
+
+  const summary = useDashboardSummary(
+    isVisible("totalAssets") || isVisible("totalValue")
+  );
   const statusBreakdown = useStatusBreakdown(isVisible("statusBreakdown"));
   const warrantyExpiries = useWarrantyExpiries(
     warrantyDays,
@@ -74,42 +70,38 @@ export default function DashboardPage() {
   const unassignedAssets = useUnassignedAssets(isVisible("unassignedAssets"));
   const valueByLocation = useValueByLocation(isVisible("valueByLocation"));
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = prefs.visibleWidgets.indexOf(active.id as WidgetId);
-      const newIndex = prefs.visibleWidgets.indexOf(over.id as WidgetId);
-      if (oldIndex !== -1 && newIndex !== -1) {
-        reorderWidgets(arrayMove(prefs.visibleWidgets, oldIndex, newIndex));
-      }
+  // Apply min sizes to all layouts for react-grid-layout constraints
+  const layoutsWithMinSizes = useMemo(() => {
+    const result: ResponsiveLayouts = {};
+    for (const bp of Object.keys(prefs.layouts)) {
+      result[bp] = preferencesStore.applyMinSizes(prefs.layouts[bp] ?? []);
     }
+    return result;
+  }, [prefs.layouts]);
+
+  function handleLayoutChange(_current: Layout, allLayouts: ResponsiveLayouts) {
+    updateLayouts(allLayouts);
   }
 
   function renderWidget(id: WidgetId) {
     switch (id) {
-      case "summary":
+      case "totalAssets":
         return (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <StatCard
-              title="Total Assets"
-              value={summary.data?.totalAssets?.toString() ?? "0"}
-              icon={Package}
-              isLoading={summary.isLoading}
-            />
-            <StatCard
-              title="Total Value"
-              value={formatCurrency(summary.data?.totalValue ?? 0)}
-              icon={PoundSterling}
-              isLoading={summary.isLoading}
-            />
-          </div>
+          <StatCard
+            title="Total Assets"
+            value={summary.data?.totalAssets?.toString() ?? "0"}
+            icon={Package}
+            isLoading={summary.isLoading}
+          />
+        );
+      case "totalValue":
+        return (
+          <StatCard
+            title="Total Value"
+            value={formatCurrency(summary.data?.totalValue ?? 0)}
+            icon={PoundSterling}
+            isLoading={summary.isLoading}
+          />
         );
       case "statusBreakdown":
         return (
@@ -201,25 +193,28 @@ export default function DashboardPage() {
         }
       />
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext items={visibleWidgets} strategy={rectSortingStrategy}>
-          <div className="grid gap-4 lg:grid-cols-2">
+      <div ref={containerRef}>
+        {width > 0 && (
+          <ResponsiveGridLayout
+            width={width}
+            layouts={layoutsWithMinSizes}
+            breakpoints={{ lg: 900, md: 600, sm: 0 }}
+            cols={{ lg: 12, md: 6, sm: 1 }}
+            rowHeight={60}
+            margin={[16, 16]}
+            onLayoutChange={handleLayoutChange}
+            dragConfig={{ enabled: true, handle: ".drag-handle" }}
+            resizeConfig={{ enabled: true }}
+            compactor={verticalCompactor}
+          >
             {visibleWidgets.map((id) => (
-              <SortableWidget
-                key={id}
-                id={id}
-                className={id === "summary" ? "lg:col-span-2" : ""}
-              >
-                {renderWidget(id)}
-              </SortableWidget>
+              <div key={id}>
+                <DashboardWidget>{renderWidget(id)}</DashboardWidget>
+              </div>
             ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+          </ResponsiveGridLayout>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import {
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -9,6 +10,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CHART_PALETTE } from "@/lib/chart-colors";
 import type { AssetsByAgeBucket } from "@/types/dashboard";
 
 interface AssetsByAgeChartProps {
@@ -18,19 +20,19 @@ interface AssetsByAgeChartProps {
 
 export function AssetsByAgeChart({ data, isLoading }: AssetsByAgeChartProps) {
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle>Assets by Age</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 min-h-0">
         {isLoading ? (
-          <Skeleton className="h-[250px] w-full" />
+          <Skeleton className="h-full w-full" />
         ) : !data || data.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-6">
             No age data available.
           </p>
         ) : (
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
               layout="vertical"
@@ -40,7 +42,11 @@ export function AssetsByAgeChart({ data, isLoading }: AssetsByAgeChartProps) {
               <XAxis type="number" allowDecimals={false} />
               <YAxis type="category" dataKey="bucket" width={50} />
               <Tooltip />
-              <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                {data.map((_, i) => (
+                  <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         )}

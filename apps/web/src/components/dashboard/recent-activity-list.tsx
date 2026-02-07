@@ -22,11 +22,11 @@ export function RecentActivityList({
   isLoading,
 }: RecentActivityListProps) {
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle>Recent Activity</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 min-h-0 flex flex-col">
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -38,7 +38,7 @@ export function RecentActivityList({
             No recent activity.
           </p>
         ) : (
-          <div className="max-h-[320px] overflow-y-auto space-y-2">
+          <div className="overflow-y-auto flex-1 space-y-2">
             {data.map((entry) => {
               const colorClass = actionBadgeClasses[entry.action];
               return (

@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-02-07 17:49 - Replace @dnd-kit with react-grid-layout for free-form dashboard grid
+
+- **Frontend**: Replaced @dnd-kit (list-based reordering) with react-grid-layout v2 (true free-form grid)
+- Widgets now have explicit `{x, y, w, h}` positions on a 12-column grid
+- Drag widgets to any open cell; other widgets reflow with vertical compaction
+- Resize widgets by dragging edges/corners (per-widget minimum sizes enforced)
+- Responsive breakpoints: lg (12 cols), md (6 cols), sm (1 col)
+- Layout persists to localStorage across sessions
+- All widget components updated with flex sizing to fill their grid cells
+- Removed @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities dependencies
+- Deleted sortable-widget.tsx, replaced with dashboard-widget.tsx wrapper
+- Total Assets and Total Value are now independent widgets (can be resized separately)
+- Warranty Expiries settings icon aligned inline with drag handle
+- Bar charts now use a 10-colour palette instead of monochrome black/primary bars
+
 ## 2026-02-07 17:24 - Dashboard reflow, drag-and-drop reordering, 4 new widgets
 
 - **Frontend**: Dashboard grid now reflows — hiding widgets no longer leaves empty gaps (flat single grid replaces paired 2-column rows)
