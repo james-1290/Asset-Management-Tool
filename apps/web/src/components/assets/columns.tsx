@@ -141,6 +141,7 @@ export function getAssetColumns({
 
   const actionsColumn: ColumnDef<Asset, unknown> = {
     id: "actions",
+    enableHiding: false,
     cell: ({ row }) => {
       const asset = row.original;
       return (

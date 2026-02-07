@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-02-07 19:12 - Column visibility toggle for DataTable
+
+- **Frontend**: New reusable `<ColumnToggle>` component — dropdown with checkboxes to show/hide columns
+- **Frontend**: Added to assets toolbar; custom field columns (hidden by default) can now be toggled visible
+- **Frontend**: Actions column marked as non-hideable
+
 ## 2026-02-07 18:41 - Custom Fields (define per asset type, render in forms, DataTable columns)
 
 - **Backend**: New DTOs (`CustomFieldDto.cs`), endpoints for custom field CRUD

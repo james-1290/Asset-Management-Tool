@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import type { Asset } from "../../types/asset";
+import { ColumnToggle } from "../column-toggle";
 
 interface AssetsToolbarProps {
   table: Table<Asset>;
@@ -64,6 +65,7 @@ export function AssetsToolbar({ table }: AssetsToolbarProps) {
           ))}
         </SelectContent>
       </Select>
+      <ColumnToggle table={table} />
     </div>
   );
 }
