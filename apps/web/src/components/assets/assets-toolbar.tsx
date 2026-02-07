@@ -1,4 +1,3 @@
-import { useSearchParams } from "react-router-dom";
 import type { Table } from "@tanstack/react-table";
 import { Input } from "../ui/input";
 import {
@@ -13,6 +12,10 @@ import { ColumnToggle } from "../column-toggle";
 
 interface AssetsToolbarProps {
   table: Table<Asset>;
+  search: string;
+  onSearchChange: (value: string) => void;
+  status: string;
+  onStatusChange: (value: string) => void;
 }
 
 const STATUS_OPTIONS = [
@@ -24,35 +27,22 @@ const STATUS_OPTIONS = [
   { value: "Sold", label: "Sold" },
 ] as const;
 
-export function AssetsToolbar({ table }: AssetsToolbarProps) {
-  const [, setSearchParams] = useSearchParams();
-  const statusFilter = (table.getColumn("status")?.getFilterValue() as string) ?? "";
-
-  function handleStatusChange(value: string) {
-    if (value === "all") {
-      table.getColumn("status")?.setFilterValue(undefined);
-      setSearchParams((prev) => {
-        prev.delete("status");
-        return prev;
-      });
-    } else {
-      table.getColumn("status")?.setFilterValue(value);
-      setSearchParams((prev) => {
-        prev.set("status", value);
-        return prev;
-      });
-    }
-  }
-
+export function AssetsToolbar({
+  table,
+  search,
+  onSearchChange,
+  status,
+  onStatusChange,
+}: AssetsToolbarProps) {
   return (
     <div className="flex items-center gap-2">
       <Input
-        placeholder="Filter by name…"
-        value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-        onChange={(e) => table.getColumn("name")?.setFilterValue(e.target.value)}
+        placeholder="Search assets…"
+        value={search}
+        onChange={(e) => onSearchChange(e.target.value)}
         className="max-w-sm"
       />
-      <Select value={statusFilter || "all"} onValueChange={handleStatusChange}>
+      <Select value={status || "all"} onValueChange={onStatusChange}>
         <SelectTrigger className="w-[160px]">
           <SelectValue placeholder="All statuses" />
         </SelectTrigger>

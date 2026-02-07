@@ -5,6 +5,7 @@ import {
   keepPreviousData,
 } from "@tanstack/react-query";
 import { peopleApi } from "../lib/api/people";
+import type { PersonQueryParams } from "../lib/api/people";
 import type {
   CreatePersonRequest,
   UpdatePersonRequest,
@@ -12,6 +13,7 @@ import type {
 
 const personKeys = {
   all: ["people"] as const,
+  paged: (params: PersonQueryParams) => ["people", "paged", params] as const,
   detail: (id: string) => ["people", id] as const,
   search: (q: string) => ["people", "search", q] as const,
 };
@@ -20,6 +22,14 @@ export function usePeople() {
   return useQuery({
     queryKey: personKeys.all,
     queryFn: peopleApi.getAll,
+  });
+}
+
+export function usePagedPeople(params: PersonQueryParams) {
+  return useQuery({
+    queryKey: personKeys.paged(params),
+    queryFn: () => peopleApi.getPaged(params),
+    placeholderData: keepPreviousData,
   });
 }
 

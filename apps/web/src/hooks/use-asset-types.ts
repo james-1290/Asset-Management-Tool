@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { assetTypesApi } from "../lib/api/asset-types";
+import type { AssetTypeQueryParams } from "../lib/api/asset-types";
 import type {
   CreateAssetTypeRequest,
   UpdateAssetTypeRequest,
@@ -7,6 +8,7 @@ import type {
 
 const assetTypeKeys = {
   all: ["assetTypes"] as const,
+  paged: (params: AssetTypeQueryParams) => ["assetTypes", "paged", params] as const,
   detail: (id: string) => ["assetTypes", id] as const,
   customFields: (id: string) => ["assetTypes", id, "customFields"] as const,
 };
@@ -15,6 +17,14 @@ export function useAssetTypes() {
   return useQuery({
     queryKey: assetTypeKeys.all,
     queryFn: assetTypesApi.getAll,
+  });
+}
+
+export function usePagedAssetTypes(params: AssetTypeQueryParams) {
+  return useQuery({
+    queryKey: assetTypeKeys.paged(params),
+    queryFn: () => assetTypesApi.getPaged(params),
+    placeholderData: keepPreviousData,
   });
 }
 

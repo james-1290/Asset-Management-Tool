@@ -1,16 +1,19 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import type { SortingState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
+import { DataTablePagination } from "../components/data-table-pagination";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import { PersonFormDialog } from "../components/people/person-form-dialog";
 import { PeopleToolbar } from "../components/people/people-toolbar";
 import { getPersonColumns } from "../components/people/columns";
 import {
-  usePeople,
+  usePagedPeople,
   useCreatePerson,
   useUpdatePerson,
   useArchivePerson,
@@ -19,8 +22,61 @@ import { useLocations } from "../hooks/use-locations";
 import type { Person } from "../types/person";
 import type { PersonFormValues } from "../lib/schemas/person";
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  fullName: "fullname",
+  email: "email",
+  department: "department",
+  jobTitle: "jobtitle",
+  locationName: "locationname",
+  createdAt: "createdAt",
+};
+
 export default function PeoplePage() {
-  const { data: people, isLoading, isError } = usePeople();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = Number(searchParams.get("page")) || 1;
+  const pageSize = Number(searchParams.get("pageSize")) || 25;
+  const searchParam = searchParams.get("search") ?? "";
+  const sortByParam = searchParams.get("sortBy") ?? "fullname";
+  const sortDirParam = searchParams.get("sortDir") ?? "asc";
+
+  const [searchInput, setSearchInput] = useState(searchParam);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearchParams((prev) => {
+        if (searchInput) {
+          prev.set("search", searchInput);
+        } else {
+          prev.delete("search");
+        }
+        prev.set("page", "1");
+        return prev;
+      });
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchInput, setSearchParams]);
+
+  useEffect(() => {
+    setSearchInput(searchParam);
+  }, [searchParam]);
+
+  const queryParams = useMemo(
+    () => ({
+      page,
+      pageSize,
+      search: searchParam || undefined,
+      sortBy: sortByParam,
+      sortDir: sortDirParam,
+    }),
+    [page, pageSize, searchParam, sortByParam, sortDirParam],
+  );
+
+  const { data: pagedResult, isLoading, isError } = usePagedPeople(queryParams);
   const { data: locations } = useLocations();
   const createMutation = useCreatePerson();
   const updateMutation = useUpdatePerson();
@@ -42,6 +98,55 @@ export default function PeoplePage() {
         },
       }),
     [],
+  );
+
+  const sorting: SortingState = useMemo(
+    () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
+    [sortByParam, sortDirParam],
+  );
+
+  const handleSortingChange = useCallback(
+    (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
+      const newSorting =
+        typeof updaterOrValue === "function"
+          ? updaterOrValue(sorting)
+          : updaterOrValue;
+      setSearchParams((prev) => {
+        if (newSorting.length > 0) {
+          const col = newSorting[0];
+          const backendField = SORT_FIELD_MAP[col.id] ?? col.id;
+          prev.set("sortBy", backendField);
+          prev.set("sortDir", col.desc ? "desc" : "asc");
+        } else {
+          prev.delete("sortBy");
+          prev.delete("sortDir");
+        }
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [sorting, setSearchParams],
+  );
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setSearchParams((prev) => {
+        prev.set("page", String(newPage));
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const handlePageSizeChange = useCallback(
+    (newPageSize: number) => {
+      setSearchParams((prev) => {
+        prev.set("pageSize", String(newPageSize));
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
   );
 
   function handleFormSubmit(values: PersonFormValues) {
@@ -120,6 +225,9 @@ export default function PeoplePage() {
     );
   }
 
+  const totalCount = pagedResult?.totalCount ?? 0;
+  const pageCount = Math.max(1, Math.ceil(totalCount / pageSize));
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -140,8 +248,29 @@ export default function PeoplePage() {
 
       <DataTable
         columns={columns}
-        data={people ?? []}
-        toolbar={(table) => <PeopleToolbar table={table} />}
+        data={pagedResult?.items ?? []}
+        manualPagination
+        manualSorting
+        pageCount={pageCount}
+        rowCount={totalCount}
+        sorting={sorting}
+        onSortingChange={handleSortingChange}
+        toolbar={(table) => (
+          <PeopleToolbar
+            table={table}
+            search={searchInput}
+            onSearchChange={setSearchInput}
+          />
+        )}
+        paginationControls={
+          <DataTablePagination
+            page={page}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        }
       />
 
       <PersonFormDialog

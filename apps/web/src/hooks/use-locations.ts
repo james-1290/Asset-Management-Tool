@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { locationsApi } from "../lib/api/locations";
+import type { LocationQueryParams } from "../lib/api/locations";
 import type {
   CreateLocationRequest,
   UpdateLocationRequest,
@@ -7,6 +8,7 @@ import type {
 
 const locationKeys = {
   all: ["locations"] as const,
+  paged: (params: LocationQueryParams) => ["locations", "paged", params] as const,
   detail: (id: string) => ["locations", id] as const,
 };
 
@@ -14,6 +16,14 @@ export function useLocations() {
   return useQuery({
     queryKey: locationKeys.all,
     queryFn: locationsApi.getAll,
+  });
+}
+
+export function usePagedLocations(params: LocationQueryParams) {
+  return useQuery({
+    queryKey: locationKeys.paged(params),
+    queryFn: () => locationsApi.getPaged(params),
+    placeholderData: keepPreviousData,
   });
 }
 

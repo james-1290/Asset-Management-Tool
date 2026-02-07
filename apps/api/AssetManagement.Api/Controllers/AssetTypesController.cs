@@ -14,16 +14,48 @@ namespace AssetManagement.Api.Controllers;
 public class AssetTypesController(AppDbContext db, IAuditService audit) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<AssetTypeDto>>> GetAll()
+    public async Task<ActionResult<PagedResponse<AssetTypeDto>>> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 25,
+        [FromQuery] string? search = null,
+        [FromQuery] string sortBy = "name",
+        [FromQuery] string sortDir = "asc")
     {
-        var types = await db.AssetTypes
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = db.AssetTypes
             .Where(t => !t.IsArchived)
             .Include(t => t.CustomFieldDefinitions)
-            .OrderBy(t => t.Name)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(t => EF.Functions.ILike(t.Name, $"%{search}%"));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        query = sortBy.ToLowerInvariant() switch
+        {
+            "description" => desc ? query.OrderByDescending(t => t.Description) : query.OrderBy(t => t.Description),
+            "createdat" => desc ? query.OrderByDescending(t => t.CreatedAt) : query.OrderBy(t => t.CreatedAt),
+            _ => desc ? query.OrderByDescending(t => t.Name) : query.OrderBy(t => t.Name),
+        };
+
+        var types = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        var dtos = types.Select(t => ToDto(t)).ToList();
-        return Ok(dtos);
+        var result = new PagedResponse<AssetTypeDto>(
+            types.Select(t => ToDto(t)).ToList(),
+            page,
+            pageSize,
+            totalCount);
+
+        return Ok(result);
     }
 
     [HttpGet("{id:guid}")]

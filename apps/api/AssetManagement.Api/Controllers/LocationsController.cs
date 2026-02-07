@@ -12,17 +12,46 @@ namespace AssetManagement.Api.Controllers;
 public class LocationsController(AppDbContext db, IAuditService audit) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<LocationDto>>> GetAll()
+    public async Task<ActionResult<PagedResponse<LocationDto>>> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 25,
+        [FromQuery] string? search = null,
+        [FromQuery] string sortBy = "name",
+        [FromQuery] string sortDir = "asc")
     {
-        var locations = await db.Locations
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = db.Locations
             .Where(l => !l.IsArchived)
-            .OrderBy(l => l.Name)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(l => EF.Functions.ILike(l.Name, $"%{search}%"));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        query = sortBy.ToLowerInvariant() switch
+        {
+            "address" => desc ? query.OrderByDescending(l => l.Address) : query.OrderBy(l => l.Address),
+            "city" => desc ? query.OrderByDescending(l => l.City) : query.OrderBy(l => l.City),
+            "country" => desc ? query.OrderByDescending(l => l.Country) : query.OrderBy(l => l.Country),
+            "createdat" => desc ? query.OrderByDescending(l => l.CreatedAt) : query.OrderBy(l => l.CreatedAt),
+            _ => desc ? query.OrderByDescending(l => l.Name) : query.OrderBy(l => l.Name),
+        };
+
+        var locations = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(l => new LocationDto(
                 l.Id, l.Name, l.Address, l.City, l.Country,
                 l.IsArchived, l.CreatedAt, l.UpdatedAt))
             .ToListAsync();
 
-        return Ok(locations);
+        return Ok(new PagedResponse<LocationDto>(locations, page, pageSize, totalCount));
     }
 
     [HttpGet("{id:guid}")]

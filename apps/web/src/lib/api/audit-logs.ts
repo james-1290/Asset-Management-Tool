@@ -1,19 +1,19 @@
 import { apiClient } from "../api-client";
 import type { AuditLogEntry } from "../../types/audit-log";
+import type { PagedResponse } from "../../types/paged-response";
 
-export interface AuditLogParams {
+export interface AuditLogQueryParams {
+  page?: number;
+  pageSize?: number;
   entityType?: string;
   action?: string;
   search?: string;
+  sortBy?: string;
+  sortDir?: string;
 }
 
 export const auditLogsApi = {
-  getAll(params?: AuditLogParams): Promise<AuditLogEntry[]> {
-    const searchParams = new URLSearchParams();
-    if (params?.entityType) searchParams.set("entityType", params.entityType);
-    if (params?.action) searchParams.set("action", params.action);
-    if (params?.search) searchParams.set("search", params.search);
-    const qs = searchParams.toString();
-    return apiClient.get<AuditLogEntry[]>(`/auditlogs${qs ? `?${qs}` : ""}`);
+  getPaged(params: AuditLogQueryParams): Promise<PagedResponse<AuditLogEntry>> {
+    return apiClient.get<PagedResponse<AuditLogEntry>>("/auditlogs", params as Record<string, string | number | undefined>);
   },
 };

@@ -4,10 +4,25 @@ import type {
   CreateLocationRequest,
   UpdateLocationRequest,
 } from "../../types/location";
+import type { PagedResponse } from "../../types/paged-response";
+
+export interface LocationQueryParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  sortBy?: string;
+  sortDir?: string;
+}
 
 export const locationsApi = {
   getAll(): Promise<Location[]> {
-    return apiClient.get<Location[]>("/locations");
+    return apiClient
+      .get<PagedResponse<Location>>("/locations", { pageSize: 1000 })
+      .then((r) => r.items);
+  },
+
+  getPaged(params: LocationQueryParams): Promise<PagedResponse<Location>> {
+    return apiClient.get<PagedResponse<Location>>("/locations", params as Record<string, string | number | undefined>);
   },
 
   getById(id: string): Promise<Location> {

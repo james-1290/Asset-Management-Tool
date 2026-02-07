@@ -5,10 +5,25 @@ import type {
   UpdateAssetTypeRequest,
 } from "../../types/asset-type";
 import type { CustomFieldDefinition } from "../../types/custom-field";
+import type { PagedResponse } from "../../types/paged-response";
+
+export interface AssetTypeQueryParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  sortBy?: string;
+  sortDir?: string;
+}
 
 export const assetTypesApi = {
   getAll(): Promise<AssetType[]> {
-    return apiClient.get<AssetType[]>("/assettypes");
+    return apiClient
+      .get<PagedResponse<AssetType>>("/assettypes", { pageSize: 1000 })
+      .then((r) => r.items);
+  },
+
+  getPaged(params: AssetTypeQueryParams): Promise<PagedResponse<AssetType>> {
+    return apiClient.get<PagedResponse<AssetType>>("/assettypes", params as Record<string, string | number | undefined>);
   },
 
   getById(id: string): Promise<AssetType> {

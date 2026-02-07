@@ -30,8 +30,19 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export const apiClient = {
-  get<T>(path: string): Promise<T> {
-    return fetch(`${BASE_URL}${path}`).then(handleResponse<T>);
+  get<T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> {
+    let url = `${BASE_URL}${path}`;
+    if (params) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== "") {
+          searchParams.set(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      if (qs) url += `?${qs}`;
+    }
+    return fetch(url).then(handleResponse<T>);
   },
 
   post<T>(path: string, body: unknown): Promise<T> {

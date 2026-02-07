@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { assetsApi } from "../lib/api/assets";
+import type { AssetQueryParams } from "../lib/api/assets";
 import type {
   CreateAssetRequest,
   UpdateAssetRequest,
@@ -9,6 +10,7 @@ import type {
 
 const assetKeys = {
   all: ["assets"] as const,
+  paged: (params: AssetQueryParams) => ["assets", "paged", params] as const,
   detail: (id: string) => ["assets", id] as const,
   history: (id: string, limit?: number) => ["assets", id, "history", limit] as const,
 };
@@ -17,6 +19,14 @@ export function useAssets() {
   return useQuery({
     queryKey: assetKeys.all,
     queryFn: assetsApi.getAll,
+  });
+}
+
+export function usePagedAssets(params: AssetQueryParams) {
+  return useQuery({
+    queryKey: assetKeys.paged(params),
+    queryFn: () => assetsApi.getPaged(params),
+    placeholderData: keepPreviousData,
   });
 }
 
