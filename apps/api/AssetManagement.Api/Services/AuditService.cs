@@ -29,6 +29,8 @@ public class AuditService(AppDbContext db) : IAuditService
                 "Created" => AssetHistoryEventType.Created,
                 "Updated" => AssetHistoryEventType.Edited,
                 "Archived" => AssetHistoryEventType.Archived,
+                "CheckedOut" => AssetHistoryEventType.CheckedOut,
+                "CheckedIn" => AssetHistoryEventType.CheckedIn,
                 _ => (AssetHistoryEventType?)null,
             };
 

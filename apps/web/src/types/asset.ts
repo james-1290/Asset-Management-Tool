@@ -42,6 +42,15 @@ export interface CreateAssetRequest {
   notes?: string | null;
 }
 
+export interface CheckoutAssetRequest {
+  personId: string;
+  notes?: string | null;
+}
+
+export interface CheckinAssetRequest {
+  notes?: string | null;
+}
+
 export interface UpdateAssetRequest {
   name: string;
   assetTag: string;

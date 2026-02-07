@@ -35,6 +35,15 @@ public record CreateAssetRequest(
     string? Notes
 );
 
+public record CheckoutAssetRequest(
+    Guid PersonId,
+    string? Notes
+);
+
+public record CheckinAssetRequest(
+    string? Notes
+);
+
 public record UpdateAssetRequest(
     string Name,
     string AssetTag,

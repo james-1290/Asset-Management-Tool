@@ -266,6 +266,100 @@ public class AssetsController(AppDbContext db, IAuditService audit) : Controller
         return Ok(history);
     }
 
+    [HttpPost("{id:guid}/checkout")]
+    public async Task<ActionResult<AssetDto>> Checkout(Guid id, CheckoutAssetRequest request)
+    {
+        var asset = await db.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Location)
+            .Include(a => a.AssignedPerson)
+            .FirstOrDefaultAsync(a => a.Id == id);
+
+        if (asset is null) return NotFound();
+        if (asset.IsArchived) return BadRequest(new { error = "Cannot check out an archived asset." });
+
+        if (asset.Status != AssetStatus.Available && asset.Status != AssetStatus.Assigned)
+            return BadRequest(new { error = $"Asset must be Available or Assigned to check out. Current status: {asset.Status}" });
+
+        var person = await db.People.FirstOrDefaultAsync(p => p.Id == request.PersonId && !p.IsArchived);
+        if (person is null) return BadRequest(new { error = "Person not found." });
+
+        var changes = new List<AuditChange>();
+        changes.Add(new AuditChange("Status", asset.Status.ToString(), AssetStatus.CheckedOut.ToString()));
+
+        var oldPersonName = asset.AssignedPerson?.FullName;
+        if (asset.AssignedPersonId != request.PersonId)
+            changes.Add(new AuditChange("Assigned To", oldPersonName, person.FullName));
+
+        asset.Status = AssetStatus.CheckedOut;
+        asset.AssignedPersonId = request.PersonId;
+        asset.UpdatedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync();
+
+        await audit.LogAsync(new AuditEntry(
+            Action: "CheckedOut",
+            EntityType: "Asset",
+            EntityId: asset.Id.ToString(),
+            Details: $"Checked out \"{asset.Name}\" to {person.FullName}" + (request.Notes is not null ? $" — {request.Notes}" : ""),
+            Changes: changes));
+
+        await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
+        if (asset.LocationId is not null)
+            await db.Entry(asset).Reference(a => a.Location).LoadAsync();
+        await db.Entry(asset).Reference(a => a.AssignedPerson).LoadAsync();
+
+        return Ok(ToDto(asset));
+    }
+
+    [HttpPost("{id:guid}/checkin")]
+    public async Task<ActionResult<AssetDto>> Checkin(Guid id, CheckinAssetRequest request)
+    {
+        var asset = await db.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Location)
+            .Include(a => a.AssignedPerson)
+            .FirstOrDefaultAsync(a => a.Id == id);
+
+        if (asset is null) return NotFound();
+        if (asset.IsArchived) return BadRequest(new { error = "Cannot check in an archived asset." });
+
+        if (asset.Status != AssetStatus.CheckedOut)
+            return BadRequest(new { error = $"Asset must be CheckedOut to check in. Current status: {asset.Status}" });
+
+        var changes = new List<AuditChange>();
+        changes.Add(new AuditChange("Status", asset.Status.ToString(), AssetStatus.Available.ToString()));
+
+        var oldPersonName = asset.AssignedPerson?.FullName;
+        if (oldPersonName is not null)
+            changes.Add(new AuditChange("Assigned To", oldPersonName, null));
+
+        var detailParts = $"Checked in \"{asset.Name}\"";
+        if (oldPersonName is not null)
+            detailParts += $" from {oldPersonName}";
+        if (request.Notes is not null)
+            detailParts += $" — {request.Notes}";
+
+        asset.Status = AssetStatus.Available;
+        asset.AssignedPersonId = null;
+        asset.UpdatedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync();
+
+        await audit.LogAsync(new AuditEntry(
+            Action: "CheckedIn",
+            EntityType: "Asset",
+            EntityId: asset.Id.ToString(),
+            Details: detailParts,
+            Changes: changes));
+
+        await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
+        if (asset.LocationId is not null)
+            await db.Entry(asset).Reference(a => a.Location).LoadAsync();
+
+        return Ok(ToDto(asset));
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Archive(Guid id)
     {
