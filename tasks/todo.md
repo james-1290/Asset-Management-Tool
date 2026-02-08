@@ -86,7 +86,7 @@
 ## Later
 - [x] Retire + sold workflow
 - [ ] Dedicated deactivate workflow for applications (currently via edit form status dropdown)
-- [ ] Bulk actions (checkbox selection + action bar)
+- [x] Bulk actions (checkbox selection + action bar)
 - [ ] Email alerts (warranty/cert/licence expiry)
 - [ ] Slack webhook alerts
 - [ ] Reporting
