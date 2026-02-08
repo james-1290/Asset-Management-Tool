@@ -13,6 +13,9 @@ import { ConfirmDialog } from "../components/confirm-dialog";
 import { AssetFormDialog } from "../components/assets/asset-form-dialog";
 import { AssetsToolbar } from "../components/assets/assets-toolbar";
 import { getAssetColumns } from "../components/assets/columns";
+import { ViewModeToggle } from "../components/view-mode-toggle";
+import { GroupedGridView } from "../components/grouped-grid-view";
+import { AssetCard } from "../components/assets/asset-card";
 import {
   usePagedAssets,
   useCreateAsset,
@@ -52,6 +55,8 @@ export default function AssetsPage() {
   const sortDirParam = searchParams.get("sortDir") ?? "asc";
   const includeRetired = searchParams.get("includeRetired") === "true";
   const includeSold = searchParams.get("includeSold") === "true";
+  const typeIdParam = searchParams.get("typeId") ?? "";
+  const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
 
   // Debounced search: local input state synced to URL after 300ms
   const [searchInput, setSearchInput] = useState(searchParam);
@@ -98,8 +103,9 @@ export default function AssetsPage() {
       includeStatuses,
       sortBy: sortByParam,
       sortDir: sortDirParam,
+      typeId: typeIdParam || undefined,
     }),
-    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam],
+    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedAssets(queryParams);
@@ -188,6 +194,8 @@ export default function AssetsPage() {
       prev.delete("status");
       prev.delete("includeRetired");
       prev.delete("includeSold");
+      prev.delete("typeId");
+      prev.delete("viewMode");
       prev.set("sortBy", "name");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -208,6 +216,10 @@ export default function AssetsPage() {
         else { prev.delete("search"); setSearchInput(""); }
         if (config.status) prev.set("status", config.status);
         else prev.delete("status");
+        if (config.typeId) prev.set("typeId", config.typeId);
+        else prev.delete("typeId");
+        if (config.viewMode && config.viewMode !== "list") prev.set("viewMode", config.viewMode);
+        else prev.delete("viewMode");
         if (config.pageSize) prev.set("pageSize", String(config.pageSize));
         prev.set("page", "1");
         return prev;
@@ -221,8 +233,10 @@ export default function AssetsPage() {
     sortDir: sortDirParam,
     search: searchParam || undefined,
     status: statusParam || undefined,
+    typeId: typeIdParam || undefined,
+    viewMode: viewMode !== "list" ? viewMode : undefined,
     pageSize,
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, pageSize]);
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize]);
 
   // Sorting: derive TanStack SortingState from URL
   const sorting: SortingState = useMemo(
@@ -307,6 +321,29 @@ export default function AssetsPage() {
         if (value) prev.set("includeSold", "true");
         else prev.delete("includeSold");
         prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const handleTypeIdChange = useCallback(
+    (value: string) => {
+      setSearchParams((prev) => {
+        if (value) prev.set("typeId", value);
+        else prev.delete("typeId");
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const handleViewModeChange = useCallback(
+    (mode: "list" | "grouped") => {
+      setSearchParams((prev) => {
+        if (mode === "list") prev.delete("viewMode");
+        else prev.set("viewMode", mode);
         return prev;
       });
     },
@@ -456,7 +493,11 @@ export default function AssetsPage() {
               onIncludeRetiredChange={handleIncludeRetiredChange}
               includeSold={includeSold}
               onIncludeSoldChange={handleIncludeSoldChange}
+              typeId={typeIdParam}
+              onTypeIdChange={handleTypeIdChange}
+              assetTypes={assetTypes ?? []}
             />
+            <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
             <SavedViewSelector
               entityType="assets"
               activeViewId={activeViewId}
@@ -475,7 +516,23 @@ export default function AssetsPage() {
             onPageSizeChange={handlePageSizeChange}
           />
         }
-      />
+        hideTable={viewMode === "grouped"}
+      >
+        {viewMode === "grouped" && (
+          <GroupedGridView
+            items={pagedResult?.items ?? []}
+            groupByKey="assetTypeName"
+            renderItem={(asset) => (
+              <AssetCard
+                key={asset.id}
+                asset={asset}
+                onEdit={(a) => { setEditingAsset(a); setFormOpen(true); }}
+                onArchive={(a) => setArchivingAsset(a)}
+              />
+            )}
+          />
+        )}
+      </DataTable>
 
       <AssetFormDialog
         open={formOpen}

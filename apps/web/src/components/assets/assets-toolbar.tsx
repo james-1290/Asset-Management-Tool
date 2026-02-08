@@ -17,6 +17,7 @@ import { Checkbox } from "../ui/checkbox";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import type { Asset } from "../../types/asset";
+import type { AssetType } from "../../types/asset-type";
 import { ColumnToggle } from "../column-toggle";
 
 interface AssetsToolbarProps {
@@ -29,6 +30,9 @@ interface AssetsToolbarProps {
   onIncludeRetiredChange: (value: boolean) => void;
   includeSold: boolean;
   onIncludeSoldChange: (value: boolean) => void;
+  typeId: string;
+  onTypeIdChange: (value: string) => void;
+  assetTypes: AssetType[];
 }
 
 const STATUS_OPTIONS = [
@@ -48,9 +52,12 @@ export function AssetsToolbar({
   onIncludeRetiredChange,
   includeSold,
   onIncludeSoldChange,
+  typeId,
+  onTypeIdChange,
+  assetTypes,
 }: AssetsToolbarProps) {
   const activeFilterCount =
-    (status ? 1 : 0) + (includeRetired ? 1 : 0) + (includeSold ? 1 : 0);
+    (status ? 1 : 0) + (includeRetired ? 1 : 0) + (includeSold ? 1 : 0) + (typeId ? 1 : 0);
 
   return (
     <div className="flex items-center gap-2">
@@ -74,6 +81,22 @@ export function AssetsToolbar({
         </PopoverTrigger>
         <PopoverContent className="w-56 p-3" align="start">
           <div className="space-y-3">
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Type</span>
+              <Select value={typeId || "__all__"} onValueChange={(v) => onTypeIdChange(v === "__all__" ? "" : v)}>
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All types</SelectItem>
+                  {assetTypes.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1.5">
               <span className="text-xs font-medium text-muted-foreground">Status</span>
               <Select value={status || "all"} onValueChange={onStatusChange}>

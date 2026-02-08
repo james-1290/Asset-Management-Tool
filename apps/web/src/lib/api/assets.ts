@@ -19,6 +19,7 @@ export interface AssetQueryParams {
   includeStatuses?: string;
   sortBy?: string;
   sortDir?: string;
+  typeId?: string;
 }
 
 export const assetsApi = {

@@ -14,6 +14,7 @@ export interface CertificateQueryParams {
   status?: string;
   sortBy?: string;
   sortDir?: string;
+  typeId?: string;
 }
 
 export const certificatesApi = {

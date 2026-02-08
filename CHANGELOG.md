@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-02-08 16:44 - Type Filter + Grouped View for List Pages
+
+- **Backend**: Added `typeId` query parameter to Assets, Certificates, and Applications `GetAll` endpoints
+- **Frontend**: Added Type filter dropdown to all three list page filter popovers
+- **Frontend**: Added `typeId` to query param interfaces and saved view configuration
+- **Frontend**: Added view mode toggle (List / Grouped) to all three list pages
+- **Frontend**: Created `GroupedGridView` component that groups items by type with collapsible sections
+- **Frontend**: Created entity card components (`AssetCard`, `CertificateCard`, `ApplicationCard`) for grouped view
+- **Frontend**: Created `ViewModeToggle` segmented control component
+- **Frontend**: Extended `DataTable` to support `hideTable` + `children` for alternate views
+- **Frontend**: Type filter and view mode are persisted in URL params and saved views
+
 ## 2026-02-08 15:53 - Restore Retire/Sell Asset Workflow
 
 - **Fix**: Restored retire and sell asset dialogs, API endpoints, and hooks accidentally removed during list filter overhaul

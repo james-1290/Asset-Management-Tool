@@ -18,6 +18,7 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { ColumnToggle } from "../column-toggle";
 import type { Application } from "../../types/application";
+import type { ApplicationType } from "../../types/application-type";
 
 const STATUS_OPTIONS = [
   { value: "Active", label: "Active" },
@@ -34,6 +35,9 @@ interface ApplicationsToolbarProps {
   onStatusFilterChange: (value: string) => void;
   includeInactive: boolean;
   onIncludeInactiveChange: (value: boolean) => void;
+  typeId: string;
+  onTypeIdChange: (value: string) => void;
+  applicationTypes: ApplicationType[];
 }
 
 export function ApplicationsToolbar({
@@ -44,9 +48,12 @@ export function ApplicationsToolbar({
   onStatusFilterChange,
   includeInactive,
   onIncludeInactiveChange,
+  typeId,
+  onTypeIdChange,
+  applicationTypes,
 }: ApplicationsToolbarProps) {
   const activeFilterCount =
-    (statusFilter ? 1 : 0) + (includeInactive ? 1 : 0);
+    (statusFilter ? 1 : 0) + (includeInactive ? 1 : 0) + (typeId ? 1 : 0);
 
   return (
     <div className="flex items-center gap-2">
@@ -70,6 +77,22 @@ export function ApplicationsToolbar({
         </PopoverTrigger>
         <PopoverContent className="w-56 p-3" align="start">
           <div className="space-y-3">
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Type</span>
+              <Select value={typeId || "__all__"} onValueChange={(v) => onTypeIdChange(v === "__all__" ? "" : v)}>
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All types</SelectItem>
+                  {applicationTypes.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1.5">
               <span className="text-xs font-medium text-muted-foreground">Status</span>
               <Select

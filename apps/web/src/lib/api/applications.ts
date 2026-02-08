@@ -15,6 +15,7 @@ export interface ApplicationQueryParams {
   includeStatuses?: string;
   sortBy?: string;
   sortDir?: string;
+  typeId?: string;
 }
 
 export const applicationsApi = {

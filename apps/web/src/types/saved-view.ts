@@ -15,4 +15,6 @@ export interface ViewConfiguration {
   search?: string;
   status?: string;
   pageSize?: number;
+  typeId?: string;
+  viewMode?: "list" | "grouped";
 }
