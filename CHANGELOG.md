@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-02-08 14:21 - Mark MVP Complete
+
+- **Chore**: Mark "DataTable: saved views per user" as complete in todo.md — all Next (MVP) items are now done
+
 ## 2026-02-08 14:08 - Default View + Column Visibility Fix
 
 - **Fix**: Assets page no longer hides standard columns (Type, Assigned To) on initial load — replaced dual-useEffect initialization with simpler pattern that merges custom field visibility as defs load
