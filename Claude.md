@@ -1,5 +1,17 @@
 # Asset Management Tool (Local-first, Azure-ready)
 
+## API Server Management
+
+After ANY backend changes (new endpoints, migrations, model changes, controller updates), ALWAYS restart the API server before testing. Kill the old process and start a new one. Never assume the API is already stopped — verify with `lsof` or `ps`. This is the #1 source of bugs in this project.
+
+## Database Migrations
+
+When adding or modifying database models/columns, ALWAYS create and apply the EF migration before testing. Never skip this step. After migration, verify the table/column exists. If adding a new column to existing records, implement a backfill strategy.
+
+## Workflow: Always Implement, Don't Just Plan
+
+When the user asks to implement a feature, DO the implementation. Do not spend the entire session exploring the codebase and writing a plan file unless explicitly asked to only plan. If a plan exists, execute it.
+
 ## Product goal
 
 Build a multi-user asset management system with:
