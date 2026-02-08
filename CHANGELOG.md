@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-02-08 13:47 - Saved Views
+
+- **Backend**: New `SavedView` model with `SavedViews` table (DB migration `AddSavedViews`)
+- **Backend**: New `SavedViewsController` — CRUD endpoints at `/api/v1/saved-views` (scoped per user + entity type)
+- **Backend**: Endpoints: GET (list by entityType), POST (create), PUT (update), DELETE, PUT `/{id}/default` (toggle default)
+- **Frontend**: New `SavedViewSelector` component — dropdown to apply, save, rename, delete, and set default views
+- **Frontend**: New API layer, types, and React Query hooks for saved views
+- **Frontend**: `DataTable` now supports external `columnVisibility` / `onColumnVisibilityChange` props
+- **Frontend**: All 9 list pages integrated (assets, certificates, applications, locations, people, asset-types, certificate-types, application-types, audit-log)
+- **Frontend**: Default saved view auto-applies on page load; views capture column visibility, sort, filters, and page size
+
 ## 2026-02-07 22:32 - User Authentication (JWT)
 
 - **Backend**: Added JWT Bearer authentication with BCrypt password hashing
