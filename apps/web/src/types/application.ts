@@ -4,7 +4,8 @@ export type ApplicationStatus =
   | "Active"
   | "Expired"
   | "Suspended"
-  | "PendingRenewal";
+  | "PendingRenewal"
+  | "Inactive";
 
 export type LicenceType =
   | "PerSeat"

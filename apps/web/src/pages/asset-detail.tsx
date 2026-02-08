@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil, LogOut, LogIn } from "lucide-react";
+import { ArrowLeft, Pencil, LogOut, LogIn, Archive, PoundSterling } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import {
@@ -16,12 +16,16 @@ import { AssetHistoryDialog } from "../components/assets/asset-history-dialog";
 import { AssetFormDialog } from "../components/assets/asset-form-dialog";
 import { CheckoutDialog } from "../components/assets/checkout-dialog";
 import { CheckinDialog } from "../components/assets/checkin-dialog";
+import { RetireAssetDialog } from "../components/assets/retire-asset-dialog";
+import { SellAssetDialog } from "../components/assets/sell-asset-dialog";
 import {
   useAsset,
   useAssetHistory,
   useUpdateAsset,
   useCheckoutAsset,
   useCheckinAsset,
+  useRetireAsset,
+  useSellAsset,
 } from "../hooks/use-assets";
 import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
@@ -84,11 +88,15 @@ export default function AssetDetailPage() {
   const updateMutation = useUpdateAsset();
   const checkoutMutation = useCheckoutAsset();
   const checkinMutation = useCheckinAsset();
+  const retireMutation = useRetireAsset();
+  const sellMutation = useSellAsset();
 
   const [formOpen, setFormOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkinOpen, setCheckinOpen] = useState(false);
+  const [retireOpen, setRetireOpen] = useState(false);
+  const [sellOpen, setSellOpen] = useState(false);
 
   function handleFormSubmit(values: AssetFormValues) {
     if (!asset) return;
@@ -185,17 +193,29 @@ export default function AssetDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {(asset.status === "Available" || asset.status === "Assigned") && (
-            <Button variant="outline" onClick={() => setCheckoutOpen(true)}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Check Out
-            </Button>
-          )}
-          {asset.status === "CheckedOut" && (
-            <Button variant="outline" onClick={() => setCheckinOpen(true)}>
-              <LogIn className="mr-2 h-4 w-4" />
-              Check In
-            </Button>
+          {asset.status !== "Retired" && asset.status !== "Sold" && asset.status !== "Archived" && (
+            <>
+              {(asset.status === "Available" || asset.status === "Assigned") && (
+                <Button variant="outline" onClick={() => setCheckoutOpen(true)}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Check Out
+                </Button>
+              )}
+              {asset.status === "CheckedOut" && (
+                <Button variant="outline" onClick={() => setCheckinOpen(true)}>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Check In
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => setRetireOpen(true)}>
+                <Archive className="mr-2 h-4 w-4" />
+                Retire
+              </Button>
+              <Button variant="outline" onClick={() => setSellOpen(true)}>
+                <PoundSterling className="mr-1 h-4 w-4" />
+                Mark as Sold
+              </Button>
+            </>
           )}
           <Button onClick={() => setFormOpen(true)}>
             <Pencil className="mr-2 h-4 w-4" />
@@ -222,6 +242,15 @@ export default function AssetDetailPage() {
               <InfoItem label="Purchase Cost" value={formatCurrency(asset.purchaseCost)} />
               <InfoItem label="Warranty Expiry" value={formatDate(asset.warrantyExpiryDate)} />
               <InfoItem label="Status" value={asset.status} />
+              {asset.retiredDate && (
+                <InfoItem label="Retired Date" value={formatDate(asset.retiredDate)} />
+              )}
+              {asset.soldDate && (
+                <InfoItem label="Sold Date" value={formatDate(asset.soldDate)} />
+              )}
+              {asset.soldPrice != null && (
+                <InfoItem label="Sold Price" value={formatCurrency(asset.soldPrice)} />
+              )}
             </dl>
             {asset.customFieldValues && asset.customFieldValues.length > 0 && (
               <div className="mt-4 pt-4 border-t">
@@ -328,6 +357,48 @@ export default function AssetDetailPage() {
           );
         }}
         loading={checkinMutation.isPending}
+      />
+
+      <RetireAssetDialog
+        open={retireOpen}
+        onOpenChange={setRetireOpen}
+        assetName={asset.name}
+        onSubmit={(notes) => {
+          retireMutation.mutate(
+            { id: asset.id, data: { notes } },
+            {
+              onSuccess: () => {
+                toast.success("Asset retired");
+                setRetireOpen(false);
+              },
+              onError: () => {
+                toast.error("Failed to retire asset");
+              },
+            },
+          );
+        }}
+        loading={retireMutation.isPending}
+      />
+
+      <SellAssetDialog
+        open={sellOpen}
+        onOpenChange={setSellOpen}
+        assetName={asset.name}
+        onSubmit={(soldPrice, soldDate, notes) => {
+          sellMutation.mutate(
+            { id: asset.id, data: { soldPrice, soldDate, notes } },
+            {
+              onSuccess: () => {
+                toast.success("Asset marked as sold");
+                setSellOpen(false);
+              },
+              onError: () => {
+                toast.error("Failed to mark asset as sold");
+              },
+            },
+          );
+        }}
+        loading={sellMutation.isPending}
       />
     </div>
   );

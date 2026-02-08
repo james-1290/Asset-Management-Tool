@@ -24,6 +24,9 @@ export interface Asset {
   purchaseDate: string | null;
   purchaseCost: number | null;
   warrantyExpiryDate: string | null;
+  soldDate: string | null;
+  soldPrice: number | null;
+  retiredDate: string | null;
   notes: string | null;
   isArchived: boolean;
   createdAt: string;
@@ -52,6 +55,16 @@ export interface CheckoutAssetRequest {
 }
 
 export interface CheckinAssetRequest {
+  notes?: string | null;
+}
+
+export interface RetireAssetRequest {
+  notes?: string | null;
+}
+
+export interface SellAssetRequest {
+  soldPrice?: number | null;
+  soldDate?: string | null;
   notes?: string | null;
 }
 

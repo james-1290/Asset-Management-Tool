@@ -39,6 +39,7 @@ const APPLICATION_STATUSES = [
   { value: "Expired", label: "Expired" },
   { value: "PendingRenewal", label: "Pending Renewal" },
   { value: "Suspended", label: "Suspended" },
+  { value: "Inactive", label: "Inactive" },
 ] as const;
 
 const LICENCE_TYPES = [

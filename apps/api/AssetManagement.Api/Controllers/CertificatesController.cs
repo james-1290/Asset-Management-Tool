@@ -20,6 +20,7 @@ public class CertificatesController(AppDbContext db, IAuditService audit, ICurre
         [FromQuery] int pageSize = 25,
         [FromQuery] string? search = null,
         [FromQuery] string? status = null,
+        [FromQuery] string? includeStatuses = null,
         [FromQuery] string sortBy = "name",
         [FromQuery] string sortDir = "asc")
     {

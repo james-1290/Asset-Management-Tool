@@ -50,6 +50,8 @@ export default function AssetsPage() {
   const statusParam = searchParams.get("status") ?? "";
   const sortByParam = searchParams.get("sortBy") ?? "name";
   const sortDirParam = searchParams.get("sortDir") ?? "asc";
+  const includeRetired = searchParams.get("includeRetired") === "true";
+  const includeSold = searchParams.get("includeSold") === "true";
 
   // Debounced search: local input state synced to URL after 300ms
   const [searchInput, setSearchInput] = useState(searchParam);
@@ -78,6 +80,14 @@ export default function AssetsPage() {
     setSearchInput(searchParam);
   }, [searchParam]);
 
+  // Build includeStatuses from checkbox flags
+  const includeStatuses = useMemo(() => {
+    const parts: string[] = [];
+    if (includeRetired) parts.push("Retired");
+    if (includeSold) parts.push("Sold");
+    return parts.length > 0 ? parts.join(",") : undefined;
+  }, [includeRetired, includeSold]);
+
   // Query params for the API
   const queryParams = useMemo(
     () => ({
@@ -85,10 +95,11 @@ export default function AssetsPage() {
       pageSize,
       search: searchParam || undefined,
       status: statusParam || undefined,
+      includeStatuses,
       sortBy: sortByParam,
       sortDir: sortDirParam,
     }),
-    [page, pageSize, searchParam, statusParam, sortByParam, sortDirParam],
+    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedAssets(queryParams);
@@ -175,6 +186,8 @@ export default function AssetsPage() {
     setSearchParams((prev) => {
       prev.delete("search");
       prev.delete("status");
+      prev.delete("includeRetired");
+      prev.delete("includeSold");
       prev.set("sortBy", "name");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -269,6 +282,30 @@ export default function AssetsPage() {
         } else {
           prev.set("status", value);
         }
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const handleIncludeRetiredChange = useCallback(
+    (value: boolean) => {
+      setSearchParams((prev) => {
+        if (value) prev.set("includeRetired", "true");
+        else prev.delete("includeRetired");
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const handleIncludeSoldChange = useCallback(
+    (value: boolean) => {
+      setSearchParams((prev) => {
+        if (value) prev.set("includeSold", "true");
+        else prev.delete("includeSold");
         prev.set("page", "1");
         return prev;
       });
@@ -415,6 +452,10 @@ export default function AssetsPage() {
               onSearchChange={setSearchInput}
               status={statusParam}
               onStatusChange={handleStatusChange}
+              includeRetired={includeRetired}
+              onIncludeRetiredChange={handleIncludeRetiredChange}
+              includeSold={includeSold}
+              onIncludeSoldChange={handleIncludeSoldChange}
             />
             <SavedViewSelector
               entityType="assets"

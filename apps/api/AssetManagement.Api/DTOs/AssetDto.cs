@@ -15,6 +15,9 @@ public record AssetDto(
     DateTime? PurchaseDate,
     decimal? PurchaseCost,
     DateTime? WarrantyExpiryDate,
+    DateTime? SoldDate,
+    decimal? SoldPrice,
+    DateTime? RetiredDate,
     string? Notes,
     bool IsArchived,
     DateTime CreatedAt,
@@ -43,6 +46,16 @@ public record CheckoutAssetRequest(
 );
 
 public record CheckinAssetRequest(
+    string? Notes
+);
+
+public record RetireAssetRequest(
+    string? Notes
+);
+
+public record SellAssetRequest(
+    decimal? SoldPrice,
+    DateTime? SoldDate,
     string? Notes
 );
 

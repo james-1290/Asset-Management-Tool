@@ -5,5 +5,6 @@ public enum ApplicationStatus
     Active,
     Expired,
     Suspended,
-    PendingRenewal
+    PendingRenewal,
+    Inactive
 }

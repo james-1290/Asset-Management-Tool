@@ -20,6 +20,7 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
         [FromQuery] int pageSize = 25,
         [FromQuery] string? search = null,
         [FromQuery] string? status = null,
+        [FromQuery] string? includeStatuses = null,
         [FromQuery] string sortBy = "name",
         [FromQuery] string sortDir = "asc")
     {
@@ -49,6 +50,21 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
             if (!Enum.TryParse<AssetStatus>(status, out var parsedStatus))
                 return BadRequest(new { error = $"Invalid status: {status}" });
             query = query.Where(a => a.Status == parsedStatus);
+        }
+        else
+        {
+            // By default, exclude terminal statuses (Retired, Sold) unless explicitly included
+            var hiddenStatuses = new HashSet<AssetStatus> { AssetStatus.Retired, AssetStatus.Sold };
+            if (!string.IsNullOrWhiteSpace(includeStatuses))
+            {
+                foreach (var s in includeStatuses.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    if (Enum.TryParse<AssetStatus>(s, out var parsed))
+                        hiddenStatuses.Remove(parsed);
+                }
+            }
+            if (hiddenStatuses.Count > 0)
+                query = query.Where(a => !hiddenStatuses.Contains(a.Status));
         }
 
         var totalCount = await query.CountAsync();
@@ -505,6 +521,117 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
         return Ok(ToDto(asset));
     }
 
+    [HttpPost("{id:guid}/retire")]
+    public async Task<ActionResult<AssetDto>> Retire(Guid id, RetireAssetRequest request)
+    {
+        var asset = await db.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Location)
+            .Include(a => a.AssignedPerson)
+            .Include(a => a.CustomFieldValues)
+                .ThenInclude(v => v.CustomFieldDefinition)
+            .FirstOrDefaultAsync(a => a.Id == id);
+
+        if (asset is null) return NotFound();
+        if (asset.IsArchived) return BadRequest(new { error = "Cannot retire an archived asset." });
+        if (asset.Status == AssetStatus.Retired) return BadRequest(new { error = "Asset is already retired." });
+        if (asset.Status == AssetStatus.Sold) return BadRequest(new { error = "Cannot retire a sold asset." });
+
+        var changes = new List<AuditChange>();
+        changes.Add(new AuditChange("Status", asset.Status.ToString(), AssetStatus.Retired.ToString()));
+
+        var oldPersonName = asset.AssignedPerson?.FullName;
+        if (oldPersonName is not null)
+            changes.Add(new AuditChange("Assigned To", oldPersonName, null));
+
+        changes.Add(new AuditChange("Retired Date", null, DateTime.UtcNow.ToString("yyyy-MM-dd")));
+
+        asset.Status = AssetStatus.Retired;
+        asset.RetiredDate = DateTime.UtcNow;
+        asset.AssignedPersonId = null;
+        asset.UpdatedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync();
+
+        var details = $"Retired asset \"{asset.Name}\" ({asset.AssetTag})";
+        if (request.Notes is not null) details += $" — {request.Notes}";
+
+        await audit.LogAsync(new AuditEntry(
+            Action: "Retired",
+            EntityType: "Asset",
+            EntityId: asset.Id.ToString(),
+            EntityName: asset.Name,
+            Details: details,
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName,
+            Changes: changes));
+
+        await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
+        if (asset.LocationId is not null)
+            await db.Entry(asset).Reference(a => a.Location).LoadAsync();
+
+        return Ok(ToDto(asset));
+    }
+
+    [HttpPost("{id:guid}/sell")]
+    public async Task<ActionResult<AssetDto>> Sell(Guid id, SellAssetRequest request)
+    {
+        var asset = await db.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Location)
+            .Include(a => a.AssignedPerson)
+            .Include(a => a.CustomFieldValues)
+                .ThenInclude(v => v.CustomFieldDefinition)
+            .FirstOrDefaultAsync(a => a.Id == id);
+
+        if (asset is null) return NotFound();
+        if (asset.IsArchived) return BadRequest(new { error = "Cannot sell an archived asset." });
+        if (asset.Status == AssetStatus.Sold) return BadRequest(new { error = "Asset is already sold." });
+        if (asset.Status == AssetStatus.Retired) return BadRequest(new { error = "Cannot sell a retired asset." });
+
+        var changes = new List<AuditChange>();
+        changes.Add(new AuditChange("Status", asset.Status.ToString(), AssetStatus.Sold.ToString()));
+
+        var oldPersonName = asset.AssignedPerson?.FullName;
+        if (oldPersonName is not null)
+            changes.Add(new AuditChange("Assigned To", oldPersonName, null));
+
+        var soldDate = request.SoldDate ?? DateTime.UtcNow;
+        changes.Add(new AuditChange("Sold Date", null, soldDate.ToString("yyyy-MM-dd")));
+
+        if (request.SoldPrice is not null)
+            changes.Add(new AuditChange("Sold Price", null, request.SoldPrice.Value.ToString("F2")));
+
+        asset.Status = AssetStatus.Sold;
+        asset.SoldDate = soldDate;
+        asset.SoldPrice = request.SoldPrice;
+        asset.AssignedPersonId = null;
+        asset.UpdatedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync();
+
+        var details = $"Sold asset \"{asset.Name}\" ({asset.AssetTag})";
+        if (request.SoldPrice is not null)
+            details += $" for {request.SoldPrice.Value:F2}";
+        if (request.Notes is not null) details += $" — {request.Notes}";
+
+        await audit.LogAsync(new AuditEntry(
+            Action: "Sold",
+            EntityType: "Asset",
+            EntityId: asset.Id.ToString(),
+            EntityName: asset.Name,
+            Details: details,
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName,
+            Changes: changes));
+
+        await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
+        if (asset.LocationId is not null)
+            await db.Entry(asset).Reference(a => a.Location).LoadAsync();
+
+        return Ok(ToDto(asset));
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Archive(Guid id)
     {
@@ -534,6 +661,7 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
         a.LocationId, a.Location?.Name,
         a.AssignedPersonId, a.AssignedPerson?.FullName,
         a.PurchaseDate, a.PurchaseCost, a.WarrantyExpiryDate,
+        a.SoldDate, a.SoldPrice, a.RetiredDate,
         a.Notes, a.IsArchived, a.CreatedAt, a.UpdatedAt,
         a.CustomFieldValues
             .Where(v => !v.CustomFieldDefinition.IsArchived)

@@ -18,6 +18,10 @@ const statusConfig: Record<ApplicationStatus, { label: string; className: string
     label: "Pending Renewal",
     className: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
   },
+  Inactive: {
+    label: "Inactive",
+    className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+  },
 };
 
 interface ApplicationStatusBadgeProps {

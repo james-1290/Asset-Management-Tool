@@ -115,11 +115,24 @@ Base URL: `http://localhost:5062/api/v1`
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/assets` | List all active assets (includes type/location names) |
+| GET | `/api/v1/assets` | List assets (excludes Retired/Sold by default) |
 | GET | `/api/v1/assets/{id}` | Get asset by ID |
 | POST | `/api/v1/assets` | Create an asset |
 | PUT | `/api/v1/assets/{id}` | Update an asset |
 | DELETE | `/api/v1/assets/{id}` | Archive an asset (soft delete) |
+
+**List query parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `page` | int | Page number (default: 1) |
+| `pageSize` | int | Items per page (default: 25, max: 100) |
+| `search` | string | Search by name or asset tag (case-insensitive) |
+| `status` | string | Filter to a specific status (e.g. `Retired`). Overrides default exclusions. |
+| `includeStatuses` | string | Comma-separated statuses to include that are hidden by default (e.g. `Retired,Sold`). Only applies when `status` is not set. |
+| `sortBy` | string | Column to sort by (default: `name`) |
+| `sortDir` | string | `asc` or `desc` (default: `asc`) |
+
+By default, `Retired` and `Sold` assets are excluded from list results. Use `includeStatuses=Retired,Sold` to include them.
 
 **Create/Update request body:**
 ```json
@@ -146,6 +159,30 @@ Base URL: `http://localhost:5062/api/v1`
 - `status` must be a valid `AssetStatus` enum value (400)
 
 **Response DTO** includes flattened `assetTypeName`, `locationName`, `assignedUserId`, and `assignedUserName` fields.
+
+### Applications
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/applications` | List applications (excludes Inactive by default) |
+| GET | `/api/v1/applications/{id}` | Get application by ID |
+| POST | `/api/v1/applications` | Create an application |
+| PUT | `/api/v1/applications/{id}` | Update an application |
+| DELETE | `/api/v1/applications/{id}` | Archive an application (soft delete) |
+
+**List query parameters** follow the same pattern as Assets. By default, `Inactive` applications are excluded. Use `includeStatuses=Inactive` to include them. Status values: `Active`, `Expired`, `Suspended`, `PendingRenewal`, `Inactive`.
+
+### Certificates
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/certificates` | List certificates |
+| GET | `/api/v1/certificates/{id}` | Get certificate by ID |
+| POST | `/api/v1/certificates` | Create a certificate |
+| PUT | `/api/v1/certificates/{id}` | Update a certificate |
+| DELETE | `/api/v1/certificates/{id}` | Archive a certificate (soft delete) |
+
+**List query parameters** follow the same pattern as Assets. No statuses are hidden by default. The `includeStatuses` param is accepted for consistency but currently has no effect. Status values: `Active`, `Expired`, `PendingRenewal`, `Revoked`.
 
 ## Audit Logging
 

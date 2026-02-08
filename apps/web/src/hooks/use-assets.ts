@@ -6,6 +6,8 @@ import type {
   UpdateAssetRequest,
   CheckoutAssetRequest,
   CheckinAssetRequest,
+  RetireAssetRequest,
+  SellAssetRequest,
 } from "../types/asset";
 
 const assetKeys = {
@@ -91,6 +93,34 @@ export function useCheckinAsset() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: CheckinAssetRequest }) =>
       assetsApi.checkin(id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: assetKeys.all });
+      queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
+    },
+  });
+}
+
+export function useRetireAsset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: RetireAssetRequest }) =>
+      assetsApi.retire(id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: assetKeys.all });
+      queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
+    },
+  });
+}
+
+export function useSellAsset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: SellAssetRequest }) =>
+      assetsApi.sell(id, data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
       queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });

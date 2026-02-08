@@ -44,6 +44,7 @@ export default function ApplicationsPage() {
   const statusParam = searchParams.get("status") ?? "";
   const sortByParam = searchParams.get("sortBy") ?? "name";
   const sortDirParam = searchParams.get("sortDir") ?? "asc";
+  const includeInactive = searchParams.get("includeInactive") === "true";
 
   const [searchInput, setSearchInput] = useState(searchParam);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -85,16 +86,33 @@ export default function ApplicationsPage() {
     [setSearchParams],
   );
 
+  const handleIncludeInactiveChange = useCallback(
+    (value: boolean) => {
+      setSearchParams((prev) => {
+        if (value) prev.set("includeInactive", "true");
+        else prev.delete("includeInactive");
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const includeStatuses = useMemo(() => {
+    return includeInactive ? "Inactive" : undefined;
+  }, [includeInactive]);
+
   const queryParams = useMemo(
     () => ({
       page,
       pageSize,
       search: searchParam || undefined,
       status: statusParam || undefined,
+      includeStatuses,
       sortBy: sortByParam,
       sortDir: sortDirParam,
     }),
-    [page, pageSize, searchParam, statusParam, sortByParam, sortDirParam],
+    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedApplications(queryParams);
@@ -147,6 +165,7 @@ export default function ApplicationsPage() {
     setSearchParams((prev) => {
       prev.delete("search");
       prev.delete("status");
+      prev.delete("includeInactive");
       prev.set("sortBy", "name");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -360,6 +379,8 @@ export default function ApplicationsPage() {
               onSearchChange={setSearchInput}
               statusFilter={statusParam}
               onStatusFilterChange={handleStatusFilterChange}
+              includeInactive={includeInactive}
+              onIncludeInactiveChange={handleIncludeInactiveChange}
             />
             <SavedViewSelector
               entityType="applications"

@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-02-08 15:53 - Restore Retire/Sell Asset Workflow
+
+- **Fix**: Restored retire and sell asset dialogs, API endpoints, and hooks accidentally removed during list filter overhaul
+- **Backend**: Restored `POST /assets/{id}/retire` and `POST /assets/{id}/sell` endpoints
+- **Backend**: Restored `RetireAssetRequest` and `SellAssetRequest` DTOs
+- **Backend**: Added `SoldDate`, `SoldPrice`, `RetiredDate` back to `AssetDto`
+- **Backend**: Restored `RetiredDate` property on `Asset` model (no-op migration to sync snapshot)
+- **Backend**: Restored "Retired" and "Sold" mappings in `AuditService`
+- **Frontend**: Restored `RetireAssetDialog` and `SellAssetDialog` components
+- **Frontend**: Restored retire/sell buttons on asset detail page (hidden for already retired/sold assets)
+- **Frontend**: Restored `soldDate`, `soldPrice`, `retiredDate` display on asset detail page
+- **Frontend**: Restored `useRetireAsset` and `useSellAsset` hooks + API client methods
+- **Frontend**: Restored `RetireAssetRequest`, `SellAssetRequest` types + sold/retired fields on `Asset` type
+- **DB migration**: `RestoreRetiredDateToSnapshot` (no-op — column already existed)
+
+## 2026-02-08 15:29 - List Filter Overhaul + Application Inactive Status
+
+- **Backend**: Added `Inactive` value to `ApplicationStatus` enum (DB migration `AddApplicationInactiveStatus`)
+- **Backend**: New `includeStatuses` query param on all three list endpoints (`/assets`, `/applications`, `/certificates`)
+- **Backend**: Assets default list now excludes `Retired` and `Sold` statuses; `includeStatuses=Retired,Sold` opts them back in
+- **Backend**: Applications default list now excludes `Inactive` status; `includeStatuses=Inactive` opts it back in
+- **Backend**: Certificates endpoint accepts `includeStatuses` for API consistency (no hidden statuses currently)
+- **Frontend**: Replaced status `<Select>` dropdown on all three list toolbars with `<Popover>` containing status filter + include checkboxes
+- **Frontend**: Assets toolbar: checkboxes for "Include retired" and "Include sold"
+- **Frontend**: Applications toolbar: checkbox for "Include inactive"
+- **Frontend**: Certificates toolbar: popover with status filter only (no hidden statuses)
+- **Frontend**: Filter state persists in URL params (`includeRetired`, `includeSold`, `includeInactive`)
+- **Frontend**: Filter button shows badge count when filters are active
+- **Frontend**: Added `Inactive` status badge styling for applications (slate theme)
+- **Frontend**: Added `Inactive` to application form status dropdown
+
 ## 2026-02-08 14:21 - Mark MVP Complete
 
 - **Chore**: Mark "DataTable: saved views per user" as complete in todo.md — all Next (MVP) items are now done

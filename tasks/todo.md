@@ -79,8 +79,13 @@
 - [x] Applications/Licences module: Licence Expiries dashboard widget
 - [x] Applications/Licences module: sidebar nav + routes for Application Types and Application detail
 
+- [x] List filter overhaul: hidden statuses excluded by default (Retired/Sold for assets, Inactive for applications), opt-in via `includeStatuses` param
+- [x] Application Inactive status: new enum value, badge, form option
+- [x] Filter popover UI: replaced status dropdowns with popover + checkboxes on all list pages
+
 ## Later
-- [ ] Retire + sold workflow
+- [x] Retire + sold workflow
+- [ ] Dedicated deactivate workflow for applications (currently via edit form status dropdown)
 - [ ] Bulk actions (checkbox selection + action bar)
 - [ ] Email alerts (warranty/cert/licence expiry)
 - [ ] Slack webhook alerts

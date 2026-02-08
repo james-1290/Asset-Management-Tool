@@ -12,6 +12,7 @@ export interface ApplicationQueryParams {
   pageSize?: number;
   search?: string;
   status?: string;
+  includeStatuses?: string;
   sortBy?: string;
   sortDir?: string;
 }

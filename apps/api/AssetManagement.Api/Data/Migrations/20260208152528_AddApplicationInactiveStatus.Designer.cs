@@ -3,6 +3,7 @@ using System;
 using AssetManagement.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AssetManagement.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260208152528_AddApplicationInactiveStatus")]
+    partial class AddApplicationInactiveStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -228,9 +231,6 @@ namespace AssetManagement.Api.Data.Migrations
                         .HasColumnType("numeric(18,2)");
 
                     b.Property<DateTime?>("PurchaseDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("RetiredDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SerialNumber")
