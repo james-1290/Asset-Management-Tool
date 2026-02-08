@@ -6,8 +6,10 @@ interface AuthContextValue {
   token: string | null
   isAuthenticated: boolean
   isLoading: boolean
+  isAdmin: boolean
   login: (username: string, password: string) => Promise<void>
   logout: () => void
+  updateUser: (profile: UserProfile) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -35,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then((profile: UserProfile) => {
         setToken(savedToken)
         setUser(profile)
+        syncTheme(profile.themePreference)
       })
       .catch(() => {
         localStorage.removeItem("token")
@@ -60,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("user", JSON.stringify(data.user))
     setToken(data.token)
     setUser(data.user)
+    syncTheme(data.user.themePreference)
   }, [])
 
   const logout = useCallback(() => {
@@ -69,6 +73,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null)
   }, [])
 
+  const updateUser = useCallback((profile: UserProfile) => {
+    setUser(profile)
+    localStorage.setItem("user", JSON.stringify(profile))
+    syncTheme(profile.themePreference)
+  }, [])
+
+  const isAdmin = user?.roles?.includes("Admin") ?? false
+
   return (
     <AuthContext.Provider
       value={{
@@ -76,13 +88,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         isAuthenticated: !!token && !!user,
         isLoading,
+        isAdmin,
         login,
         logout,
+        updateUser,
       }}
     >
       {children}
     </AuthContext.Provider>
   )
+}
+
+function syncTheme(preference?: string | null) {
+  if (preference) {
+    localStorage.setItem("theme", preference)
+  }
 }
 
 export function useAuth() {

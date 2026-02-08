@@ -27,7 +27,7 @@ public class AuthController(AppDbContext db, ITokenService tokenService) : Contr
         var token = tokenService.GenerateToken(user, roles);
 
         return Ok(new LoginResponse(token, new UserProfileResponse(
-            user.Id, user.Username, user.DisplayName, user.Email, roles)));
+            user.Id, user.Username, user.DisplayName, user.Email, roles, user.ThemePreference)));
     }
 
     [HttpGet("me")]
@@ -47,6 +47,6 @@ public class AuthController(AppDbContext db, ITokenService tokenService) : Contr
 
         var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
         return Ok(new UserProfileResponse(
-            user.Id, user.Username, user.DisplayName, user.Email, roles));
+            user.Id, user.Username, user.DisplayName, user.Email, roles, user.ThemePreference));
     }
 }

@@ -4,6 +4,7 @@ export interface UserProfile {
   displayName: string
   email: string
   roles: string[]
+  themePreference?: string | null
 }
 
 export interface LoginResponse {
