@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-02-08 14:08 - Default View + Column Visibility Fix
+
+- **Fix**: Assets page no longer hides standard columns (Type, Assigned To) on initial load — replaced dual-useEffect initialization with simpler pattern that merges custom field visibility as defs load
+- **UX**: Added synthetic "Default" view entry at top of Views dropdown on all 9 list pages — always visible, resets columns/sort/filters to page defaults
+- **UX**: "Update current view" option hidden when on Default view; trigger button shows "Default" instead of "Views" when no custom view is active
+
 ## 2026-02-08 13:47 - Saved Views
 
 - **Backend**: New `SavedView` model with `SavedViews` table (DB migration `AddSavedViews`)

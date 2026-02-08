@@ -121,6 +121,19 @@ export default function LocationsPage() {
     if (defaultView) applyView(defaultView);
   }, [savedViews]);
 
+  function handleResetToDefault() {
+    setColumnVisibility({});
+    setActiveViewId(null);
+    setSearchParams((prev) => {
+      prev.delete("search");
+      prev.set("sortBy", "name");
+      prev.set("sortDir", "asc");
+      prev.set("page", "1");
+      return prev;
+    });
+    setSearchInput("");
+  }
+
   function applyView(view: SavedView) {
     try {
       const config: ViewConfiguration = JSON.parse(view.configuration);
@@ -305,6 +318,7 @@ export default function LocationsPage() {
               entityType="locations"
               activeViewId={activeViewId}
               onApplyView={applyView}
+              onResetToDefault={handleResetToDefault}
               getCurrentConfiguration={getCurrentConfiguration}
             />
           </div>

@@ -90,6 +90,21 @@ export default function AuditLogPage() {
     if (defaultView) applyView(defaultView);
   }, [savedViews]);
 
+  function handleResetToDefault() {
+    setColumnVisibility({});
+    setActiveViewId(null);
+    setSearchParams((prev) => {
+      prev.delete("search");
+      prev.delete("entityType");
+      prev.delete("action");
+      prev.set("sortBy", "timestamp");
+      prev.set("sortDir", "desc");
+      prev.set("page", "1");
+      return prev;
+    });
+    setSearchInput("");
+  }
+
   function applyView(view: SavedView) {
     try {
       const config: ViewConfiguration = JSON.parse(view.configuration);
@@ -249,6 +264,7 @@ export default function AuditLogPage() {
               entityType="audit-log"
               activeViewId={activeViewId}
               onApplyView={applyView}
+              onResetToDefault={handleResetToDefault}
               getCurrentConfiguration={getCurrentConfiguration}
             />
           </div>

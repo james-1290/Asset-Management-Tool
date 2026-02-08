@@ -148,31 +148,40 @@ export default function AssetsPage() {
     return vis;
   }, [allCustomFieldDefs]);
 
-  // Apply default saved view on first load
+  // When custom field defs load, hide them by default
+  useEffect(() => {
+    if (allCustomFieldDefs.length === 0) return;
+    setColumnVisibility((prev) => {
+      const next = { ...prev };
+      for (const cf of allCustomFieldDefs) {
+        const key = `cf_${cf.id}`;
+        if (!(key in next)) next[key] = false;
+      }
+      return next;
+    });
+  }, [allCustomFieldDefs]);
+
+  // Apply user's default saved view on first load
   useEffect(() => {
     if (defaultViewApplied.current || savedViews.length === 0) return;
     defaultViewApplied.current = true;
     const defaultView = savedViews.find((v) => v.isDefault);
-    if (defaultView) {
-      applyView(defaultView);
-    } else {
-      setColumnVisibility(defaultColumnVisibility);
-    }
-  }, [savedViews, defaultColumnVisibility]);
+    if (defaultView) applyView(defaultView);
+  }, [savedViews]);
 
-  // If no saved views yet, apply default column visibility
-  useEffect(() => {
-    if (!defaultViewApplied.current && savedViews.length === 0 && Object.keys(defaultColumnVisibility).length > 0) {
-      setColumnVisibility((prev) => {
-        // Merge: keep existing user changes, add new defaults for custom fields
-        const merged = { ...prev };
-        for (const [key, val] of Object.entries(defaultColumnVisibility)) {
-          if (!(key in merged)) merged[key] = val;
-        }
-        return merged;
-      });
-    }
-  }, [defaultColumnVisibility, savedViews.length]);
+  function handleResetToDefault() {
+    setColumnVisibility(defaultColumnVisibility);
+    setActiveViewId(null);
+    setSearchParams((prev) => {
+      prev.delete("search");
+      prev.delete("status");
+      prev.set("sortBy", "name");
+      prev.set("sortDir", "asc");
+      prev.set("page", "1");
+      return prev;
+    });
+    setSearchInput("");
+  }
 
   function applyView(view: SavedView) {
     try {
@@ -411,6 +420,7 @@ export default function AssetsPage() {
               entityType="assets"
               activeViewId={activeViewId}
               onApplyView={applyView}
+              onResetToDefault={handleResetToDefault}
               getCurrentConfiguration={getCurrentConfiguration}
             />
           </div>

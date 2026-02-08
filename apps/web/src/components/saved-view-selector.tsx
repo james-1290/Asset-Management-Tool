@@ -31,6 +31,7 @@ interface SavedViewSelectorProps {
   entityType: string;
   activeViewId: string | null;
   onApplyView: (view: SavedView) => void;
+  onResetToDefault: () => void;
   getCurrentConfiguration: () => ViewConfiguration;
 }
 
@@ -38,6 +39,7 @@ export function SavedViewSelector({
   entityType,
   activeViewId,
   onApplyView,
+  onResetToDefault,
   getCurrentConfiguration,
 }: SavedViewSelectorProps) {
   const { data: views = [] } = useSavedViews(entityType);
@@ -138,10 +140,18 @@ export function SavedViewSelector({
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="h-8 gap-1.5">
             <Bookmark className="h-3.5 w-3.5" />
-            {activeView ? activeView.name : "Views"}
+            {activeView ? activeView.name : "Default"}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuItem
+            onClick={onResetToDefault}
+            className="justify-between"
+          >
+            Default
+            {activeViewId === null && <Check className="h-4 w-4" />}
+          </DropdownMenuItem>
+          {views.length > 0 && <DropdownMenuSeparator />}
           {views.map((view) => (
             <DropdownMenuItem
               key={view.id}
@@ -155,7 +165,7 @@ export function SavedViewSelector({
               {view.id === activeViewId && <Check className="h-4 w-4" />}
             </DropdownMenuItem>
           ))}
-          {views.length > 0 && <DropdownMenuSeparator />}
+          <DropdownMenuSeparator />
           {activeViewId && (
             <DropdownMenuItem onClick={() => handleUpdateView(activeViewId)}>
               Update current view
