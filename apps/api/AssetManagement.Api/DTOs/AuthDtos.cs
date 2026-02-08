@@ -9,4 +9,5 @@ public record UserProfileResponse(
     string Username,
     string DisplayName,
     string Email,
-    List<string> Roles);
+    List<string> Roles,
+    string? ThemePreference = null);

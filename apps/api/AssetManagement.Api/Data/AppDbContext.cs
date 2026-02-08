@@ -30,6 +30,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ApplicationHistory> ApplicationHistory => Set<ApplicationHistory>();
     public DbSet<ApplicationHistoryChange> ApplicationHistoryChanges => Set<ApplicationHistoryChange>();
     public DbSet<SavedView> SavedViews => Set<SavedView>();
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -319,6 +320,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany(h => h.Changes)
             .HasForeignKey(c => c.ApplicationHistoryId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // SystemSetting
+        modelBuilder.Entity<SystemSetting>()
+            .HasKey(s => s.Key);
 
         // SavedView
         modelBuilder.Entity<SavedView>()

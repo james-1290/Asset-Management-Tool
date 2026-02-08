@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-02-08 22:07 - Settings Page with Profile, Users, Alerts & System Config
+
+- **Backend**: Added `SystemSetting` model (key-value store, `Key` as PK)
+- **Backend**: Added `ThemePreference` to `User` model
+- **Backend**: EF Migration: `AddSystemSettingsAndUserTheme`
+- **Backend**: Seed data: "User" role, default system settings (org name, currency, date format, page size), default alert settings (thresholds, SMTP, Slack)
+- **Backend**: New `ProfileController` — `PUT /api/v1/profile` (update display name, email, theme), `PUT /api/v1/profile/password` (change password)
+- **Backend**: New `SettingsController` — `GET/PUT /api/v1/settings/system` and `GET/PUT /api/v1/settings/alerts` (admin only for writes)
+- **Backend**: New `RolesController` — `GET /api/v1/roles` (admin only)
+- **Backend**: Expanded `UsersController` — full CRUD: list (with `?includeInactive`), get by ID, create, update (name/email/role/active), reset password (all admin-only except list)
+- **Backend**: `UserProfileResponse` now includes `themePreference`
+- **Frontend**: Settings page at `/settings` with tabbed layout (URL-driven `?tab=profile|users|alerts|system`)
+- **Frontend**: Profile tab — edit display name, email, theme preference; change password with validation
+- **Frontend**: Users tab (admin only) — DataTable with role badges & status badges, add/edit user dialogs, reset password dialog
+- **Frontend**: Alerts tab (admin only) — toggle switches for warranty/certificate/licence alerts, configurable thresholds, SMTP config, Slack webhook, recipients
+- **Frontend**: System tab (admin only) — organisation name, currency, date format, default page size
+- **Frontend**: Auth context now exposes `isAdmin` boolean and `updateUser()` method; syncs theme preference to localStorage on login
+- **Frontend**: User menu now has "Profile" link that navigates to `/settings?tab=profile`
+- **Frontend**: Added shadcn `Tabs` and `Switch` UI components
+
 ## 2026-02-08 21:49 - Person Detail Page with Full History Tracking
 
 - **Backend**: Added `PersonHistory` + `PersonHistoryChange` tables (EF migration: `AddPersonHistory`)

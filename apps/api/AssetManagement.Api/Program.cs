@@ -92,6 +92,52 @@ if (app.Environment.IsDevelopment())
 
         await db.SaveChangesAsync();
     }
+
+    // Seed "User" role if not exists
+    if (!await db.Roles.AnyAsync(r => r.Name == "User"))
+    {
+        db.Roles.Add(new Role
+        {
+            Id = Guid.NewGuid(),
+            Name = "User",
+            Description = "Standard user"
+        });
+        await db.SaveChangesAsync();
+    }
+
+    // Seed default system settings
+    var defaultSettings = new Dictionary<string, string>
+    {
+        ["org.name"] = "My Organisation",
+        ["org.currency"] = "GBP",
+        ["org.dateFormat"] = "DD/MM/YYYY",
+        ["org.defaultPageSize"] = "25",
+        ["alerts.warranty.enabled"] = "true",
+        ["alerts.certificate.enabled"] = "true",
+        ["alerts.licence.enabled"] = "true",
+        ["alerts.thresholds"] = "90,30,14,7",
+        ["alerts.smtp.host"] = "",
+        ["alerts.smtp.port"] = "587",
+        ["alerts.smtp.username"] = "",
+        ["alerts.smtp.password"] = "",
+        ["alerts.smtp.fromAddress"] = "",
+        ["alerts.slack.webhookUrl"] = "",
+        ["alerts.recipients"] = "",
+    };
+
+    foreach (var (key, value) in defaultSettings)
+    {
+        if (!await db.SystemSettings.AnyAsync(s => s.Key == key))
+        {
+            db.SystemSettings.Add(new SystemSetting
+            {
+                Key = key,
+                Value = value,
+                UpdatedBy = "System"
+            });
+        }
+    }
+    await db.SaveChangesAsync();
 }
 
 app.Run();

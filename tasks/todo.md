@@ -46,6 +46,7 @@
 - [x] Dashboard: free-form grid via react-grid-layout v2 (drag to any cell, resize by edges, vertical compaction)
 - [x] Dashboard: Total Assets and Total Value as independent resizable widgets
 - [x] Dashboard: colourful 10-colour palette for bar charts
+- [x] Dashboard: stat card redesign — clickable number cards with coloured icons, fixed grid size, navigation to filtered views
 - [x] Custom fields: define per asset type (inline editor in asset type dialog)
 - [x] Custom fields: render dynamically in asset create/edit forms (Text, Number, Date, Boolean, SingleSelect, MultiSelect, URL)
 - [x] Custom fields: toggleable columns in assets DataTable
@@ -61,6 +62,11 @@
 - [x] Certificates module: Certificate detail page (info card, custom fields, history timeline)
 - [x] Certificates module: Certificate Expiries dashboard widget
 - [x] Certificates module: sidebar nav + routes for Certificate Types and Certificate detail
+
+- [x] Person detail page (/people/:id) with info card, assigned assets table, history timeline
+- [x] Person history: field-level change tracking (PersonHistory + PersonHistoryChange tables)
+- [x] Person history: asset assignment events logged from checkout/checkin/retire/sell/edit
+- [x] People list: clickable name links + View action in dropdown
 
 ## Next (MVP)
 
