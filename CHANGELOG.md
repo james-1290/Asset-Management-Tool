@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-02-08 20:58 - Dashboard Stat Cards Redesign
+
+- **Frontend**: Redesigned dashboard stat cards with coloured circular icons, big bold numbers, and labels
+- **Frontend**: All 8 stat cards are now clickable — navigate to filtered list views
+- **Frontend**: Stat cards locked to fixed 3×2 grid size (draggable but not resizable)
+- **Frontend**: Converted 6 list widgets (recently added, unassigned, checked out, warranty/cert/licence expiries) to number-only stat cards
+- **Frontend**: Updated default dashboard layout — 8 stat cards in top 2 rows, charts below
+- **Frontend**: Removed per-widget expiry day selectors (hardcoded to 30 days)
+- **Frontend**: Added dark mode support for stat card icon backgrounds
+
 ## 2026-02-08 20:38 - Bulk Actions for Type & People Pages
 
 - **Backend**: Added `POST /api/v1/assettypes/bulk-archive` endpoint
