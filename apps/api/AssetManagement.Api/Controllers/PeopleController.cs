@@ -141,7 +141,7 @@ public class PeopleController(AppDbContext db, IAuditService audit, ICurrentUser
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<PersonDto>> Update(Guid id, UpdatePersonRequest request)
     {
-        var person = await db.People.FindAsync(id);
+        var person = await db.People.Include(p => p.Location).FirstOrDefaultAsync(p => p.Id == id);
         if (person is null) return NotFound();
 
         if (request.LocationId.HasValue)
@@ -149,6 +149,21 @@ public class PeopleController(AppDbContext db, IAuditService audit, ICurrentUser
             var location = await db.Locations.FindAsync(request.LocationId.Value);
             if (location is null || location.IsArchived)
                 return BadRequest("Invalid location ID.");
+        }
+
+        var changes = new List<AuditChange>();
+        Track(changes, "Full Name", person.FullName, request.FullName);
+        Track(changes, "Email", person.Email, request.Email);
+        Track(changes, "Department", person.Department, request.Department);
+        Track(changes, "Job Title", person.JobTitle, request.JobTitle);
+
+        if (request.LocationId != person.LocationId)
+        {
+            var oldName = person.Location?.Name;
+            string? newName = null;
+            if (request.LocationId is not null)
+                newName = await db.Locations.Where(l => l.Id == request.LocationId).Select(l => l.Name).FirstAsync();
+            changes.Add(new AuditChange("Location", oldName, newName));
         }
 
         person.FullName = request.FullName;
@@ -167,7 +182,8 @@ public class PeopleController(AppDbContext db, IAuditService audit, ICurrentUser
             EntityName: person.FullName,
             Details: $"Updated person \"{person.FullName}\"",
             ActorId: currentUser.UserId,
-            ActorName: currentUser.UserName));
+            ActorName: currentUser.UserName,
+            Changes: changes));
 
         await db.Entry(person).Reference(p => p.Location).LoadAsync();
 
@@ -175,6 +191,12 @@ public class PeopleController(AppDbContext db, IAuditService audit, ICurrentUser
             person.Id, person.FullName, person.Email, person.Department, person.JobTitle,
             person.LocationId, person.Location?.Name,
             person.IsArchived, person.CreatedAt, person.UpdatedAt));
+    }
+
+    private static void Track(List<AuditChange> changes, string field, string? oldVal, string? newVal)
+    {
+        if (oldVal != newVal)
+            changes.Add(new AuditChange(field, oldVal, newVal));
     }
 
     [HttpPost("bulk-archive")]
@@ -201,6 +223,63 @@ public class PeopleController(AppDbContext db, IAuditService audit, ICurrentUser
             succeeded++;
         }
         return Ok(new BulkActionResponse(succeeded, failed));
+    }
+
+    [HttpGet("{id:guid}/history")]
+    public async Task<ActionResult<List<PersonHistoryDto>>> GetHistory(
+        Guid id,
+        [FromQuery] int? limit = null)
+    {
+        var person = await db.People.FindAsync(id);
+        if (person is null) return NotFound();
+
+        var query = db.PersonHistory
+            .Where(h => h.PersonId == id)
+            .Include(h => h.PerformedByUser)
+            .Include(h => h.Changes)
+            .OrderByDescending(h => h.Timestamp)
+            .AsQueryable();
+
+        if (limit.HasValue)
+            query = query.Take(limit.Value);
+
+        var history = await query
+            .Select(h => new PersonHistoryDto(
+                h.Id,
+                h.EventType.ToString(),
+                h.Details,
+                h.Timestamp,
+                h.PerformedByUser != null ? h.PerformedByUser.DisplayName : null,
+                h.Changes.Select(c => new PersonHistoryChangeDto(
+                    c.FieldName, c.OldValue, c.NewValue
+                )).ToList()))
+            .ToListAsync();
+
+        return Ok(history);
+    }
+
+    [HttpGet("{id:guid}/assets")]
+    public async Task<ActionResult<List<AssignedAssetDto>>> GetAssignedAssets(Guid id)
+    {
+        var person = await db.People.FindAsync(id);
+        if (person is null) return NotFound();
+
+        var assets = await db.Assets
+            .Where(a => a.AssignedPersonId == id && !a.IsArchived)
+            .Include(a => a.AssetType)
+            .Include(a => a.Location)
+            .OrderBy(a => a.Name)
+            .Select(a => new AssignedAssetDto(
+                a.Id,
+                a.Name,
+                a.AssetTag,
+                a.SerialNumber,
+                a.Status.ToString(),
+                a.AssetType!.Name,
+                a.Location != null ? a.Location.Name : null))
+            .ToListAsync();
+
+        return Ok(assets);
     }
 
     [HttpDelete("{id:guid}")]

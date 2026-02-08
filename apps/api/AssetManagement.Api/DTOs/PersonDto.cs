@@ -33,3 +33,28 @@ public record PersonSearchResult(
     Guid Id,
     string FullName
 );
+
+public record PersonHistoryChangeDto(
+    string FieldName,
+    string? OldValue,
+    string? NewValue
+);
+
+public record PersonHistoryDto(
+    Guid Id,
+    string EventType,
+    string? Details,
+    DateTime Timestamp,
+    string? PerformedByUserName,
+    List<PersonHistoryChangeDto> Changes
+);
+
+public record AssignedAssetDto(
+    Guid Id,
+    string Name,
+    string AssetTag,
+    string? SerialNumber,
+    string Status,
+    string AssetTypeName,
+    string? LocationName
+);

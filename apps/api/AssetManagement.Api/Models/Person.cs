@@ -14,4 +14,5 @@ public class Person
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Asset> AssignedAssets { get; set; } = [];
+    public List<PersonHistory> History { get; set; } = [];
 }

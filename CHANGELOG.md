@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-02-08 21:49 - Person Detail Page with Full History Tracking
+
+- **Backend**: Added `PersonHistory` + `PersonHistoryChange` tables (EF migration: `AddPersonHistory`)
+- **Backend**: Added `PersonHistoryEventType` enum (Created, Edited, Archived, Restored, AssetAssigned, AssetUnassigned, AssetCheckedOut, AssetCheckedIn)
+- **Backend**: `AuditService` now creates `PersonHistory` records with field-level change tracking for Person entities
+- **Backend**: Asset checkout/checkin/retire/sell/update now log entries to person history when assignment changes
+- **Backend**: `PeopleController.Update` now tracks field-level changes (Full Name, Email, Department, Job Title, Location)
+- **Backend**: Added `GET /api/v1/people/{id}/history` endpoint — returns person history with field-level changes
+- **Backend**: Added `GET /api/v1/people/{id}/assets` endpoint — returns non-archived assets assigned to a person
+- **Frontend**: New person detail page at `/people/:id` with info card, assigned assets table, and history timeline
+- **Frontend**: Person history timeline shows field-level changes (matching asset history pattern)
+- **Frontend**: Person name in People list is now a clickable link to detail page
+- **Frontend**: Added "View" action to person row dropdown menu
+- **Frontend**: History timeline with "View All History" dialog for full audit trail
+
 ## 2026-02-08 20:58 - Dashboard Stat Cards Redesign
 
 - **Frontend**: Redesigned dashboard stat cards with coloured circular icons, big bold numbers, and labels

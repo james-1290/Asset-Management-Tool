@@ -31,3 +31,28 @@ export interface PersonSearchResult {
   id: string;
   fullName: string;
 }
+
+export interface PersonHistoryChange {
+  fieldName: string;
+  oldValue: string | null;
+  newValue: string | null;
+}
+
+export interface PersonHistory {
+  id: string;
+  eventType: string;
+  details: string | null;
+  timestamp: string;
+  performedByUserName: string | null;
+  changes: PersonHistoryChange[];
+}
+
+export interface AssignedAsset {
+  id: string;
+  name: string;
+  assetTag: string;
+  serialNumber: string | null;
+  status: string;
+  assetTypeName: string;
+  locationName: string | null;
+}

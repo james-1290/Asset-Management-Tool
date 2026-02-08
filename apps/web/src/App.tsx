@@ -14,6 +14,7 @@ import ApplicationTypesPage from "@/pages/application-types"
 import AssetTypesPage from "@/pages/asset-types"
 import LocationsPage from "@/pages/locations"
 import PeoplePage from "@/pages/people"
+import PersonDetailPage from "@/pages/person-detail"
 import AuditLogPage from "@/pages/audit-log"
 import SettingsPage from "@/pages/settings"
 
@@ -36,6 +37,7 @@ function App() {
             <Route path="/asset-types" element={<AssetTypesPage />} />
             <Route path="/locations" element={<LocationsPage />} />
             <Route path="/people" element={<PeoplePage />} />
+            <Route path="/people/:id" element={<PersonDetailPage />} />
             <Route path="/audit-log" element={<AuditLogPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>

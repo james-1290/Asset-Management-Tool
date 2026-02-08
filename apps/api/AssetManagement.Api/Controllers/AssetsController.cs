@@ -296,13 +296,19 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
             changes.Add(new AuditChange("Location", oldName, newName));
         }
 
+        Guid? oldAssignedPersonId = null;
+        string? oldAssignedPersonName = null;
+        Guid? newAssignedPersonId = null;
+        string? newAssignedPersonName = null;
+
         if (request.AssignedPersonId != asset.AssignedPersonId)
         {
-            var oldName = asset.AssignedPerson?.FullName;
-            string? newName = null;
+            oldAssignedPersonId = asset.AssignedPersonId;
+            oldAssignedPersonName = asset.AssignedPerson?.FullName;
+            newAssignedPersonId = request.AssignedPersonId;
             if (request.AssignedPersonId is not null)
-                newName = await db.People.Where(p => p.Id == request.AssignedPersonId).Select(p => p.FullName).FirstAsync();
-            changes.Add(new AuditChange("Assigned To", oldName, newName));
+                newAssignedPersonName = await db.People.Where(p => p.Id == request.AssignedPersonId).Select(p => p.FullName).FirstAsync();
+            changes.Add(new AuditChange("Assigned To", oldAssignedPersonName, newAssignedPersonName));
         }
 
         TrackDate(changes, "Purchase Date", asset.PurchaseDate, request.PurchaseDate);
@@ -380,6 +386,30 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
             ActorId: currentUser.UserId,
             ActorName: currentUser.UserName,
             Changes: changes.Count > 0 ? changes : null));
+
+        // Log assignment changes to person history
+        if (oldAssignedPersonId is not null && oldAssignedPersonId != newAssignedPersonId)
+        {
+            await audit.LogAsync(new AuditEntry(
+                Action: "AssetUnassigned",
+                EntityType: "Person",
+                EntityId: oldAssignedPersonId.Value.ToString(),
+                EntityName: oldAssignedPersonName,
+                Details: $"Asset \"{asset.Name}\" ({asset.AssetTag}) unassigned from this person",
+                ActorId: currentUser.UserId,
+                ActorName: currentUser.UserName));
+        }
+        if (newAssignedPersonId is not null && newAssignedPersonId != oldAssignedPersonId)
+        {
+            await audit.LogAsync(new AuditEntry(
+                Action: "AssetAssigned",
+                EntityType: "Person",
+                EntityId: newAssignedPersonId.Value.ToString(),
+                EntityName: newAssignedPersonName,
+                Details: $"Asset \"{asset.Name}\" ({asset.AssetTag}) assigned to this person",
+                ActorId: currentUser.UserId,
+                ActorName: currentUser.UserName));
+        }
 
         // Reload navigation properties
         await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
@@ -465,6 +495,16 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
             ActorName: currentUser.UserName,
             Changes: changes));
 
+        // Log to person history
+        await audit.LogAsync(new AuditEntry(
+            Action: "AssetCheckedOut",
+            EntityType: "Person",
+            EntityId: person.Id.ToString(),
+            EntityName: person.FullName,
+            Details: $"Asset \"{asset.Name}\" ({asset.AssetTag}) checked out to this person",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName));
+
         await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
         if (asset.LocationId is not null)
             await db.Entry(asset).Reference(a => a.Location).LoadAsync();
@@ -493,6 +533,7 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
         var changes = new List<AuditChange>();
         changes.Add(new AuditChange("Status", asset.Status.ToString(), AssetStatus.Available.ToString()));
 
+        var oldPersonId = asset.AssignedPersonId;
         var oldPersonName = asset.AssignedPerson?.FullName;
         if (oldPersonName is not null)
             changes.Add(new AuditChange("Assigned To", oldPersonName, null));
@@ -518,6 +559,19 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
             ActorId: currentUser.UserId,
             ActorName: currentUser.UserName,
             Changes: changes));
+
+        // Log to person history
+        if (oldPersonId is not null)
+        {
+            await audit.LogAsync(new AuditEntry(
+                Action: "AssetCheckedIn",
+                EntityType: "Person",
+                EntityId: oldPersonId.Value.ToString(),
+                EntityName: oldPersonName,
+                Details: $"Asset \"{asset.Name}\" ({asset.AssetTag}) checked in from this person",
+                ActorId: currentUser.UserId,
+                ActorName: currentUser.UserName));
+        }
 
         await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
         if (asset.LocationId is not null)
@@ -545,6 +599,7 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
         var changes = new List<AuditChange>();
         changes.Add(new AuditChange("Status", asset.Status.ToString(), AssetStatus.Retired.ToString()));
 
+        var oldPersonId = asset.AssignedPersonId;
         var oldPersonName = asset.AssignedPerson?.FullName;
         if (oldPersonName is not null)
             changes.Add(new AuditChange("Assigned To", oldPersonName, null));
@@ -570,6 +625,19 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
             ActorId: currentUser.UserId,
             ActorName: currentUser.UserName,
             Changes: changes));
+
+        // Log to person history
+        if (oldPersonId is not null)
+        {
+            await audit.LogAsync(new AuditEntry(
+                Action: "AssetUnassigned",
+                EntityType: "Person",
+                EntityId: oldPersonId.Value.ToString(),
+                EntityName: oldPersonName,
+                Details: $"Asset \"{asset.Name}\" ({asset.AssetTag}) unassigned (asset retired)",
+                ActorId: currentUser.UserId,
+                ActorName: currentUser.UserName));
+        }
 
         await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
         if (asset.LocationId is not null)
@@ -597,6 +665,7 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
         var changes = new List<AuditChange>();
         changes.Add(new AuditChange("Status", asset.Status.ToString(), AssetStatus.Sold.ToString()));
 
+        var oldPersonId = asset.AssignedPersonId;
         var oldPersonName = asset.AssignedPerson?.FullName;
         if (oldPersonName is not null)
             changes.Add(new AuditChange("Assigned To", oldPersonName, null));
@@ -629,6 +698,19 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
             ActorId: currentUser.UserId,
             ActorName: currentUser.UserName,
             Changes: changes));
+
+        // Log to person history
+        if (oldPersonId is not null)
+        {
+            await audit.LogAsync(new AuditEntry(
+                Action: "AssetUnassigned",
+                EntityType: "Person",
+                EntityId: oldPersonId.Value.ToString(),
+                EntityName: oldPersonName,
+                Details: $"Asset \"{asset.Name}\" ({asset.AssetTag}) unassigned (asset sold)",
+                ActorId: currentUser.UserId,
+                ActorName: currentUser.UserName));
+        }
 
         await db.Entry(asset).Reference(a => a.AssetType).LoadAsync();
         if (asset.LocationId is not null)
