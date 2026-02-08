@@ -20,6 +20,7 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
         [FromQuery] int pageSize = 25,
         [FromQuery] string? search = null,
         [FromQuery] string? status = null,
+        [FromQuery] string? includeStatuses = null,
         [FromQuery] string sortBy = "name",
         [FromQuery] string sortDir = "asc")
     {
@@ -49,6 +50,21 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
             if (!Enum.TryParse<AssetStatus>(status, out var parsedStatus))
                 return BadRequest(new { error = $"Invalid status: {status}" });
             query = query.Where(a => a.Status == parsedStatus);
+        }
+        else
+        {
+            // By default, exclude terminal statuses (Retired, Sold) unless explicitly included
+            var hiddenStatuses = new HashSet<AssetStatus> { AssetStatus.Retired, AssetStatus.Sold };
+            if (!string.IsNullOrWhiteSpace(includeStatuses))
+            {
+                foreach (var s in includeStatuses.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    if (Enum.TryParse<AssetStatus>(s, out var parsed))
+                        hiddenStatuses.Remove(parsed);
+                }
+            }
+            if (hiddenStatuses.Count > 0)
+                query = query.Where(a => !hiddenStatuses.Contains(a.Status));
         }
 
         var totalCount = await query.CountAsync();

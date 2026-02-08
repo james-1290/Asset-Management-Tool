@@ -20,6 +20,7 @@ public class ApplicationsController(AppDbContext db, IAuditService audit, ICurre
         [FromQuery] int pageSize = 25,
         [FromQuery] string? search = null,
         [FromQuery] string? status = null,
+        [FromQuery] string? includeStatuses = null,
         [FromQuery] string sortBy = "name",
         [FromQuery] string sortDir = "asc")
     {
@@ -46,6 +47,21 @@ public class ApplicationsController(AppDbContext db, IAuditService audit, ICurre
             if (!Enum.TryParse<ApplicationStatus>(status, out var parsedStatus))
                 return BadRequest(new { error = $"Invalid status: {status}" });
             query = query.Where(a => a.Status == parsedStatus);
+        }
+        else
+        {
+            // By default, exclude Inactive unless explicitly included
+            var hiddenStatuses = new HashSet<ApplicationStatus> { ApplicationStatus.Inactive };
+            if (!string.IsNullOrWhiteSpace(includeStatuses))
+            {
+                foreach (var s in includeStatuses.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    if (Enum.TryParse<ApplicationStatus>(s, out var parsed))
+                        hiddenStatuses.Remove(parsed);
+                }
+            }
+            if (hiddenStatuses.Count > 0)
+                query = query.Where(a => !hiddenStatuses.Contains(a.Status));
         }
 
         var totalCount = await query.CountAsync();

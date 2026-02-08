@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-02-08 15:29 - List Filter Overhaul + Application Inactive Status
+
+- **Backend**: Added `Inactive` value to `ApplicationStatus` enum (DB migration `AddApplicationInactiveStatus`)
+- **Backend**: New `includeStatuses` query param on all three list endpoints (`/assets`, `/applications`, `/certificates`)
+- **Backend**: Assets default list now excludes `Retired` and `Sold` statuses; `includeStatuses=Retired,Sold` opts them back in
+- **Backend**: Applications default list now excludes `Inactive` status; `includeStatuses=Inactive` opts it back in
+- **Backend**: Certificates endpoint accepts `includeStatuses` for API consistency (no hidden statuses currently)
+- **Frontend**: Replaced status `<Select>` dropdown on all three list toolbars with `<Popover>` containing status filter + include checkboxes
+- **Frontend**: Assets toolbar: checkboxes for "Include retired" and "Include sold"
+- **Frontend**: Applications toolbar: checkbox for "Include inactive"
+- **Frontend**: Certificates toolbar: popover with status filter only (no hidden statuses)
+- **Frontend**: Filter state persists in URL params (`includeRetired`, `includeSold`, `includeInactive`)
+- **Frontend**: Filter button shows badge count when filters are active
+- **Frontend**: Added `Inactive` status badge styling for applications (slate theme)
+- **Frontend**: Added `Inactive` to application form status dropdown
+
 ## 2026-02-08 14:21 - Mark MVP Complete
 
 - **Chore**: Mark "DataTable: saved views per user" as complete in todo.md — all Next (MVP) items are now done

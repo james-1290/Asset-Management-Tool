@@ -14,6 +14,7 @@ export interface AssetQueryParams {
   pageSize?: number;
   search?: string;
   status?: string;
+  includeStatuses?: string;
   sortBy?: string;
   sortDir?: string;
 }
