@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-02-08 15:53 - Restore Retire/Sell Asset Workflow
+
+- **Fix**: Restored retire and sell asset dialogs, API endpoints, and hooks accidentally removed during list filter overhaul
+- **Backend**: Restored `POST /assets/{id}/retire` and `POST /assets/{id}/sell` endpoints
+- **Backend**: Restored `RetireAssetRequest` and `SellAssetRequest` DTOs
+- **Backend**: Added `SoldDate`, `SoldPrice`, `RetiredDate` back to `AssetDto`
+- **Backend**: Restored `RetiredDate` property on `Asset` model (no-op migration to sync snapshot)
+- **Backend**: Restored "Retired" and "Sold" mappings in `AuditService`
+- **Frontend**: Restored `RetireAssetDialog` and `SellAssetDialog` components
+- **Frontend**: Restored retire/sell buttons on asset detail page (hidden for already retired/sold assets)
+- **Frontend**: Restored `soldDate`, `soldPrice`, `retiredDate` display on asset detail page
+- **Frontend**: Restored `useRetireAsset` and `useSellAsset` hooks + API client methods
+- **Frontend**: Restored `RetireAssetRequest`, `SellAssetRequest` types + sold/retired fields on `Asset` type
+- **DB migration**: `RestoreRetiredDateToSnapshot` (no-op — column already existed)
+
 ## 2026-02-08 15:29 - List Filter Overhaul + Application Inactive Status
 
 - **Backend**: Added `Inactive` value to `ApplicationStatus` enum (DB migration `AddApplicationInactiveStatus`)

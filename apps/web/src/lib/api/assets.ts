@@ -5,6 +5,8 @@ import type {
   UpdateAssetRequest,
   CheckoutAssetRequest,
   CheckinAssetRequest,
+  RetireAssetRequest,
+  SellAssetRequest,
 } from "../../types/asset";
 import type { AssetHistory } from "../../types/asset-history";
 import type { PagedResponse } from "../../types/paged-response";
@@ -53,6 +55,14 @@ export const assetsApi = {
 
   checkin(id: string, data: CheckinAssetRequest): Promise<Asset> {
     return apiClient.post<Asset>(`/assets/${id}/checkin`, data);
+  },
+
+  retire(id: string, data: RetireAssetRequest): Promise<Asset> {
+    return apiClient.post<Asset>(`/assets/${id}/retire`, data);
+  },
+
+  sell(id: string, data: SellAssetRequest): Promise<Asset> {
+    return apiClient.post<Asset>(`/assets/${id}/sell`, data);
   },
 
   archive(id: string): Promise<void> {

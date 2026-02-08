@@ -25,6 +25,7 @@ public class Asset
     public int? DepreciationMonths { get; set; }
     public DateTime? SoldDate { get; set; }
     public decimal? SoldPrice { get; set; }
+    public DateTime? RetiredDate { get; set; }
     public string? Notes { get; set; }
 
     public bool IsArchived { get; set; }
