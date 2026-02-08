@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
-import type { SortingState, VisibilityState } from "@tanstack/react-table";
+import { Plus, Archive, RefreshCw } from "lucide-react";
+import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
@@ -20,7 +20,11 @@ import {
   useCreateApplication,
   useUpdateApplication,
   useArchiveApplication,
+  useBulkArchiveApplications,
+  useBulkStatusApplications,
 } from "../hooks/use-applications";
+import { getSelectionColumn } from "../components/data-table-selection-column";
+import { BulkActionBar } from "../components/bulk-action-bar";
 import { useApplicationTypes } from "../hooks/use-application-types";
 import { useLocations } from "../hooks/use-locations";
 import type { Application } from "../types/application";
@@ -150,10 +154,14 @@ export default function ApplicationsPage() {
   const createMutation = useCreateApplication();
   const updateMutation = useUpdateApplication();
   const archiveMutation = useArchiveApplication();
+  const bulkArchiveMutation = useBulkArchiveApplications();
+  const bulkStatusMutation = useBulkStatusApplications();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState<Application | null>(null);
   const [archivingApplication, setArchivingApplication] = useState<Application | null>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   // Saved views
   const { data: savedViews = [] } = useSavedViews("applications");
@@ -162,8 +170,9 @@ export default function ApplicationsPage() {
   const defaultViewApplied = useRef(false);
 
   const columns = useMemo(
-    () =>
-      getApplicationColumns({
+    () => [
+      getSelectionColumn<Application>(),
+      ...getApplicationColumns({
         onEdit: (application) => {
           setEditingApplication(application);
           setFormOpen(true);
@@ -172,6 +181,7 @@ export default function ApplicationsPage() {
           setArchivingApplication(application);
         },
       }),
+    ],
     [],
   );
 
@@ -352,6 +362,35 @@ export default function ApplicationsPage() {
     });
   }
 
+  const selectedIds = Object.keys(rowSelection);
+  const selectedCount = selectedIds.length;
+
+  function handleBulkArchive() {
+    bulkArchiveMutation.mutate(selectedIds, {
+      onSuccess: (result) => {
+        toast.success(`Archived ${result.succeeded} application(s)`);
+        setRowSelection({});
+        setBulkArchiveOpen(false);
+      },
+      onError: () => {
+        toast.error("Failed to archive applications");
+        setBulkArchiveOpen(false);
+      },
+    });
+  }
+
+  function handleBulkStatus(status: string) {
+    bulkStatusMutation.mutate({ ids: selectedIds, status }, {
+      onSuccess: (result) => {
+        toast.success(`Updated ${result.succeeded} application(s) to ${status}`);
+        setRowSelection({});
+      },
+      onError: () => {
+        toast.error("Failed to update status");
+      },
+    });
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -402,6 +441,9 @@ export default function ApplicationsPage() {
         data={pagedResult?.items ?? []}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        getRowId={(row: Application) => row.id}
         manualPagination
         manualSorting
         pageCount={pageCount}
@@ -409,27 +451,55 @@ export default function ApplicationsPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
-          <div className="flex items-center gap-2">
-            <ApplicationsToolbar
-              table={table}
-              search={searchInput}
-              onSearchChange={setSearchInput}
-              statusFilter={statusParam}
-              onStatusFilterChange={handleStatusFilterChange}
-              includeInactive={includeInactive}
-              onIncludeInactiveChange={handleIncludeInactiveChange}
-              typeId={typeIdParam}
-              onTypeIdChange={handleTypeIdChange}
-              applicationTypes={applicationTypes ?? []}
-            />
-            <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
-            <SavedViewSelector
-              entityType="applications"
-              activeViewId={activeViewId}
-              onApplyView={applyView}
-              onResetToDefault={handleResetToDefault}
-              getCurrentConfiguration={getCurrentConfiguration}
-            />
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <ApplicationsToolbar
+                table={table}
+                search={searchInput}
+                onSearchChange={setSearchInput}
+                statusFilter={statusParam}
+                onStatusFilterChange={handleStatusFilterChange}
+                includeInactive={includeInactive}
+                onIncludeInactiveChange={handleIncludeInactiveChange}
+                typeId={typeIdParam}
+                onTypeIdChange={handleTypeIdChange}
+                applicationTypes={applicationTypes ?? []}
+              />
+              <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+              <SavedViewSelector
+                entityType="applications"
+                activeViewId={activeViewId}
+                onApplyView={applyView}
+                onResetToDefault={handleResetToDefault}
+                getCurrentConfiguration={getCurrentConfiguration}
+              />
+            </div>
+            <BulkActionBar
+              selectedCount={selectedCount}
+              onClearSelection={() => setRowSelection({})}
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setBulkArchiveOpen(true)}
+                disabled={bulkArchiveMutation.isPending}
+              >
+                <Archive className="mr-1 h-3 w-3" />
+                Archive
+              </Button>
+              {["Active", "Expired", "Suspended", "PendingRenewal", "Inactive"].map((s) => (
+                <Button
+                  key={s}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkStatus(s)}
+                  disabled={bulkStatusMutation.isPending}
+                >
+                  <RefreshCw className="mr-1 h-3 w-3" />
+                  {s === "PendingRenewal" ? "Pending Renewal" : s}
+                </Button>
+              ))}
+            </BulkActionBar>
           </div>
         )}
         paginationControls={
@@ -482,6 +552,16 @@ export default function ApplicationsPage() {
         confirmLabel="Delete"
         onConfirm={handleArchive}
         loading={archiveMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={bulkArchiveOpen}
+        onOpenChange={setBulkArchiveOpen}
+        title="Archive selected applications"
+        description={`Are you sure you want to archive ${selectedCount} application(s)? This action can be undone later.`}
+        confirmLabel="Archive"
+        onConfirm={handleBulkArchive}
+        loading={bulkArchiveMutation.isPending}
       />
     </div>
   );

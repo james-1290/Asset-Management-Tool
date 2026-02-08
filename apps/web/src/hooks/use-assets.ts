@@ -139,3 +139,26 @@ export function useArchiveAsset() {
     },
   });
 }
+
+export function useBulkArchiveAssets() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => assetsApi.bulkArchive(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assetKeys.all });
+    },
+  });
+}
+
+export function useBulkStatusAssets() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids, status }: { ids: string[]; status: string }) =>
+      assetsApi.bulkStatus(ids, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assetKeys.all });
+    },
+  });
+}

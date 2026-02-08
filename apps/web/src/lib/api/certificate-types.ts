@@ -42,6 +42,10 @@ export const certificateTypesApi = {
     return apiClient.delete(`/certificatetypes/${id}`);
   },
 
+  bulkArchive(ids: string[]): Promise<{ succeeded: number; failed: number }> {
+    return apiClient.post("/certificatetypes/bulk-archive", { ids });
+  },
+
   getCustomFields(certificateTypeId: string): Promise<CustomFieldDefinition[]> {
     return apiClient.get<CustomFieldDefinition[]>(`/certificatetypes/${certificateTypeId}/customfields`);
   },

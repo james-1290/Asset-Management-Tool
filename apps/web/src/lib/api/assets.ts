@@ -69,4 +69,12 @@ export const assetsApi = {
   archive(id: string): Promise<void> {
     return apiClient.delete(`/assets/${id}`);
   },
+
+  bulkArchive(ids: string[]): Promise<{ succeeded: number; failed: number }> {
+    return apiClient.post("/assets/bulk-archive", { ids });
+  },
+
+  bulkStatus(ids: string[], status: string): Promise<{ succeeded: number; failed: number }> {
+    return apiClient.post("/assets/bulk-status", { ids, status });
+  },
 };

@@ -62,6 +62,17 @@ export function useArchiveApplicationType() {
   });
 }
 
+export function useBulkArchiveApplicationTypes() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => applicationTypesApi.bulkArchive(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: applicationTypeKeys.all });
+    },
+  });
+}
+
 export function useApplicationCustomFieldDefinitions(applicationTypeId: string | undefined) {
   return useQuery({
     queryKey: applicationTypeKeys.customFields(applicationTypeId ?? ""),

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
-import type { SortingState, VisibilityState } from "@tanstack/react-table";
+import { Plus, Trash2 } from "lucide-react";
+import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
@@ -17,7 +17,10 @@ import {
   useCreatePerson,
   useUpdatePerson,
   useArchivePerson,
+  useBulkArchivePeople,
 } from "../hooks/use-people";
+import { getSelectionColumn } from "../components/data-table-selection-column";
+import { BulkActionBar } from "../components/bulk-action-bar";
 import { useLocations } from "../hooks/use-locations";
 import type { Person } from "../types/person";
 import type { PersonFormValues } from "../lib/schemas/person";
@@ -84,10 +87,13 @@ export default function PeoplePage() {
   const createMutation = useCreatePerson();
   const updateMutation = useUpdatePerson();
   const archiveMutation = useArchivePerson();
+  const bulkArchiveMutation = useBulkArchivePeople();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [archivingPerson, setArchivingPerson] = useState<Person | null>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   // Saved views
   const { data: savedViews = [] } = useSavedViews("people");
@@ -96,8 +102,9 @@ export default function PeoplePage() {
   const defaultViewApplied = useRef(false);
 
   const columns = useMemo(
-    () =>
-      getPersonColumns({
+    () => [
+      getSelectionColumn<Person>(),
+      ...getPersonColumns({
         onEdit: (person) => {
           setEditingPerson(person);
           setFormOpen(true);
@@ -106,8 +113,25 @@ export default function PeoplePage() {
           setArchivingPerson(person);
         },
       }),
+    ],
     [],
   );
+
+  const selectedIds = Object.keys(rowSelection);
+
+  function handleBulkArchive() {
+    bulkArchiveMutation.mutate(selectedIds, {
+      onSuccess: (result) => {
+        toast.success(`Archived ${result.succeeded} person(s)`);
+        setRowSelection({});
+        setBulkArchiveOpen(false);
+      },
+      onError: () => {
+        toast.error("Failed to archive people");
+        setBulkArchiveOpen(false);
+      },
+    });
+  }
 
   const sorting: SortingState = useMemo(
     () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
@@ -312,20 +336,30 @@ export default function PeoplePage() {
         rowCount={totalCount}
         sorting={sorting}
         onSortingChange={handleSortingChange}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        getRowId={(row) => row.id}
         toolbar={(table) => (
-          <div className="flex items-center gap-2">
-            <PeopleToolbar
-              table={table}
-              search={searchInput}
-              onSearchChange={setSearchInput}
-            />
-            <SavedViewSelector
-              entityType="people"
-              activeViewId={activeViewId}
-              onApplyView={applyView}
-              onResetToDefault={handleResetToDefault}
-              getCurrentConfiguration={getCurrentConfiguration}
-            />
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <PeopleToolbar
+                table={table}
+                search={searchInput}
+                onSearchChange={setSearchInput}
+              />
+              <SavedViewSelector
+                entityType="people"
+                activeViewId={activeViewId}
+                onApplyView={applyView}
+                onResetToDefault={handleResetToDefault}
+                getCurrentConfiguration={getCurrentConfiguration}
+              />
+            </div>
+            <BulkActionBar selectedCount={selectedIds.length} onClearSelection={() => setRowSelection({})}>
+              <Button variant="destructive" size="sm" onClick={() => setBulkArchiveOpen(true)}>
+                <Trash2 className="mr-1 h-3 w-3" />Archive
+              </Button>
+            </BulkActionBar>
           </div>
         )}
         paginationControls={
@@ -361,6 +395,16 @@ export default function PeoplePage() {
         confirmLabel="Delete"
         onConfirm={handleArchive}
         loading={archiveMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={bulkArchiveOpen}
+        onOpenChange={setBulkArchiveOpen}
+        title="Archive people"
+        description={`Are you sure you want to archive ${selectedIds.length} person(s)? This action can be undone later.`}
+        confirmLabel="Archive"
+        onConfirm={handleBulkArchive}
+        loading={bulkArchiveMutation.isPending}
       />
     </div>
   );

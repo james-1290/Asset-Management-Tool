@@ -48,4 +48,12 @@ export const certificatesApi = {
   archive(id: string): Promise<void> {
     return apiClient.delete(`/certificates/${id}`);
   },
+
+  bulkArchive(ids: string[]): Promise<{ succeeded: number; failed: number }> {
+    return apiClient.post("/certificates/bulk-archive", { ids });
+  },
+
+  bulkStatus(ids: string[], status: string): Promise<{ succeeded: number; failed: number }> {
+    return apiClient.post("/certificates/bulk-status", { ids, status });
+  },
 };

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
-import type { SortingState, VisibilityState } from "@tanstack/react-table";
+import { Plus, Trash2 } from "lucide-react";
+import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
@@ -17,7 +17,10 @@ import {
   useCreateAssetType,
   useUpdateAssetType,
   useArchiveAssetType,
+  useBulkArchiveAssetTypes,
 } from "../hooks/use-asset-types";
+import { getSelectionColumn } from "../components/data-table-selection-column";
+import { BulkActionBar } from "../components/bulk-action-bar";
 import type { AssetType } from "../types/asset-type";
 import type { AssetTypeFormValues } from "../lib/schemas/asset-type";
 import { SavedViewSelector } from "../components/saved-view-selector";
@@ -79,12 +82,15 @@ export default function AssetTypesPage() {
   const createMutation = useCreateAssetType();
   const updateMutation = useUpdateAssetType();
   const archiveMutation = useArchiveAssetType();
+  const bulkArchiveMutation = useBulkArchiveAssetTypes();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingAssetType, setEditingAssetType] = useState<AssetType | null>(null);
   const [archivingAssetType, setArchivingAssetType] = useState<AssetType | null>(
     null,
   );
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   // Saved views
   const { data: savedViews = [] } = useSavedViews("asset-types");
@@ -93,8 +99,9 @@ export default function AssetTypesPage() {
   const defaultViewApplied = useRef(false);
 
   const columns = useMemo(
-    () =>
-      getAssetTypeColumns({
+    () => [
+      getSelectionColumn<AssetType>(),
+      ...getAssetTypeColumns({
         onEdit: (assetType) => {
           setEditingAssetType(assetType);
           setFormOpen(true);
@@ -103,8 +110,25 @@ export default function AssetTypesPage() {
           setArchivingAssetType(assetType);
         },
       }),
+    ],
     [],
   );
+
+  const selectedIds = Object.keys(rowSelection);
+
+  function handleBulkArchive() {
+    bulkArchiveMutation.mutate(selectedIds, {
+      onSuccess: (result) => {
+        toast.success(`Archived ${result.succeeded} asset type(s)`);
+        setRowSelection({});
+        setBulkArchiveOpen(false);
+      },
+      onError: () => {
+        toast.error("Failed to archive asset types");
+        setBulkArchiveOpen(false);
+      },
+    });
+  }
 
   const sorting: SortingState = useMemo(
     () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
@@ -313,20 +337,30 @@ export default function AssetTypesPage() {
         rowCount={totalCount}
         sorting={sorting}
         onSortingChange={handleSortingChange}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        getRowId={(row) => row.id}
         toolbar={(table) => (
-          <div className="flex items-center gap-2">
-            <AssetTypesToolbar
-              table={table}
-              search={searchInput}
-              onSearchChange={setSearchInput}
-            />
-            <SavedViewSelector
-              entityType="asset-types"
-              activeViewId={activeViewId}
-              onApplyView={applyView}
-              onResetToDefault={handleResetToDefault}
-              getCurrentConfiguration={getCurrentConfiguration}
-            />
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <AssetTypesToolbar
+                table={table}
+                search={searchInput}
+                onSearchChange={setSearchInput}
+              />
+              <SavedViewSelector
+                entityType="asset-types"
+                activeViewId={activeViewId}
+                onApplyView={applyView}
+                onResetToDefault={handleResetToDefault}
+                getCurrentConfiguration={getCurrentConfiguration}
+              />
+            </div>
+            <BulkActionBar selectedCount={selectedIds.length} onClearSelection={() => setRowSelection({})}>
+              <Button variant="destructive" size="sm" onClick={() => setBulkArchiveOpen(true)}>
+                <Trash2 className="mr-1 h-3 w-3" />Archive
+              </Button>
+            </BulkActionBar>
           </div>
         )}
         paginationControls={
@@ -361,6 +395,16 @@ export default function AssetTypesPage() {
         confirmLabel="Delete"
         onConfirm={handleArchive}
         loading={archiveMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={bulkArchiveOpen}
+        onOpenChange={setBulkArchiveOpen}
+        title="Archive asset types"
+        description={`Are you sure you want to archive ${selectedIds.length} asset type(s)? This action can be undone later.`}
+        confirmLabel="Archive"
+        onConfirm={handleBulkArchive}
+        loading={bulkArchiveMutation.isPending}
       />
     </div>
   );

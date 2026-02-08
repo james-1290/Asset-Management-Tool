@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-02-08 20:38 - Bulk Actions for Type & People Pages
+
+- **Backend**: Added `POST /api/v1/assettypes/bulk-archive` endpoint
+- **Backend**: Added `POST /api/v1/certificatetypes/bulk-archive` endpoint
+- **Backend**: Added `POST /api/v1/applicationtypes/bulk-archive` endpoint
+- **Backend**: Added `POST /api/v1/people/bulk-archive` endpoint
+- **Frontend**: Added `bulkArchive()` to asset-types, certificate-types, application-types, and people API clients
+- **Frontend**: Added `useBulkArchive*` hooks for all four entity types
+- **Frontend**: Integrated row selection + bulk archive on Asset Types, Certificate Types, Application Types, and People pages
+
+## 2026-02-08 20:27 - Bulk Actions for List Pages
+
+- **Backend**: Added `POST /api/v1/assets/bulk-archive` and `POST /api/v1/assets/bulk-status` endpoints
+- **Backend**: Added `POST /api/v1/certificates/bulk-archive` and `POST /api/v1/certificates/bulk-status` endpoints
+- **Backend**: Added `POST /api/v1/applications/bulk-archive` and `POST /api/v1/applications/bulk-status` endpoints
+- **Backend**: Added `BulkArchiveRequest`, `BulkStatusRequest`, and `BulkActionResponse` DTOs
+- **Backend**: Each bulk operation audits per-item and returns succeeded/failed counts
+- **Frontend**: Added `bulkArchive()` and `bulkStatus()` to all three API client files
+- **Frontend**: Added `useBulkArchive*` and `useBulkStatus*` hooks for all three entity types
+- **Frontend**: Added row selection support to `DataTable` component (`rowSelection`, `onRowSelectionChange`, `getRowId`)
+- **Frontend**: Created `data-table-selection-column.tsx` — reusable checkbox column (header select-all + row select)
+- **Frontend**: Created `bulk-action-bar.tsx` — sticky bar showing selected count, action buttons, and clear selection
+- **Frontend**: Integrated bulk actions on Assets page (Archive, Available, Assigned, In Maintenance)
+- **Frontend**: Integrated bulk actions on Certificates page (Archive, Active, Expired, Revoked, Pending Renewal)
+- **Frontend**: Integrated bulk actions on Applications page (Archive, Active, Expired, Suspended, Pending Renewal, Inactive)
+- **Frontend**: Bulk archive shows confirmation dialog; status changes apply immediately
+- **Frontend**: Selection clears after successful bulk operation
+
 ## 2026-02-08 16:44 - Type Filter + Grouped View for List Pages
 
 - **Backend**: Added `typeId` query parameter to Assets, Certificates, and Applications `GetAll` endpoints

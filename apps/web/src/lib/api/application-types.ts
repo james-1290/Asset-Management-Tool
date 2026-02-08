@@ -42,6 +42,10 @@ export const applicationTypesApi = {
     return apiClient.delete(`/applicationtypes/${id}`);
   },
 
+  bulkArchive(ids: string[]): Promise<{ succeeded: number; failed: number }> {
+    return apiClient.post("/applicationtypes/bulk-archive", { ids });
+  },
+
   getCustomFields(applicationTypeId: string): Promise<CustomFieldDefinition[]> {
     return apiClient.get<CustomFieldDefinition[]>(`/applicationtypes/${applicationTypeId}/customfields`);
   },

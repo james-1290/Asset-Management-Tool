@@ -225,6 +225,32 @@ public class AssetTypesController(AppDbContext db, IAuditService audit, ICurrent
         return Ok(ToDto(type));
     }
 
+    [HttpPost("bulk-archive")]
+    public async Task<IActionResult> BulkArchive([FromBody] BulkArchiveRequest request)
+    {
+        int succeeded = 0, failed = 0;
+        foreach (var id in request.Ids)
+        {
+            var type = await db.AssetTypes.FindAsync(id);
+            if (type is null || type.IsArchived) { failed++; continue; }
+
+            type.IsArchived = true;
+            type.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+
+            await audit.LogAsync(new AuditEntry(
+                Action: "Archived",
+                EntityType: "AssetType",
+                EntityId: type.Id.ToString(),
+                EntityName: type.Name,
+                Details: $"Bulk archived asset type \"{type.Name}\"",
+                ActorId: currentUser.UserId,
+                ActorName: currentUser.UserName));
+            succeeded++;
+        }
+        return Ok(new BulkActionResponse(succeeded, failed));
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Archive(Guid id)
     {

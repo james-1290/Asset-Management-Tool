@@ -62,6 +62,17 @@ export function useArchiveAssetType() {
   });
 }
 
+export function useBulkArchiveAssetTypes() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => assetTypesApi.bulkArchive(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assetTypeKeys.all });
+    },
+  });
+}
+
 export function useCustomFieldDefinitions(assetTypeId: string | undefined) {
   return useQuery({
     queryKey: assetTypeKeys.customFields(assetTypeId ?? ""),
