@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
-import type { SortingState } from "@tanstack/react-table";
+import type { SortingState, VisibilityState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
@@ -22,6 +22,9 @@ import { useCertificateTypes } from "../hooks/use-certificate-types";
 import { useLocations } from "../hooks/use-locations";
 import type { Certificate } from "../types/certificate";
 import type { CertificateFormValues } from "../lib/schemas/certificate";
+import { SavedViewSelector } from "../components/saved-view-selector";
+import { useSavedViews } from "../hooks/use-saved-views";
+import type { SavedView, ViewConfiguration } from "../types/saved-view";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -104,6 +107,12 @@ export default function CertificatesPage() {
   const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null);
   const [archivingCertificate, setArchivingCertificate] = useState<Certificate | null>(null);
 
+  // Saved views
+  const { data: savedViews = [] } = useSavedViews("certificates");
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  const defaultViewApplied = useRef(false);
+
   const columns = useMemo(
     () =>
       getCertificateColumns({
@@ -122,6 +131,56 @@ export default function CertificatesPage() {
     () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
     [sortByParam, sortDirParam],
   );
+
+  // Apply default saved view on first load
+  useEffect(() => {
+    if (defaultViewApplied.current || savedViews.length === 0) return;
+    defaultViewApplied.current = true;
+    const defaultView = savedViews.find((v) => v.isDefault);
+    if (defaultView) applyView(defaultView);
+  }, [savedViews]);
+
+  function handleResetToDefault() {
+    setColumnVisibility({});
+    setActiveViewId(null);
+    setSearchParams((prev) => {
+      prev.delete("search");
+      prev.delete("status");
+      prev.set("sortBy", "name");
+      prev.set("sortDir", "asc");
+      prev.set("page", "1");
+      return prev;
+    });
+    setSearchInput("");
+  }
+
+  function applyView(view: SavedView) {
+    try {
+      const config: ViewConfiguration = JSON.parse(view.configuration);
+      setColumnVisibility(config.columnVisibility ?? {});
+      setActiveViewId(view.id);
+      setSearchParams((prev) => {
+        if (config.sortBy) prev.set("sortBy", config.sortBy);
+        if (config.sortDir) prev.set("sortDir", config.sortDir);
+        if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
+        else { prev.delete("search"); setSearchInput(""); }
+        if (config.status) prev.set("status", config.status);
+        else prev.delete("status");
+        if (config.pageSize) prev.set("pageSize", String(config.pageSize));
+        prev.set("page", "1");
+        return prev;
+      });
+    } catch { /* invalid config */ }
+  }
+
+  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
+    columnVisibility,
+    sortBy: sortByParam,
+    sortDir: sortDirParam,
+    search: searchParam || undefined,
+    status: statusParam || undefined,
+    pageSize,
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, pageSize]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -281,6 +340,8 @@ export default function CertificatesPage() {
       <DataTable
         columns={columns}
         data={pagedResult?.items ?? []}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={setColumnVisibility}
         manualPagination
         manualSorting
         pageCount={pageCount}
@@ -288,13 +349,22 @@ export default function CertificatesPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
-          <CertificatesToolbar
-            table={table}
-            search={searchInput}
-            onSearchChange={setSearchInput}
-            statusFilter={statusParam}
-            onStatusFilterChange={handleStatusFilterChange}
-          />
+          <div className="flex items-center gap-2">
+            <CertificatesToolbar
+              table={table}
+              search={searchInput}
+              onSearchChange={setSearchInput}
+              statusFilter={statusParam}
+              onStatusFilterChange={handleStatusFilterChange}
+            />
+            <SavedViewSelector
+              entityType="certificates"
+              activeViewId={activeViewId}
+              onApplyView={applyView}
+              onResetToDefault={handleResetToDefault}
+              getCurrentConfiguration={getCurrentConfiguration}
+            />
+          </div>
         )}
         paginationControls={
           <DataTablePagination

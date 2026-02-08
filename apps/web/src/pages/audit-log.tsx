@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import type { SortingState } from "@tanstack/react-table";
+import type { SortingState, VisibilityState } from "@tanstack/react-table";
 import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
@@ -8,6 +8,9 @@ import { Skeleton } from "../components/ui/skeleton";
 import { AuditLogsToolbar } from "../components/audit-logs/audit-logs-toolbar";
 import { auditLogColumns } from "../components/audit-logs/columns";
 import { usePagedAuditLogs } from "../hooks/use-audit-logs";
+import { SavedViewSelector } from "../components/saved-view-selector";
+import { useSavedViews } from "../hooks/use-saved-views";
+import type { SavedView, ViewConfiguration } from "../types/saved-view";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   timestamp: "timestamp",
@@ -30,6 +33,12 @@ export default function AuditLogPage() {
 
   const [searchInput, setSearchInput] = useState(searchParam);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Saved views
+  const { data: savedViews = [] } = useSavedViews("audit-log");
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  const defaultViewApplied = useRef(false);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -72,6 +81,54 @@ export default function AuditLogPage() {
     () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
     [sortByParam, sortDirParam],
   );
+
+  // Apply default saved view on first load
+  useEffect(() => {
+    if (defaultViewApplied.current || savedViews.length === 0) return;
+    defaultViewApplied.current = true;
+    const defaultView = savedViews.find((v) => v.isDefault);
+    if (defaultView) applyView(defaultView);
+  }, [savedViews]);
+
+  function handleResetToDefault() {
+    setColumnVisibility({});
+    setActiveViewId(null);
+    setSearchParams((prev) => {
+      prev.delete("search");
+      prev.delete("entityType");
+      prev.delete("action");
+      prev.set("sortBy", "timestamp");
+      prev.set("sortDir", "desc");
+      prev.set("page", "1");
+      return prev;
+    });
+    setSearchInput("");
+  }
+
+  function applyView(view: SavedView) {
+    try {
+      const config: ViewConfiguration = JSON.parse(view.configuration);
+      setColumnVisibility(config.columnVisibility ?? {});
+      setActiveViewId(view.id);
+      setSearchParams((prev) => {
+        if (config.sortBy) prev.set("sortBy", config.sortBy);
+        if (config.sortDir) prev.set("sortDir", config.sortDir);
+        if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
+        else { prev.delete("search"); setSearchInput(""); }
+        if (config.pageSize) prev.set("pageSize", String(config.pageSize));
+        prev.set("page", "1");
+        return prev;
+      });
+    } catch { /* invalid config */ }
+  }
+
+  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
+    columnVisibility,
+    sortBy: sortByParam,
+    sortDir: sortDirParam,
+    search: searchParam || undefined,
+    pageSize,
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -184,6 +241,8 @@ export default function AuditLogPage() {
       <DataTable
         columns={auditLogColumns}
         data={pagedResult?.items ?? []}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={setColumnVisibility}
         manualPagination
         manualSorting
         pageCount={pageCount}
@@ -191,15 +250,24 @@ export default function AuditLogPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
-          <AuditLogsToolbar
-            table={table}
-            search={searchInput}
-            onSearchChange={setSearchInput}
-            entityType={entityTypeParam}
-            onEntityTypeChange={handleEntityTypeChange}
-            action={actionParam}
-            onActionChange={handleActionChange}
-          />
+          <div className="flex items-center gap-2">
+            <AuditLogsToolbar
+              table={table}
+              search={searchInput}
+              onSearchChange={setSearchInput}
+              entityType={entityTypeParam}
+              onEntityTypeChange={handleEntityTypeChange}
+              action={actionParam}
+              onActionChange={handleActionChange}
+            />
+            <SavedViewSelector
+              entityType="audit-log"
+              activeViewId={activeViewId}
+              onApplyView={applyView}
+              onResetToDefault={handleResetToDefault}
+              getCurrentConfiguration={getCurrentConfiguration}
+            />
+          </div>
         )}
         paginationControls={
           <DataTablePagination

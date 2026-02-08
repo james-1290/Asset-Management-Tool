@@ -26,6 +26,8 @@ interface DataTableProps<TData, TValue> {
   toolbar?: (table: ReturnType<typeof useReactTable<TData>>) => ReactNode;
   initialColumnFilters?: ColumnFiltersState;
   initialColumnVisibility?: VisibilityState;
+  columnVisibility?: VisibilityState;
+  onColumnVisibilityChange?: OnChangeFn<VisibilityState>;
   manualPagination?: boolean;
   manualSorting?: boolean;
   pageCount?: number;
@@ -41,6 +43,8 @@ export function DataTable<TData, TValue>({
   toolbar,
   initialColumnFilters,
   initialColumnVisibility,
+  columnVisibility: externalColumnVisibility,
+  onColumnVisibilityChange: externalOnColumnVisibilityChange,
   manualPagination,
   manualSorting,
   pageCount,
@@ -51,10 +55,13 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialColumnFilters ?? []);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(initialColumnVisibility ?? {});
+  const [internalColumnVisibility, setInternalColumnVisibility] = useState<VisibilityState>(initialColumnVisibility ?? {});
 
   const sorting = manualSorting && externalSorting ? externalSorting : internalSorting;
   const onSortingChange = manualSorting && externalOnSortingChange ? externalOnSortingChange : setInternalSorting;
+
+  const columnVisibility = externalColumnVisibility ?? internalColumnVisibility;
+  const onColumnVisibilityChange = externalOnColumnVisibilityChange ?? setInternalColumnVisibility;
 
   const table = useReactTable({
     data,
@@ -64,7 +71,7 @@ export function DataTable<TData, TValue>({
     ...(!manualPagination ? { getFilteredRowModel: getFilteredRowModel() } : {}),
     onSortingChange,
     onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange,
     ...(manualPagination ? { manualPagination: true, pageCount, rowCount } : {}),
     ...(manualSorting ? { manualSorting: true } : {}),
     state: {

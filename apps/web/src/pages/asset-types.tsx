@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
-import type { SortingState } from "@tanstack/react-table";
+import type { SortingState, VisibilityState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
@@ -20,6 +20,9 @@ import {
 } from "../hooks/use-asset-types";
 import type { AssetType } from "../types/asset-type";
 import type { AssetTypeFormValues } from "../lib/schemas/asset-type";
+import { SavedViewSelector } from "../components/saved-view-selector";
+import { useSavedViews } from "../hooks/use-saved-views";
+import type { SavedView, ViewConfiguration } from "../types/saved-view";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -83,6 +86,12 @@ export default function AssetTypesPage() {
     null,
   );
 
+  // Saved views
+  const { data: savedViews = [] } = useSavedViews("asset-types");
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  const defaultViewApplied = useRef(false);
+
   const columns = useMemo(
     () =>
       getAssetTypeColumns({
@@ -101,6 +110,52 @@ export default function AssetTypesPage() {
     () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
     [sortByParam, sortDirParam],
   );
+
+  // Apply default saved view on first load
+  useEffect(() => {
+    if (defaultViewApplied.current || savedViews.length === 0) return;
+    defaultViewApplied.current = true;
+    const defaultView = savedViews.find((v) => v.isDefault);
+    if (defaultView) applyView(defaultView);
+  }, [savedViews]);
+
+  function handleResetToDefault() {
+    setColumnVisibility({});
+    setActiveViewId(null);
+    setSearchParams((prev) => {
+      prev.delete("search");
+      prev.set("sortBy", "name");
+      prev.set("sortDir", "asc");
+      prev.set("page", "1");
+      return prev;
+    });
+    setSearchInput("");
+  }
+
+  function applyView(view: SavedView) {
+    try {
+      const config: ViewConfiguration = JSON.parse(view.configuration);
+      setColumnVisibility(config.columnVisibility ?? {});
+      setActiveViewId(view.id);
+      setSearchParams((prev) => {
+        if (config.sortBy) prev.set("sortBy", config.sortBy);
+        if (config.sortDir) prev.set("sortDir", config.sortDir);
+        if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
+        else { prev.delete("search"); setSearchInput(""); }
+        if (config.pageSize) prev.set("pageSize", String(config.pageSize));
+        prev.set("page", "1");
+        return prev;
+      });
+    } catch { /* invalid config */ }
+  }
+
+  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
+    columnVisibility,
+    sortBy: sortByParam,
+    sortDir: sortDirParam,
+    search: searchParam || undefined,
+    pageSize,
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -250,6 +305,8 @@ export default function AssetTypesPage() {
       <DataTable
         columns={columns}
         data={pagedResult?.items ?? []}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={setColumnVisibility}
         manualPagination
         manualSorting
         pageCount={pageCount}
@@ -257,11 +314,20 @@ export default function AssetTypesPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
-          <AssetTypesToolbar
-            table={table}
-            search={searchInput}
-            onSearchChange={setSearchInput}
-          />
+          <div className="flex items-center gap-2">
+            <AssetTypesToolbar
+              table={table}
+              search={searchInput}
+              onSearchChange={setSearchInput}
+            />
+            <SavedViewSelector
+              entityType="asset-types"
+              activeViewId={activeViewId}
+              onApplyView={applyView}
+              onResetToDefault={handleResetToDefault}
+              getCurrentConfiguration={getCurrentConfiguration}
+            />
+          </div>
         )}
         paginationControls={
           <DataTablePagination
