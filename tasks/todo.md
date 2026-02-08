@@ -66,7 +66,7 @@
 
 - [x] User authentication (JWT login, protected routes, user identity in audit logs, admin seed, frontend login page + user menu)
 - [x] DataTable: server-side pagination, sorting, filtering for all list pages (Assets, Locations, Asset Types, People, Audit Logs)
-- [ ] DataTable: saved views per user
+- [x] DataTable: saved views per user
 
 - [x] Applications/Licences module: backend models, enums, DB migration (ApplicationType, Application, ApplicationHistory, ApplicationHistoryChange)
 - [x] Applications/Licences module: ApplicationTypesController + ApplicationsController with paged CRUD, search, status filter
