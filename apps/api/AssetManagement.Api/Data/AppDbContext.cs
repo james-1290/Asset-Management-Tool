@@ -19,6 +19,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CustomFieldDefinition> CustomFieldDefinitions => Set<CustomFieldDefinition>();
     public DbSet<CustomFieldValue> CustomFieldValues => Set<CustomFieldValue>();
     public DbSet<Person> People => Set<Person>();
+    public DbSet<PersonHistory> PersonHistory => Set<PersonHistory>();
+    public DbSet<PersonHistoryChange> PersonHistoryChanges => Set<PersonHistoryChange>();
     public DbSet<CertificateType> CertificateTypes => Set<CertificateType>();
     public DbSet<Certificate> Certificates => Set<Certificate>();
     public DbSet<CertificateHistory> CertificateHistory => Set<CertificateHistory>();
@@ -171,6 +173,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(p => p.LocationId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // PersonHistory
+        modelBuilder.Entity<PersonHistory>()
+            .HasOne(h => h.Person)
+            .WithMany(p => p.History)
+            .HasForeignKey(h => h.PersonId);
+
+        modelBuilder.Entity<PersonHistory>()
+            .HasIndex(h => h.PersonId);
+
+        modelBuilder.Entity<PersonHistory>()
+            .Property(h => h.EventType)
+            .HasConversion<string>();
+
+        // PersonHistoryChange
+        modelBuilder.Entity<PersonHistoryChange>()
+            .HasOne(c => c.PersonHistory)
+            .WithMany(h => h.Changes)
+            .HasForeignKey(c => c.PersonHistoryId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // CertificateType
         modelBuilder.Entity<CertificateType>()

@@ -66,6 +66,50 @@ public class AuditService(AppDbContext db) : IAuditService
             }
         }
 
+        if (entry.EntityType == "Person" && Guid.TryParse(entry.EntityId, out var personId))
+        {
+            var personEventType = entry.Action switch
+            {
+                "Created" => PersonHistoryEventType.Created,
+                "Updated" => PersonHistoryEventType.Edited,
+                "Archived" => PersonHistoryEventType.Archived,
+                "Restored" => PersonHistoryEventType.Restored,
+                "AssetAssigned" => PersonHistoryEventType.AssetAssigned,
+                "AssetUnassigned" => PersonHistoryEventType.AssetUnassigned,
+                "AssetCheckedOut" => PersonHistoryEventType.AssetCheckedOut,
+                "AssetCheckedIn" => PersonHistoryEventType.AssetCheckedIn,
+                _ => (PersonHistoryEventType?)null,
+            };
+
+            if (personEventType is not null)
+            {
+                var personHistory = new PersonHistory
+                {
+                    Id = Guid.NewGuid(),
+                    PersonId = personId,
+                    EventType = personEventType.Value,
+                    PerformedByUserId = entry.ActorId,
+                    Details = entry.Details,
+                };
+
+                if (entry.Changes is { Count: > 0 })
+                {
+                    foreach (var change in entry.Changes)
+                    {
+                        personHistory.Changes.Add(new PersonHistoryChange
+                        {
+                            Id = Guid.NewGuid(),
+                            FieldName = change.FieldName,
+                            OldValue = change.OldValue,
+                            NewValue = change.NewValue,
+                        });
+                    }
+                }
+
+                db.PersonHistory.Add(personHistory);
+            }
+        }
+
         if (entry.EntityType == "Certificate" && Guid.TryParse(entry.EntityId, out var certificateId))
         {
             var certEventType = entry.Action switch

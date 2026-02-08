@@ -1,4 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import { Link } from "react-router-dom";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -30,6 +31,14 @@ export function getPersonColumns({
           Full Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
+      ),
+      cell: ({ row }) => (
+        <Link
+          to={`/people/${row.original.id}`}
+          className="font-medium text-primary hover:underline"
+        >
+          {row.original.fullName}
+        </Link>
       ),
     },
     {
@@ -65,6 +74,9 @@ export function getPersonColumns({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link to={`/people/${person.id}`}>View</Link>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onEdit(person)}>
                 Edit
               </DropdownMenuItem>

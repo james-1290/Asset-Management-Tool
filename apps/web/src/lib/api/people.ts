@@ -2,6 +2,8 @@ import { apiClient } from "../api-client";
 import type {
   Person,
   PersonSearchResult,
+  PersonHistory,
+  AssignedAsset,
   CreatePersonRequest,
   UpdatePersonRequest,
 } from "../../types/person";
@@ -50,5 +52,14 @@ export const peopleApi = {
     const params = new URLSearchParams({ limit: String(limit) });
     if (q) params.set("q", q);
     return apiClient.get<PersonSearchResult[]>(`/people/search?${params}`);
+  },
+
+  getHistory(id: string, limit?: number): Promise<PersonHistory[]> {
+    const params = limit ? { limit } : undefined;
+    return apiClient.get<PersonHistory[]>(`/people/${id}/history`, params as Record<string, string | number | undefined>);
+  },
+
+  getAssignedAssets(id: string): Promise<AssignedAsset[]> {
+    return apiClient.get<AssignedAsset[]>(`/people/${id}/assets`);
   },
 };

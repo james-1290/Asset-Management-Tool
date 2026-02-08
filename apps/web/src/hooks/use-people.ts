@@ -16,6 +16,8 @@ const personKeys = {
   paged: (params: PersonQueryParams) => ["people", "paged", params] as const,
   detail: (id: string) => ["people", id] as const,
   search: (q: string) => ["people", "search", q] as const,
+  history: (id: string, limit?: number) => ["people", id, "history", limit] as const,
+  assets: (id: string) => ["people", id, "assets"] as const,
 };
 
 export function usePeople() {
@@ -38,6 +40,27 @@ export function usePeopleSearch(query: string) {
     queryKey: personKeys.search(query),
     queryFn: () => peopleApi.search(query),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function usePerson(id: string) {
+  return useQuery({
+    queryKey: personKeys.detail(id),
+    queryFn: () => peopleApi.getById(id),
+  });
+}
+
+export function usePersonHistory(id: string, limit?: number) {
+  return useQuery({
+    queryKey: personKeys.history(id, limit),
+    queryFn: () => peopleApi.getHistory(id, limit),
+  });
+}
+
+export function usePersonAssets(id: string) {
+  return useQuery({
+    queryKey: personKeys.assets(id),
+    queryFn: () => peopleApi.getAssignedAssets(id),
   });
 }
 
