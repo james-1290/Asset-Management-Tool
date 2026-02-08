@@ -44,63 +44,79 @@ export const ALL_WIDGET_IDS: WidgetId[] = Object.keys(
   WIDGET_LABELS
 ) as WidgetId[];
 
-export const WIDGET_MIN_SIZES: Record<WidgetId, { minW: number; minH: number }> = {
-  totalAssets: { minW: 3, minH: 2 },
-  totalValue: { minW: 3, minH: 2 },
+export const STAT_CARD_WIDGET_IDS: WidgetId[] = [
+  "totalAssets",
+  "totalValue",
+  "recentlyAdded",
+  "unassignedAssets",
+  "checkedOut",
+  "warrantyExpiries",
+  "certificateExpiries",
+  "licenceExpiries",
+];
+
+export const WIDGET_MIN_SIZES: Record<WidgetId, { minW: number; minH: number; maxW?: number; maxH?: number }> = {
+  totalAssets: { minW: 3, minH: 2, maxW: 3, maxH: 2 },
+  totalValue: { minW: 3, minH: 2, maxW: 3, maxH: 2 },
+  recentlyAdded: { minW: 3, minH: 2, maxW: 3, maxH: 2 },
+  unassignedAssets: { minW: 3, minH: 2, maxW: 3, maxH: 2 },
+  checkedOut: { minW: 3, minH: 2, maxW: 3, maxH: 2 },
+  warrantyExpiries: { minW: 3, minH: 2, maxW: 3, maxH: 2 },
+  certificateExpiries: { minW: 3, minH: 2, maxW: 3, maxH: 2 },
+  licenceExpiries: { minW: 3, minH: 2, maxW: 3, maxH: 2 },
   statusBreakdown: { minW: 4, minH: 4 },
-  warrantyExpiries: { minW: 3, minH: 3 },
   assetsByType: { minW: 4, minH: 4 },
   assetsByLocation: { minW: 4, minH: 4 },
   recentActivity: { minW: 3, minH: 3 },
-  checkedOut: { minW: 3, minH: 3 },
-  recentlyAdded: { minW: 3, minH: 3 },
   assetsByAge: { minW: 4, minH: 4 },
-  unassignedAssets: { minW: 3, minH: 3 },
   valueByLocation: { minW: 4, minH: 4 },
-  certificateExpiries: { minW: 3, minH: 3 },
-  licenceExpiries: { minW: 3, minH: 3 },
 };
 
 const DEFAULT_LG_LAYOUT: LayoutItem[] = [
-  { i: "totalAssets", x: 0, y: 0, w: 6, h: 2 },
-  { i: "totalValue", x: 6, y: 0, w: 6, h: 2 },
-  { i: "statusBreakdown", x: 0, y: 2, w: 6, h: 5 },
-  { i: "warrantyExpiries", x: 6, y: 2, w: 6, h: 5 },
-  { i: "assetsByType", x: 0, y: 7, w: 6, h: 5 },
-  { i: "assetsByLocation", x: 6, y: 7, w: 6, h: 5 },
-  { i: "recentActivity", x: 0, y: 12, w: 6, h: 5 },
-  { i: "checkedOut", x: 6, y: 12, w: 6, h: 5 },
-  { i: "recentlyAdded", x: 0, y: 17, w: 6, h: 5 },
-  { i: "assetsByAge", x: 6, y: 17, w: 6, h: 5 },
-  { i: "unassignedAssets", x: 0, y: 22, w: 6, h: 5 },
-  { i: "valueByLocation", x: 6, y: 22, w: 6, h: 5 },
-  { i: "certificateExpiries", x: 0, y: 27, w: 6, h: 5 },
-  { i: "licenceExpiries", x: 6, y: 27, w: 6, h: 5 },
+  // Row 0: stat cards (4 across)
+  { i: "totalAssets", x: 0, y: 0, w: 3, h: 2 },
+  { i: "totalValue", x: 3, y: 0, w: 3, h: 2 },
+  { i: "recentlyAdded", x: 6, y: 0, w: 3, h: 2 },
+  { i: "unassignedAssets", x: 9, y: 0, w: 3, h: 2 },
+  // Row 1: stat cards (4 across)
+  { i: "checkedOut", x: 0, y: 2, w: 3, h: 2 },
+  { i: "warrantyExpiries", x: 3, y: 2, w: 3, h: 2 },
+  { i: "certificateExpiries", x: 6, y: 2, w: 3, h: 2 },
+  { i: "licenceExpiries", x: 9, y: 2, w: 3, h: 2 },
+  // Charts
+  { i: "statusBreakdown", x: 0, y: 4, w: 6, h: 5 },
+  { i: "assetsByType", x: 6, y: 4, w: 6, h: 5 },
+  { i: "assetsByLocation", x: 0, y: 9, w: 6, h: 5 },
+  { i: "assetsByAge", x: 6, y: 9, w: 6, h: 5 },
+  { i: "valueByLocation", x: 0, y: 14, w: 6, h: 5 },
+  { i: "recentActivity", x: 6, y: 14, w: 6, h: 5 },
 ];
 
 const DEFAULT_MD_LAYOUT: LayoutItem[] = [
-  { i: "totalAssets", x: 0, y: 0, w: 6, h: 2 },
-  { i: "totalValue", x: 0, y: 2, w: 6, h: 2 },
-  { i: "statusBreakdown", x: 0, y: 4, w: 6, h: 5 },
-  { i: "warrantyExpiries", x: 0, y: 9, w: 6, h: 5 },
-  { i: "assetsByType", x: 0, y: 12, w: 6, h: 5 },
-  { i: "assetsByLocation", x: 0, y: 17, w: 6, h: 5 },
-  { i: "recentActivity", x: 0, y: 22, w: 6, h: 5 },
-  { i: "checkedOut", x: 0, y: 27, w: 6, h: 5 },
-  { i: "recentlyAdded", x: 0, y: 32, w: 6, h: 5 },
-  { i: "assetsByAge", x: 0, y: 37, w: 6, h: 5 },
-  { i: "unassignedAssets", x: 0, y: 42, w: 6, h: 5 },
-  { i: "valueByLocation", x: 0, y: 47, w: 6, h: 5 },
-  { i: "certificateExpiries", x: 0, y: 52, w: 6, h: 5 },
-  { i: "licenceExpiries", x: 0, y: 57, w: 6, h: 5 },
+  // Stat cards: 2 per row on medium
+  { i: "totalAssets", x: 0, y: 0, w: 3, h: 2 },
+  { i: "totalValue", x: 3, y: 0, w: 3, h: 2 },
+  { i: "recentlyAdded", x: 0, y: 2, w: 3, h: 2 },
+  { i: "unassignedAssets", x: 3, y: 2, w: 3, h: 2 },
+  { i: "checkedOut", x: 0, y: 4, w: 3, h: 2 },
+  { i: "warrantyExpiries", x: 3, y: 4, w: 3, h: 2 },
+  { i: "certificateExpiries", x: 0, y: 6, w: 3, h: 2 },
+  { i: "licenceExpiries", x: 3, y: 6, w: 3, h: 2 },
+  // Charts: full width
+  { i: "statusBreakdown", x: 0, y: 8, w: 6, h: 5 },
+  { i: "assetsByType", x: 0, y: 13, w: 6, h: 5 },
+  { i: "assetsByLocation", x: 0, y: 18, w: 6, h: 5 },
+  { i: "assetsByAge", x: 0, y: 23, w: 6, h: 5 },
+  { i: "valueByLocation", x: 0, y: 28, w: 6, h: 5 },
+  { i: "recentActivity", x: 0, y: 33, w: 6, h: 5 },
 ];
 
 const DEFAULT_SM_LAYOUT: LayoutItem[] = ALL_WIDGET_IDS.map((id, index) => ({
   i: id,
   x: 0,
-  y: index * 5,
+  y: index * 2,
   w: 1,
-  h: (id === "totalAssets" || id === "totalValue") ? 2 : 5,
+  h: STAT_CARD_WIDGET_IDS.includes(id) ? 2 : 5,
 }));
 
 export const DEFAULT_LAYOUTS: ResponsiveLayouts = {
@@ -111,9 +127,12 @@ export const DEFAULT_LAYOUTS: ResponsiveLayouts = {
 
 function applyMinSizes(layout: Layout): LayoutItem[] {
   return layout.map((item) => {
-    const mins = WIDGET_MIN_SIZES[item.i as WidgetId];
-    if (mins) {
-      return { ...item, minW: mins.minW, minH: mins.minH };
+    const sizes = WIDGET_MIN_SIZES[item.i as WidgetId];
+    if (sizes) {
+      const result: LayoutItem = { ...item, minW: sizes.minW, minH: sizes.minH };
+      if (sizes.maxW !== undefined) result.maxW = sizes.maxW;
+      if (sizes.maxH !== undefined) result.maxH = sizes.maxH;
+      return result;
     }
     return { ...item };
   });
