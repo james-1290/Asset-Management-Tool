@@ -12,6 +12,9 @@ import { ConfirmDialog } from "../components/confirm-dialog";
 import { ApplicationFormDialog } from "../components/applications/application-form-dialog";
 import { ApplicationsToolbar } from "../components/applications/applications-toolbar";
 import { getApplicationColumns } from "../components/applications/columns";
+import { ViewModeToggle } from "../components/view-mode-toggle";
+import { GroupedGridView } from "../components/grouped-grid-view";
+import { ApplicationCard } from "../components/applications/application-card";
 import {
   usePagedApplications,
   useCreateApplication,
@@ -45,6 +48,8 @@ export default function ApplicationsPage() {
   const sortByParam = searchParams.get("sortBy") ?? "name";
   const sortDirParam = searchParams.get("sortDir") ?? "asc";
   const includeInactive = searchParams.get("includeInactive") === "true";
+  const typeIdParam = searchParams.get("typeId") ?? "";
+  const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
 
   const [searchInput, setSearchInput] = useState(searchParam);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -98,6 +103,29 @@ export default function ApplicationsPage() {
     [setSearchParams],
   );
 
+  const handleTypeIdChange = useCallback(
+    (value: string) => {
+      setSearchParams((prev) => {
+        if (value) prev.set("typeId", value);
+        else prev.delete("typeId");
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const handleViewModeChange = useCallback(
+    (mode: "list" | "grouped") => {
+      setSearchParams((prev) => {
+        if (mode === "list") prev.delete("viewMode");
+        else prev.set("viewMode", mode);
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
   const includeStatuses = useMemo(() => {
     return includeInactive ? "Inactive" : undefined;
   }, [includeInactive]);
@@ -111,8 +139,9 @@ export default function ApplicationsPage() {
       includeStatuses,
       sortBy: sortByParam,
       sortDir: sortDirParam,
+      typeId: typeIdParam || undefined,
     }),
-    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam],
+    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedApplications(queryParams);
@@ -166,6 +195,8 @@ export default function ApplicationsPage() {
       prev.delete("search");
       prev.delete("status");
       prev.delete("includeInactive");
+      prev.delete("typeId");
+      prev.delete("viewMode");
       prev.set("sortBy", "name");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -186,6 +217,10 @@ export default function ApplicationsPage() {
         else { prev.delete("search"); setSearchInput(""); }
         if (config.status) prev.set("status", config.status);
         else prev.delete("status");
+        if (config.typeId) prev.set("typeId", config.typeId);
+        else prev.delete("typeId");
+        if (config.viewMode && config.viewMode !== "list") prev.set("viewMode", config.viewMode);
+        else prev.delete("viewMode");
         if (config.pageSize) prev.set("pageSize", String(config.pageSize));
         prev.set("page", "1");
         return prev;
@@ -199,8 +234,10 @@ export default function ApplicationsPage() {
     sortDir: sortDirParam,
     search: searchParam || undefined,
     status: statusParam || undefined,
+    typeId: typeIdParam || undefined,
+    viewMode: viewMode !== "list" ? viewMode : undefined,
     pageSize,
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, pageSize]);
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -381,7 +418,11 @@ export default function ApplicationsPage() {
               onStatusFilterChange={handleStatusFilterChange}
               includeInactive={includeInactive}
               onIncludeInactiveChange={handleIncludeInactiveChange}
+              typeId={typeIdParam}
+              onTypeIdChange={handleTypeIdChange}
+              applicationTypes={applicationTypes ?? []}
             />
+            <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
             <SavedViewSelector
               entityType="applications"
               activeViewId={activeViewId}
@@ -400,7 +441,23 @@ export default function ApplicationsPage() {
             onPageSizeChange={handlePageSizeChange}
           />
         }
-      />
+        hideTable={viewMode === "grouped"}
+      >
+        {viewMode === "grouped" && (
+          <GroupedGridView
+            items={pagedResult?.items ?? []}
+            groupByKey="applicationTypeName"
+            renderItem={(app) => (
+              <ApplicationCard
+                key={app.id}
+                application={app}
+                onEdit={(a) => { setEditingApplication(a); setFormOpen(true); }}
+                onArchive={(a) => setArchivingApplication(a)}
+              />
+            )}
+          />
+        )}
+      </DataTable>
 
       <ApplicationFormDialog
         open={formOpen}

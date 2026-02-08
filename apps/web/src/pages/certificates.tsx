@@ -12,6 +12,9 @@ import { ConfirmDialog } from "../components/confirm-dialog";
 import { CertificateFormDialog } from "../components/certificates/certificate-form-dialog";
 import { CertificatesToolbar } from "../components/certificates/certificates-toolbar";
 import { getCertificateColumns } from "../components/certificates/columns";
+import { ViewModeToggle } from "../components/view-mode-toggle";
+import { GroupedGridView } from "../components/grouped-grid-view";
+import { CertificateCard } from "../components/certificates/certificate-card";
 import {
   usePagedCertificates,
   useCreateCertificate,
@@ -43,6 +46,8 @@ export default function CertificatesPage() {
   const statusParam = searchParams.get("status") ?? "";
   const sortByParam = searchParams.get("sortBy") ?? "name";
   const sortDirParam = searchParams.get("sortDir") ?? "asc";
+  const typeIdParam = searchParams.get("typeId") ?? "";
+  const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
 
   const [searchInput, setSearchInput] = useState(searchParam);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -84,6 +89,29 @@ export default function CertificatesPage() {
     [setSearchParams],
   );
 
+  const handleTypeIdChange = useCallback(
+    (value: string) => {
+      setSearchParams((prev) => {
+        if (value) prev.set("typeId", value);
+        else prev.delete("typeId");
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const handleViewModeChange = useCallback(
+    (mode: "list" | "grouped") => {
+      setSearchParams((prev) => {
+        if (mode === "list") prev.delete("viewMode");
+        else prev.set("viewMode", mode);
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
   const queryParams = useMemo(
     () => ({
       page,
@@ -92,8 +120,9 @@ export default function CertificatesPage() {
       status: statusParam || undefined,
       sortBy: sortByParam,
       sortDir: sortDirParam,
+      typeId: typeIdParam || undefined,
     }),
-    [page, pageSize, searchParam, statusParam, sortByParam, sortDirParam],
+    [page, pageSize, searchParam, statusParam, sortByParam, sortDirParam, typeIdParam],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedCertificates(queryParams);
@@ -146,6 +175,8 @@ export default function CertificatesPage() {
     setSearchParams((prev) => {
       prev.delete("search");
       prev.delete("status");
+      prev.delete("typeId");
+      prev.delete("viewMode");
       prev.set("sortBy", "name");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -166,6 +197,10 @@ export default function CertificatesPage() {
         else { prev.delete("search"); setSearchInput(""); }
         if (config.status) prev.set("status", config.status);
         else prev.delete("status");
+        if (config.typeId) prev.set("typeId", config.typeId);
+        else prev.delete("typeId");
+        if (config.viewMode && config.viewMode !== "list") prev.set("viewMode", config.viewMode);
+        else prev.delete("viewMode");
         if (config.pageSize) prev.set("pageSize", String(config.pageSize));
         prev.set("page", "1");
         return prev;
@@ -179,8 +214,10 @@ export default function CertificatesPage() {
     sortDir: sortDirParam,
     search: searchParam || undefined,
     status: statusParam || undefined,
+    typeId: typeIdParam || undefined,
+    viewMode: viewMode !== "list" ? viewMode : undefined,
     pageSize,
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, pageSize]);
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -356,7 +393,11 @@ export default function CertificatesPage() {
               onSearchChange={setSearchInput}
               statusFilter={statusParam}
               onStatusFilterChange={handleStatusFilterChange}
+              typeId={typeIdParam}
+              onTypeIdChange={handleTypeIdChange}
+              certificateTypes={certificateTypes ?? []}
             />
+            <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
             <SavedViewSelector
               entityType="certificates"
               activeViewId={activeViewId}
@@ -375,7 +416,23 @@ export default function CertificatesPage() {
             onPageSizeChange={handlePageSizeChange}
           />
         }
-      />
+        hideTable={viewMode === "grouped"}
+      >
+        {viewMode === "grouped" && (
+          <GroupedGridView
+            items={pagedResult?.items ?? []}
+            groupByKey="certificateTypeName"
+            renderItem={(cert) => (
+              <CertificateCard
+                key={cert.id}
+                certificate={cert}
+                onEdit={(c) => { setEditingCertificate(c); setFormOpen(true); }}
+                onArchive={(c) => setArchivingCertificate(c)}
+              />
+            )}
+          />
+        )}
+      </DataTable>
 
       <CertificateFormDialog
         open={formOpen}

@@ -17,6 +17,7 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { ColumnToggle } from "../column-toggle";
 import type { Certificate } from "../../types/certificate";
+import type { CertificateType } from "../../types/certificate-type";
 
 const STATUS_OPTIONS = [
   { value: "Active", label: "Active" },
@@ -31,6 +32,9 @@ interface CertificatesToolbarProps {
   onSearchChange: (value: string) => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
+  typeId: string;
+  onTypeIdChange: (value: string) => void;
+  certificateTypes: CertificateType[];
 }
 
 export function CertificatesToolbar({
@@ -39,8 +43,11 @@ export function CertificatesToolbar({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  typeId,
+  onTypeIdChange,
+  certificateTypes,
 }: CertificatesToolbarProps) {
-  const activeFilterCount = statusFilter ? 1 : 0;
+  const activeFilterCount = (statusFilter ? 1 : 0) + (typeId ? 1 : 0);
 
   return (
     <div className="flex items-center gap-2">
@@ -63,24 +70,42 @@ export function CertificatesToolbar({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-56 p-3" align="start">
-          <div className="space-y-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Status</span>
-            <Select
-              value={statusFilter || "__all__"}
-              onValueChange={(v) => onStatusFilterChange(v === "__all__" ? "" : v)}
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">All statuses</SelectItem>
-                {STATUS_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Type</span>
+              <Select value={typeId || "__all__"} onValueChange={(v) => onTypeIdChange(v === "__all__" ? "" : v)}>
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All types</SelectItem>
+                  {certificateTypes.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Status</span>
+              <Select
+                value={statusFilter || "__all__"}
+                onValueChange={(v) => onStatusFilterChange(v === "__all__" ? "" : v)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All statuses</SelectItem>
+                  {STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </PopoverContent>
       </Popover>

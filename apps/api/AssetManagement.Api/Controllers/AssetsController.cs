@@ -22,7 +22,8 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
         [FromQuery] string? status = null,
         [FromQuery] string? includeStatuses = null,
         [FromQuery] string sortBy = "name",
-        [FromQuery] string sortDir = "asc")
+        [FromQuery] string sortDir = "asc",
+        [FromQuery] Guid? typeId = null)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -35,6 +36,10 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
             .Include(a => a.CustomFieldValues)
                 .ThenInclude(v => v.CustomFieldDefinition)
             .AsQueryable();
+
+        // Filter by type
+        if (typeId.HasValue)
+            query = query.Where(a => a.AssetTypeId == typeId.Value);
 
         // Filter by search
         if (!string.IsNullOrWhiteSpace(search))

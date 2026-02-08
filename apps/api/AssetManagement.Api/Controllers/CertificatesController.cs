@@ -22,7 +22,8 @@ public class CertificatesController(AppDbContext db, IAuditService audit, ICurre
         [FromQuery] string? status = null,
         [FromQuery] string? includeStatuses = null,
         [FromQuery] string sortBy = "name",
-        [FromQuery] string sortDir = "asc")
+        [FromQuery] string sortDir = "asc",
+        [FromQuery] Guid? typeId = null)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -34,6 +35,10 @@ public class CertificatesController(AppDbContext db, IAuditService audit, ICurre
             .Include(c => c.Person)
             .Include(c => c.Location)
             .AsQueryable();
+
+        // Filter by type
+        if (typeId.HasValue)
+            query = query.Where(c => c.CertificateTypeId == typeId.Value);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
