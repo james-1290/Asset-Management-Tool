@@ -177,6 +177,32 @@ public class PeopleController(AppDbContext db, IAuditService audit, ICurrentUser
             person.IsArchived, person.CreatedAt, person.UpdatedAt));
     }
 
+    [HttpPost("bulk-archive")]
+    public async Task<IActionResult> BulkArchive([FromBody] BulkArchiveRequest request)
+    {
+        int succeeded = 0, failed = 0;
+        foreach (var id in request.Ids)
+        {
+            var person = await db.People.FindAsync(id);
+            if (person is null || person.IsArchived) { failed++; continue; }
+
+            person.IsArchived = true;
+            person.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+
+            await audit.LogAsync(new AuditEntry(
+                Action: "Archived",
+                EntityType: "Person",
+                EntityId: person.Id.ToString(),
+                EntityName: person.FullName,
+                Details: $"Bulk archived person \"{person.FullName}\"",
+                ActorId: currentUser.UserId,
+                ActorName: currentUser.UserName));
+            succeeded++;
+        }
+        return Ok(new BulkActionResponse(succeeded, failed));
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Archive(Guid id)
     {

@@ -427,6 +427,63 @@ public class CertificatesController(AppDbContext db, IAuditService audit, ICurre
         return Ok(history);
     }
 
+    [HttpPost("bulk-archive")]
+    public async Task<ActionResult<BulkActionResponse>> BulkArchive(BulkArchiveRequest request)
+    {
+        int succeeded = 0, failed = 0;
+        foreach (var id in request.Ids)
+        {
+            var cert = await db.Certificates.FindAsync(id);
+            if (cert is null || cert.IsArchived) { failed++; continue; }
+
+            cert.IsArchived = true;
+            cert.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+
+            await audit.LogAsync(new AuditEntry(
+                Action: "Archived",
+                EntityType: "Certificate",
+                EntityId: cert.Id.ToString(),
+                EntityName: cert.Name,
+                Details: $"Bulk archived certificate \"{cert.Name}\"",
+                ActorId: currentUser.UserId,
+                ActorName: currentUser.UserName));
+            succeeded++;
+        }
+        return Ok(new BulkActionResponse(succeeded, failed));
+    }
+
+    [HttpPost("bulk-status")]
+    public async Task<ActionResult<BulkActionResponse>> BulkStatus(BulkStatusRequest request)
+    {
+        if (!Enum.TryParse<CertificateStatus>(request.Status, out var newStatus))
+            return BadRequest(new { error = $"Invalid status: {request.Status}" });
+
+        int succeeded = 0, failed = 0;
+        foreach (var id in request.Ids)
+        {
+            var cert = await db.Certificates.FindAsync(id);
+            if (cert is null || cert.IsArchived) { failed++; continue; }
+
+            var oldStatus = cert.Status;
+            cert.Status = newStatus;
+            cert.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+
+            await audit.LogAsync(new AuditEntry(
+                Action: "StatusChanged",
+                EntityType: "Certificate",
+                EntityId: cert.Id.ToString(),
+                EntityName: cert.Name,
+                Details: $"Bulk status change \"{cert.Name}\": {oldStatus} → {newStatus}",
+                ActorId: currentUser.UserId,
+                ActorName: currentUser.UserName,
+                Changes: [new AuditChange("Status", oldStatus.ToString(), newStatus.ToString())]));
+            succeeded++;
+        }
+        return Ok(new BulkActionResponse(succeeded, failed));
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Archive(Guid id)
     {

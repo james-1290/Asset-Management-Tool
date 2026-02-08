@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
-import type { SortingState, VisibilityState } from "@tanstack/react-table";
+import { Plus, Archive, RefreshCw } from "lucide-react";
+import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
@@ -21,7 +21,11 @@ import {
   useCreateAsset,
   useUpdateAsset,
   useArchiveAsset,
+  useBulkArchiveAssets,
+  useBulkStatusAssets,
 } from "../hooks/use-assets";
+import { getSelectionColumn } from "../components/data-table-selection-column";
+import { BulkActionBar } from "../components/bulk-action-bar";
 import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
 import { useSavedViews } from "../hooks/use-saved-views";
@@ -114,10 +118,14 @@ export default function AssetsPage() {
   const createMutation = useCreateAsset();
   const updateMutation = useUpdateAsset();
   const archiveMutation = useArchiveAsset();
+  const bulkArchiveMutation = useBulkArchiveAssets();
+  const bulkStatusMutation = useBulkStatusAssets();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [archivingAsset, setArchivingAsset] = useState<Asset | null>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   // Saved views
   const { data: savedViews = [] } = useSavedViews("assets");
@@ -142,8 +150,9 @@ export default function AssetsPage() {
   }, [assetTypes]);
 
   const columns = useMemo(
-    () =>
-      getAssetColumns({
+    () => [
+      getSelectionColumn<Asset>(),
+      ...getAssetColumns({
         onEdit: (asset) => {
           setEditingAsset(asset);
           setFormOpen(true);
@@ -153,6 +162,7 @@ export default function AssetsPage() {
         },
         customFieldDefinitions: allCustomFieldDefs,
       }),
+    ],
     [allCustomFieldDefs],
   );
 
@@ -425,6 +435,35 @@ export default function AssetsPage() {
     });
   }
 
+  const selectedIds = Object.keys(rowSelection);
+  const selectedCount = selectedIds.length;
+
+  function handleBulkArchive() {
+    bulkArchiveMutation.mutate(selectedIds, {
+      onSuccess: (result) => {
+        toast.success(`Archived ${result.succeeded} asset(s)`);
+        setRowSelection({});
+        setBulkArchiveOpen(false);
+      },
+      onError: () => {
+        toast.error("Failed to archive assets");
+        setBulkArchiveOpen(false);
+      },
+    });
+  }
+
+  function handleBulkStatus(status: string) {
+    bulkStatusMutation.mutate({ ids: selectedIds, status }, {
+      onSuccess: (result) => {
+        toast.success(`Updated ${result.succeeded} asset(s) to ${status}`);
+        setRowSelection({});
+      },
+      onError: () => {
+        toast.error("Failed to update status");
+      },
+    });
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -475,6 +514,9 @@ export default function AssetsPage() {
         data={pagedResult?.items ?? []}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        getRowId={(row: Asset) => row.id}
         manualPagination
         manualSorting
         pageCount={pageCount}
@@ -482,8 +524,9 @@ export default function AssetsPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
-          <div className="flex items-center gap-2">
-            <AssetsToolbar
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <AssetsToolbar
               table={table}
               search={searchInput}
               onSearchChange={setSearchInput}
@@ -505,6 +548,33 @@ export default function AssetsPage() {
               onResetToDefault={handleResetToDefault}
               getCurrentConfiguration={getCurrentConfiguration}
             />
+            </div>
+            <BulkActionBar
+              selectedCount={selectedCount}
+              onClearSelection={() => setRowSelection({})}
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setBulkArchiveOpen(true)}
+                disabled={bulkArchiveMutation.isPending}
+              >
+                <Archive className="mr-1 h-3 w-3" />
+                Archive
+              </Button>
+              {["Available", "Assigned", "InMaintenance"].map((s) => (
+                <Button
+                  key={s}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkStatus(s)}
+                  disabled={bulkStatusMutation.isPending}
+                >
+                  <RefreshCw className="mr-1 h-3 w-3" />
+                  {s === "InMaintenance" ? "In Maintenance" : s}
+                </Button>
+              ))}
+            </BulkActionBar>
           </div>
         )}
         paginationControls={
@@ -557,6 +627,16 @@ export default function AssetsPage() {
         confirmLabel="Delete"
         onConfirm={handleArchive}
         loading={archiveMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={bulkArchiveOpen}
+        onOpenChange={setBulkArchiveOpen}
+        title="Archive selected assets"
+        description={`Are you sure you want to archive ${selectedCount} asset(s)? This action can be undone later.`}
+        confirmLabel="Archive"
+        onConfirm={handleBulkArchive}
+        loading={bulkArchiveMutation.isPending}
       />
     </div>
   );

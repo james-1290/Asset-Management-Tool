@@ -42,6 +42,10 @@ export const peopleApi = {
     return apiClient.delete(`/people/${id}`);
   },
 
+  bulkArchive(ids: string[]): Promise<{ succeeded: number; failed: number }> {
+    return apiClient.post("/people/bulk-archive", { ids });
+  },
+
   search(q: string, limit = 5): Promise<PersonSearchResult[]> {
     const params = new URLSearchParams({ limit: String(limit) });
     if (q) params.set("q", q);

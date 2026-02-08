@@ -49,4 +49,12 @@ export const applicationsApi = {
   archive(id: string): Promise<void> {
     return apiClient.delete(`/applications/${id}`);
   },
+
+  bulkArchive(ids: string[]): Promise<{ succeeded: number; failed: number }> {
+    return apiClient.post("/applications/bulk-archive", { ids });
+  },
+
+  bulkStatus(ids: string[], status: string): Promise<{ succeeded: number; failed: number }> {
+    return apiClient.post("/applications/bulk-status", { ids, status });
+  },
 };

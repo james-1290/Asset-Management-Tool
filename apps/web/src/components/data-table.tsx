@@ -4,6 +4,7 @@ import {
   type ColumnFiltersState,
   type SortingState,
   type VisibilityState,
+  type RowSelectionState,
   type OnChangeFn,
   flexRender,
   getCoreRowModel,
@@ -34,6 +35,9 @@ interface DataTableProps<TData, TValue> {
   rowCount?: number;
   sorting?: SortingState;
   onSortingChange?: OnChangeFn<SortingState>;
+  rowSelection?: RowSelectionState;
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>;
+  getRowId?: (row: TData) => string;
   paginationControls?: ReactNode;
   hideTable?: boolean;
   children?: ReactNode;
@@ -53,6 +57,9 @@ export function DataTable<TData, TValue>({
   rowCount,
   sorting: externalSorting,
   onSortingChange: externalOnSortingChange,
+  rowSelection: externalRowSelection,
+  onRowSelectionChange: externalOnRowSelectionChange,
+  getRowId,
   paginationControls,
   hideTable,
   children,
@@ -76,12 +83,15 @@ export function DataTable<TData, TValue>({
     onSortingChange,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange,
+    ...(externalOnRowSelectionChange ? { onRowSelectionChange: externalOnRowSelectionChange, enableRowSelection: true } : {}),
+    ...(getRowId ? { getRowId } : {}),
     ...(manualPagination ? { manualPagination: true, pageCount, rowCount } : {}),
     ...(manualSorting ? { manualSorting: true } : {}),
     state: {
       sorting,
       columnFilters,
       columnVisibility,
+      ...(externalRowSelection !== undefined ? { rowSelection: externalRowSelection } : {}),
     },
   });
 

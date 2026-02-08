@@ -79,3 +79,26 @@ export function useArchiveApplication() {
     },
   });
 }
+
+export function useBulkArchiveApplications() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => applicationsApi.bulkArchive(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+    },
+  });
+}
+
+export function useBulkStatusApplications() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids, status }: { ids: string[]; status: string }) =>
+      applicationsApi.bulkStatus(ids, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+    },
+  });
+}

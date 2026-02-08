@@ -74,3 +74,14 @@ export function useArchivePerson() {
     },
   });
 }
+
+export function useBulkArchivePeople() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => peopleApi.bulkArchive(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: personKeys.all });
+    },
+  });
+}

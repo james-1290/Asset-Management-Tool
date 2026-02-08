@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
-import type { SortingState, VisibilityState } from "@tanstack/react-table";
+import { Plus, Archive, RefreshCw } from "lucide-react";
+import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
@@ -20,7 +20,11 @@ import {
   useCreateCertificate,
   useUpdateCertificate,
   useArchiveCertificate,
+  useBulkArchiveCertificates,
+  useBulkStatusCertificates,
 } from "../hooks/use-certificates";
+import { getSelectionColumn } from "../components/data-table-selection-column";
+import { BulkActionBar } from "../components/bulk-action-bar";
 import { useCertificateTypes } from "../hooks/use-certificate-types";
 import { useLocations } from "../hooks/use-locations";
 import type { Certificate } from "../types/certificate";
@@ -131,10 +135,14 @@ export default function CertificatesPage() {
   const createMutation = useCreateCertificate();
   const updateMutation = useUpdateCertificate();
   const archiveMutation = useArchiveCertificate();
+  const bulkArchiveMutation = useBulkArchiveCertificates();
+  const bulkStatusMutation = useBulkStatusCertificates();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null);
   const [archivingCertificate, setArchivingCertificate] = useState<Certificate | null>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   // Saved views
   const { data: savedViews = [] } = useSavedViews("certificates");
@@ -143,8 +151,9 @@ export default function CertificatesPage() {
   const defaultViewApplied = useRef(false);
 
   const columns = useMemo(
-    () =>
-      getCertificateColumns({
+    () => [
+      getSelectionColumn<Certificate>(),
+      ...getCertificateColumns({
         onEdit: (certificate) => {
           setEditingCertificate(certificate);
           setFormOpen(true);
@@ -153,6 +162,7 @@ export default function CertificatesPage() {
           setArchivingCertificate(certificate);
         },
       }),
+    ],
     [],
   );
 
@@ -329,6 +339,35 @@ export default function CertificatesPage() {
     });
   }
 
+  const selectedIds = Object.keys(rowSelection);
+  const selectedCount = selectedIds.length;
+
+  function handleBulkArchive() {
+    bulkArchiveMutation.mutate(selectedIds, {
+      onSuccess: (result) => {
+        toast.success(`Archived ${result.succeeded} certificate(s)`);
+        setRowSelection({});
+        setBulkArchiveOpen(false);
+      },
+      onError: () => {
+        toast.error("Failed to archive certificates");
+        setBulkArchiveOpen(false);
+      },
+    });
+  }
+
+  function handleBulkStatus(status: string) {
+    bulkStatusMutation.mutate({ ids: selectedIds, status }, {
+      onSuccess: (result) => {
+        toast.success(`Updated ${result.succeeded} certificate(s) to ${status}`);
+        setRowSelection({});
+      },
+      onError: () => {
+        toast.error("Failed to update status");
+      },
+    });
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -379,6 +418,9 @@ export default function CertificatesPage() {
         data={pagedResult?.items ?? []}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        getRowId={(row: Certificate) => row.id}
         manualPagination
         manualSorting
         pageCount={pageCount}
@@ -386,25 +428,53 @@ export default function CertificatesPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
-          <div className="flex items-center gap-2">
-            <CertificatesToolbar
-              table={table}
-              search={searchInput}
-              onSearchChange={setSearchInput}
-              statusFilter={statusParam}
-              onStatusFilterChange={handleStatusFilterChange}
-              typeId={typeIdParam}
-              onTypeIdChange={handleTypeIdChange}
-              certificateTypes={certificateTypes ?? []}
-            />
-            <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
-            <SavedViewSelector
-              entityType="certificates"
-              activeViewId={activeViewId}
-              onApplyView={applyView}
-              onResetToDefault={handleResetToDefault}
-              getCurrentConfiguration={getCurrentConfiguration}
-            />
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <CertificatesToolbar
+                table={table}
+                search={searchInput}
+                onSearchChange={setSearchInput}
+                statusFilter={statusParam}
+                onStatusFilterChange={handleStatusFilterChange}
+                typeId={typeIdParam}
+                onTypeIdChange={handleTypeIdChange}
+                certificateTypes={certificateTypes ?? []}
+              />
+              <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+              <SavedViewSelector
+                entityType="certificates"
+                activeViewId={activeViewId}
+                onApplyView={applyView}
+                onResetToDefault={handleResetToDefault}
+                getCurrentConfiguration={getCurrentConfiguration}
+              />
+            </div>
+            <BulkActionBar
+              selectedCount={selectedCount}
+              onClearSelection={() => setRowSelection({})}
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setBulkArchiveOpen(true)}
+                disabled={bulkArchiveMutation.isPending}
+              >
+                <Archive className="mr-1 h-3 w-3" />
+                Archive
+              </Button>
+              {["Active", "Expired", "Revoked", "PendingRenewal"].map((s) => (
+                <Button
+                  key={s}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkStatus(s)}
+                  disabled={bulkStatusMutation.isPending}
+                >
+                  <RefreshCw className="mr-1 h-3 w-3" />
+                  {s === "PendingRenewal" ? "Pending Renewal" : s}
+                </Button>
+              ))}
+            </BulkActionBar>
           </div>
         )}
         paginationControls={
@@ -457,6 +527,16 @@ export default function CertificatesPage() {
         confirmLabel="Delete"
         onConfirm={handleArchive}
         loading={archiveMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={bulkArchiveOpen}
+        onOpenChange={setBulkArchiveOpen}
+        title="Archive selected certificates"
+        description={`Are you sure you want to archive ${selectedCount} certificate(s)? This action can be undone later.`}
+        confirmLabel="Archive"
+        onConfirm={handleBulkArchive}
+        loading={bulkArchiveMutation.isPending}
       />
     </div>
   );

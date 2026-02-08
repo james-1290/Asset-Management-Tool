@@ -62,6 +62,17 @@ export function useArchiveCertificateType() {
   });
 }
 
+export function useBulkArchiveCertificateTypes() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => certificateTypesApi.bulkArchive(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: certificateTypeKeys.all });
+    },
+  });
+}
+
 export function useCertificateCustomFieldDefinitions(certificateTypeId: string | undefined) {
   return useQuery({
     queryKey: certificateTypeKeys.customFields(certificateTypeId ?? ""),

@@ -637,6 +637,63 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
         return Ok(ToDto(asset));
     }
 
+    [HttpPost("bulk-archive")]
+    public async Task<ActionResult<BulkActionResponse>> BulkArchive(BulkArchiveRequest request)
+    {
+        int succeeded = 0, failed = 0;
+        foreach (var id in request.Ids)
+        {
+            var asset = await db.Assets.FindAsync(id);
+            if (asset is null || asset.IsArchived) { failed++; continue; }
+
+            asset.IsArchived = true;
+            asset.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+
+            await audit.LogAsync(new AuditEntry(
+                Action: "Archived",
+                EntityType: "Asset",
+                EntityId: asset.Id.ToString(),
+                EntityName: asset.Name,
+                Details: $"Bulk archived asset \"{asset.Name}\" ({asset.AssetTag})",
+                ActorId: currentUser.UserId,
+                ActorName: currentUser.UserName));
+            succeeded++;
+        }
+        return Ok(new BulkActionResponse(succeeded, failed));
+    }
+
+    [HttpPost("bulk-status")]
+    public async Task<ActionResult<BulkActionResponse>> BulkStatus(BulkStatusRequest request)
+    {
+        if (!Enum.TryParse<AssetStatus>(request.Status, out var newStatus))
+            return BadRequest(new { error = $"Invalid status: {request.Status}" });
+
+        int succeeded = 0, failed = 0;
+        foreach (var id in request.Ids)
+        {
+            var asset = await db.Assets.FindAsync(id);
+            if (asset is null || asset.IsArchived) { failed++; continue; }
+
+            var oldStatus = asset.Status;
+            asset.Status = newStatus;
+            asset.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+
+            await audit.LogAsync(new AuditEntry(
+                Action: "StatusChanged",
+                EntityType: "Asset",
+                EntityId: asset.Id.ToString(),
+                EntityName: asset.Name,
+                Details: $"Bulk status change \"{asset.Name}\" ({asset.AssetTag}): {oldStatus} → {newStatus}",
+                ActorId: currentUser.UserId,
+                ActorName: currentUser.UserName,
+                Changes: [new AuditChange("Status", oldStatus.ToString(), newStatus.ToString())]));
+            succeeded++;
+        }
+        return Ok(new BulkActionResponse(succeeded, failed));
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Archive(Guid id)
     {

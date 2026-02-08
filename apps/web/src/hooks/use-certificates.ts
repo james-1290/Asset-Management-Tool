@@ -79,3 +79,26 @@ export function useArchiveCertificate() {
     },
   });
 }
+
+export function useBulkArchiveCertificates() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => certificatesApi.bulkArchive(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: certificateKeys.all });
+    },
+  });
+}
+
+export function useBulkStatusCertificates() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids, status }: { ids: string[]; status: string }) =>
+      certificatesApi.bulkStatus(ids, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: certificateKeys.all });
+    },
+  });
+}

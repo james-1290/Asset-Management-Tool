@@ -42,6 +42,10 @@ export const assetTypesApi = {
     return apiClient.delete(`/assettypes/${id}`);
   },
 
+  bulkArchive(ids: string[]): Promise<{ succeeded: number; failed: number }> {
+    return apiClient.post("/assettypes/bulk-archive", { ids });
+  },
+
   getCustomFields(assetTypeId: string): Promise<CustomFieldDefinition[]> {
     return apiClient.get<CustomFieldDefinition[]>(`/assettypes/${assetTypeId}/customfields`);
   },
