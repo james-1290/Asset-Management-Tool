@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil, LogOut, LogIn, Archive, DollarSign } from "lucide-react";
+import { ArrowLeft, Pencil, LogOut, LogIn, Archive, PoundSterling } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import {
@@ -212,7 +212,7 @@ export default function AssetDetailPage() {
                 Retire
               </Button>
               <Button variant="outline" onClick={() => setSellOpen(true)}>
-                <DollarSign className="mr-2 h-4 w-4" />
+                <PoundSterling className="mr-1 h-4 w-4" />
                 Mark as Sold
               </Button>
             </>
