@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom"
+import { useState, useEffect, useCallback } from "react"
+import { NavLink, useLocation } from "react-router-dom"
 import {
   LayoutDashboard,
   Monitor,
@@ -12,17 +13,22 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Package,
+  Building2,
+  Laptop,
 } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
@@ -31,23 +37,119 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
-const navItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Assets", url: "/assets", icon: Monitor },
-  { title: "Asset Types", url: "/asset-types", icon: Tag },
-  { title: "Certificates", url: "/certificates", icon: ShieldCheck },
-  { title: "Certificate Types", url: "/certificate-types", icon: FileKey },
-  { title: "Applications / Licences", url: "/applications", icon: AppWindow },
-  { title: "Application Types", url: "/application-types", icon: Tag },
-  { title: "Locations", url: "/locations", icon: MapPin },
-  { title: "People", url: "/people", icon: Users },
-  { title: "Audit Log", url: "/audit-log", icon: ScrollText },
-  { title: "Settings", url: "/settings", icon: Settings },
+interface NavChild {
+  title: string
+  url: string
+  icon: React.ComponentType<{ className?: string }>
+}
+
+interface NavGroup {
+  kind: "group"
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  children: NavChild[]
+}
+
+interface NavStandalone {
+  kind: "standalone"
+  title: string
+  url: string
+  icon: React.ComponentType<{ className?: string }>
+}
+
+type NavEntry = NavGroup | NavStandalone
+
+const navStructure: NavEntry[] = [
+  { kind: "standalone", title: "Dashboard", url: "/", icon: LayoutDashboard },
+  {
+    kind: "group",
+    title: "Inventory",
+    icon: Package,
+    children: [
+      { title: "Assets", url: "/assets", icon: Monitor },
+      { title: "Asset Types", url: "/asset-types", icon: Tag },
+    ],
+  },
+  {
+    kind: "group",
+    title: "Certificates",
+    icon: ShieldCheck,
+    children: [
+      { title: "Certificates", url: "/certificates", icon: ShieldCheck },
+      { title: "Certificate Types", url: "/certificate-types", icon: FileKey },
+    ],
+  },
+  {
+    kind: "group",
+    title: "Software",
+    icon: Laptop,
+    children: [
+      { title: "Applications / Licences", url: "/applications", icon: AppWindow },
+      { title: "Application Types", url: "/application-types", icon: Tag },
+    ],
+  },
+  {
+    kind: "group",
+    title: "Organisation",
+    icon: Building2,
+    children: [
+      { title: "Locations", url: "/locations", icon: MapPin },
+      { title: "People", url: "/people", icon: Users },
+    ],
+  },
+  { kind: "standalone", title: "Audit Log", url: "/audit-log", icon: ScrollText },
+  { kind: "standalone", title: "Settings", url: "/settings", icon: Settings },
 ]
+
+const STORAGE_KEY = "sidebar-groups"
+
+function loadGroupState(): Record<string, boolean> {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) return JSON.parse(stored)
+  } catch {
+    // ignore
+  }
+  return {}
+}
+
+function saveGroupState(state: Record<string, boolean>) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  } catch {
+    // ignore
+  }
+}
 
 export function AppSidebar() {
   const { toggleSidebar } = useSidebar()
+  const location = useLocation()
+  const [groupState, setGroupState] = useState<Record<string, boolean>>(loadGroupState)
+
+  useEffect(() => {
+    saveGroupState(groupState)
+  }, [groupState])
+
+  const toggleGroup = useCallback((groupTitle: string) => {
+    setGroupState((prev) => ({
+      ...prev,
+      [groupTitle]: !(prev[groupTitle] ?? false),
+    }))
+  }, [])
+
+  const isGroupOpen = (groupTitle: string) => groupState[groupTitle] ?? false
+
+  const isChildActive = (children: NavChild[]) =>
+    children.some((child) => {
+      if (child.url === "/") return location.pathname === "/"
+      return location.pathname.startsWith(child.url)
+    })
 
   return (
     <Sidebar collapsible="icon">
@@ -88,24 +190,71 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink
-                      to={item.url}
-                      className={({ isActive }) =>
-                        isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""
-                      }
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navStructure.map((entry) => {
+                if (entry.kind === "standalone") {
+                  return (
+                    <SidebarMenuItem key={entry.title}>
+                      <SidebarMenuButton asChild tooltip={entry.title}>
+                        <NavLink
+                          to={entry.url}
+                          className={({ isActive }) =>
+                            isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""
+                          }
+                        >
+                          <entry.icon className="h-4 w-4" />
+                          <span>{entry.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                }
+
+                const groupOpen = isGroupOpen(entry.title)
+                const hasActiveChild = isChildActive(entry.children)
+
+                return (
+                  <Collapsible
+                    key={entry.title}
+                    open={groupOpen}
+                    onOpenChange={() => toggleGroup(entry.title)}
+                    className="group/collapsible"
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          tooltip={entry.title}
+                          className={hasActiveChild && !groupOpen ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}
+                        >
+                          <entry.icon className="h-4 w-4" />
+                          <span>{entry.title}</span>
+                          <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {entry.children.map((child) => (
+                            <SidebarMenuSubItem key={child.title}>
+                              <SidebarMenuSubButton asChild>
+                                <NavLink
+                                  to={child.url}
+                                  className={({ isActive }) =>
+                                    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""
+                                  }
+                                >
+                                  <child.icon className="h-4 w-4" />
+                                  <span>{child.title}</span>
+                                </NavLink>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
