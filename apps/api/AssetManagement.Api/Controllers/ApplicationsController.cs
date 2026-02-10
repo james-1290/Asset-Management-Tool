@@ -614,6 +614,99 @@ public class ApplicationsController(AppDbContext db, IAuditService audit, ICurre
         return Ok(new BulkActionResponse(succeeded, failed));
     }
 
+    [HttpPost("{id:guid}/deactivate")]
+    public async Task<ActionResult<ApplicationDto>> Deactivate(Guid id, DeactivateApplicationRequest request)
+    {
+        var app = await db.Applications
+            .Include(a => a.ApplicationType)
+            .Include(a => a.Asset)
+            .Include(a => a.Person)
+            .Include(a => a.Location)
+            .FirstOrDefaultAsync(a => a.Id == id);
+
+        if (app is null) return NotFound();
+
+        if (app.IsArchived)
+            return BadRequest(new { error = "Cannot deactivate an archived application." });
+
+        if (app.Status == ApplicationStatus.Inactive)
+            return BadRequest(new { error = "Application is already inactive." });
+
+        var oldStatus = app.Status;
+        app.Status = ApplicationStatus.Inactive;
+        app.DeactivatedDate = request.DeactivatedDate ?? DateTime.UtcNow;
+        app.UpdatedAt = DateTime.UtcNow;
+
+        if (!string.IsNullOrWhiteSpace(request.Notes))
+            app.Notes = request.Notes;
+
+        await db.SaveChangesAsync();
+
+        var changes = new List<AuditChange>
+        {
+            new("Status", oldStatus.ToString(), ApplicationStatus.Inactive.ToString())
+        };
+
+        await audit.LogAsync(new AuditEntry(
+            Action: "Deactivated",
+            EntityType: "Application",
+            EntityId: app.Id.ToString(),
+            EntityName: app.Name,
+            Details: $"Deactivated application \"{app.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName,
+            Changes: changes));
+
+        var cfvs = await LoadCustomFieldValues(app.Id);
+        return Ok(ToDto(app, cfvs));
+    }
+
+    [HttpPost("{id:guid}/reactivate")]
+    public async Task<ActionResult<ApplicationDto>> Reactivate(Guid id, ReactivateApplicationRequest request)
+    {
+        var app = await db.Applications
+            .Include(a => a.ApplicationType)
+            .Include(a => a.Asset)
+            .Include(a => a.Person)
+            .Include(a => a.Location)
+            .FirstOrDefaultAsync(a => a.Id == id);
+
+        if (app is null) return NotFound();
+
+        if (app.IsArchived)
+            return BadRequest(new { error = "Cannot reactivate an archived application." });
+
+        if (app.Status != ApplicationStatus.Inactive)
+            return BadRequest(new { error = "Only inactive applications can be reactivated." });
+
+        app.Status = ApplicationStatus.Active;
+        app.DeactivatedDate = null;
+        app.UpdatedAt = DateTime.UtcNow;
+
+        if (!string.IsNullOrWhiteSpace(request.Notes))
+            app.Notes = request.Notes;
+
+        await db.SaveChangesAsync();
+
+        var changes = new List<AuditChange>
+        {
+            new("Status", ApplicationStatus.Inactive.ToString(), ApplicationStatus.Active.ToString())
+        };
+
+        await audit.LogAsync(new AuditEntry(
+            Action: "Reactivated",
+            EntityType: "Application",
+            EntityId: app.Id.ToString(),
+            EntityName: app.Name,
+            Details: $"Reactivated application \"{app.Name}\"",
+            ActorId: currentUser.UserId,
+            ActorName: currentUser.UserName,
+            Changes: changes));
+
+        var cfvs = await LoadCustomFieldValues(app.Id);
+        return Ok(ToDto(app, cfvs));
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Archive(Guid id)
     {
@@ -653,6 +746,7 @@ public class ApplicationsController(AppDbContext db, IAuditService audit, ICurre
         a.PurchaseDate, a.ExpiryDate,
         a.PurchaseCost, a.AutoRenewal,
         a.Status.ToString(),
+        a.DeactivatedDate,
         a.Notes,
         a.AssetId, a.Asset?.Name,
         a.PersonId, a.Person?.FullName,

@@ -21,6 +21,7 @@ public class Application
     public decimal? PurchaseCost { get; set; }
     public bool AutoRenewal { get; set; }
     public ApplicationStatus Status { get; set; } = ApplicationStatus.Active;
+    public DateTime? DeactivatedDate { get; set; }
     public string? Notes { get; set; }
 
     public Guid? AssetId { get; set; }

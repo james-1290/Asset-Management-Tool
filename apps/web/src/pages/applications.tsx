@@ -11,6 +11,7 @@ import { DataTablePagination } from "../components/data-table-pagination";
 import { applicationsApi } from "../lib/api/applications";
 import { ExportButton } from "../components/export-button";
 import { ConfirmDialog } from "../components/confirm-dialog";
+import { DeactivateApplicationDialog } from "../components/applications/deactivate-application-dialog";
 import { ApplicationFormDialog } from "../components/applications/application-form-dialog";
 import { ApplicationsToolbar } from "../components/applications/applications-toolbar";
 import { getApplicationColumns } from "../components/applications/columns";
@@ -22,6 +23,7 @@ import {
   useCreateApplication,
   useUpdateApplication,
   useArchiveApplication,
+  useDeactivateApplication,
   useBulkArchiveApplications,
   useBulkStatusApplications,
 } from "../hooks/use-applications";
@@ -156,12 +158,14 @@ export default function ApplicationsPage() {
   const createMutation = useCreateApplication();
   const updateMutation = useUpdateApplication();
   const archiveMutation = useArchiveApplication();
+  const deactivateMutation = useDeactivateApplication();
   const bulkArchiveMutation = useBulkArchiveApplications();
   const bulkStatusMutation = useBulkStatusApplications();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState<Application | null>(null);
   const [archivingApplication, setArchivingApplication] = useState<Application | null>(null);
+  const [deactivatingApplication, setDeactivatingApplication] = useState<Application | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
@@ -181,6 +185,9 @@ export default function ApplicationsPage() {
         },
         onArchive: (application) => {
           setArchivingApplication(application);
+        },
+        onDeactivate: (application) => {
+          setDeactivatingApplication(application);
         },
       }),
     ],
@@ -384,6 +391,22 @@ export default function ApplicationsPage() {
     });
   }
 
+  function handleDeactivate(notes: string | null, deactivatedDate: string | null) {
+    if (!deactivatingApplication) return;
+    deactivateMutation.mutate(
+      { id: deactivatingApplication.id, data: { notes, deactivatedDate } },
+      {
+        onSuccess: () => {
+          toast.success("Application deactivated");
+          setDeactivatingApplication(null);
+        },
+        onError: () => {
+          toast.error("Failed to deactivate application");
+        },
+      },
+    );
+  }
+
   const selectedIds = Object.keys(rowSelection);
   const selectedCount = selectedIds.length;
 
@@ -585,6 +608,16 @@ export default function ApplicationsPage() {
         confirmLabel="Archive"
         onConfirm={handleBulkArchive}
         loading={bulkArchiveMutation.isPending}
+      />
+
+      <DeactivateApplicationDialog
+        open={!!deactivatingApplication}
+        onOpenChange={(open) => {
+          if (!open) setDeactivatingApplication(null);
+        }}
+        applicationName={deactivatingApplication?.name ?? ""}
+        onSubmit={handleDeactivate}
+        loading={deactivateMutation.isPending}
       />
     </div>
   );

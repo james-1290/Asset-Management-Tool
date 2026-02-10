@@ -16,6 +16,7 @@ public record ApplicationDto(
     decimal? PurchaseCost,
     bool AutoRenewal,
     string Status,
+    DateTime? DeactivatedDate,
     string? Notes,
     Guid? AssetId,
     string? AssetName,
@@ -69,6 +70,15 @@ public record UpdateApplicationRequest(
     Guid? PersonId,
     Guid? LocationId,
     List<CustomFieldValueInput>? CustomFieldValues
+);
+
+public record DeactivateApplicationRequest(
+    string? Notes,
+    DateTime? DeactivatedDate
+);
+
+public record ReactivateApplicationRequest(
+    string? Notes
 );
 
 public record ApplicationHistoryChangeDto(

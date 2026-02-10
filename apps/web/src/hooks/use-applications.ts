@@ -4,6 +4,8 @@ import type { ApplicationQueryParams } from "../lib/api/applications";
 import type {
   CreateApplicationRequest,
   UpdateApplicationRequest,
+  DeactivateApplicationRequest,
+  ReactivateApplicationRequest,
 } from "../types/application";
 
 const applicationKeys = {
@@ -61,6 +63,34 @@ export function useUpdateApplication() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateApplicationRequest }) =>
       applicationsApi.update(id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "history"] });
+    },
+  });
+}
+
+export function useDeactivateApplication() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: DeactivateApplicationRequest }) =>
+      applicationsApi.deactivate(id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "history"] });
+    },
+  });
+}
+
+export function useReactivateApplication() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ReactivateApplicationRequest }) =>
+      applicationsApi.reactivate(id, data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: applicationKeys.all });
       queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });

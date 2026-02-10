@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil, Power, PowerOff } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import {
@@ -14,10 +14,13 @@ import { ApplicationStatusBadge } from "../components/applications/application-s
 import { ApplicationHistoryTimeline } from "../components/applications/application-history-timeline";
 import { ApplicationHistoryDialog } from "../components/applications/application-history-dialog";
 import { ApplicationFormDialog } from "../components/applications/application-form-dialog";
+import { DeactivateApplicationDialog } from "../components/applications/deactivate-application-dialog";
 import {
   useApplication,
   useApplicationHistory,
   useUpdateApplication,
+  useDeactivateApplication,
+  useReactivateApplication,
 } from "../hooks/use-applications";
 import { useApplicationTypes } from "../hooks/use-application-types";
 import { useLocations } from "../hooks/use-locations";
@@ -79,9 +82,12 @@ export default function ApplicationDetailPage() {
   const { data: applicationTypes } = useApplicationTypes();
   const { data: locations } = useLocations();
   const updateMutation = useUpdateApplication();
+  const deactivateMutation = useDeactivateApplication();
+  const reactivateMutation = useReactivateApplication();
 
   const [formOpen, setFormOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
 
   function handleFormSubmit(values: ApplicationFormValues) {
     if (!application) return;
@@ -123,6 +129,37 @@ export default function ApplicationDetailPage() {
         },
         onError: () => {
           toast.error("Failed to update application");
+        },
+      },
+    );
+  }
+
+  function handleDeactivate(notes: string | null, deactivatedDate: string | null) {
+    if (!application) return;
+    deactivateMutation.mutate(
+      { id: application.id, data: { notes, deactivatedDate } },
+      {
+        onSuccess: () => {
+          toast.success("Application deactivated");
+          setDeactivateOpen(false);
+        },
+        onError: () => {
+          toast.error("Failed to deactivate application");
+        },
+      },
+    );
+  }
+
+  function handleReactivate() {
+    if (!application) return;
+    reactivateMutation.mutate(
+      { id: application.id, data: {} },
+      {
+        onSuccess: () => {
+          toast.success("Application reactivated");
+        },
+        onError: () => {
+          toast.error("Failed to reactivate application");
         },
       },
     );
@@ -173,10 +210,28 @@ export default function ApplicationDetailPage() {
             </p>
           </div>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <Pencil className="mr-2 h-4 w-4" />
-          Edit
-        </Button>
+        <div className="flex items-center gap-2">
+          {application.status !== "Inactive" && !application.isArchived && (
+            <Button variant="destructive" onClick={() => setDeactivateOpen(true)}>
+              <PowerOff className="mr-2 h-4 w-4" />
+              Deactivate
+            </Button>
+          )}
+          {application.status === "Inactive" && !application.isArchived && (
+            <Button
+              variant="outline"
+              onClick={handleReactivate}
+              disabled={reactivateMutation.isPending}
+            >
+              <Power className="mr-2 h-4 w-4" />
+              {reactivateMutation.isPending ? "Reactivating..." : "Reactivate"}
+            </Button>
+          )}
+          <Button onClick={() => setFormOpen(true)}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -265,6 +320,14 @@ export default function ApplicationDetailPage() {
         applicationName={application.name}
         open={historyOpen}
         onOpenChange={setHistoryOpen}
+      />
+
+      <DeactivateApplicationDialog
+        open={deactivateOpen}
+        onOpenChange={setDeactivateOpen}
+        applicationName={application.name}
+        onSubmit={handleDeactivate}
+        loading={deactivateMutation.isPending}
       />
     </div>
   );
