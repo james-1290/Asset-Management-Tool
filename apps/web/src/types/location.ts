@@ -22,3 +22,20 @@ export interface UpdateLocationRequest {
   city?: string | null;
   country?: string | null;
 }
+
+export interface LocationAsset {
+  id: string;
+  name: string;
+  assetTag: string;
+  assetTypeName: string | null;
+  status: string;
+  assignedPersonName: string | null;
+}
+
+export interface LocationPerson {
+  id: string;
+  fullName: string;
+  email: string | null;
+  department: string | null;
+  jobTitle: string | null;
+}

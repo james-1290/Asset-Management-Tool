@@ -24,3 +24,20 @@ public record UpdateLocationRequest(
     string? City,
     string? Country
 );
+
+public record LocationAssetDto(
+    Guid Id,
+    string Name,
+    string AssetTag,
+    string? AssetTypeName,
+    string Status,
+    string? AssignedPersonName
+);
+
+public record LocationPersonDto(
+    Guid Id,
+    string FullName,
+    string? Email,
+    string? Department,
+    string? JobTitle
+);

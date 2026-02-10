@@ -13,6 +13,7 @@ import ApplicationDetailPage from "@/pages/application-detail"
 import ApplicationTypesPage from "@/pages/application-types"
 import AssetTypesPage from "@/pages/asset-types"
 import LocationsPage from "@/pages/locations"
+import LocationDetailPage from "@/pages/location-detail"
 import PeoplePage from "@/pages/people"
 import PersonDetailPage from "@/pages/person-detail"
 import AuditLogPage from "@/pages/audit-log"
@@ -36,6 +37,7 @@ function App() {
             <Route path="/application-types" element={<ApplicationTypesPage />} />
             <Route path="/asset-types" element={<AssetTypesPage />} />
             <Route path="/locations" element={<LocationsPage />} />
+            <Route path="/locations/:id" element={<LocationDetailPage />} />
             <Route path="/people" element={<PeoplePage />} />
             <Route path="/people/:id" element={<PersonDetailPage />} />
             <Route path="/audit-log" element={<AuditLogPage />} />

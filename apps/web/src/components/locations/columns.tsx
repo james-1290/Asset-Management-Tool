@@ -1,4 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import { Link } from "react-router-dom";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -30,6 +31,14 @@ export function getLocationColumns({
           Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
+      ),
+      cell: ({ row }) => (
+        <Link
+          to={`/locations/${row.original.id}`}
+          className="font-medium text-primary hover:underline"
+        >
+          {row.getValue("name")}
+        </Link>
       ),
     },
     {

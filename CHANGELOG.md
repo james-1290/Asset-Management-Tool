@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-10 08:31 - Location Detail Page
+
+- Added location detail page at `/locations/:id` with details card, assets table, and people table
+- Backend: new `GET /api/v1/locations/{id}/assets` and `GET /api/v1/locations/{id}/people` endpoints
+- Backend: new `LocationAssetDto` and `LocationPersonDto` DTOs
+- Frontend: new `useLocation`, `useLocationAssets`, `useLocationPeople` hooks
+- Location names in the list page are now clickable links to the detail page
+- Detail page includes Edit and Archive actions (reuses existing dialogs)
+
 ## 2026-02-10 08:02 - Header Enhancements (5 Features)
 
 - **Feature 1 — Sidebar Toggle**: Added `SidebarTrigger` to the header for collapsing/expanding the sidebar
