@@ -16,4 +16,8 @@ export const auditLogsApi = {
   getPaged(params: AuditLogQueryParams): Promise<PagedResponse<AuditLogEntry>> {
     return apiClient.get<PagedResponse<AuditLogEntry>>("/auditlogs", params as Record<string, string | number | undefined>);
   },
+
+  exportCsv(params: Omit<AuditLogQueryParams, "page" | "pageSize">): Promise<void> {
+    return apiClient.downloadCsv("/auditlogs/export", params as Record<string, string | number | undefined>, "audit-log-export.csv");
+  },
 };

@@ -8,6 +8,8 @@ import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
+import { applicationsApi } from "../lib/api/applications";
+import { ExportButton } from "../components/export-button";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import { ApplicationFormDialog } from "../components/applications/application-form-dialog";
 import { ApplicationsToolbar } from "../components/applications/applications-toolbar";
@@ -293,6 +295,26 @@ export default function ApplicationsPage() {
     [setSearchParams],
   );
 
+  const [exporting, setExporting] = useState(false);
+  async function handleExport() {
+    setExporting(true);
+    try {
+      await applicationsApi.exportCsv({
+        search: searchParam || undefined,
+        status: statusParam || undefined,
+        includeStatuses,
+        sortBy: sortByParam,
+        sortDir: sortDirParam,
+        typeId: typeIdParam || undefined,
+        ids: selectedIds.length > 0 ? selectedIds.join(",") : undefined,
+      });
+    } catch {
+      toast.error("Failed to export applications");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function handleFormSubmit(values: ApplicationFormValues) {
     const customFieldValues = Object.entries(values.customFieldValues ?? {})
       .filter(([, v]) => v != null && v !== "" && v !== "__none__")
@@ -466,6 +488,7 @@ export default function ApplicationsPage() {
                 applicationTypes={applicationTypes ?? []}
               />
               <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+              <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
               <SavedViewSelector
                 entityType="applications"
                 activeViewId={activeViewId}

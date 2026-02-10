@@ -79,4 +79,41 @@ export const apiClient = {
       headers: { ...getAuthHeaders() },
     }).then(handleResponse<T>);
   },
+
+  async downloadCsv(path: string, params?: Record<string, string | number | undefined>, filename?: string): Promise<void> {
+    let url = `${BASE_URL}${path}`;
+    if (params) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== "") {
+          searchParams.set(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      if (qs) url += `?${qs}`;
+    }
+
+    const response = await fetch(url, { headers: { ...getAuthHeaders() } });
+
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    if (!response.ok) {
+      throw new ApiError(response.status, response.statusText);
+    }
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = filename ?? "export.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(objectUrl);
+  },
 };

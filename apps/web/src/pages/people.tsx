@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
+import { peopleApi } from "../lib/api/people";
+import { ExportButton } from "../components/export-button";
 import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
@@ -228,6 +230,23 @@ export default function PeoplePage() {
     [setSearchParams],
   );
 
+  const [exporting, setExporting] = useState(false);
+  async function handleExport() {
+    setExporting(true);
+    try {
+      await peopleApi.exportCsv({
+        search: searchParam || undefined,
+        sortBy: sortByParam,
+        sortDir: sortDirParam,
+        ids: selectedIds.length > 0 ? selectedIds.join(",") : undefined,
+      });
+    } catch {
+      toast.error("Failed to export people");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function handleFormSubmit(values: PersonFormValues) {
     const data = {
       fullName: values.fullName,
@@ -347,6 +366,7 @@ export default function PeoplePage() {
                 search={searchInput}
                 onSearchChange={setSearchInput}
               />
+              <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedIds.length} />
               <SavedViewSelector
                 entityType="people"
                 activeViewId={activeViewId}

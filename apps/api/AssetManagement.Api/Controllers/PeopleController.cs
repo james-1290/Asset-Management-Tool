@@ -1,7 +1,9 @@
+using System.Globalization;
 using AssetManagement.Api.Data;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Services;
+using CsvHelper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +45,74 @@ public class PeopleController(AppDbContext db, IAuditService audit, ICurrentUser
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
+        var query = ApplySorting(BuildFilteredQuery(search), sortBy, sortDir);
+
+        var totalCount = await query.CountAsync();
+
+        var people = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(p => new PersonDto(
+                p.Id, p.FullName, p.Email, p.Department, p.JobTitle,
+                p.LocationId, p.Location != null ? p.Location.Name : null,
+                p.IsArchived, p.CreatedAt, p.UpdatedAt))
+            .ToListAsync();
+
+        return Ok(new PagedResponse<PersonDto>(people, page, pageSize, totalCount));
+    }
+
+    [HttpGet("export")]
+    public async Task<IActionResult> Export(
+        [FromQuery] string? search = null,
+        [FromQuery] string sortBy = "fullname",
+        [FromQuery] string sortDir = "asc",
+        [FromQuery] string? ids = null)
+    {
+        List<Person> people;
+        if (!string.IsNullOrEmpty(ids))
+        {
+            var idList = ids.Split(',').Select(id => Guid.TryParse(id.Trim(), out var g) ? g : (Guid?)null).Where(g => g.HasValue).Select(g => g!.Value).ToList();
+            people = await db.People.Include(p => p.Location).Where(p => !p.IsArchived && idList.Contains(p.Id)).ToListAsync();
+        }
+        else
+        {
+            var query = ApplySorting(BuildFilteredQuery(search), sortBy, sortDir);
+            people = await query.Include(p => p.Location).ToListAsync();
+        }
+
+        var ms = new MemoryStream();
+        await using var writer = new StreamWriter(ms, leaveOpen: true);
+        await using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+
+        csv.WriteField("FullName");
+        csv.WriteField("Email");
+        csv.WriteField("Department");
+        csv.WriteField("JobTitle");
+        csv.WriteField("Location");
+        csv.WriteField("CreatedAt");
+        csv.WriteField("UpdatedAt");
+        await csv.NextRecordAsync();
+
+        foreach (var p in people)
+        {
+            csv.WriteField(p.FullName);
+            csv.WriteField(p.Email);
+            csv.WriteField(p.Department);
+            csv.WriteField(p.JobTitle);
+            csv.WriteField(p.Location?.Name);
+            csv.WriteField(p.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            csv.WriteField(p.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            await csv.NextRecordAsync();
+        }
+
+        await writer.FlushAsync();
+        ms.Position = 0;
+
+        return File(ms, "text/csv", "people-export.csv");
+    }
+
+    private IQueryable<Person> BuildFilteredQuery(string? search)
+    {
         var query = db.People
             .Where(p => !p.IsArchived)
             .Include(p => p.Location)
@@ -55,10 +125,13 @@ public class PeopleController(AppDbContext db, IAuditService audit, ICurrentUser
                 (p.Email != null && EF.Functions.ILike(p.Email, $"%{search}%")));
         }
 
-        var totalCount = await query.CountAsync();
+        return query;
+    }
 
+    private static IQueryable<Person> ApplySorting(IQueryable<Person> query, string sortBy, string sortDir)
+    {
         var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
-        query = sortBy.ToLowerInvariant() switch
+        return sortBy.ToLowerInvariant() switch
         {
             "email" => desc ? query.OrderByDescending(p => p.Email) : query.OrderBy(p => p.Email),
             "department" => desc ? query.OrderByDescending(p => p.Department) : query.OrderBy(p => p.Department),
@@ -67,17 +140,6 @@ public class PeopleController(AppDbContext db, IAuditService audit, ICurrentUser
             "createdat" => desc ? query.OrderByDescending(p => p.CreatedAt) : query.OrderBy(p => p.CreatedAt),
             _ => desc ? query.OrderByDescending(p => p.FullName) : query.OrderBy(p => p.FullName),
         };
-
-        var people = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(p => new PersonDto(
-                p.Id, p.FullName, p.Email, p.Department, p.JobTitle,
-                p.LocationId, p.Location != null ? p.Location.Name : null,
-                p.IsArchived, p.CreatedAt, p.UpdatedAt))
-            .ToListAsync();
-
-        return Ok(new PagedResponse<PersonDto>(people, page, pageSize, totalCount));
     }
 
     [HttpGet("{id:guid}")]

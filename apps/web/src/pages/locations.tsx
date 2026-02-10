@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { locationsApi } from "../lib/api/locations";
+import { ExportButton } from "../components/export-button";
 import type { SortingState, VisibilityState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
@@ -203,6 +205,22 @@ export default function LocationsPage() {
     [setSearchParams],
   );
 
+  const [exporting, setExporting] = useState(false);
+  async function handleExport() {
+    setExporting(true);
+    try {
+      await locationsApi.exportCsv({
+        search: searchParam || undefined,
+        sortBy: sortByParam,
+        sortDir: sortDirParam,
+      });
+    } catch {
+      toast.error("Failed to export locations");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function handleFormSubmit(values: LocationFormValues) {
     const data = {
       name: values.name,
@@ -314,6 +332,7 @@ export default function LocationsPage() {
               search={searchInput}
               onSearchChange={setSearchInput}
             />
+            <ExportButton onExport={handleExport} loading={exporting} />
             <SavedViewSelector
               entityType="locations"
               activeViewId={activeViewId}

@@ -50,4 +50,8 @@ export const locationsApi = {
   archive(id: string): Promise<void> {
     return apiClient.delete(`/locations/${id}`);
   },
+
+  exportCsv(params: Omit<LocationQueryParams, "page" | "pageSize">): Promise<void> {
+    return apiClient.downloadCsv("/locations/export", params as Record<string, string | number | undefined>, "locations-export.csv");
+  },
 };

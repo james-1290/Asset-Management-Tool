@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Archive, RefreshCw } from "lucide-react";
+import { assetsApi } from "../lib/api/assets";
+import { ExportButton } from "../components/export-button";
 import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
@@ -360,6 +362,33 @@ export default function AssetsPage() {
     [setSearchParams],
   );
 
+  const [exporting, setExporting] = useState(false);
+  async function handleExport() {
+    setExporting(true);
+    try {
+      await assetsApi.exportCsv({
+        search: searchParam || undefined,
+        status: statusParam || undefined,
+        includeStatuses: buildIncludeStatuses(),
+        sortBy: sortByParam,
+        sortDir: sortDirParam,
+        typeId: typeIdParam || undefined,
+        ids: selectedIds.length > 0 ? selectedIds.join(",") : undefined,
+      });
+    } catch {
+      toast.error("Failed to export assets");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  function buildIncludeStatuses(): string | undefined {
+    const parts: string[] = [];
+    if (includeRetired) parts.push("Retired");
+    if (includeSold) parts.push("Sold");
+    return parts.length > 0 ? parts.join(",") : undefined;
+  }
+
   function handleFormSubmit(values: AssetFormValues) {
     const customFieldValues = Object.entries(values.customFieldValues ?? {})
       .filter(([, v]) => v != null && v !== "" && v !== "__none__")
@@ -541,6 +570,7 @@ export default function AssetsPage() {
               assetTypes={assetTypes ?? []}
             />
             <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+            <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
             <SavedViewSelector
               entityType="assets"
               activeViewId={activeViewId}

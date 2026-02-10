@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import type { SortingState, VisibilityState } from "@tanstack/react-table";
 import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
@@ -8,6 +9,8 @@ import { Skeleton } from "../components/ui/skeleton";
 import { AuditLogsToolbar } from "../components/audit-logs/audit-logs-toolbar";
 import { auditLogColumns } from "../components/audit-logs/columns";
 import { usePagedAuditLogs } from "../hooks/use-audit-logs";
+import { auditLogsApi } from "../lib/api/audit-logs";
+import { ExportButton } from "../components/export-button";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
@@ -204,6 +207,24 @@ export default function AuditLogPage() {
     [setSearchParams],
   );
 
+  const [exporting, setExporting] = useState(false);
+  async function handleExport() {
+    setExporting(true);
+    try {
+      await auditLogsApi.exportCsv({
+        entityType: entityTypeParam || undefined,
+        action: actionParam || undefined,
+        search: searchParam || undefined,
+        sortBy: sortByParam,
+        sortDir: sortDirParam,
+      });
+    } catch {
+      toast.error("Failed to export audit log");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -260,6 +281,7 @@ export default function AuditLogPage() {
               action={actionParam}
               onActionChange={handleActionChange}
             />
+            <ExportButton onExport={handleExport} loading={exporting} />
             <SavedViewSelector
               entityType="audit-log"
               activeViewId={activeViewId}

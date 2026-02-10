@@ -1,8 +1,10 @@
+using System.Globalization;
 using AssetManagement.Api.Data;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Models.Enums;
 using AssetManagement.Api.Services;
+using CsvHelper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -28,46 +30,12 @@ public class CertificatesController(AppDbContext db, IAuditService audit, ICurre
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var query = db.Certificates
-            .Where(c => !c.IsArchived)
-            .Include(c => c.CertificateType)
-            .Include(c => c.Asset)
-            .Include(c => c.Person)
-            .Include(c => c.Location)
-            .AsQueryable();
+        var (query, error) = BuildFilteredQuery(search, status, typeId);
+        if (error is not null) return error;
 
-        // Filter by type
-        if (typeId.HasValue)
-            query = query.Where(c => c.CertificateTypeId == typeId.Value);
+        var totalCount = await query!.CountAsync();
 
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            query = query.Where(c =>
-                EF.Functions.ILike(c.Name, $"%{search}%") ||
-                (c.Issuer != null && EF.Functions.ILike(c.Issuer, $"%{search}%")) ||
-                (c.Subject != null && EF.Functions.ILike(c.Subject, $"%{search}%")));
-        }
-
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            if (!Enum.TryParse<CertificateStatus>(status, out var parsedStatus))
-                return BadRequest(new { error = $"Invalid status: {status}" });
-            query = query.Where(c => c.Status == parsedStatus);
-        }
-
-        var totalCount = await query.CountAsync();
-
-        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
-        query = sortBy.ToLowerInvariant() switch
-        {
-            "issuer" => desc ? query.OrderByDescending(c => c.Issuer) : query.OrderBy(c => c.Issuer),
-            "subject" => desc ? query.OrderByDescending(c => c.Subject) : query.OrderBy(c => c.Subject),
-            "expirydate" => desc ? query.OrderByDescending(c => c.ExpiryDate) : query.OrderBy(c => c.ExpiryDate),
-            "status" => desc ? query.OrderByDescending(c => c.Status) : query.OrderBy(c => c.Status),
-            "certificatetypename" => desc ? query.OrderByDescending(c => c.CertificateType.Name) : query.OrderBy(c => c.CertificateType.Name),
-            "createdat" => desc ? query.OrderByDescending(c => c.CreatedAt) : query.OrderBy(c => c.CreatedAt),
-            _ => desc ? query.OrderByDescending(c => c.Name) : query.OrderBy(c => c.Name),
-        };
+        query = ApplySorting(query!, sortBy, sortDir);
 
         var certificates = await query
             .Skip((page - 1) * pageSize)
@@ -89,6 +57,115 @@ public class CertificatesController(AppDbContext db, IAuditService audit, ICurre
             totalCount);
 
         return Ok(result);
+    }
+
+    [HttpGet("export")]
+    public async Task<IActionResult> Export(
+        [FromQuery] string? search = null,
+        [FromQuery] string? status = null,
+        [FromQuery] string sortBy = "name",
+        [FromQuery] string sortDir = "asc",
+        [FromQuery] Guid? typeId = null,
+        [FromQuery] string? ids = null)
+    {
+        List<Certificate> certificates;
+        if (!string.IsNullOrEmpty(ids))
+        {
+            var idList = ids.Split(',').Select(id => Guid.TryParse(id.Trim(), out var g) ? g : (Guid?)null).Where(g => g.HasValue).Select(g => g!.Value).ToList();
+            certificates = await db.Certificates.Include(c => c.CertificateType).Where(c => !c.IsArchived && idList.Contains(c.Id)).ToListAsync();
+        }
+        else
+        {
+            var (query, error) = BuildFilteredQuery(search, status, typeId);
+            if (error is not null) return error;
+            query = ApplySorting(query!, sortBy, sortDir);
+            certificates = await query.ToListAsync();
+        }
+
+        var ms = new MemoryStream();
+        await using var writer = new StreamWriter(ms, leaveOpen: true);
+        await using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+
+        csv.WriteField("Name");
+        csv.WriteField("CertificateType");
+        csv.WriteField("Status");
+        csv.WriteField("Issuer");
+        csv.WriteField("Subject");
+        csv.WriteField("IssuedDate");
+        csv.WriteField("ExpiryDate");
+        csv.WriteField("AutoRenewal");
+        csv.WriteField("Notes");
+        csv.WriteField("CreatedAt");
+        csv.WriteField("UpdatedAt");
+        await csv.NextRecordAsync();
+
+        foreach (var c in certificates)
+        {
+            csv.WriteField(c.Name);
+            csv.WriteField(c.CertificateType?.Name);
+            csv.WriteField(c.Status.ToString());
+            csv.WriteField(c.Issuer);
+            csv.WriteField(c.Subject);
+            csv.WriteField(c.IssuedDate?.ToString("yyyy-MM-dd"));
+            csv.WriteField(c.ExpiryDate?.ToString("yyyy-MM-dd"));
+            csv.WriteField(c.AutoRenewal);
+            csv.WriteField(c.Notes);
+            csv.WriteField(c.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            csv.WriteField(c.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            await csv.NextRecordAsync();
+        }
+
+        await writer.FlushAsync();
+        ms.Position = 0;
+
+        return File(ms, "text/csv", "certificates-export.csv");
+    }
+
+    private (IQueryable<Certificate>? query, ActionResult? error) BuildFilteredQuery(
+        string? search, string? status, Guid? typeId)
+    {
+        var query = db.Certificates
+            .Where(c => !c.IsArchived)
+            .Include(c => c.CertificateType)
+            .Include(c => c.Asset)
+            .Include(c => c.Person)
+            .Include(c => c.Location)
+            .AsQueryable();
+
+        if (typeId.HasValue)
+            query = query.Where(c => c.CertificateTypeId == typeId.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(c =>
+                EF.Functions.ILike(c.Name, $"%{search}%") ||
+                (c.Issuer != null && EF.Functions.ILike(c.Issuer, $"%{search}%")) ||
+                (c.Subject != null && EF.Functions.ILike(c.Subject, $"%{search}%")));
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            if (!Enum.TryParse<CertificateStatus>(status, out var parsedStatus))
+                return (null, BadRequest(new { error = $"Invalid status: {status}" }));
+            query = query.Where(c => c.Status == parsedStatus);
+        }
+
+        return (query, null);
+    }
+
+    private static IQueryable<Certificate> ApplySorting(IQueryable<Certificate> query, string sortBy, string sortDir)
+    {
+        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        return sortBy.ToLowerInvariant() switch
+        {
+            "issuer" => desc ? query.OrderByDescending(c => c.Issuer) : query.OrderBy(c => c.Issuer),
+            "subject" => desc ? query.OrderByDescending(c => c.Subject) : query.OrderBy(c => c.Subject),
+            "expirydate" => desc ? query.OrderByDescending(c => c.ExpiryDate) : query.OrderBy(c => c.ExpiryDate),
+            "status" => desc ? query.OrderByDescending(c => c.Status) : query.OrderBy(c => c.Status),
+            "certificatetypename" => desc ? query.OrderByDescending(c => c.CertificateType.Name) : query.OrderBy(c => c.CertificateType.Name),
+            "createdat" => desc ? query.OrderByDescending(c => c.CreatedAt) : query.OrderBy(c => c.CreatedAt),
+            _ => desc ? query.OrderByDescending(c => c.Name) : query.OrderBy(c => c.Name),
+        };
     }
 
     [HttpGet("{id:guid}")]

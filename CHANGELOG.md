@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-02-10 14:05 - CSV Export on All List Pages
+
+- Added `GET /api/v1/{entity}/export` endpoints to all 6 controllers (Assets, Locations, People, Certificates, Applications, AuditLogs)
+- Each export endpoint accepts the same filter/sort params as the paged GET, but returns all matching rows as CSV
+- Installed CsvHelper 33.1.0 NuGet package for CSV generation
+- Added `downloadCsv()` method to frontend api-client for blob download
+- Created reusable `ExportButton` component (Download icon + loading spinner)
+- Added export functions to all 6 frontend API modules
+- Added Export button to toolbar of all 6 list pages (Assets, Locations, People, Certificates, Applications, Audit Log)
+- Export respects current filters/sorting — CSV matches what the user sees
+- Refactored each controller to extract shared `BuildFilteredQuery` and `ApplySorting` methods (reused by both paged GET and export)
+
 ## 2026-02-10 08:31 - Location Detail Page
 
 - Added location detail page at `/locations/:id` with details card, assets table, and people table

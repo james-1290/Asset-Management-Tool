@@ -57,4 +57,8 @@ export const applicationsApi = {
   bulkStatus(ids: string[], status: string): Promise<{ succeeded: number; failed: number }> {
     return apiClient.post("/applications/bulk-status", { ids, status });
   },
+
+  exportCsv(params: Omit<ApplicationQueryParams, "page" | "pageSize"> & { ids?: string }): Promise<void> {
+    return apiClient.downloadCsv("/applications/export", params as Record<string, string | number | undefined>, "applications-export.csv");
+  },
 };
