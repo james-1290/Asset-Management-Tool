@@ -80,6 +80,16 @@ export const apiClient = {
     }).then(handleResponse<T>);
   },
 
+  uploadFile<T>(path: string, file: File, fieldName = "file"): Promise<T> {
+    const formData = new FormData();
+    formData.append(fieldName, file);
+    return fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers: { ...getAuthHeaders() },
+      body: formData,
+    }).then(handleResponse<T>);
+  },
+
   async downloadCsv(path: string, params?: Record<string, string | number | undefined>, filename?: string): Promise<void> {
     let url = `${BASE_URL}${path}`;
     if (params) {
