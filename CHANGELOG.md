@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-10 22:01 - Reports Page + Tools Sidebar Group
+
+- Added **Reports** page with 5 pre-built reports: Asset Summary, Upcoming Expiries, Licence Summary, Assignments, Asset Lifecycle
+- Added `ReportsController` with 5 endpoints: `/api/v1/reports/asset-summary`, `/expiries`, `/licence-summary`, `/assignments`, `/asset-lifecycle`
+- All report endpoints support `?format=csv` for CSV export
+- Added new **Tools** collapsible group in sidebar with Reports and Import Data
+- Moved Import from Settings tab to standalone page at `/tools/import`
+- Settings page now has 4 tabs: Profile, Users, Alerts, System
+
 ## 2026-02-10 21:50 - Application Deactivate/Reactivate Workflow
 
 - Added dedicated `POST /api/v1/applications/{id}/deactivate` and `/reactivate` endpoints

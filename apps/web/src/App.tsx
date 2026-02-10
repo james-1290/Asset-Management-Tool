@@ -18,6 +18,8 @@ import PeoplePage from "@/pages/people"
 import PersonDetailPage from "@/pages/person-detail"
 import AuditLogPage from "@/pages/audit-log"
 import SettingsPage from "@/pages/settings"
+import ReportsPage from "@/pages/reports"
+import ImportPage from "@/pages/import"
 
 function App() {
   return (
@@ -40,6 +42,8 @@ function App() {
             <Route path="/locations/:id" element={<LocationDetailPage />} />
             <Route path="/people" element={<PeoplePage />} />
             <Route path="/people/:id" element={<PersonDetailPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/tools/import" element={<ImportPage />} />
             <Route path="/audit-log" element={<AuditLogPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
