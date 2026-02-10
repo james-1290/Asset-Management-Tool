@@ -11,6 +11,7 @@ import {
   ScrollText,
   Settings,
   ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import {
   Sidebar,
@@ -67,16 +68,19 @@ export function AppSidebar() {
           </div>
         </div>
 
-        {/* Collapsed: AM badge + expand chevron */}
-        <div className="hidden flex-col items-center gap-1 group-data-[collapsible=icon]:flex">
+        {/* Collapsed: expand chevron */}
+        <div className="hidden items-center justify-center group-data-[collapsible=icon]:flex">
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7"
                 onClick={toggleSidebar}
-                className="size-8 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center hover:bg-primary/90 transition-colors"
               >
-                AM
-              </button>
+                <ChevronRight className="size-4" />
+                <span className="sr-only">Expand sidebar</span>
+              </Button>
             </TooltipTrigger>
             <TooltipContent side="right">Expand sidebar</TooltipContent>
           </Tooltip>

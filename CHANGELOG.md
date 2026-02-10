@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-02-10 08:02 - Header Enhancements (5 Features)
+
+- **Feature 1 — Sidebar Toggle**: Added `SidebarTrigger` to the header for collapsing/expanding the sidebar
+- **Feature 2 — Breadcrumbs**: Route-aware breadcrumbs in the header; static segments from route map, dynamic entity names resolved from React Query cache; settings tab names shown as nested crumbs
+- **Feature 3 — Global Search (Cmd+K)**: New `SearchController` (`GET /api/v1/search?q=term`) searches across Assets (name, tag), Certificates, Applications, People, and Locations; frontend command palette with debounced search, grouped results, and keyboard navigation
+- **Feature 4 — Quick Actions (+New)**: Dropdown menu in header to create any entity (Asset, Certificate, Application, Person, Location) from anywhere; reuses existing form dialogs and mutation hooks
+- **Feature 5 — Notifications Bell**: New `NotificationsController` (`GET /api/v1/notifications/summary`) returns upcoming expiry counts using alert threshold settings as lookahead window; frontend bell icon with badge count and popover listing expiring warranties, certificates, and licences with "expires in X days" labels
+- **Header layout**: `[SidebarTrigger] [Breadcrumbs ...flex-1...] [Search ⌘K] [+New] [🔔 Bell] [🌓 Theme] [👤 Avatar]`
+- **New backend files**: `SearchController.cs`, `SearchDtos.cs`, `NotificationsController.cs`, `NotificationDtos.cs`
+- **New frontend files**: `breadcrumbs.tsx`, `command-search.tsx`, `quick-actions.tsx`, `notifications-bell.tsx`, `search.ts`, `notifications.ts`, `use-search.ts`, `use-notifications.ts`
+- **shadcn component installed**: `breadcrumb`
+
 ## 2026-02-08 22:07 - Settings Page with Profile, Users, Alerts & System Config
 
 - **Backend**: Added `SystemSetting` model (key-value store, `Key` as PK)
