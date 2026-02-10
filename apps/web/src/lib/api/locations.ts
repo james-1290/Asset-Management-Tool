@@ -1,6 +1,8 @@
 import { apiClient } from "../api-client";
 import type {
   Location,
+  LocationAsset,
+  LocationPerson,
   CreateLocationRequest,
   UpdateLocationRequest,
 } from "../../types/location";
@@ -35,6 +37,14 @@ export const locationsApi = {
 
   update(id: string, data: UpdateLocationRequest): Promise<Location> {
     return apiClient.put<Location>(`/locations/${id}`, data);
+  },
+
+  getAssets(id: string): Promise<LocationAsset[]> {
+    return apiClient.get<LocationAsset[]>(`/locations/${id}/assets`);
+  },
+
+  getPeople(id: string): Promise<LocationPerson[]> {
+    return apiClient.get<LocationPerson[]>(`/locations/${id}/people`);
   },
 
   archive(id: string): Promise<void> {

@@ -126,6 +126,49 @@ public class LocationsController(AppDbContext db, IAuditService audit, ICurrentU
             location.Country, location.IsArchived, location.CreatedAt, location.UpdatedAt));
     }
 
+    [HttpGet("{id:guid}/assets")]
+    public async Task<ActionResult<List<LocationAssetDto>>> GetAssets(Guid id)
+    {
+        var location = await db.Locations.FindAsync(id);
+        if (location is null) return NotFound();
+
+        var assets = await db.Assets
+            .Where(a => a.LocationId == id && !a.IsArchived)
+            .Include(a => a.AssetType)
+            .Include(a => a.AssignedPerson)
+            .OrderBy(a => a.Name)
+            .Select(a => new LocationAssetDto(
+                a.Id,
+                a.Name,
+                a.AssetTag,
+                a.AssetType.Name,
+                a.Status.ToString(),
+                a.AssignedPerson != null ? a.AssignedPerson.FullName : null))
+            .ToListAsync();
+
+        return Ok(assets);
+    }
+
+    [HttpGet("{id:guid}/people")]
+    public async Task<ActionResult<List<LocationPersonDto>>> GetPeople(Guid id)
+    {
+        var location = await db.Locations.FindAsync(id);
+        if (location is null) return NotFound();
+
+        var people = await db.People
+            .Where(p => p.LocationId == id && !p.IsArchived)
+            .OrderBy(p => p.FullName)
+            .Select(p => new LocationPersonDto(
+                p.Id,
+                p.FullName,
+                p.Email,
+                p.Department,
+                p.JobTitle))
+            .ToListAsync();
+
+        return Ok(people);
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Archive(Guid id)
     {

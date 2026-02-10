@@ -27,6 +27,30 @@ export function usePagedLocations(params: LocationQueryParams) {
   });
 }
 
+export function useLocation(id: string) {
+  return useQuery({
+    queryKey: locationKeys.detail(id),
+    queryFn: () => locationsApi.getById(id),
+    enabled: !!id,
+  });
+}
+
+export function useLocationAssets(id: string) {
+  return useQuery({
+    queryKey: [...locationKeys.detail(id), "assets"] as const,
+    queryFn: () => locationsApi.getAssets(id),
+    enabled: !!id,
+  });
+}
+
+export function useLocationPeople(id: string) {
+  return useQuery({
+    queryKey: [...locationKeys.detail(id), "people"] as const,
+    queryFn: () => locationsApi.getPeople(id),
+    enabled: !!id,
+  });
+}
+
 export function useCreateLocation() {
   const queryClient = useQueryClient();
 
