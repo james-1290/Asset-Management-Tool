@@ -33,6 +33,7 @@ export interface Application {
   purchaseCost: number | null;
   autoRenewal: boolean;
   status: ApplicationStatus;
+  deactivatedDate: string | null;
   notes: string | null;
   assetId: string | null;
   assetName: string | null;
@@ -86,4 +87,13 @@ export interface UpdateApplicationRequest {
   personId?: string | null;
   locationId?: string | null;
   customFieldValues?: CustomFieldValueInput[];
+}
+
+export interface DeactivateApplicationRequest {
+  notes?: string | null;
+  deactivatedDate?: string | null;
+}
+
+export interface ReactivateApplicationRequest {
+  notes?: string | null;
 }

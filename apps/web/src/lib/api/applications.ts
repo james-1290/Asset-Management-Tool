@@ -3,6 +3,8 @@ import type {
   Application,
   CreateApplicationRequest,
   UpdateApplicationRequest,
+  DeactivateApplicationRequest,
+  ReactivateApplicationRequest,
 } from "../../types/application";
 import type { ApplicationHistory } from "../../types/application-history";
 import type { PagedResponse } from "../../types/paged-response";
@@ -44,6 +46,14 @@ export const applicationsApi = {
 
   update(id: string, data: UpdateApplicationRequest): Promise<Application> {
     return apiClient.put<Application>(`/applications/${id}`, data);
+  },
+
+  deactivate(id: string, data: DeactivateApplicationRequest): Promise<Application> {
+    return apiClient.post<Application>(`/applications/${id}/deactivate`, data);
+  },
+
+  reactivate(id: string, data: ReactivateApplicationRequest): Promise<Application> {
+    return apiClient.post<Application>(`/applications/${id}/reactivate`, data);
   },
 
   archive(id: string): Promise<void> {

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-10 21:50 - Application Deactivate/Reactivate Workflow
+
+- Added dedicated `POST /api/v1/applications/{id}/deactivate` and `/reactivate` endpoints
+- Added `DeactivatedDate` column to Application model (DB migration: AddApplicationDeactivatedDate)
+- New `DeactivateApplicationDialog` component with optional notes and date fields
+- Detail page shows Deactivate button (for active apps) or Reactivate button (for inactive apps)
+- List page row dropdown includes Deactivate action
+- Both actions create audit log entries with status change tracking
+
 ## 2026-02-10 19:32 - Sidebar Nav Grouping
 
 - Grouped sidebar nav items into collapsible sections: Inventory, Certificates, Software, Organisation

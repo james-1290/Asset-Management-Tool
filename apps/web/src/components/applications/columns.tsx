@@ -14,6 +14,7 @@ import type { Application } from "../../types/application";
 interface ColumnActions {
   onEdit: (application: Application) => void;
   onArchive: (application: Application) => void;
+  onDeactivate?: (application: Application) => void;
 }
 
 function formatDate(iso: string | null): string {
@@ -28,6 +29,7 @@ function formatDate(iso: string | null): string {
 export function getApplicationColumns({
   onEdit,
   onArchive,
+  onDeactivate,
 }: ColumnActions): ColumnDef<Application, unknown>[] {
   return [
     {
@@ -138,6 +140,11 @@ export function getApplicationColumns({
               <DropdownMenuItem onClick={() => onEdit(application)}>
                 Edit
               </DropdownMenuItem>
+              {onDeactivate && application.status !== "Inactive" && !application.isArchived && (
+                <DropdownMenuItem onClick={() => onDeactivate(application)}>
+                  Deactivate
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
                 onClick={() => onArchive(application)}
