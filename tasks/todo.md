@@ -89,6 +89,8 @@
 - [x] Application Inactive status: new enum value, badge, form option
 - [x] Filter popover UI: replaced status dropdowns with popover + checkboxes on all list pages
 
+- [x] Header enhancements: breadcrumbs, global search (Cmd+K), quick actions (+New), notifications bell, sidebar toggle polish
+
 ## Later
 - [x] Retire + sold workflow
 - [ ] Dedicated deactivate workflow for applications (currently via edit form status dropdown)
@@ -99,3 +101,10 @@
 - [ ] SSO / OIDC integration
 - [ ] Attachment support
 - [ ] Azure deployment config
+- [ ] CSV/Excel export: "Export" button on all list pages, downloads current filtered/sorted view as CSV
+- [ ] Duplicate detection: warn on create if similar record exists (fuzzy match on name/serial/email), offer to navigate to existing
+- [ ] Data import (CSV upload): bulk import assets/people/certificates with column mapping, validation preview, error reporting
+- [ ] Location detail page (/locations/:id): location info card, list of assets/people/certificates at that location (no map)
+- [ ] Depreciation tracking: depreciation method + useful life per asset type, auto-calculate book value, dashboard stat card
+- [ ] Relationship linking: many-to-many links between entities with type labels, "Related Items" section on detail pages
+- [ ] Sidebar nav grouping: collapsible groups (Inventory, Security, Software, Organisation); single "Types" nav item expanding to Asset Types / Certificate Types / Application Types
