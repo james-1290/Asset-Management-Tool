@@ -16,6 +16,9 @@ import {
   Package,
   Building2,
   Laptop,
+  Wrench,
+  BarChart3,
+  Upload,
 } from "lucide-react"
 import {
   Sidebar,
@@ -101,6 +104,15 @@ const navStructure: NavEntry[] = [
     children: [
       { title: "Locations", url: "/locations", icon: MapPin },
       { title: "People", url: "/people", icon: Users },
+    ],
+  },
+  {
+    kind: "group",
+    title: "Tools",
+    icon: Wrench,
+    children: [
+      { title: "Reports", url: "/reports", icon: BarChart3 },
+      { title: "Import Data", url: "/tools/import", icon: Upload },
     ],
   },
   { kind: "standalone", title: "Audit Log", url: "/audit-log", icon: ScrollText },
