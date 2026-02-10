@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-10 19:32 - Sidebar Nav Grouping
+
+- Grouped sidebar nav items into collapsible sections: Inventory, Certificates, Software, Organisation
+- Dashboard, Audit Log, and Settings remain as standalone top-level items
+- Groups expand/collapse on click with chevron rotation animation
+- Open/closed state persisted to localStorage
+- Active child highlights parent group when collapsed
+- Installed shadcn collapsible component (radix-ui)
+
 ## 2026-02-10 15:10 - CSV Data Import
 
 - Added Import tab to Settings page (admin only) for bulk CSV import
