@@ -1,7 +1,9 @@
+using System.Globalization;
 using AssetManagement.Api.Data;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Services;
+using CsvHelper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -24,26 +26,9 @@ public class LocationsController(AppDbContext db, IAuditService audit, ICurrentU
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var query = db.Locations
-            .Where(l => !l.IsArchived)
-            .AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            query = query.Where(l => EF.Functions.ILike(l.Name, $"%{search}%"));
-        }
+        var query = ApplySorting(BuildFilteredQuery(search), sortBy, sortDir);
 
         var totalCount = await query.CountAsync();
-
-        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
-        query = sortBy.ToLowerInvariant() switch
-        {
-            "address" => desc ? query.OrderByDescending(l => l.Address) : query.OrderBy(l => l.Address),
-            "city" => desc ? query.OrderByDescending(l => l.City) : query.OrderBy(l => l.City),
-            "country" => desc ? query.OrderByDescending(l => l.Country) : query.OrderBy(l => l.Country),
-            "createdat" => desc ? query.OrderByDescending(l => l.CreatedAt) : query.OrderBy(l => l.CreatedAt),
-            _ => desc ? query.OrderByDescending(l => l.Name) : query.OrderBy(l => l.Name),
-        };
 
         var locations = await query
             .Skip((page - 1) * pageSize)
@@ -54,6 +39,69 @@ public class LocationsController(AppDbContext db, IAuditService audit, ICurrentU
             .ToListAsync();
 
         return Ok(new PagedResponse<LocationDto>(locations, page, pageSize, totalCount));
+    }
+
+    [HttpGet("export")]
+    public async Task<IActionResult> Export(
+        [FromQuery] string? search = null,
+        [FromQuery] string sortBy = "name",
+        [FromQuery] string sortDir = "asc")
+    {
+        var query = ApplySorting(BuildFilteredQuery(search), sortBy, sortDir);
+        var locations = await query.ToListAsync();
+
+        var ms = new MemoryStream();
+        await using var writer = new StreamWriter(ms, leaveOpen: true);
+        await using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+
+        csv.WriteField("Name");
+        csv.WriteField("Address");
+        csv.WriteField("City");
+        csv.WriteField("Country");
+        csv.WriteField("CreatedAt");
+        csv.WriteField("UpdatedAt");
+        await csv.NextRecordAsync();
+
+        foreach (var l in locations)
+        {
+            csv.WriteField(l.Name);
+            csv.WriteField(l.Address);
+            csv.WriteField(l.City);
+            csv.WriteField(l.Country);
+            csv.WriteField(l.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            csv.WriteField(l.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            await csv.NextRecordAsync();
+        }
+
+        await writer.FlushAsync();
+        ms.Position = 0;
+
+        return File(ms, "text/csv", "locations-export.csv");
+    }
+
+    private IQueryable<Location> BuildFilteredQuery(string? search)
+    {
+        var query = db.Locations
+            .Where(l => !l.IsArchived)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(l => EF.Functions.ILike(l.Name, $"%{search}%"));
+
+        return query;
+    }
+
+    private static IQueryable<Location> ApplySorting(IQueryable<Location> query, string sortBy, string sortDir)
+    {
+        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        return sortBy.ToLowerInvariant() switch
+        {
+            "address" => desc ? query.OrderByDescending(l => l.Address) : query.OrderBy(l => l.Address),
+            "city" => desc ? query.OrderByDescending(l => l.City) : query.OrderBy(l => l.City),
+            "country" => desc ? query.OrderByDescending(l => l.Country) : query.OrderBy(l => l.Country),
+            "createdat" => desc ? query.OrderByDescending(l => l.CreatedAt) : query.OrderBy(l => l.CreatedAt),
+            _ => desc ? query.OrderByDescending(l => l.Name) : query.OrderBy(l => l.Name),
+        };
     }
 
     [HttpGet("{id:guid}")]

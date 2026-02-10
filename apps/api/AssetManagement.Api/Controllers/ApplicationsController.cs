@@ -1,8 +1,10 @@
+using System.Globalization;
 using AssetManagement.Api.Data;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Models.Enums;
 using AssetManagement.Api.Services;
+using CsvHelper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -28,60 +30,12 @@ public class ApplicationsController(AppDbContext db, IAuditService audit, ICurre
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var query = db.Applications
-            .Where(a => !a.IsArchived)
-            .Include(a => a.ApplicationType)
-            .Include(a => a.Asset)
-            .Include(a => a.Person)
-            .Include(a => a.Location)
-            .AsQueryable();
+        var (query, error) = BuildFilteredQuery(search, status, includeStatuses, typeId);
+        if (error is not null) return error;
 
-        // Filter by type
-        if (typeId.HasValue)
-            query = query.Where(a => a.ApplicationTypeId == typeId.Value);
+        var totalCount = await query!.CountAsync();
 
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            query = query.Where(a =>
-                EF.Functions.ILike(a.Name, $"%{search}%") ||
-                (a.Publisher != null && EF.Functions.ILike(a.Publisher, $"%{search}%")));
-        }
-
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            if (!Enum.TryParse<ApplicationStatus>(status, out var parsedStatus))
-                return BadRequest(new { error = $"Invalid status: {status}" });
-            query = query.Where(a => a.Status == parsedStatus);
-        }
-        else
-        {
-            // By default, exclude Inactive unless explicitly included
-            var hiddenStatuses = new HashSet<ApplicationStatus> { ApplicationStatus.Inactive };
-            if (!string.IsNullOrWhiteSpace(includeStatuses))
-            {
-                foreach (var s in includeStatuses.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                {
-                    if (Enum.TryParse<ApplicationStatus>(s, out var parsed))
-                        hiddenStatuses.Remove(parsed);
-                }
-            }
-            if (hiddenStatuses.Count > 0)
-                query = query.Where(a => !hiddenStatuses.Contains(a.Status));
-        }
-
-        var totalCount = await query.CountAsync();
-
-        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
-        query = sortBy.ToLowerInvariant() switch
-        {
-            "publisher" => desc ? query.OrderByDescending(a => a.Publisher) : query.OrderBy(a => a.Publisher),
-            "licencetype" => desc ? query.OrderByDescending(a => a.LicenceType) : query.OrderBy(a => a.LicenceType),
-            "expirydate" => desc ? query.OrderByDescending(a => a.ExpiryDate) : query.OrderBy(a => a.ExpiryDate),
-            "status" => desc ? query.OrderByDescending(a => a.Status) : query.OrderBy(a => a.Status),
-            "applicationtypename" => desc ? query.OrderByDescending(a => a.ApplicationType.Name) : query.OrderBy(a => a.ApplicationType.Name),
-            "createdat" => desc ? query.OrderByDescending(a => a.CreatedAt) : query.OrderBy(a => a.CreatedAt),
-            _ => desc ? query.OrderByDescending(a => a.Name) : query.OrderBy(a => a.Name),
-        };
+        query = ApplySorting(query!, sortBy, sortDir);
 
         var applications = await query
             .Skip((page - 1) * pageSize)
@@ -102,6 +56,137 @@ public class ApplicationsController(AppDbContext db, IAuditService audit, ICurre
             totalCount);
 
         return Ok(result);
+    }
+
+    [HttpGet("export")]
+    public async Task<IActionResult> Export(
+        [FromQuery] string? search = null,
+        [FromQuery] string? status = null,
+        [FromQuery] string? includeStatuses = null,
+        [FromQuery] string sortBy = "name",
+        [FromQuery] string sortDir = "asc",
+        [FromQuery] Guid? typeId = null,
+        [FromQuery] string? ids = null)
+    {
+        List<Application> applications;
+        if (!string.IsNullOrEmpty(ids))
+        {
+            var idList = ids.Split(',').Select(id => Guid.TryParse(id.Trim(), out var g) ? g : (Guid?)null).Where(g => g.HasValue).Select(g => g!.Value).ToList();
+            applications = await db.Applications.Include(a => a.ApplicationType).Where(a => !a.IsArchived && idList.Contains(a.Id)).ToListAsync();
+        }
+        else
+        {
+            var (query, error) = BuildFilteredQuery(search, status, includeStatuses, typeId);
+            if (error is not null) return error;
+            query = ApplySorting(query!, sortBy, sortDir);
+            applications = await query.ToListAsync();
+        }
+
+        var ms = new MemoryStream();
+        await using var writer = new StreamWriter(ms, leaveOpen: true);
+        await using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+
+        csv.WriteField("Name");
+        csv.WriteField("ApplicationType");
+        csv.WriteField("Status");
+        csv.WriteField("Publisher");
+        csv.WriteField("Version");
+        csv.WriteField("LicenceKey");
+        csv.WriteField("LicenceType");
+        csv.WriteField("MaxSeats");
+        csv.WriteField("UsedSeats");
+        csv.WriteField("ExpiryDate");
+        csv.WriteField("PurchaseCost");
+        csv.WriteField("AutoRenewal");
+        csv.WriteField("Notes");
+        csv.WriteField("CreatedAt");
+        csv.WriteField("UpdatedAt");
+        await csv.NextRecordAsync();
+
+        foreach (var a in applications)
+        {
+            csv.WriteField(a.Name);
+            csv.WriteField(a.ApplicationType?.Name);
+            csv.WriteField(a.Status.ToString());
+            csv.WriteField(a.Publisher);
+            csv.WriteField(a.Version);
+            csv.WriteField(a.LicenceKey);
+            csv.WriteField(a.LicenceType?.ToString());
+            csv.WriteField(a.MaxSeats);
+            csv.WriteField(a.UsedSeats);
+            csv.WriteField(a.ExpiryDate?.ToString("yyyy-MM-dd"));
+            csv.WriteField(a.PurchaseCost?.ToString("F2"));
+            csv.WriteField(a.AutoRenewal);
+            csv.WriteField(a.Notes);
+            csv.WriteField(a.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            csv.WriteField(a.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            await csv.NextRecordAsync();
+        }
+
+        await writer.FlushAsync();
+        ms.Position = 0;
+
+        return File(ms, "text/csv", "applications-export.csv");
+    }
+
+    private (IQueryable<Application>? query, ActionResult? error) BuildFilteredQuery(
+        string? search, string? status, string? includeStatuses, Guid? typeId)
+    {
+        var query = db.Applications
+            .Where(a => !a.IsArchived)
+            .Include(a => a.ApplicationType)
+            .Include(a => a.Asset)
+            .Include(a => a.Person)
+            .Include(a => a.Location)
+            .AsQueryable();
+
+        if (typeId.HasValue)
+            query = query.Where(a => a.ApplicationTypeId == typeId.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(a =>
+                EF.Functions.ILike(a.Name, $"%{search}%") ||
+                (a.Publisher != null && EF.Functions.ILike(a.Publisher, $"%{search}%")));
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            if (!Enum.TryParse<ApplicationStatus>(status, out var parsedStatus))
+                return (null, BadRequest(new { error = $"Invalid status: {status}" }));
+            query = query.Where(a => a.Status == parsedStatus);
+        }
+        else
+        {
+            var hiddenStatuses = new HashSet<ApplicationStatus> { ApplicationStatus.Inactive };
+            if (!string.IsNullOrWhiteSpace(includeStatuses))
+            {
+                foreach (var s in includeStatuses.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    if (Enum.TryParse<ApplicationStatus>(s, out var parsed))
+                        hiddenStatuses.Remove(parsed);
+                }
+            }
+            if (hiddenStatuses.Count > 0)
+                query = query.Where(a => !hiddenStatuses.Contains(a.Status));
+        }
+
+        return (query, null);
+    }
+
+    private static IQueryable<Application> ApplySorting(IQueryable<Application> query, string sortBy, string sortDir)
+    {
+        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        return sortBy.ToLowerInvariant() switch
+        {
+            "publisher" => desc ? query.OrderByDescending(a => a.Publisher) : query.OrderBy(a => a.Publisher),
+            "licencetype" => desc ? query.OrderByDescending(a => a.LicenceType) : query.OrderBy(a => a.LicenceType),
+            "expirydate" => desc ? query.OrderByDescending(a => a.ExpiryDate) : query.OrderBy(a => a.ExpiryDate),
+            "status" => desc ? query.OrderByDescending(a => a.Status) : query.OrderBy(a => a.Status),
+            "applicationtypename" => desc ? query.OrderByDescending(a => a.ApplicationType.Name) : query.OrderBy(a => a.ApplicationType.Name),
+            "createdat" => desc ? query.OrderByDescending(a => a.CreatedAt) : query.OrderBy(a => a.CreatedAt),
+            _ => desc ? query.OrderByDescending(a => a.Name) : query.OrderBy(a => a.Name),
+        };
     }
 
     [HttpGet("{id:guid}")]

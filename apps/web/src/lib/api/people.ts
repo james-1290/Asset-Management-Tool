@@ -62,4 +62,8 @@ export const peopleApi = {
   getAssignedAssets(id: string): Promise<AssignedAsset[]> {
     return apiClient.get<AssignedAsset[]>(`/people/${id}/assets`);
   },
+
+  exportCsv(params: Omit<PersonQueryParams, "page" | "pageSize"> & { ids?: string }): Promise<void> {
+    return apiClient.downloadCsv("/people/export", params as Record<string, string | number | undefined>, "people-export.csv");
+  },
 };

@@ -8,6 +8,8 @@ import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
+import { certificatesApi } from "../lib/api/certificates";
+import { ExportButton } from "../components/export-button";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import { CertificateFormDialog } from "../components/certificates/certificate-form-dialog";
 import { CertificatesToolbar } from "../components/certificates/certificates-toolbar";
@@ -273,6 +275,25 @@ export default function CertificatesPage() {
     [setSearchParams],
   );
 
+  const [exporting, setExporting] = useState(false);
+  async function handleExport() {
+    setExporting(true);
+    try {
+      await certificatesApi.exportCsv({
+        search: searchParam || undefined,
+        status: statusParam || undefined,
+        sortBy: sortByParam,
+        sortDir: sortDirParam,
+        typeId: typeIdParam || undefined,
+        ids: selectedIds.length > 0 ? selectedIds.join(",") : undefined,
+      });
+    } catch {
+      toast.error("Failed to export certificates");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function handleFormSubmit(values: CertificateFormValues) {
     const customFieldValues = Object.entries(values.customFieldValues ?? {})
       .filter(([, v]) => v != null && v !== "" && v !== "__none__")
@@ -441,6 +462,7 @@ export default function CertificatesPage() {
                 certificateTypes={certificateTypes ?? []}
               />
               <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+              <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
               <SavedViewSelector
                 entityType="certificates"
                 activeViewId={activeViewId}

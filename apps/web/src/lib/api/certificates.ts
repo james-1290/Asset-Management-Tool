@@ -56,4 +56,8 @@ export const certificatesApi = {
   bulkStatus(ids: string[], status: string): Promise<{ succeeded: number; failed: number }> {
     return apiClient.post("/certificates/bulk-status", { ids, status });
   },
+
+  exportCsv(params: Omit<CertificateQueryParams, "page" | "pageSize"> & { ids?: string }): Promise<void> {
+    return apiClient.downloadCsv("/certificates/export", params as Record<string, string | number | undefined>, "certificates-export.csv");
+  },
 };

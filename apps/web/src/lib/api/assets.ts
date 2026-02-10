@@ -77,4 +77,8 @@ export const assetsApi = {
   bulkStatus(ids: string[], status: string): Promise<{ succeeded: number; failed: number }> {
     return apiClient.post("/assets/bulk-status", { ids, status });
   },
+
+  exportCsv(params: Omit<AssetQueryParams, "page" | "pageSize"> & { ids?: string }): Promise<void> {
+    return apiClient.downloadCsv("/assets/export", params as Record<string, string | number | undefined>, "assets-export.csv");
+  },
 };

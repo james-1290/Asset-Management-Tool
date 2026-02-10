@@ -1,8 +1,10 @@
+using System.Globalization;
 using AssetManagement.Api.Data;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Models.Enums;
 using AssetManagement.Api.Services;
+using CsvHelper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -28,66 +30,12 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var query = db.Assets
-            .Where(a => !a.IsArchived)
-            .Include(a => a.AssetType)
-            .Include(a => a.Location)
-            .Include(a => a.AssignedPerson)
-            .Include(a => a.CustomFieldValues)
-                .ThenInclude(v => v.CustomFieldDefinition)
-            .AsQueryable();
+        var (query, error) = BuildFilteredQuery(search, status, includeStatuses, typeId);
+        if (error is not null) return error;
 
-        // Filter by type
-        if (typeId.HasValue)
-            query = query.Where(a => a.AssetTypeId == typeId.Value);
+        var totalCount = await query!.CountAsync();
 
-        // Filter by search
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            query = query.Where(a =>
-                EF.Functions.ILike(a.Name, $"%{search}%") ||
-                EF.Functions.ILike(a.AssetTag, $"%{search}%"));
-        }
-
-        // Filter by status
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            if (!Enum.TryParse<AssetStatus>(status, out var parsedStatus))
-                return BadRequest(new { error = $"Invalid status: {status}" });
-            query = query.Where(a => a.Status == parsedStatus);
-        }
-        else
-        {
-            // By default, exclude terminal statuses (Retired, Sold) unless explicitly included
-            var hiddenStatuses = new HashSet<AssetStatus> { AssetStatus.Retired, AssetStatus.Sold };
-            if (!string.IsNullOrWhiteSpace(includeStatuses))
-            {
-                foreach (var s in includeStatuses.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                {
-                    if (Enum.TryParse<AssetStatus>(s, out var parsed))
-                        hiddenStatuses.Remove(parsed);
-                }
-            }
-            if (hiddenStatuses.Count > 0)
-                query = query.Where(a => !hiddenStatuses.Contains(a.Status));
-        }
-
-        var totalCount = await query.CountAsync();
-
-        // Sort
-        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
-        query = sortBy.ToLowerInvariant() switch
-        {
-            "assettag" => desc ? query.OrderByDescending(a => a.AssetTag) : query.OrderBy(a => a.AssetTag),
-            "status" => desc ? query.OrderByDescending(a => a.Status) : query.OrderBy(a => a.Status),
-            "assettypename" => desc ? query.OrderByDescending(a => a.AssetType.Name) : query.OrderBy(a => a.AssetType.Name),
-            "locationname" => desc ? query.OrderByDescending(a => a.Location!.Name) : query.OrderBy(a => a.Location!.Name),
-            "purchasedate" => desc ? query.OrderByDescending(a => a.PurchaseDate) : query.OrderBy(a => a.PurchaseDate),
-            "purchasecost" => desc ? query.OrderByDescending(a => a.PurchaseCost) : query.OrderBy(a => a.PurchaseCost),
-            "warrantyexpirydate" => desc ? query.OrderByDescending(a => a.WarrantyExpiryDate) : query.OrderBy(a => a.WarrantyExpiryDate),
-            "createdat" => desc ? query.OrderByDescending(a => a.CreatedAt) : query.OrderBy(a => a.CreatedAt),
-            _ => desc ? query.OrderByDescending(a => a.Name) : query.OrderBy(a => a.Name),
-        };
+        query = ApplySorting(query!, sortBy, sortDir);
 
         var assets = await query
             .Skip((page - 1) * pageSize)
@@ -101,6 +49,136 @@ public class AssetsController(AppDbContext db, IAuditService audit, ICurrentUser
             totalCount);
 
         return Ok(result);
+    }
+
+    [HttpGet("export")]
+    public async Task<IActionResult> Export(
+        [FromQuery] string? search = null,
+        [FromQuery] string? status = null,
+        [FromQuery] string? includeStatuses = null,
+        [FromQuery] string sortBy = "name",
+        [FromQuery] string sortDir = "asc",
+        [FromQuery] Guid? typeId = null,
+        [FromQuery] string? ids = null)
+    {
+        List<Asset> assets;
+        if (!string.IsNullOrEmpty(ids))
+        {
+            var idList = ids.Split(',').Select(id => Guid.TryParse(id.Trim(), out var g) ? g : (Guid?)null).Where(g => g.HasValue).Select(g => g!.Value).ToList();
+            assets = await db.Assets.Include(a => a.AssetType).Include(a => a.Location).Include(a => a.AssignedPerson).Where(a => !a.IsArchived && idList.Contains(a.Id)).ToListAsync();
+        }
+        else
+        {
+            var (query, error) = BuildFilteredQuery(search, status, includeStatuses, typeId);
+            if (error is not null) return error;
+            query = ApplySorting(query!, sortBy, sortDir);
+            assets = await query.ToListAsync();
+        }
+
+        var ms = new MemoryStream();
+        await using var writer = new StreamWriter(ms, leaveOpen: true);
+        await using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+
+        csv.WriteField("AssetTag");
+        csv.WriteField("Name");
+        csv.WriteField("Status");
+        csv.WriteField("AssetType");
+        csv.WriteField("Location");
+        csv.WriteField("AssignedTo");
+        csv.WriteField("SerialNumber");
+        csv.WriteField("PurchaseDate");
+        csv.WriteField("PurchaseCost");
+        csv.WriteField("WarrantyExpiryDate");
+        csv.WriteField("Notes");
+        csv.WriteField("CreatedAt");
+        csv.WriteField("UpdatedAt");
+        await csv.NextRecordAsync();
+
+        foreach (var a in assets)
+        {
+            csv.WriteField(a.AssetTag);
+            csv.WriteField(a.Name);
+            csv.WriteField(a.Status.ToString());
+            csv.WriteField(a.AssetType?.Name);
+            csv.WriteField(a.Location?.Name);
+            csv.WriteField(a.AssignedPerson?.FullName);
+            csv.WriteField(a.SerialNumber);
+            csv.WriteField(a.PurchaseDate?.ToString("yyyy-MM-dd"));
+            csv.WriteField(a.PurchaseCost?.ToString("F2"));
+            csv.WriteField(a.WarrantyExpiryDate?.ToString("yyyy-MM-dd"));
+            csv.WriteField(a.Notes);
+            csv.WriteField(a.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            csv.WriteField(a.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            await csv.NextRecordAsync();
+        }
+
+        await writer.FlushAsync();
+        ms.Position = 0;
+
+        return File(ms, "text/csv", "assets-export.csv");
+    }
+
+    private (IQueryable<Asset>? query, ActionResult? error) BuildFilteredQuery(
+        string? search, string? status, string? includeStatuses, Guid? typeId)
+    {
+        var query = db.Assets
+            .Where(a => !a.IsArchived)
+            .Include(a => a.AssetType)
+            .Include(a => a.Location)
+            .Include(a => a.AssignedPerson)
+            .Include(a => a.CustomFieldValues)
+                .ThenInclude(v => v.CustomFieldDefinition)
+            .AsQueryable();
+
+        if (typeId.HasValue)
+            query = query.Where(a => a.AssetTypeId == typeId.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(a =>
+                EF.Functions.ILike(a.Name, $"%{search}%") ||
+                EF.Functions.ILike(a.AssetTag, $"%{search}%"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            if (!Enum.TryParse<AssetStatus>(status, out var parsedStatus))
+                return (null, BadRequest(new { error = $"Invalid status: {status}" }));
+            query = query.Where(a => a.Status == parsedStatus);
+        }
+        else
+        {
+            var hiddenStatuses = new HashSet<AssetStatus> { AssetStatus.Retired, AssetStatus.Sold };
+            if (!string.IsNullOrWhiteSpace(includeStatuses))
+            {
+                foreach (var s in includeStatuses.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    if (Enum.TryParse<AssetStatus>(s, out var parsed))
+                        hiddenStatuses.Remove(parsed);
+                }
+            }
+            if (hiddenStatuses.Count > 0)
+                query = query.Where(a => !hiddenStatuses.Contains(a.Status));
+        }
+
+        return (query, null);
+    }
+
+    private static IQueryable<Asset> ApplySorting(IQueryable<Asset> query, string sortBy, string sortDir)
+    {
+        var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+        return sortBy.ToLowerInvariant() switch
+        {
+            "assettag" => desc ? query.OrderByDescending(a => a.AssetTag) : query.OrderBy(a => a.AssetTag),
+            "status" => desc ? query.OrderByDescending(a => a.Status) : query.OrderBy(a => a.Status),
+            "assettypename" => desc ? query.OrderByDescending(a => a.AssetType.Name) : query.OrderBy(a => a.AssetType.Name),
+            "locationname" => desc ? query.OrderByDescending(a => a.Location!.Name) : query.OrderBy(a => a.Location!.Name),
+            "purchasedate" => desc ? query.OrderByDescending(a => a.PurchaseDate) : query.OrderBy(a => a.PurchaseDate),
+            "purchasecost" => desc ? query.OrderByDescending(a => a.PurchaseCost) : query.OrderBy(a => a.PurchaseCost),
+            "warrantyexpirydate" => desc ? query.OrderByDescending(a => a.WarrantyExpiryDate) : query.OrderBy(a => a.WarrantyExpiryDate),
+            "createdat" => desc ? query.OrderByDescending(a => a.CreatedAt) : query.OrderBy(a => a.CreatedAt),
+            _ => desc ? query.OrderByDescending(a => a.Name) : query.OrderBy(a => a.Name),
+        };
     }
 
     [HttpGet("{id:guid}")]
