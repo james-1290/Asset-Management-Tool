@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-02-10 15:10 - CSV Data Import
+
+- Added Import tab to Settings page (admin only) for bulk CSV import
+- Backend: new `ImportController` with 3 endpoints per entity type:
+  - `GET /api/v1/import/{entityType}/template` — download CSV template with headers + example rows
+  - `POST /api/v1/import/{entityType}/validate` — upload CSV, parse & validate, return row-by-row results
+  - `POST /api/v1/import/{entityType}/execute` — upload CSV, create valid records, skip invalid
+- Supports 5 entity types: locations, people, assets, certificates, applications
+- Validation includes: required fields, max length, enum parsing (case-insensitive), FK resolution by name, asset tag uniqueness, email format, date format (yyyy-MM-dd), boolean parsing, decimal parsing
+- Limits: 5MB file size, 10,000 rows max
+- Each imported record gets an audit log entry ("Imported via CSV import")
+- Frontend: wizard-style ImportTab component with 4 steps (select → upload → preview → results)
+- Frontend: added `uploadFile()` method to api-client for multipart form uploads
+- New frontend types (`import.ts`) and API module (`import.ts`)
+
 ## 2026-02-10 14:05 - CSV Export on All List Pages
 
 - Added `GET /api/v1/{entity}/export` endpoints to all 6 controllers (Assets, Locations, People, Certificates, Applications, AuditLogs)

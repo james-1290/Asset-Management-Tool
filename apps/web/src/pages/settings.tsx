@@ -5,8 +5,9 @@ import { ProfileTab } from "@/components/settings/profile-tab";
 import { UsersTab } from "@/components/settings/users-tab";
 import { AlertsTab } from "@/components/settings/alerts-tab";
 import { SystemTab } from "@/components/settings/system-tab";
+import { ImportTab } from "@/components/settings/import-tab";
 
-const TABS = ["profile", "users", "alerts", "system"] as const;
+const TABS = ["profile", "users", "alerts", "import", "system"] as const;
 type TabValue = (typeof TABS)[number];
 
 export default function SettingsPage() {
@@ -35,6 +36,7 @@ export default function SettingsPage() {
           <TabsTrigger value="profile">Profile</TabsTrigger>
           {isAdmin && <TabsTrigger value="users">Users</TabsTrigger>}
           {isAdmin && <TabsTrigger value="alerts">Alerts</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="import">Import</TabsTrigger>}
           {isAdmin && <TabsTrigger value="system">System</TabsTrigger>}
         </TabsList>
 
@@ -51,6 +53,12 @@ export default function SettingsPage() {
         {isAdmin && (
           <TabsContent value="alerts" className="mt-6">
             <AlertsTab />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="import" className="mt-6">
+            <ImportTab />
           </TabsContent>
         )}
 
