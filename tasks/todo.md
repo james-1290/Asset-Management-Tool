@@ -93,18 +93,18 @@
 
 ## Later
 - [x] Retire + sold workflow
-- [ ] Dedicated deactivate workflow for applications (currently via edit form status dropdown)
+- [x] Dedicated deactivate workflow for applications (currently via edit form status dropdown)
 - [x] Bulk actions (checkbox selection + action bar)
 - [ ] Email alerts (warranty/cert/licence expiry)
 - [ ] Slack webhook alerts
-- [ ] Reporting
+- [x] Reporting (5 pre-built reports: Asset Summary, Expiries, Licence Summary, Assignments, Asset Lifecycle + CSV export + Tools sidebar group)
 - [ ] SSO / OIDC integration
 - [ ] Attachment support
 - [ ] Azure deployment config
-- [ ] CSV/Excel export: "Export" button on all list pages, downloads current filtered/sorted view as CSV
+- [x] CSV/Excel export: "Export" button on all list pages, downloads current filtered/sorted view as CSV (with selection support)
 - [ ] Duplicate detection: warn on create if similar record exists (fuzzy match on name/serial/email), offer to navigate to existing
-- [ ] Data import (CSV upload): bulk import assets/people/certificates with column mapping, validation preview, error reporting
-- [ ] Location detail page (/locations/:id): location info card, list of assets/people/certificates at that location (no map)
+- [x] Data import (CSV upload): bulk import for all 5 entity types with validation preview, error reporting, template download
+- [x] Location detail page (/locations/:id): location info card, list of assets/people/certificates at that location (no map)
 - [ ] Depreciation tracking: depreciation method + useful life per asset type, auto-calculate book value, dashboard stat card
 - [ ] Relationship linking: many-to-many links between entities with type labels, "Related Items" section on detail pages
-- [ ] Sidebar nav grouping: collapsible groups (Inventory, Security, Software, Organisation); single "Types" nav item expanding to Asset Types / Certificate Types / Application Types
+- [x] Sidebar nav grouping: collapsible groups (Inventory, Certificates, Software, Organisation) with localStorage persistence
