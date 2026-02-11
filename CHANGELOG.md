@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-02-11 20:02 - Remove stale postgres MCP server
+
+- Removed `postgres` MCP server from `.mcp.json` (project migrated to MySQL)
+
 ## 2026-02-11 18:42 - Fix API port to match frontend proxy
 
 - Changed Kotlin API port from 5116 to 5115 in `application.yml`

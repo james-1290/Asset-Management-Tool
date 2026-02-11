@@ -4,14 +4,6 @@
       "command": "uvx",
       "args": ["mcp-server-docker"]
     },
-    "postgres": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-postgres",
-        "postgresql://postgres:postgres@localhost:5432/assetmgmt"
-      ]
-    },
     "playwright": {
       "command": "npx",
       "args": [
