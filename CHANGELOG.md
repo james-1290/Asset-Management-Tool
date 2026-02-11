@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-02-11 18:30 - Backend Migration: ASP.NET Core → Spring Boot Kotlin
+
+- **Full backend rewrite** from ASP.NET Core (.NET 10) + PostgreSQL to Spring Boot 3.2 Kotlin + MySQL 8.3
+- New API at `apps/api-kt/` — all 21 controllers ported (6,400+ LOC Kotlin)
+- All API contracts preserved: same URLs, request/response shapes, status codes
+- Flyway migration (`V001__initial_schema.sql`) creates all 33 tables
+- JWT auth, audit logging, CSV import/export, custom fields all functional
+- Database seeder: Admin/User roles, admin user, 15 default system settings
+- Stack: JDK 21, Spring Boot 3.2.5, Hibernate 6.4, Flyway 9.22, jjwt, OpenCSV, SpringDoc OpenAPI
+- Docker: MySQL 8.3 service added to `infra/docker-compose.yml`
+- Verified end-to-end: login, CRUD, checkout/checkin workflows, audit trail, search, reports, dashboard
+- **DB migration**: PostgreSQL → MySQL (CHAR(36) UUIDs, VARCHAR(50) enums, DATETIME(6) timestamps)
+- Frontend unchanged — works against new API with no modifications needed
+
 ## 2026-02-10 22:01 - Reports Page + Tools Sidebar Group
 
 - Added **Reports** page with 5 pre-built reports: Asset Summary, Upcoming Expiries, Licence Summary, Assignments, Asset Lifecycle
