@@ -91,6 +91,8 @@
 
 - [x] Header enhancements: breadcrumbs, global search (Cmd+K), quick actions (+New), notifications bell, sidebar toggle polish
 
+- [x] Backend migration: ASP.NET Core + PostgreSQL → Spring Boot Kotlin + MySQL (all 21 controllers, 33 tables, JWT auth, audit logging, CSV import/export, custom fields)
+
 ## Later
 - [x] Retire + sold workflow
 - [x] Dedicated deactivate workflow for applications (currently via edit form status dropdown)
