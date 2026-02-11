@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-02-11 18:42 - Fix API port to match frontend proxy
+
+- Changed Kotlin API port from 5116 to 5115 in `application.yml`
+- Port 5115 matches the Vite proxy config (`/api` → `http://localhost:5115`)
+- Verified full frontend integration: login, dashboard, all CRUD pages, audit log, settings
+
 ## 2026-02-11 18:30 - Backend Migration: ASP.NET Core → Spring Boot Kotlin
 
 - **Full backend rewrite** from ASP.NET Core (.NET 10) + PostgreSQL to Spring Boot 3.2 Kotlin + MySQL 8.3
