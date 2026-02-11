@@ -12,11 +12,19 @@ data class AlertSettingsDto(
     val certificateEnabled: Boolean,
     val licenceEnabled: Boolean,
     val thresholds: String,
+    val emailProvider: String = "smtp",
     val smtpHost: String,
     val smtpPort: Int,
     val smtpUsername: String,
     val smtpPassword: String,
     val smtpFromAddress: String,
+    val graphTenantId: String = "",
+    val graphClientId: String = "",
+    val graphClientSecret: String = "",
+    val graphFromAddress: String = "",
     val slackWebhookUrl: String,
-    val recipients: String
+    val recipients: String,
+    val scheduleType: String = "disabled",
+    val scheduleTime: String = "09:00",
+    val scheduleDay: String = "MONDAY"
 )

@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-02-11 20:49 - Add Microsoft Graph email provider
+
+- Added selectable email provider: SMTP (existing) or Microsoft Graph (new)
+- Graph provider uses `com.microsoft.graph` SDK + `com.azure:azure-identity` for client credentials flow
+- EmailService refactored with provider pattern — delegates to SMTP or Graph based on `alerts.email.provider` setting
+- New settings: `emailProvider`, `graphTenantId`, `graphClientId`, `graphClientSecret`, `graphFromAddress`
+- Frontend: provider selector in Alerts tab, conditionally shows SMTP or Graph config fields
+- SMTP path unchanged — MailHog still works for local dev
+
+## 2026-02-11 20:19 - Email alerts for expiring items
+
+- Added email sending engine with configurable SMTP (reads config from DB, not Spring auto-config)
+- Added `AlertProcessingService`: queries expiring warranties/certificates/licences per threshold, builds grouped HTML digest email, deduplicates via `alert_history` table
+- Added `AlertSchedulerService`: dynamic cron scheduling (daily/weekly/biweekly/monthly/first-business-day)
+- Added Flyway migration V002 for `alert_history` table
+- New endpoints: `POST /api/v1/alerts/send-now`, `POST /api/v1/alerts/test-email`, `GET /api/v1/alerts/history`
+- Extended `PUT /api/v1/settings/alerts` with `scheduleType`, `scheduleTime`, `scheduleDay` fields
+- Frontend: schedule configuration card, send test email dialog, send alerts now button, alert history table with pagination
+- Added MailHog to docker-compose for local email testing (SMTP 1025, UI 8025)
+- **DB migration**: V002__alert_history.sql
+
 ## 2026-02-11 20:02 - Remove stale postgres MCP server
 
 - Removed `postgres` MCP server from `.mcp.json` (project migrated to MySQL)
