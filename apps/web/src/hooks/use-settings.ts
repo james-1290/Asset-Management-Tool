@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { settingsApi } from "../lib/api/settings";
+import { settingsApi, alertsApi } from "../lib/api/settings";
 import type { SystemSettings, AlertSettings } from "../types/settings";
 
 const settingsKeys = {
   system: ["settings", "system"] as const,
   alerts: ["settings", "alerts"] as const,
+  alertHistory: ["alerts", "history"] as const,
 };
 
 export function useSystemSettings() {
@@ -40,5 +41,29 @@ export function useUpdateAlertSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: settingsKeys.alerts });
     },
+  });
+}
+
+export function useSendTestEmail() {
+  return useMutation({
+    mutationFn: (recipient: string) => alertsApi.testEmail(recipient),
+  });
+}
+
+export function useSendAlertsNow() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => alertsApi.sendNow(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.alertHistory });
+    },
+  });
+}
+
+export function useAlertHistory(page = 0, size = 20) {
+  return useQuery({
+    queryKey: [...settingsKeys.alertHistory, page, size],
+    queryFn: () => alertsApi.getHistory(page, size),
   });
 }

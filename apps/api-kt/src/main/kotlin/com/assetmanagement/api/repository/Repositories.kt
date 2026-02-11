@@ -135,3 +135,9 @@ interface SavedViewRepository : JpaRepository<SavedView, UUID> {
 interface SystemSettingRepository : JpaRepository<SystemSetting, String> {
     fun findByKey(key: String): SystemSetting?
 }
+
+@Repository
+interface AlertHistoryRepository : JpaRepository<AlertHistory, UUID> {
+    fun existsByEntityTypeAndEntityIdAndThresholdDays(entityType: String, entityId: UUID, thresholdDays: Int): Boolean
+    fun findAllByOrderBySentAtDesc(pageable: Pageable): Page<AlertHistory>
+}
