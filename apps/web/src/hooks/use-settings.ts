@@ -50,6 +50,12 @@ export function useSendTestEmail() {
   });
 }
 
+export function useSendTestSlack() {
+  return useMutation({
+    mutationFn: () => alertsApi.testSlack(),
+  });
+}
+
 export function useSendAlertsNow() {
   const queryClient = useQueryClient();
 

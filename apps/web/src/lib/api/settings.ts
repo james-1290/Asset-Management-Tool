@@ -34,6 +34,10 @@ export const alertsApi = {
     return apiClient.post<TestEmailResponse>("/alerts/test-email", { recipient });
   },
 
+  testSlack(): Promise<TestEmailResponse> {
+    return apiClient.post<TestEmailResponse>("/alerts/test-slack", {});
+  },
+
   getHistory(page = 0, size = 20): Promise<AlertHistoryPage> {
     return apiClient.get<AlertHistoryPage>(`/alerts/history?page=${page}&size=${size}`);
   },
