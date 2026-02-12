@@ -6,6 +6,7 @@ import type {
 } from "../../types/certificate";
 import type { CertificateHistory } from "../../types/certificate-history";
 import type { PagedResponse } from "../../types/paged-response";
+import type { DuplicateCheckResult, CheckCertificateDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface CertificateQueryParams {
   page?: number;
@@ -59,5 +60,9 @@ export const certificatesApi = {
 
   exportCsv(params: Omit<CertificateQueryParams, "page" | "pageSize"> & { ids?: string }): Promise<void> {
     return apiClient.downloadCsv("/certificates/export", params as Record<string, string | number | undefined>, "certificates-export.csv");
+  },
+
+  checkDuplicates(data: CheckCertificateDuplicatesRequest): Promise<DuplicateCheckResult[]> {
+    return apiClient.post<DuplicateCheckResult[]>("/certificates/check-duplicates", data);
   },
 };

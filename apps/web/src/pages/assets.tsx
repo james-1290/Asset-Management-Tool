@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Archive, RefreshCw } from "lucide-react";
 import { assetsApi } from "../lib/api/assets";
+import { getApiErrorMessage } from "../lib/api-client";
 import { ExportButton } from "../components/export-button";
 import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
@@ -25,6 +26,7 @@ import {
   useArchiveAsset,
   useBulkArchiveAssets,
   useBulkStatusAssets,
+  useCheckAssetDuplicates,
 } from "../hooks/use-assets";
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { BulkActionBar } from "../components/bulk-action-bar";
@@ -35,6 +37,8 @@ import type { Asset } from "../types/asset";
 import type { AssetFormValues } from "../lib/schemas/asset";
 import type { CustomFieldDefinition } from "../types/custom-field";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
+import type { DuplicateCheckResult } from "../types/duplicate-check";
+import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 
 // Map TanStack column IDs to backend sortBy values
 const SORT_FIELD_MAP: Record<string, string> = {
@@ -118,6 +122,7 @@ export default function AssetsPage() {
   const { data: assetTypes } = useAssetTypes();
   const { data: locations } = useLocations();
   const createMutation = useCreateAsset();
+  const checkDuplicatesMutation = useCheckAssetDuplicates();
   const updateMutation = useUpdateAsset();
   const archiveMutation = useArchiveAsset();
   const bulkArchiveMutation = useBulkArchiveAssets();
@@ -126,6 +131,10 @@ export default function AssetsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [archivingAsset, setArchivingAsset] = useState<Asset | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    duplicates: DuplicateCheckResult[];
+    onConfirm: () => void;
+  } | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
@@ -439,15 +448,36 @@ export default function AssetsPage() {
         },
       );
     } else {
-      createMutation.mutate(data, {
-        onSuccess: () => {
-          toast.success("Asset created");
-          setFormOpen(false);
+      const doCreate = () => {
+        createMutation.mutate(data, {
+          onSuccess: () => {
+            toast.success("Asset created");
+            setFormOpen(false);
+            setDuplicateWarning(null);
+          },
+          onError: (error) => {
+            toast.error(getApiErrorMessage(error, "Failed to create asset"));
+          },
+        });
+      };
+
+      checkDuplicatesMutation.mutate(
+        {
+          name: data.name,
+          assetTag: data.assetTag,
+          serialNumber: data.serialNumber || undefined,
         },
-        onError: () => {
-          toast.error("Failed to create asset");
+        {
+          onSuccess: (duplicates) => {
+            if (duplicates.length === 0) {
+              doCreate();
+            } else {
+              setDuplicateWarning({ duplicates, onConfirm: doCreate });
+            }
+          },
+          onError: () => doCreate(),
         },
-      });
+      );
     }
   }
 
@@ -668,6 +698,17 @@ export default function AssetsPage() {
         onConfirm={handleBulkArchive}
         loading={bulkArchiveMutation.isPending}
       />
+
+      {duplicateWarning && (
+        <DuplicateWarningDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setDuplicateWarning(null); }}
+          duplicates={duplicateWarning.duplicates}
+          entityType="assets"
+          onCreateAnyway={duplicateWarning.onConfirm}
+          loading={createMutation.isPending}
+        />
+      )}
     </div>
   );
 }

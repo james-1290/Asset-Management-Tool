@@ -1,5 +1,12 @@
 const BASE_URL = "/api/v1";
 
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError && error.body && typeof error.body === "object" && "error" in error.body) {
+    return (error.body as { error: string }).error;
+  }
+  return fallback;
+}
+
 export class ApiError extends Error {
   status: number;
   statusText: string;

@@ -9,6 +9,7 @@ import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
 import { certificatesApi } from "../lib/api/certificates";
+import { getApiErrorMessage } from "../lib/api-client";
 import { ExportButton } from "../components/export-button";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import { CertificateFormDialog } from "../components/certificates/certificate-form-dialog";
@@ -24,6 +25,7 @@ import {
   useArchiveCertificate,
   useBulkArchiveCertificates,
   useBulkStatusCertificates,
+  useCheckCertificateDuplicates,
 } from "../hooks/use-certificates";
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { BulkActionBar } from "../components/bulk-action-bar";
@@ -34,6 +36,8 @@ import type { CertificateFormValues } from "../lib/schemas/certificate";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
+import type { DuplicateCheckResult } from "../types/duplicate-check";
+import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -135,6 +139,7 @@ export default function CertificatesPage() {
   const { data: certificateTypes } = useCertificateTypes();
   const { data: locations } = useLocations();
   const createMutation = useCreateCertificate();
+  const checkDuplicatesMutation = useCheckCertificateDuplicates();
   const updateMutation = useUpdateCertificate();
   const archiveMutation = useArchiveCertificate();
   const bulkArchiveMutation = useBulkArchiveCertificates();
@@ -143,6 +148,10 @@ export default function CertificatesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null);
   const [archivingCertificate, setArchivingCertificate] = useState<Certificate | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    duplicates: DuplicateCheckResult[];
+    onConfirm: () => void;
+  } | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
@@ -335,15 +344,36 @@ export default function CertificatesPage() {
         },
       );
     } else {
-      createMutation.mutate(data, {
-        onSuccess: () => {
-          toast.success("Certificate created");
-          setFormOpen(false);
+      const doCreate = () => {
+        createMutation.mutate(data, {
+          onSuccess: () => {
+            toast.success("Certificate created");
+            setFormOpen(false);
+            setDuplicateWarning(null);
+          },
+          onError: (error) => {
+            toast.error(getApiErrorMessage(error, "Failed to create certificate"));
+          },
+        });
+      };
+
+      checkDuplicatesMutation.mutate(
+        {
+          name: data.name,
+          thumbprint: data.thumbprint || undefined,
+          serialNumber: data.serialNumber || undefined,
         },
-        onError: () => {
-          toast.error("Failed to create certificate");
+        {
+          onSuccess: (duplicates) => {
+            if (duplicates.length === 0) {
+              doCreate();
+            } else {
+              setDuplicateWarning({ duplicates, onConfirm: doCreate });
+            }
+          },
+          onError: () => doCreate(),
         },
-      });
+      );
     }
   }
 
@@ -560,6 +590,17 @@ export default function CertificatesPage() {
         onConfirm={handleBulkArchive}
         loading={bulkArchiveMutation.isPending}
       />
+
+      {duplicateWarning && (
+        <DuplicateWarningDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setDuplicateWarning(null); }}
+          duplicates={duplicateWarning.duplicates}
+          entityType="certificates"
+          onCreateAnyway={duplicateWarning.onConfirm}
+          loading={createMutation.isPending}
+        />
+      )}
     </div>
   );
 }

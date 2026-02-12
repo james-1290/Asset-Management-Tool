@@ -8,6 +8,7 @@ import type {
 } from "../../types/application";
 import type { ApplicationHistory } from "../../types/application-history";
 import type { PagedResponse } from "../../types/paged-response";
+import type { DuplicateCheckResult, CheckApplicationDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface ApplicationQueryParams {
   page?: number;
@@ -70,5 +71,9 @@ export const applicationsApi = {
 
   exportCsv(params: Omit<ApplicationQueryParams, "page" | "pageSize"> & { ids?: string }): Promise<void> {
     return apiClient.downloadCsv("/applications/export", params as Record<string, string | number | undefined>, "applications-export.csv");
+  },
+
+  checkDuplicates(data: CheckApplicationDuplicatesRequest): Promise<DuplicateCheckResult[]> {
+    return apiClient.post<DuplicateCheckResult[]>("/applications/check-duplicates", data);
   },
 };

@@ -8,6 +8,7 @@ import type {
   UpdatePersonRequest,
 } from "../../types/person";
 import type { PagedResponse } from "../../types/paged-response";
+import type { DuplicateCheckResult, CheckPersonDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface PersonQueryParams {
   page?: number;
@@ -65,5 +66,9 @@ export const peopleApi = {
 
   exportCsv(params: Omit<PersonQueryParams, "page" | "pageSize"> & { ids?: string }): Promise<void> {
     return apiClient.downloadCsv("/people/export", params as Record<string, string | number | undefined>, "people-export.csv");
+  },
+
+  checkDuplicates(data: CheckPersonDuplicatesRequest): Promise<DuplicateCheckResult[]> {
+    return apiClient.post<DuplicateCheckResult[]>("/people/check-duplicates", data);
   },
 };

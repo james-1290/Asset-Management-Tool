@@ -849,6 +849,45 @@ class AssetsController(
     }
 
     // ──────────────────────────────────────────────────────────────────────────
+    // 14. POST /check-duplicates — Find potential duplicates before creating
+    // ──────────────────────────────────────────────────────────────────────────
+    @PostMapping("/check-duplicates")
+    fun checkDuplicates(@RequestBody request: CheckAssetDuplicatesRequest): ResponseEntity<List<DuplicateCheckResult>> {
+        val spec = Specification<Asset> { root, _, cb ->
+            val predicates = mutableListOf<Predicate>()
+            predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+
+            if (request.excludeId != null)
+                predicates.add(cb.notEqual(root.get<UUID>("id"), request.excludeId))
+
+            val matchConditions = mutableListOf<Predicate>()
+
+            // Exact match on assetTag
+            if (!request.assetTag.isNullOrBlank())
+                matchConditions.add(cb.equal(cb.lower(root.get("assetTag")), request.assetTag.lowercase()))
+
+            // Fuzzy match on name
+            if (!request.name.isNullOrBlank())
+                matchConditions.add(cb.like(cb.lower(root.get("name")), "%${request.name.lowercase()}%"))
+
+            // Fuzzy match on serialNumber
+            if (!request.serialNumber.isNullOrBlank())
+                matchConditions.add(cb.like(cb.lower(root.get("serialNumber")), "%${request.serialNumber.lowercase()}%"))
+
+            if (matchConditions.isEmpty())
+                return@Specification cb.and(*predicates.toTypedArray(), cb.disjunction())
+
+            predicates.add(cb.or(*matchConditions.toTypedArray()))
+            cb.and(*predicates.toTypedArray())
+        }
+
+        val results = assetRepository.findAll(spec, PageRequest.of(0, 5))
+            .content.map { DuplicateCheckResult(it.id, it.name, "Tag: ${it.assetTag}") }
+
+        return ResponseEntity.ok(results)
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     // Private helpers
     // ──────────────────────────────────────────────────────────────────────────
 

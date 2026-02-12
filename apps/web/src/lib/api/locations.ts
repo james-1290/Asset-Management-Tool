@@ -7,6 +7,7 @@ import type {
   UpdateLocationRequest,
 } from "../../types/location";
 import type { PagedResponse } from "../../types/paged-response";
+import type { DuplicateCheckResult, CheckLocationDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface LocationQueryParams {
   page?: number;
@@ -53,5 +54,9 @@ export const locationsApi = {
 
   exportCsv(params: Omit<LocationQueryParams, "page" | "pageSize">): Promise<void> {
     return apiClient.downloadCsv("/locations/export", params as Record<string, string | number | undefined>, "locations-export.csv");
+  },
+
+  checkDuplicates(data: CheckLocationDuplicatesRequest): Promise<DuplicateCheckResult[]> {
+    return apiClient.post<DuplicateCheckResult[]>("/locations/check-duplicates", data);
   },
 };

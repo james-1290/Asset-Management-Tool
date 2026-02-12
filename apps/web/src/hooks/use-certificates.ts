@@ -5,6 +5,7 @@ import type {
   CreateCertificateRequest,
   UpdateCertificateRequest,
 } from "../types/certificate";
+import type { CheckCertificateDuplicatesRequest } from "../types/duplicate-check";
 
 const certificateKeys = {
   all: ["certificates"] as const,
@@ -77,6 +78,12 @@ export function useArchiveCertificate() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: certificateKeys.all });
     },
+  });
+}
+
+export function useCheckCertificateDuplicates() {
+  return useMutation({
+    mutationFn: (data: CheckCertificateDuplicatesRequest) => certificatesApi.checkDuplicates(data),
   });
 }
 

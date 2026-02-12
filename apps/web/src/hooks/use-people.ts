@@ -10,6 +10,7 @@ import type {
   CreatePersonRequest,
   UpdatePersonRequest,
 } from "../types/person";
+import type { CheckPersonDuplicatesRequest } from "../types/duplicate-check";
 
 const personKeys = {
   all: ["people"] as const,
@@ -84,6 +85,12 @@ export function useUpdatePerson() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: personKeys.all });
     },
+  });
+}
+
+export function useCheckPersonDuplicates() {
+  return useMutation({
+    mutationFn: (data: CheckPersonDuplicatesRequest) => peopleApi.checkDuplicates(data),
   });
 }
 

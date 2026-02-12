@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Monitor, ShieldCheck, AppWindow, Users, MapPin } from "lucide-react";
+import { getApiErrorMessage } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,25 +15,32 @@ import { CertificateFormDialog } from "@/components/certificates/certificate-for
 import { ApplicationFormDialog } from "@/components/applications/application-form-dialog";
 import { PersonFormDialog } from "@/components/people/person-form-dialog";
 import { LocationFormDialog } from "@/components/locations/location-form-dialog";
+import { DuplicateWarningDialog } from "@/components/shared/duplicate-warning-dialog";
 import { useAssetTypes } from "@/hooks/use-asset-types";
 import { useCertificateTypes } from "@/hooks/use-certificate-types";
 import { useApplicationTypes } from "@/hooks/use-application-types";
 import { useLocations } from "@/hooks/use-locations";
-import { useCreateAsset } from "@/hooks/use-assets";
-import { useCreateCertificate } from "@/hooks/use-certificates";
-import { useCreateApplication } from "@/hooks/use-applications";
-import { useCreatePerson } from "@/hooks/use-people";
-import { useCreateLocation } from "@/hooks/use-locations";
+import { useCreateAsset, useCheckAssetDuplicates } from "@/hooks/use-assets";
+import { useCreateCertificate, useCheckCertificateDuplicates } from "@/hooks/use-certificates";
+import { useCreateApplication, useCheckApplicationDuplicates } from "@/hooks/use-applications";
+import { useCreatePerson, useCheckPersonDuplicates } from "@/hooks/use-people";
+import { useCreateLocation, useCheckLocationDuplicates } from "@/hooks/use-locations";
 import type { AssetFormValues } from "@/lib/schemas/asset";
 import type { CertificateFormValues } from "@/lib/schemas/certificate";
 import type { ApplicationFormValues } from "@/lib/schemas/application";
 import type { PersonFormValues } from "@/lib/schemas/person";
 import type { LocationFormValues } from "@/lib/schemas/location";
+import type { DuplicateCheckResult } from "@/types/duplicate-check";
 
 type ActiveDialog = "asset" | "certificate" | "application" | "person" | "location" | null;
 
 export function QuickActions() {
   const [activeDialog, setActiveDialog] = useState<ActiveDialog>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    entityType: "assets" | "certificates" | "applications" | "people" | "locations";
+    duplicates: DuplicateCheckResult[];
+    onConfirm: () => void;
+  } | null>(null);
   const navigate = useNavigate();
 
   const { data: assetTypes = [] } = useAssetTypes();
@@ -46,7 +54,13 @@ export function QuickActions() {
   const createPerson = useCreatePerson();
   const createLocation = useCreateLocation();
 
-  function handleAssetSubmit(values: AssetFormValues) {
+  const checkAssetDuplicates = useCheckAssetDuplicates();
+  const checkCertificateDuplicates = useCheckCertificateDuplicates();
+  const checkApplicationDuplicates = useCheckApplicationDuplicates();
+  const checkPersonDuplicates = useCheckPersonDuplicates();
+  const checkLocationDuplicates = useCheckLocationDuplicates();
+
+  function doCreateAsset(values: AssetFormValues) {
     const cfValues = values.customFieldValues
       ? Object.entries(values.customFieldValues)
           .filter(([, v]) => v !== undefined && v !== "")
@@ -72,14 +86,39 @@ export function QuickActions() {
         onSuccess: () => {
           toast.success("Asset created");
           setActiveDialog(null);
+          setDuplicateWarning(null);
           navigate("/assets");
         },
-        onError: () => toast.error("Failed to create asset"),
+        onError: (error) => toast.error(getApiErrorMessage(error, "Failed to create asset")),
       },
     );
   }
 
-  function handleCertificateSubmit(values: CertificateFormValues) {
+  function handleAssetSubmit(values: AssetFormValues) {
+    checkAssetDuplicates.mutate(
+      {
+        name: values.name,
+        assetTag: values.assetTag,
+        serialNumber: values.serialNumber || undefined,
+      },
+      {
+        onSuccess: (duplicates) => {
+          if (duplicates.length === 0) {
+            doCreateAsset(values);
+          } else {
+            setDuplicateWarning({
+              entityType: "assets",
+              duplicates,
+              onConfirm: () => doCreateAsset(values),
+            });
+          }
+        },
+        onError: () => doCreateAsset(values), // On check failure, proceed with create
+      },
+    );
+  }
+
+  function doCreateCertificate(values: CertificateFormValues) {
     const cfValues = values.customFieldValues
       ? Object.entries(values.customFieldValues)
           .filter(([, v]) => v !== undefined && v !== "")
@@ -108,14 +147,39 @@ export function QuickActions() {
         onSuccess: () => {
           toast.success("Certificate created");
           setActiveDialog(null);
+          setDuplicateWarning(null);
           navigate("/certificates");
         },
-        onError: () => toast.error("Failed to create certificate"),
+        onError: (error) => toast.error(getApiErrorMessage(error, "Failed to create certificate")),
       },
     );
   }
 
-  function handleApplicationSubmit(values: ApplicationFormValues) {
+  function handleCertificateSubmit(values: CertificateFormValues) {
+    checkCertificateDuplicates.mutate(
+      {
+        name: values.name,
+        thumbprint: values.thumbprint || undefined,
+        serialNumber: values.serialNumber || undefined,
+      },
+      {
+        onSuccess: (duplicates) => {
+          if (duplicates.length === 0) {
+            doCreateCertificate(values);
+          } else {
+            setDuplicateWarning({
+              entityType: "certificates",
+              duplicates,
+              onConfirm: () => doCreateCertificate(values),
+            });
+          }
+        },
+        onError: () => doCreateCertificate(values),
+      },
+    );
+  }
+
+  function doCreateApplication(values: ApplicationFormValues) {
     const cfValues = values.customFieldValues
       ? Object.entries(values.customFieldValues)
           .filter(([, v]) => v !== undefined && v !== "")
@@ -147,14 +211,39 @@ export function QuickActions() {
         onSuccess: () => {
           toast.success("Application created");
           setActiveDialog(null);
+          setDuplicateWarning(null);
           navigate("/applications");
         },
-        onError: () => toast.error("Failed to create application"),
+        onError: (error) => toast.error(getApiErrorMessage(error, "Failed to create application")),
       },
     );
   }
 
-  function handlePersonSubmit(values: PersonFormValues) {
+  function handleApplicationSubmit(values: ApplicationFormValues) {
+    checkApplicationDuplicates.mutate(
+      {
+        name: values.name,
+        publisher: values.publisher || undefined,
+        licenceKey: values.licenceKey || undefined,
+      },
+      {
+        onSuccess: (duplicates) => {
+          if (duplicates.length === 0) {
+            doCreateApplication(values);
+          } else {
+            setDuplicateWarning({
+              entityType: "applications",
+              duplicates,
+              onConfirm: () => doCreateApplication(values),
+            });
+          }
+        },
+        onError: () => doCreateApplication(values),
+      },
+    );
+  }
+
+  function doCreatePerson(values: PersonFormValues) {
     createPerson.mutate(
       {
         fullName: values.fullName,
@@ -167,14 +256,38 @@ export function QuickActions() {
         onSuccess: () => {
           toast.success("Person created");
           setActiveDialog(null);
+          setDuplicateWarning(null);
           navigate("/people");
         },
-        onError: () => toast.error("Failed to create person"),
+        onError: (error) => toast.error(getApiErrorMessage(error, "Failed to create person")),
       },
     );
   }
 
-  function handleLocationSubmit(values: LocationFormValues) {
+  function handlePersonSubmit(values: PersonFormValues) {
+    checkPersonDuplicates.mutate(
+      {
+        fullName: values.fullName,
+        email: values.email || undefined,
+      },
+      {
+        onSuccess: (duplicates) => {
+          if (duplicates.length === 0) {
+            doCreatePerson(values);
+          } else {
+            setDuplicateWarning({
+              entityType: "people",
+              duplicates,
+              onConfirm: () => doCreatePerson(values),
+            });
+          }
+        },
+        onError: () => doCreatePerson(values),
+      },
+    );
+  }
+
+  function doCreateLocation(values: LocationFormValues) {
     createLocation.mutate(
       {
         name: values.name,
@@ -186,12 +299,42 @@ export function QuickActions() {
         onSuccess: () => {
           toast.success("Location created");
           setActiveDialog(null);
+          setDuplicateWarning(null);
           navigate("/locations");
         },
-        onError: () => toast.error("Failed to create location"),
+        onError: (error) => toast.error(getApiErrorMessage(error, "Failed to create location")),
       },
     );
   }
+
+  function handleLocationSubmit(values: LocationFormValues) {
+    checkLocationDuplicates.mutate(
+      {
+        name: values.name,
+      },
+      {
+        onSuccess: (duplicates) => {
+          if (duplicates.length === 0) {
+            doCreateLocation(values);
+          } else {
+            setDuplicateWarning({
+              entityType: "locations",
+              duplicates,
+              onConfirm: () => doCreateLocation(values),
+            });
+          }
+        },
+        onError: () => doCreateLocation(values),
+      },
+    );
+  }
+
+  const isChecking =
+    checkAssetDuplicates.isPending ||
+    checkCertificateDuplicates.isPending ||
+    checkApplicationDuplicates.isPending ||
+    checkPersonDuplicates.isPending ||
+    checkLocationDuplicates.isPending;
 
   return (
     <>
@@ -232,7 +375,7 @@ export function QuickActions() {
         assetTypes={assetTypes}
         locations={locations}
         onSubmit={handleAssetSubmit}
-        loading={createAsset.isPending}
+        loading={createAsset.isPending || isChecking}
       />
 
       <CertificateFormDialog
@@ -241,7 +384,7 @@ export function QuickActions() {
         certificateTypes={certificateTypes}
         locations={locations}
         onSubmit={handleCertificateSubmit}
-        loading={createCertificate.isPending}
+        loading={createCertificate.isPending || isChecking}
       />
 
       <ApplicationFormDialog
@@ -250,7 +393,7 @@ export function QuickActions() {
         applicationTypes={applicationTypes}
         locations={locations}
         onSubmit={handleApplicationSubmit}
-        loading={createApplication.isPending}
+        loading={createApplication.isPending || isChecking}
       />
 
       <PersonFormDialog
@@ -258,15 +401,34 @@ export function QuickActions() {
         onOpenChange={(open) => !open && setActiveDialog(null)}
         locations={locations}
         onSubmit={handlePersonSubmit}
-        loading={createPerson.isPending}
+        loading={createPerson.isPending || isChecking}
       />
 
       <LocationFormDialog
         open={activeDialog === "location"}
         onOpenChange={(open) => !open && setActiveDialog(null)}
         onSubmit={handleLocationSubmit}
-        loading={createLocation.isPending}
+        loading={createLocation.isPending || isChecking}
       />
+
+      {duplicateWarning && (
+        <DuplicateWarningDialog
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setDuplicateWarning(null);
+          }}
+          duplicates={duplicateWarning.duplicates}
+          entityType={duplicateWarning.entityType}
+          onCreateAnyway={duplicateWarning.onConfirm}
+          loading={
+            createAsset.isPending ||
+            createCertificate.isPending ||
+            createApplication.isPending ||
+            createPerson.isPending ||
+            createLocation.isPending
+          }
+        />
+      )}
     </>
   );
 }

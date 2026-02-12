@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { peopleApi } from "../lib/api/people";
+import { getApiErrorMessage } from "../lib/api-client";
 import { ExportButton } from "../components/export-button";
 import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
@@ -20,6 +21,7 @@ import {
   useUpdatePerson,
   useArchivePerson,
   useBulkArchivePeople,
+  useCheckPersonDuplicates,
 } from "../hooks/use-people";
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { BulkActionBar } from "../components/bulk-action-bar";
@@ -29,6 +31,8 @@ import type { PersonFormValues } from "../lib/schemas/person";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
+import type { DuplicateCheckResult } from "../types/duplicate-check";
+import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   fullName: "fullname",
@@ -87,6 +91,7 @@ export default function PeoplePage() {
   const { data: pagedResult, isLoading, isError } = usePagedPeople(queryParams);
   const { data: locations } = useLocations();
   const createMutation = useCreatePerson();
+  const checkDuplicatesMutation = useCheckPersonDuplicates();
   const updateMutation = useUpdatePerson();
   const archiveMutation = useArchivePerson();
   const bulkArchiveMutation = useBulkArchivePeople();
@@ -94,6 +99,10 @@ export default function PeoplePage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [archivingPerson, setArchivingPerson] = useState<Person | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    duplicates: DuplicateCheckResult[];
+    onConfirm: () => void;
+  } | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
@@ -274,15 +283,35 @@ export default function PeoplePage() {
         },
       );
     } else {
-      createMutation.mutate(data, {
-        onSuccess: () => {
-          toast.success("Person created");
-          setFormOpen(false);
+      const doCreate = () => {
+        createMutation.mutate(data, {
+          onSuccess: () => {
+            toast.success("Person created");
+            setFormOpen(false);
+            setDuplicateWarning(null);
+          },
+          onError: (error) => {
+            toast.error(getApiErrorMessage(error, "Failed to create person"));
+          },
+        });
+      };
+
+      checkDuplicatesMutation.mutate(
+        {
+          fullName: data.fullName,
+          email: data.email || undefined,
         },
-        onError: () => {
-          toast.error("Failed to create person");
+        {
+          onSuccess: (duplicates) => {
+            if (duplicates.length === 0) {
+              doCreate();
+            } else {
+              setDuplicateWarning({ duplicates, onConfirm: doCreate });
+            }
+          },
+          onError: () => doCreate(),
         },
-      });
+      );
     }
   }
 
@@ -426,6 +455,17 @@ export default function PeoplePage() {
         onConfirm={handleBulkArchive}
         loading={bulkArchiveMutation.isPending}
       />
+
+      {duplicateWarning && (
+        <DuplicateWarningDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setDuplicateWarning(null); }}
+          duplicates={duplicateWarning.duplicates}
+          entityType="people"
+          onCreateAnyway={duplicateWarning.onConfirm}
+          loading={createMutation.isPending}
+        />
+      )}
     </div>
   );
 }

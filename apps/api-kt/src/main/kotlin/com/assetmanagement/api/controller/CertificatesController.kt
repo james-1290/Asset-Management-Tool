@@ -516,4 +516,38 @@ class CertificatesController(
 
         return ResponseEntity.noContent().build()
     }
+
+    // ── POST /check-duplicates ──────────────────────────────────────────
+    @PostMapping("/check-duplicates")
+    fun checkDuplicates(@RequestBody request: CheckCertificateDuplicatesRequest): ResponseEntity<List<DuplicateCheckResult>> {
+        val spec = Specification<Certificate> { root, _, cb ->
+            val predicates = mutableListOf<Predicate>()
+            predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+
+            if (request.excludeId != null)
+                predicates.add(cb.notEqual(root.get<UUID>("id"), request.excludeId))
+
+            val matchConditions = mutableListOf<Predicate>()
+
+            if (!request.thumbprint.isNullOrBlank())
+                matchConditions.add(cb.equal(cb.lower(root.get("thumbprint")), request.thumbprint.lowercase()))
+
+            if (!request.name.isNullOrBlank())
+                matchConditions.add(cb.like(cb.lower(root.get("name")), "%${request.name.lowercase()}%"))
+
+            if (!request.serialNumber.isNullOrBlank())
+                matchConditions.add(cb.like(cb.lower(root.get("serialNumber")), "%${request.serialNumber.lowercase()}%"))
+
+            if (matchConditions.isEmpty())
+                return@Specification cb.and(*predicates.toTypedArray(), cb.disjunction())
+
+            predicates.add(cb.or(*matchConditions.toTypedArray()))
+            cb.and(*predicates.toTypedArray())
+        }
+
+        val results = certificateRepository.findAll(spec, PageRequest.of(0, 5))
+            .content.map { DuplicateCheckResult(it.id, it.name, "Thumbprint: ${it.thumbprint ?: "N/A"}") }
+
+        return ResponseEntity.ok(results)
+    }
 }
