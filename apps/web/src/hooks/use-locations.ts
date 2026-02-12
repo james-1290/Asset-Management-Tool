@@ -5,6 +5,7 @@ import type {
   CreateLocationRequest,
   UpdateLocationRequest,
 } from "../types/location";
+import type { CheckLocationDuplicatesRequest } from "../types/duplicate-check";
 
 const locationKeys = {
   all: ["locations"] as const,
@@ -71,6 +72,12 @@ export function useUpdateLocation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: locationKeys.all });
     },
+  });
+}
+
+export function useCheckLocationDuplicates() {
+  return useMutation({
+    mutationFn: (data: CheckLocationDuplicatesRequest) => locationsApi.checkDuplicates(data),
   });
 }
 

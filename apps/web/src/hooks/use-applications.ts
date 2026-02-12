@@ -7,6 +7,7 @@ import type {
   DeactivateApplicationRequest,
   ReactivateApplicationRequest,
 } from "../types/application";
+import type { CheckApplicationDuplicatesRequest } from "../types/duplicate-check";
 
 const applicationKeys = {
   all: ["applications"] as const,
@@ -96,6 +97,12 @@ export function useReactivateApplication() {
       queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "history"] });
     },
+  });
+}
+
+export function useCheckApplicationDuplicates() {
+  return useMutation({
+    mutationFn: (data: CheckApplicationDuplicatesRequest) => applicationsApi.checkDuplicates(data),
   });
 }
 

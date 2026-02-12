@@ -10,6 +10,7 @@ import type {
 } from "../../types/asset";
 import type { AssetHistory } from "../../types/asset-history";
 import type { PagedResponse } from "../../types/paged-response";
+import type { DuplicateCheckResult, CheckAssetDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface AssetQueryParams {
   page?: number;
@@ -80,5 +81,9 @@ export const assetsApi = {
 
   exportCsv(params: Omit<AssetQueryParams, "page" | "pageSize"> & { ids?: string }): Promise<void> {
     return apiClient.downloadCsv("/assets/export", params as Record<string, string | number | undefined>, "assets-export.csv");
+  },
+
+  checkDuplicates(data: CheckAssetDuplicatesRequest): Promise<DuplicateCheckResult[]> {
+    return apiClient.post<DuplicateCheckResult[]>("/assets/check-duplicates", data);
   },
 };

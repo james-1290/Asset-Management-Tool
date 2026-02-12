@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { locationsApi } from "../lib/api/locations";
+import { getApiErrorMessage } from "../lib/api-client";
 import { ExportButton } from "../components/export-button";
 import type { SortingState, VisibilityState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
@@ -19,12 +20,15 @@ import {
   useCreateLocation,
   useUpdateLocation,
   useArchiveLocation,
+  useCheckLocationDuplicates,
 } from "../hooks/use-locations";
 import type { Location } from "../types/location";
 import type { LocationFormValues } from "../lib/schemas/location";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
+import type { DuplicateCheckResult } from "../types/duplicate-check";
+import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -81,6 +85,7 @@ export default function LocationsPage() {
 
   const { data: pagedResult, isLoading, isError } = usePagedLocations(queryParams);
   const createMutation = useCreateLocation();
+  const checkDuplicatesMutation = useCheckLocationDuplicates();
   const updateMutation = useUpdateLocation();
   const archiveMutation = useArchiveLocation();
 
@@ -89,6 +94,10 @@ export default function LocationsPage() {
   const [archivingLocation, setArchivingLocation] = useState<Location | null>(
     null,
   );
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    duplicates: DuplicateCheckResult[];
+    onConfirm: () => void;
+  } | null>(null);
 
   // Saved views
   const { data: savedViews = [] } = useSavedViews("locations");
@@ -244,15 +253,32 @@ export default function LocationsPage() {
         },
       );
     } else {
-      createMutation.mutate(data, {
-        onSuccess: () => {
-          toast.success("Location created");
-          setFormOpen(false);
+      const doCreate = () => {
+        createMutation.mutate(data, {
+          onSuccess: () => {
+            toast.success("Location created");
+            setFormOpen(false);
+            setDuplicateWarning(null);
+          },
+          onError: (error) => {
+            toast.error(getApiErrorMessage(error, "Failed to create location"));
+          },
+        });
+      };
+
+      checkDuplicatesMutation.mutate(
+        { name: data.name },
+        {
+          onSuccess: (duplicates) => {
+            if (duplicates.length === 0) {
+              doCreate();
+            } else {
+              setDuplicateWarning({ duplicates, onConfirm: doCreate });
+            }
+          },
+          onError: () => doCreate(),
         },
-        onError: () => {
-          toast.error("Failed to create location");
-        },
-      });
+      );
     }
   }
 
@@ -375,6 +401,17 @@ export default function LocationsPage() {
         onConfirm={handleArchive}
         loading={archiveMutation.isPending}
       />
+
+      {duplicateWarning && (
+        <DuplicateWarningDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setDuplicateWarning(null); }}
+          duplicates={duplicateWarning.duplicates}
+          entityType="locations"
+          onCreateAnyway={duplicateWarning.onConfirm}
+          loading={createMutation.isPending}
+        />
+      )}
     </div>
   );
 }

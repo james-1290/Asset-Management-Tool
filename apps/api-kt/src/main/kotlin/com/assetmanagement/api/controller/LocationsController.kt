@@ -171,5 +171,28 @@ class LocationsController(
         return ResponseEntity.noContent().build()
     }
 
+    // ── POST /check-duplicates ─────────────────────────────────────────
+    @PostMapping("/check-duplicates")
+    fun checkDuplicates(@RequestBody request: CheckLocationDuplicatesRequest): ResponseEntity<List<DuplicateCheckResult>> {
+        val spec = Specification<Location> { root, _, cb ->
+            val predicates = mutableListOf<Predicate>()
+            predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+
+            if (request.excludeId != null)
+                predicates.add(cb.notEqual(root.get<UUID>("id"), request.excludeId))
+
+            if (request.name.isNullOrBlank())
+                return@Specification cb.and(*predicates.toTypedArray(), cb.disjunction())
+
+            predicates.add(cb.like(cb.lower(root.get("name")), "%${request.name.lowercase()}%"))
+            cb.and(*predicates.toTypedArray())
+        }
+
+        val results = locationRepository.findAll(spec, PageRequest.of(0, 5))
+            .content.map { DuplicateCheckResult(it.id, it.name, "${it.city ?: ""} ${it.country ?: ""}".trim().ifEmpty { "N/A" }) }
+
+        return ResponseEntity.ok(results)
+    }
+
     private fun Location.toDto() = LocationDto(id, name, address, city, country, isArchived, createdAt, updatedAt)
 }

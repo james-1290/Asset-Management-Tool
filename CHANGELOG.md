@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-02-12 08:10 - Add duplicate detection on entity creation
+
+- Added `POST /api/v1/{entity}/check-duplicates` endpoints for all 5 entity types (assets, certificates, applications, people, locations)
+- Matching strategy: exact match on unique identifiers (assetTag, thumbprint, licenceKey, email), fuzzy (case-insensitive contains) on names and other fields
+- Excludes archived records; supports `excludeId` for edit flows; returns max 5 matches
+- New shared `DuplicateWarningDialog` component shows potential duplicates with links to existing records
+- Create flows in both quick-actions dropdown and list pages now check for duplicates before saving
+- Users can review matches and choose "Create Anyway" or "Cancel" to navigate to an existing record
+- No DB migrations required
+
 ## 2026-02-11 20:49 - Add Microsoft Graph email provider
 
 - Added selectable email provider: SMTP (existing) or Microsoft Graph (new)

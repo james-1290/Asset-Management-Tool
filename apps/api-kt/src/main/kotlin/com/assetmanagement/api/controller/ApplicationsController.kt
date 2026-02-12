@@ -770,6 +770,40 @@ class ApplicationsController(
         )
     }
 
+    // ── POST /check-duplicates ─────────────────────────────────────────
+    @PostMapping("/check-duplicates")
+    fun checkDuplicates(@RequestBody request: CheckApplicationDuplicatesRequest): ResponseEntity<List<DuplicateCheckResult>> {
+        val spec = Specification<Application> { root, _, cb ->
+            val predicates = mutableListOf<Predicate>()
+            predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+
+            if (request.excludeId != null)
+                predicates.add(cb.notEqual(root.get<UUID>("id"), request.excludeId))
+
+            val matchConditions = mutableListOf<Predicate>()
+
+            if (!request.licenceKey.isNullOrBlank())
+                matchConditions.add(cb.equal(cb.lower(root.get("licenceKey")), request.licenceKey.lowercase()))
+
+            if (!request.name.isNullOrBlank())
+                matchConditions.add(cb.like(cb.lower(root.get("name")), "%${request.name.lowercase()}%"))
+
+            if (!request.publisher.isNullOrBlank())
+                matchConditions.add(cb.like(cb.lower(root.get("publisher")), "%${request.publisher.lowercase()}%"))
+
+            if (matchConditions.isEmpty())
+                return@Specification cb.and(*predicates.toTypedArray(), cb.disjunction())
+
+            predicates.add(cb.or(*matchConditions.toTypedArray()))
+            cb.and(*predicates.toTypedArray())
+        }
+
+        val results = applicationRepository.findAll(spec, PageRequest.of(0, 5))
+            .content.map { DuplicateCheckResult(it.id, it.name, "Publisher: ${it.publisher ?: "N/A"}") }
+
+        return ResponseEntity.ok(results)
+    }
+
     // ── Change tracking helpers ─────────────────────────────────────────
 
     private fun track(changes: MutableList<AuditChange>, field: String, oldVal: String?, newVal: String?) {

@@ -9,6 +9,7 @@ import type {
   RetireAssetRequest,
   SellAssetRequest,
 } from "../types/asset";
+import type { CheckAssetDuplicatesRequest } from "../types/duplicate-check";
 
 const assetKeys = {
   all: ["assets"] as const,
@@ -148,6 +149,12 @@ export function useBulkArchiveAssets() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
     },
+  });
+}
+
+export function useCheckAssetDuplicates() {
+  return useMutation({
+    mutationFn: (data: CheckAssetDuplicatesRequest) => assetsApi.checkDuplicates(data),
   });
 }
 

@@ -179,6 +179,37 @@ class PeopleController(
         return ResponseEntity.noContent().build()
     }
 
+    // ── POST /check-duplicates ─────────────────────────────────────────
+    @PostMapping("/check-duplicates")
+    fun checkDuplicates(@RequestBody request: CheckPersonDuplicatesRequest): ResponseEntity<List<DuplicateCheckResult>> {
+        val spec = Specification<Person> { root, _, cb ->
+            val predicates = mutableListOf<Predicate>()
+            predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+
+            if (request.excludeId != null)
+                predicates.add(cb.notEqual(root.get<UUID>("id"), request.excludeId))
+
+            val matchConditions = mutableListOf<Predicate>()
+
+            if (!request.email.isNullOrBlank())
+                matchConditions.add(cb.equal(cb.lower(root.get("email")), request.email.lowercase()))
+
+            if (!request.fullName.isNullOrBlank())
+                matchConditions.add(cb.like(cb.lower(root.get("fullName")), "%${request.fullName.lowercase()}%"))
+
+            if (matchConditions.isEmpty())
+                return@Specification cb.and(*predicates.toTypedArray(), cb.disjunction())
+
+            predicates.add(cb.or(*matchConditions.toTypedArray()))
+            cb.and(*predicates.toTypedArray())
+        }
+
+        val results = personRepository.findAll(spec, PageRequest.of(0, 5))
+            .content.map { DuplicateCheckResult(it.id, it.fullName, "Email: ${it.email ?: "N/A"}") }
+
+        return ResponseEntity.ok(results)
+    }
+
     private fun buildSpec(search: String?): Specification<Person> = Specification { root, _, cb ->
         val predicates = mutableListOf<Predicate>()
         predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
