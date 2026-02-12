@@ -105,7 +105,7 @@
 - [x] Dedicated deactivate workflow for applications (currently via edit form status dropdown)
 - [x] Bulk actions (checkbox selection + action bar)
 - [x] Email alerts (warranty/cert/licence expiry) — SMTP + Microsoft Graph providers, scheduled digests, alert history
-- [ ] Slack webhook alerts
+- [x] Slack webhook alerts
 - [x] Reporting (5 pre-built reports: Asset Summary, Expiries, Licence Summary, Assignments, Asset Lifecycle + CSV export + Tools sidebar group)
 - [x] SSO / OIDC integration (SAML 2.0 with Entra ID, SCIM 2.0 provisioning)
 - [ ] Attachment support
