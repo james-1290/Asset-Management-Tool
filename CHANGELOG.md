@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-02-12 17:37 - Add depreciation tracking
+
+- Straight-line depreciation computed on-the-fly: `bookValue`, `totalDepreciation`, `monthlyDepreciation`
+- Asset types now have `defaultDepreciationMonths` — auto-fills on asset creation
+- `depreciationMonths` wired through asset create/update forms
+- Asset detail page shows depreciation section when depreciation is configured
+- Dashboard "Total Book Value" stat card shows sum of book values across all assets
+- CSV export includes DepreciationMonths, BookValue, TotalDepreciation columns
+- DB migration V004: adds `default_depreciation_months` to `asset_types`
+
 ## 2026-02-12 12:04 - Add Slack webhook alerts
 
 - New `SlackService` sends Block Kit formatted digest messages to a Slack webhook

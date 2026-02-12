@@ -14,7 +14,8 @@ export type WidgetId =
   | "unassignedAssets"
   | "valueByLocation"
   | "certificateExpiries"
-  | "licenceExpiries";
+  | "licenceExpiries"
+  | "totalBookValue";
 
 export interface DashboardPreferences {
   visibleWidgets: WidgetId[];
@@ -38,6 +39,7 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   valueByLocation: "Value by Location",
   certificateExpiries: "Certificate Expiries",
   licenceExpiries: "Licence Expiries",
+  totalBookValue: "Total Book Value",
 };
 
 export const ALL_WIDGET_IDS: WidgetId[] = Object.keys(
@@ -53,6 +55,7 @@ export const STAT_CARD_WIDGET_IDS: WidgetId[] = [
   "warrantyExpiries",
   "certificateExpiries",
   "licenceExpiries",
+  "totalBookValue",
 ];
 
 export const WIDGET_MIN_SIZES: Record<WidgetId, { minW: number; minH: number; maxW?: number; maxH?: number }> = {
@@ -64,6 +67,7 @@ export const WIDGET_MIN_SIZES: Record<WidgetId, { minW: number; minH: number; ma
   warrantyExpiries: { minW: 3, minH: 2, maxW: 3, maxH: 2 },
   certificateExpiries: { minW: 3, minH: 2, maxW: 3, maxH: 2 },
   licenceExpiries: { minW: 3, minH: 2, maxW: 3, maxH: 2 },
+  totalBookValue: { minW: 3, minH: 2, maxW: 3, maxH: 2 },
   statusBreakdown: { minW: 4, minH: 4 },
   assetsByType: { minW: 4, minH: 4 },
   assetsByLocation: { minW: 4, minH: 4 },
@@ -79,12 +83,14 @@ const DEFAULT_LG_LAYOUT: LayoutItem[] = [
   { i: "recentlyAdded", x: 6, y: 0, w: 3, h: 2 },
   { i: "unassignedAssets", x: 9, y: 0, w: 3, h: 2 },
   // Row 1: stat cards (4 across)
-  { i: "checkedOut", x: 0, y: 2, w: 3, h: 2 },
-  { i: "warrantyExpiries", x: 3, y: 2, w: 3, h: 2 },
-  { i: "certificateExpiries", x: 6, y: 2, w: 3, h: 2 },
-  { i: "licenceExpiries", x: 9, y: 2, w: 3, h: 2 },
+  { i: "totalBookValue", x: 0, y: 2, w: 3, h: 2 },
+  { i: "checkedOut", x: 3, y: 2, w: 3, h: 2 },
+  { i: "warrantyExpiries", x: 6, y: 2, w: 3, h: 2 },
+  { i: "certificateExpiries", x: 9, y: 2, w: 3, h: 2 },
+  // Row 2
+  { i: "licenceExpiries", x: 0, y: 4, w: 3, h: 2 },
   // Charts
-  { i: "statusBreakdown", x: 0, y: 4, w: 6, h: 5 },
+  { i: "statusBreakdown", x: 0, y: 6, w: 6, h: 5 },
   { i: "assetsByType", x: 6, y: 4, w: 6, h: 5 },
   { i: "assetsByLocation", x: 0, y: 9, w: 6, h: 5 },
   { i: "assetsByAge", x: 6, y: 9, w: 6, h: 5 },
@@ -102,8 +108,9 @@ const DEFAULT_MD_LAYOUT: LayoutItem[] = [
   { i: "warrantyExpiries", x: 3, y: 4, w: 3, h: 2 },
   { i: "certificateExpiries", x: 0, y: 6, w: 3, h: 2 },
   { i: "licenceExpiries", x: 3, y: 6, w: 3, h: 2 },
+  { i: "totalBookValue", x: 0, y: 8, w: 3, h: 2 },
   // Charts: full width
-  { i: "statusBreakdown", x: 0, y: 8, w: 6, h: 5 },
+  { i: "statusBreakdown", x: 0, y: 10, w: 6, h: 5 },
   { i: "assetsByType", x: 0, y: 13, w: 6, h: 5 },
   { i: "assetsByLocation", x: 0, y: 18, w: 6, h: 5 },
   { i: "assetsByAge", x: 0, y: 23, w: 6, h: 5 },

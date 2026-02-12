@@ -131,6 +131,9 @@ export default function AssetDetailPage() {
       warrantyExpiryDate: values.warrantyExpiryDate
         ? `${values.warrantyExpiryDate}T00:00:00Z`
         : null,
+      depreciationMonths: values.depreciationMonths
+        ? parseInt(values.depreciationMonths, 10)
+        : null,
       notes: values.notes || null,
       customFieldValues,
     };
@@ -242,6 +245,14 @@ export default function AssetDetailPage() {
               <InfoItem label="Purchase Cost" value={formatCurrency(asset.purchaseCost)} />
               <InfoItem label="Warranty Expiry" value={formatDate(asset.warrantyExpiryDate)} />
               <InfoItem label="Status" value={asset.status} />
+              {asset.depreciationMonths != null && (
+                <>
+                  <InfoItem label="Depreciation Period" value={`${asset.depreciationMonths} months`} />
+                  <InfoItem label="Monthly Depreciation" value={formatCurrency(asset.monthlyDepreciation)} />
+                  <InfoItem label="Total Depreciation" value={formatCurrency(asset.totalDepreciation)} />
+                  <InfoItem label="Book Value" value={formatCurrency(asset.bookValue)} />
+                </>
+              )}
               {asset.retiredDate && (
                 <InfoItem label="Retired Date" value={formatDate(asset.retiredDate)} />
               )}

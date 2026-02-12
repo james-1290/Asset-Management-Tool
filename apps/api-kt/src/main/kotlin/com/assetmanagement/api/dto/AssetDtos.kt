@@ -20,6 +20,9 @@ data class AssetDto(
     val purchaseCost: BigDecimal?,
     val warrantyExpiryDate: Instant?,
     val depreciationMonths: Int? = null,
+    val bookValue: BigDecimal? = null,
+    val totalDepreciation: BigDecimal? = null,
+    val monthlyDepreciation: BigDecimal? = null,
     val soldDate: Instant?,
     val soldPrice: BigDecimal?,
     val retiredDate: Instant?,
@@ -41,6 +44,7 @@ data class CreateAssetRequest(
     val purchaseDate: Instant? = null,
     val purchaseCost: BigDecimal? = null,
     val warrantyExpiryDate: Instant? = null,
+    val depreciationMonths: Int? = null,
     val notes: String? = null,
     val customFieldValues: List<CustomFieldValueInput>? = null
 )
@@ -56,6 +60,7 @@ data class UpdateAssetRequest(
     val purchaseDate: Instant? = null,
     val purchaseCost: BigDecimal? = null,
     val warrantyExpiryDate: Instant? = null,
+    val depreciationMonths: Int? = null,
     val notes: String? = null,
     val customFieldValues: List<CustomFieldValueInput>? = null
 )

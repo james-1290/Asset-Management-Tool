@@ -7,6 +7,7 @@ data class AssetTypeDto(
     val id: UUID,
     val name: String,
     val description: String?,
+    val defaultDepreciationMonths: Int?,
     val isArchived: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
@@ -16,11 +17,13 @@ data class AssetTypeDto(
 data class CreateAssetTypeRequest(
     val name: String,
     val description: String? = null,
+    val defaultDepreciationMonths: Int? = null,
     val customFields: List<CustomFieldDefinitionInput>? = null
 )
 
 data class UpdateAssetTypeRequest(
     val name: String,
     val description: String? = null,
+    val defaultDepreciationMonths: Int? = null,
     val customFields: List<CustomFieldDefinitionInput>? = null
 )

@@ -6,7 +6,8 @@ import java.util.*
 
 data class DashboardSummaryDto(
     val totalAssets: Int,
-    val totalValue: BigDecimal
+    val totalValue: BigDecimal,
+    val totalBookValue: BigDecimal
 )
 
 data class StatusBreakdownItemDto(

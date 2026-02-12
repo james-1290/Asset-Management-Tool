@@ -66,7 +66,7 @@ class AssetTypesController(
 
     @PostMapping
     fun create(@RequestBody request: CreateAssetTypeRequest): ResponseEntity<Any> {
-        val type = AssetType(name = request.name, description = request.description)
+        val type = AssetType(name = request.name, description = request.description, defaultDepreciationMonths = request.defaultDepreciationMonths)
         assetTypeRepository.save(type)
 
         request.customFields?.forEach { field ->
@@ -88,7 +88,7 @@ class AssetTypesController(
     @PutMapping("/{id}")
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateAssetTypeRequest): ResponseEntity<Any> {
         val type = assetTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
-        type.name = request.name; type.description = request.description; type.updatedAt = Instant.now()
+        type.name = request.name; type.description = request.description; type.defaultDepreciationMonths = request.defaultDepreciationMonths; type.updatedAt = Instant.now()
 
         if (request.customFields != null) {
             val existing = type.customFieldDefinitions.filter { !it.isArchived }
@@ -141,7 +141,7 @@ class AssetTypesController(
         return ResponseEntity.noContent().build()
     }
 
-    private fun AssetType.toDto() = AssetTypeDto(id, name, description, isArchived, createdAt, updatedAt,
+    private fun AssetType.toDto() = AssetTypeDto(id, name, description, defaultDepreciationMonths, isArchived, createdAt, updatedAt,
         customFieldDefinitions.filter { !it.isArchived }.sortedBy { it.sortOrder }
             .map { CustomFieldDefinitionDto(it.id, it.name, it.fieldType.name, it.options, it.isRequired, it.sortOrder) })
 }

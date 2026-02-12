@@ -19,9 +19,11 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.io.OutputStreamWriter
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.net.URI
 import java.time.Instant
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
 import java.util.*
 
@@ -121,9 +123,24 @@ class AssetsController(
         writer.writeNext(arrayOf(
             "AssetTag", "Name", "Status", "AssetType", "Location", "AssignedTo",
             "SerialNumber", "PurchaseDate", "PurchaseCost", "WarrantyExpiryDate",
+            "DepreciationMonths", "BookValue", "TotalDepreciation",
             "Notes", "CreatedAt", "UpdatedAt"
         ))
+        val now = Instant.now()
         assets.forEach { a ->
+            var csvBookValue = ""
+            var csvTotalDepr = ""
+            val cost = a.purchaseCost
+            val months = a.depreciationMonths
+            val pDate = a.purchaseDate
+            if (cost != null && months != null && months > 0 && pDate != null) {
+                val monthly = cost.divide(BigDecimal(months), 2, RoundingMode.HALF_UP)
+                val elapsed = ChronoUnit.DAYS.between(pDate, now).toBigDecimal()
+                    .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong().coerceIn(0, months.toLong())
+                val totalDepr = (monthly * BigDecimal(elapsed)).setScale(2, RoundingMode.HALF_UP)
+                csvTotalDepr = String.format("%.2f", totalDepr)
+                csvBookValue = String.format("%.2f", (cost - totalDepr).coerceAtLeast(BigDecimal.ZERO))
+            }
             writer.writeNext(arrayOf(
                 a.assetTag,
                 a.name,
@@ -135,6 +152,9 @@ class AssetsController(
                 a.purchaseDate?.let { dateOnlyFormat.format(it) } ?: "",
                 a.purchaseCost?.let { String.format("%.2f", it) } ?: "",
                 a.warrantyExpiryDate?.let { dateOnlyFormat.format(it) } ?: "",
+                a.depreciationMonths?.toString() ?: "",
+                csvBookValue,
+                csvTotalDepr,
                 a.notes ?: "",
                 dateFormat.format(a.createdAt),
                 dateFormat.format(a.updatedAt)
@@ -203,6 +223,7 @@ class AssetsController(
             purchaseDate = request.purchaseDate,
             purchaseCost = request.purchaseCost,
             warrantyExpiryDate = request.warrantyExpiryDate,
+            depreciationMonths = request.depreciationMonths ?: assetType.defaultDepreciationMonths,
             notes = request.notes
         )
 
@@ -328,6 +349,9 @@ class AssetsController(
         trackDecimal(changes, "Purchase Cost", asset.purchaseCost, request.purchaseCost)
         trackDate(changes, "Warranty Expiry", asset.warrantyExpiryDate, request.warrantyExpiryDate)
 
+        if (asset.depreciationMonths != request.depreciationMonths)
+            changes.add(AuditChange("Depreciation Months", asset.depreciationMonths?.toString(), request.depreciationMonths?.toString()))
+
         // Apply changes
         asset.name = request.name
         asset.assetTag = request.assetTag
@@ -338,6 +362,7 @@ class AssetsController(
         asset.purchaseDate = request.purchaseDate
         asset.purchaseCost = request.purchaseCost
         asset.warrantyExpiryDate = request.warrantyExpiryDate
+        asset.depreciationMonths = request.depreciationMonths
         asset.notes = request.notes
         if (newStatus != null) asset.status = newStatus
         asset.updatedAt = Instant.now()
@@ -967,6 +992,24 @@ class AssetsController(
                 )
             }
 
+        // Compute depreciation fields
+        var bookValue: BigDecimal? = null
+        var totalDepreciation: BigDecimal? = null
+        var monthlyDepreciation: BigDecimal? = null
+
+        val cost = asset.purchaseCost
+        val months = asset.depreciationMonths
+        val purchaseDate = asset.purchaseDate
+
+        if (cost != null && months != null && months > 0 && purchaseDate != null) {
+            monthlyDepreciation = cost.divide(BigDecimal(months), 2, RoundingMode.HALF_UP)
+            val elapsedMonths = ChronoUnit.DAYS.between(purchaseDate, Instant.now()).toBigDecimal()
+                .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong()
+            val cappedMonths = elapsedMonths.coerceIn(0, months.toLong())
+            totalDepreciation = (monthlyDepreciation * BigDecimal(cappedMonths)).setScale(2, RoundingMode.HALF_UP)
+            bookValue = (cost - totalDepreciation).coerceAtLeast(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP)
+        }
+
         return AssetDto(
             id = asset.id,
             name = asset.name,
@@ -983,6 +1026,9 @@ class AssetsController(
             purchaseCost = asset.purchaseCost,
             warrantyExpiryDate = asset.warrantyExpiryDate,
             depreciationMonths = asset.depreciationMonths,
+            bookValue = bookValue,
+            totalDepreciation = totalDepreciation,
+            monthlyDepreciation = monthlyDepreciation,
             soldDate = asset.soldDate,
             soldPrice = asset.soldPrice,
             retiredDate = asset.retiredDate,

@@ -47,6 +47,7 @@ export function AssetTypeFormDialog({
     defaultValues: {
       name: "",
       description: "",
+      defaultDepreciationMonths: "",
       customFields: [],
     },
   });
@@ -56,6 +57,9 @@ export function AssetTypeFormDialog({
       form.reset({
         name: assetType?.name ?? "",
         description: assetType?.description ?? "",
+        defaultDepreciationMonths: assetType?.defaultDepreciationMonths != null
+          ? String(assetType.defaultDepreciationMonths)
+          : "",
         customFields:
           assetType?.customFields?.map((cf, i) => ({
             id: cf.id,
@@ -101,6 +105,25 @@ export function AssetTypeFormDialog({
                   <FormControl>
                     <Input
                       placeholder="Optional description"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="defaultDepreciationMonths"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default Depreciation (months)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="e.g. 36"
                       {...field}
                     />
                   </FormControl>

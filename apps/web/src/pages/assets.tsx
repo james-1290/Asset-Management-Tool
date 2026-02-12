@@ -429,6 +429,9 @@ export default function AssetsPage() {
       warrantyExpiryDate: values.warrantyExpiryDate
         ? `${values.warrantyExpiryDate}T00:00:00Z`
         : null,
+      depreciationMonths: values.depreciationMonths
+        ? parseInt(values.depreciationMonths, 10)
+        : null,
       notes: values.notes || null,
       customFieldValues,
     };

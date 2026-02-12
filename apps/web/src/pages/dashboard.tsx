@@ -14,6 +14,7 @@ import {
   ShieldAlert,
   FileWarning,
   KeyRound,
+  TrendingDown,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -60,7 +61,7 @@ export default function DashboardPage() {
   const { width, containerRef } = useContainerWidth();
 
   const summary = useDashboardSummary(
-    isVisible("totalAssets") || isVisible("totalValue")
+    isVisible("totalAssets") || isVisible("totalValue") || isVisible("totalBookValue")
   );
   const statusBreakdown = useStatusBreakdown(isVisible("statusBreakdown"));
   const warrantyExpiries = useWarrantyExpiries(
@@ -185,6 +186,17 @@ export default function DashboardPage() {
             isLoading={licenceExpiries.isLoading}
             href="/applications?sortBy=expiryDate&sortDir=asc"
             iconColor="bg-cyan-100 text-cyan-600 dark:bg-cyan-900 dark:text-cyan-300"
+          />
+        );
+      case "totalBookValue":
+        return (
+          <StatCard
+            title="Total Book Value"
+            value={formatCurrency(summary.data?.totalBookValue ?? 0)}
+            icon={TrendingDown}
+            isLoading={summary.isLoading}
+            href="/assets"
+            iconColor="bg-teal-100 text-teal-600 dark:bg-teal-900 dark:text-teal-300"
           />
         );
       case "statusBreakdown":

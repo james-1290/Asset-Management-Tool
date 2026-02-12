@@ -20,6 +20,7 @@ export const assetSchema = z.object({
     .optional()
     .or(z.literal("")),
   warrantyExpiryDate: z.string().optional().or(z.literal("")),
+  depreciationMonths: z.string().optional().or(z.literal("")),
   notes: z.string().max(2000).optional().or(z.literal("")),
   customFieldValues: z.record(z.string(), z.string().optional()).optional(),
 });

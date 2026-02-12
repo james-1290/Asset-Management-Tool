@@ -24,6 +24,10 @@ export interface Asset {
   purchaseDate: string | null;
   purchaseCost: number | null;
   warrantyExpiryDate: string | null;
+  depreciationMonths: number | null;
+  bookValue: number | null;
+  totalDepreciation: number | null;
+  monthlyDepreciation: number | null;
   soldDate: string | null;
   soldPrice: number | null;
   retiredDate: string | null;
@@ -45,6 +49,7 @@ export interface CreateAssetRequest {
   purchaseDate?: string | null;
   purchaseCost?: number | null;
   warrantyExpiryDate?: string | null;
+  depreciationMonths?: number | null;
   notes?: string | null;
   customFieldValues?: CustomFieldValueInput[];
 }
@@ -79,6 +84,7 @@ export interface UpdateAssetRequest {
   purchaseDate?: string | null;
   purchaseCost?: number | null;
   warrantyExpiryDate?: string | null;
+  depreciationMonths?: number | null;
   notes?: string | null;
   customFieldValues?: CustomFieldValueInput[];
 }

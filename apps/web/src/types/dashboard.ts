@@ -1,6 +1,7 @@
 export interface DashboardSummary {
   totalAssets: number;
   totalValue: number;
+  totalBookValue: number;
 }
 
 export interface StatusBreakdownItem {

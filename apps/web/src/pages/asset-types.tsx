@@ -238,6 +238,9 @@ export default function AssetTypesPage() {
     const data = {
       name: values.name,
       description: values.description || null,
+      defaultDepreciationMonths: values.defaultDepreciationMonths
+        ? parseInt(values.defaultDepreciationMonths, 10)
+        : null,
       customFields,
     };
 

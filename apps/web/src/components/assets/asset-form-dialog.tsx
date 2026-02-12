@@ -77,6 +77,7 @@ export function AssetFormDialog({
       assignedPersonId: "",
       purchaseDate: "",
       purchaseCost: "",
+      depreciationMonths: "",
       warrantyExpiryDate: "",
       notes: "",
       customFieldValues: {},
@@ -86,6 +87,19 @@ export function AssetFormDialog({
   const watchedAssetTypeId = form.watch("assetTypeId");
   const { data: customFieldDefs } =
     useCustomFieldDefinitions(watchedAssetTypeId || undefined);
+
+  // Auto-fill depreciation months from asset type default (only when creating)
+  useEffect(() => {
+    if (!isEditing && watchedAssetTypeId) {
+      const selectedType = assetTypes.find((t) => t.id === watchedAssetTypeId);
+      if (selectedType?.defaultDepreciationMonths) {
+        const current = form.getValues("depreciationMonths");
+        if (!current) {
+          form.setValue("depreciationMonths", String(selectedType.defaultDepreciationMonths));
+        }
+      }
+    }
+  }, [watchedAssetTypeId, isEditing, assetTypes, form]);
 
   useEffect(() => {
     if (open) {
@@ -111,6 +125,8 @@ export function AssetFormDialog({
           : "",
         purchaseCost:
           asset?.purchaseCost != null ? String(asset.purchaseCost) : "",
+        depreciationMonths:
+          asset?.depreciationMonths != null ? String(asset.depreciationMonths) : "",
         warrantyExpiryDate: asset?.warrantyExpiryDate
           ? asset.warrantyExpiryDate.substring(0, 10)
           : "",
@@ -295,7 +311,7 @@ export function AssetFormDialog({
               )}
             />
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="purchaseDate"
@@ -328,6 +344,9 @@ export function AssetFormDialog({
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="warrantyExpiryDate"
@@ -336,6 +355,25 @@ export function AssetFormDialog({
                     <FormLabel>Warranty Expiry</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="depreciationMonths"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Depreciation (months)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        step="1"
+                        placeholder="e.g. 36"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

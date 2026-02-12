@@ -4,6 +4,7 @@
 
 ## Done
 
+- [x] Depreciation tracking (straight-line, per-asset-type defaults, computed on-the-fly, dashboard stat card)
 - [x] SAML 2.0 SSO with Microsoft Entra ID (SP-initiated, JIT provisioning, toggleable)
 - [x] SCIM 2.0 provisioning server (user lifecycle management from Entra)
 - [x] Auth guards for SSO users (reject local login, block password reset)
