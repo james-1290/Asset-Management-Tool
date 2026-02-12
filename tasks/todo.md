@@ -115,6 +115,6 @@
 - [x] Duplicate detection: warn on create if similar record exists (fuzzy match on name/serial/email), offer to navigate to existing
 - [x] Data import (CSV upload): bulk import for all 5 entity types with validation preview, error reporting, template download
 - [x] Location detail page (/locations/:id): location info card, list of assets/people/certificates at that location (no map)
-- [ ] Depreciation tracking: depreciation method + useful life per asset type, auto-calculate book value, dashboard stat card
+- [x] Depreciation tracking: depreciation method + useful life per asset type, auto-calculate book value, dashboard stat card
 - [ ] Relationship linking: many-to-many links between entities with type labels, "Related Items" section on detail pages
 - [x] Sidebar nav grouping: collapsible groups (Inventory, Certificates, Software, Organisation) with localStorage persistence
