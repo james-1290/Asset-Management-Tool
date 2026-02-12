@@ -17,6 +17,18 @@ export default defineConfig({
         target: 'http://localhost:5115',
         changeOrigin: true,
       },
+      '/saml2': {
+        target: 'http://localhost:5115',
+        changeOrigin: true,
+      },
+      '/login/saml2': {
+        target: 'http://localhost:5115',
+        changeOrigin: true,
+      },
+      '/scim': {
+        target: 'http://localhost:5115',
+        changeOrigin: true,
+      },
     },
   },
 })

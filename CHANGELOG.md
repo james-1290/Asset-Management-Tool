@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-02-12 10:46 - Grey out Entra-managed fields for SSO/SCIM users
+
+- Admin edit dialog: display name, email, and active toggle disabled for SSO users; role remains editable
+- Admin user list: "Reset Password" action hidden for non-LOCAL users
+- Profile page: name/email inputs disabled, password form hidden for SSO users
+- Added `authProvider` to `UserDetail` TypeScript type
+
+## 2026-02-12 09:50 - Add SAML 2.0 SSO and SCIM 2.0 provisioning
+
+- **SAML 2.0 SSO** (Microsoft Entra ID): SP-initiated login with JIT user provisioning
+  - Configurable via `saml.enabled` env var (disabled by default, existing local auth unaffected)
+  - `SamlConfig` registers relying party from Entra federation metadata URL
+  - `SamlAuthSuccessHandler` extracts SAML attributes, finds/creates user, issues JWT, redirects to frontend
+  - Dual `SecurityFilterChain` — Order 1 for SAML paths, Order 2 for API/JWT (existing)
+  - `GET /api/v1/auth/sso-config` public endpoint returns SSO state for frontend
+  - Dev key generation script at `scripts/generate-saml-keys.sh`
+- **SCIM 2.0 provisioning server** for automated user lifecycle from Entra
+  - Configurable via `scim.enabled` env var (disabled by default)
+  - Bearer token auth via `ScimAuthFilter`
+  - Full SCIM endpoints: ServiceProviderConfig, Schemas, ResourceTypes, Users CRUD
+  - Supports filter (`userName eq`, `externalId eq`), PATCH (Entra deactivation flow), DELETE (soft deactivate)
+- **Auth guards**: local login rejects SSO accounts, password reset blocked for non-LOCAL users, Entra-synced fields (displayName, email, active) are read-only for SSO/SCIM users (only role is editable by admins)
+- **DB migration V003**: adds `auth_provider`, `external_id` columns to users; makes `password_hash` nullable
+- **Frontend**: login page shows "Sign in with Microsoft" button when SSO enabled, handles SSO token callback
+- Added `authProvider` field to user detail and profile DTOs
+- Vite proxy updated for `/saml2`, `/login/saml2`, `/scim` paths
+- Added Shibboleth Maven repo for OpenSAML dependencies
+
 ## 2026-02-12 08:10 - Add duplicate detection on entity creation
 
 - Added `POST /api/v1/{entity}/check-duplicates` endpoints for all 5 entity types (assets, certificates, applications, people, locations)

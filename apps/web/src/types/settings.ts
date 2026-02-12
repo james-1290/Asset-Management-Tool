@@ -70,6 +70,7 @@ export interface UserDetail {
   isActive: boolean;
   roles: string[];
   createdAt: string;
+  authProvider?: string;
 }
 
 export interface CreateUserRequest {

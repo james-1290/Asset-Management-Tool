@@ -43,6 +43,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 export function ProfileTab() {
   const { user, updateUser } = useAuth();
   const updateProfile = useUpdateProfile();
+  const isSsoUser = !!user?.authProvider && user.authProvider !== "LOCAL";
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -87,7 +88,11 @@ export function ProfileTab() {
       <Card>
         <CardHeader>
           <CardTitle>Profile</CardTitle>
-          <CardDescription>Update your display name, email, and theme preference.</CardDescription>
+          <CardDescription>
+            {isSsoUser
+              ? "Your name and email are managed by your identity provider."
+              : "Update your display name, email, and theme preference."}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -99,7 +104,7 @@ export function ProfileTab() {
                   <FormItem>
                     <FormLabel>Display Name</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} disabled={isSsoUser} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -112,7 +117,7 @@ export function ProfileTab() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} />
+                      <Input type="email" {...field} disabled={isSsoUser} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -148,9 +153,12 @@ export function ProfileTab() {
         </CardContent>
       </Card>
 
-      <Separator />
-
-      <PasswordForm />
+      {!isSsoUser && (
+        <>
+          <Separator />
+          <PasswordForm />
+        </>
+      )}
     </div>
   );
 }
