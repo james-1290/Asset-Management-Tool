@@ -14,11 +14,17 @@ class User(
     @Column(name = "username", nullable = false, unique = true)
     var username: String = "",
 
-    @Column(name = "password_hash", nullable = false)
-    var passwordHash: String = "",
+    @Column(name = "password_hash")
+    var passwordHash: String? = null,
 
     @Column(name = "email", nullable = false, unique = true)
     var email: String = "",
+
+    @Column(name = "auth_provider", nullable = false, columnDefinition = "VARCHAR(20)")
+    var authProvider: String = "LOCAL",
+
+    @Column(name = "external_id", unique = true)
+    var externalId: String? = null,
 
     @Column(name = "display_name", nullable = false)
     var displayName: String = "",

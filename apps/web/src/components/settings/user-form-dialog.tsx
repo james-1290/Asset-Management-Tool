@@ -110,12 +110,19 @@ export function UserFormDialog({
     }
   }, [open, user, isEditing, createForm, editForm]);
 
+  const isSsoUser = isEditing && !!user?.authProvider && user.authProvider !== "LOCAL";
+
   if (isEditing) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
+            {isSsoUser && (
+              <p className="text-sm text-muted-foreground">
+                Display name, email, and active status are managed by the identity provider.
+              </p>
+            )}
           </DialogHeader>
           <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit(onSubmitEdit)} className="space-y-4">
@@ -126,7 +133,7 @@ export function UserFormDialog({
                   <FormItem>
                     <FormLabel>Display Name</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} disabled={isSsoUser} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -139,7 +146,7 @@ export function UserFormDialog({
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} />
+                      <Input type="email" {...field} disabled={isSsoUser} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -176,7 +183,7 @@ export function UserFormDialog({
                   <FormItem className="flex items-center justify-between rounded-lg border p-3">
                     <FormLabel>Active</FormLabel>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch checked={field.value} onCheckedChange={field.onChange} disabled={isSsoUser} />
                     </FormControl>
                   </FormItem>
                 )}

@@ -1,8 +1,13 @@
 package com.assetmanagement.api.config
 
 import com.assetmanagement.api.security.JwtAuthenticationFilter
+import com.assetmanagement.api.security.SamlAuthSuccessHandler
+import com.assetmanagement.api.security.ScimAuthFilter
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -18,8 +23,31 @@ class SecurityConfig(
     private val corsConfig: CorsConfig
 ) {
 
+    @Autowired(required = false)
+    private var samlAuthSuccessHandler: SamlAuthSuccessHandler? = null
+
+    @Autowired(required = false)
+    private var scimAuthFilter: ScimAuthFilter? = null
+
     @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+    @Order(1)
+    @ConditionalOnProperty(name = ["saml.enabled"], havingValue = "true")
+    fun samlFilterChain(http: HttpSecurity): SecurityFilterChain {
+        http
+            .securityMatcher("/saml2/**", "/login/saml2/**")
+            .cors { it.configurationSource(corsConfig.corsConfigurationSource()) }
+            .csrf { it.disable() }
+            .saml2Login { saml ->
+                saml.successHandler(samlAuthSuccessHandler)
+            }
+            .saml2Metadata { }
+
+        return http.build()
+    }
+
+    @Bean
+    @Order(2)
+    fun apiFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .cors { it.configurationSource(corsConfig.corsConfigurationSource()) }
             .csrf { it.disable() }
@@ -27,11 +55,17 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers("/api/v1/auth/login").permitAll()
+                    .requestMatchers("/api/v1/auth/sso-config").permitAll()
                     .requestMatchers("/api/v1/health").permitAll()
+                    .requestMatchers("/scim/v2/**").permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                     .anyRequest().authenticated()
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+
+        scimAuthFilter?.let { filter ->
+            http.addFilterBefore(filter, JwtAuthenticationFilter::class.java)
+        }
 
         return http.build()
     }

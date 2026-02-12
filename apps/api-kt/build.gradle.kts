@@ -15,6 +15,7 @@ java {
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://build.shibboleth.net/maven/releases/") }
 }
 
 dependencies {
@@ -48,6 +49,9 @@ dependencies {
 
     // API Docs
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.4.0")
+
+    // SAML 2.0 SSO
+    implementation("org.springframework.security:spring-security-saml2-service-provider")
 
     // BCrypt (included via spring-security)
 

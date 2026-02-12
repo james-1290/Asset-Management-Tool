@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import type { SsoConfig } from "@/types/auth"
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -17,15 +18,42 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const { login, loginWithToken } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [ssoConfig, setSsoConfig] = useState<SsoConfig | null>(null)
+  const [ssoLoading, setSsoLoading] = useState(false)
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { username: "", password: "" },
   })
+
+  // Handle SSO token callback
+  useEffect(() => {
+    const token = searchParams.get("token")
+    const sso = searchParams.get("sso")
+    if (token && sso === "1") {
+      setSsoLoading(true)
+      setSearchParams({}, { replace: true })
+      loginWithToken(token)
+        .then(() => navigate("/", { replace: true }))
+        .catch(() => setError("SSO login failed. Please try again."))
+        .finally(() => setSsoLoading(false))
+    }
+  }, [searchParams, setSearchParams, loginWithToken, navigate])
+
+  // Fetch SSO config
+  useEffect(() => {
+    fetch("/api/v1/auth/sso-config")
+      .then((res) => res.ok ? res.json() : null)
+      .then((config: SsoConfig | null) => {
+        if (config) setSsoConfig(config)
+      })
+      .catch(() => {})
+  }, [])
 
   async function onSubmit(values: LoginFormValues) {
     setError(null)
@@ -38,6 +66,18 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (ssoLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-sm">
+          <CardContent className="pt-6 text-center">
+            <p className="text-muted-foreground">Completing sign-in...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -91,6 +131,29 @@ export default function LoginPage() {
               </Button>
             </form>
           </Form>
+
+          {ssoConfig?.ssoEnabled && ssoConfig.ssoUrl && (
+            <>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  window.location.href = ssoConfig.ssoUrl!
+                }}
+              >
+                {ssoConfig.ssoLabel ?? "Sign in with SSO"}
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

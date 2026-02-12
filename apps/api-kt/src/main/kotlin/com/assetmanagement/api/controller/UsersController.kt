@@ -29,13 +29,16 @@ class UsersController(
     private fun isAdmin(): Boolean =
         SecurityContextHolder.getContext().authentication?.authorities?.any { it.authority == "ROLE_Admin" } == true
 
+    private fun toDetailDto(u: User): UserDetailDto =
+        UserDetailDto(u.id, u.username, u.displayName, u.email, u.isActive,
+            u.userRoles.mapNotNull { it.role?.name }, u.createdAt, u.authProvider)
+
     @GetMapping
     fun getAll(@RequestParam(defaultValue = "false") includeInactive: Boolean): ResponseEntity<List<UserDetailDto>> {
         val users = userRepository.findAll()
             .filter { if (!includeInactive || !isAdmin()) it.isActive else true }
             .sortedBy { it.displayName }
-            .map { u -> UserDetailDto(u.id, u.username, u.displayName, u.email, u.isActive,
-                u.userRoles.mapNotNull { it.role?.name }, u.createdAt) }
+            .map { toDetailDto(it) }
         return ResponseEntity.ok(users)
     }
 
@@ -43,8 +46,7 @@ class UsersController(
     @PreAuthorize("hasRole('Admin')")
     fun getById(@PathVariable id: UUID): ResponseEntity<UserDetailDto> {
         val user = userRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
-        return ResponseEntity.ok(UserDetailDto(user.id, user.username, user.displayName, user.email, user.isActive,
-            user.userRoles.mapNotNull { it.role?.name }, user.createdAt))
+        return ResponseEntity.ok(toDetailDto(user))
     }
 
     @PostMapping
@@ -64,13 +66,25 @@ class UsersController(
             "User created with role ${request.role}", currentUserService.userId, currentUserService.userName))
 
         return ResponseEntity.created(URI("/api/v1/users/${user.id}"))
-            .body(UserDetailDto(user.id, user.username, user.displayName, user.email, user.isActive, listOf(request.role), user.createdAt))
+            .body(toDetailDto(user.apply { userRoles = mutableListOf() }).copy(roles = listOf(request.role)))
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('Admin')")
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateUserRequest): ResponseEntity<Any> {
         val user = userRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+
+        val isSsoUser = user.authProvider != "LOCAL"
+
+        // For SSO users, only role changes are allowed — displayName, email, active are managed by the identity provider
+        if (isSsoUser) {
+            if (request.displayName != user.displayName || request.email != user.email || request.isActive != user.isActive) {
+                return ResponseEntity.badRequest().body(mapOf(
+                    "error" to "Display name, email, and active status are managed by the identity provider for SSO users. Only role can be changed."
+                ))
+            }
+        }
+
         if (userRepository.findByEmail(request.email)?.let { it.id != id } == true)
             return ResponseEntity.status(409).body(mapOf("error" to "Email is already in use."))
 
@@ -98,13 +112,16 @@ class UsersController(
                 "User updated", currentUserService.userId, currentUserService.userName, changes))
         }
 
-        return ResponseEntity.ok(UserDetailDto(user.id, user.username, user.displayName, user.email, user.isActive, listOf(request.role), user.createdAt))
+        return ResponseEntity.ok(UserDetailDto(user.id, user.username, user.displayName, user.email, user.isActive,
+            listOf(request.role), user.createdAt, user.authProvider))
     }
 
     @PutMapping("/{id}/password")
     @PreAuthorize("hasRole('Admin')")
     fun resetPassword(@PathVariable id: UUID, @RequestBody request: ResetPasswordRequest): ResponseEntity<Any> {
         val user = userRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+        if (user.authProvider != "LOCAL")
+            return ResponseEntity.badRequest().body(mapOf("error" to "Cannot reset password for SSO users."))
         if (request.newPassword.length < 6) return ResponseEntity.badRequest().body(mapOf("error" to "Password must be at least 6 characters."))
         user.passwordHash = passwordEncoder.encode(request.newPassword); user.updatedAt = Instant.now()
         userRepository.save(user)

@@ -18,5 +18,12 @@ data class UserProfileResponse(
     val displayName: String,
     val email: String,
     val roles: List<String>,
-    val themePreference: String? = null
+    val themePreference: String? = null,
+    val authProvider: String = "LOCAL"
+)
+
+data class SsoConfigResponse(
+    val ssoEnabled: Boolean,
+    val ssoUrl: String? = null,
+    val ssoLabel: String? = null
 )

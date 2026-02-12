@@ -43,6 +43,21 @@ jwt:
 cors:
   origins: http://localhost:5173
 
+saml:
+  enabled: ${SAML_ENABLED:false}
+  registration-id: ${SAML_REGISTRATION_ID:entra}
+  entity-id: ${SAML_ENTITY_ID:asset-management-sp}
+  acs-url: ${SAML_ACS_URL:http://localhost:5115/login/saml2/sso/entra}
+  metadata-url: ${SAML_METADATA_URL:}
+  signing-key: ${SAML_SIGNING_KEY:classpath:saml/saml-signing-key.pem}
+  signing-cert: ${SAML_SIGNING_CERT:classpath:saml/saml-signing-cert.pem}
+  default-role: ${SAML_DEFAULT_ROLE:User}
+  frontend-origin: ${SAML_FRONTEND_ORIGIN:http://localhost:5173}
+
+scim:
+  enabled: ${SCIM_ENABLED:false}
+  bearer-token: ${SCIM_BEARER_TOKEN:change-me-in-production}
+
 springdoc:
   api-docs:
     path: /v3/api-docs

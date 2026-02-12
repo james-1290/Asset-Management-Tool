@@ -89,10 +89,12 @@ export function UsersTab() {
             <Pencil className="mr-2 h-4 w-4" />
             Edit
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setResetUser(row.original)}>
-            <KeyRound className="mr-2 h-4 w-4" />
-            Reset Password
-          </DropdownMenuItem>
+          {(!row.original.authProvider || row.original.authProvider === "LOCAL") && (
+            <DropdownMenuItem onClick={() => setResetUser(row.original)}>
+              <KeyRound className="mr-2 h-4 w-4" />
+              Reset Password
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     ),

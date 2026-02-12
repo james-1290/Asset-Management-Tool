@@ -8,6 +8,7 @@ interface AuthContextValue {
   isLoading: boolean
   isAdmin: boolean
   login: (username: string, password: string) => Promise<void>
+  loginWithToken: (token: string) => Promise<void>
   logout: () => void
   updateUser: (profile: UserProfile) => void
 }
@@ -66,6 +67,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     syncTheme(data.user.themePreference)
   }, [])
 
+  const loginWithToken = useCallback(async (ssoToken: string) => {
+    const res = await fetch("/api/v1/auth/me", {
+      headers: { Authorization: `Bearer ${ssoToken}` },
+    })
+    if (!res.ok) throw new Error("Invalid SSO token")
+
+    const profile: UserProfile = await res.json()
+    localStorage.setItem("token", ssoToken)
+    localStorage.setItem("user", JSON.stringify(profile))
+    setToken(ssoToken)
+    setUser(profile)
+    syncTheme(profile.themePreference)
+  }, [])
+
   const logout = useCallback(() => {
     localStorage.removeItem("token")
     localStorage.removeItem("user")
@@ -90,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAdmin,
         login,
+        loginWithToken,
         logout,
         updateUser,
       }}

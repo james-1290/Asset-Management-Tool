@@ -18,7 +18,8 @@ data class UserDetailDto(
     val email: String,
     val isActive: Boolean,
     val roles: List<String>,
-    val createdAt: Instant
+    val createdAt: Instant,
+    val authProvider: String = "LOCAL"
 )
 
 data class CreateUserRequest(

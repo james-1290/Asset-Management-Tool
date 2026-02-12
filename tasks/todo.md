@@ -1,6 +1,13 @@
 # TODO
 
+## In Progress
+
 ## Done
+
+- [x] SAML 2.0 SSO with Microsoft Entra ID (SP-initiated, JIT provisioning, toggleable)
+- [x] SCIM 2.0 provisioning server (user lifecycle management from Entra)
+- [x] Auth guards for SSO users (reject local login, block password reset)
+- [x] Frontend SSO login button + token callback flow
 
 - [x] Monorepo structure (apps/web, apps/api, infra, docs, tasks)
 - [x] Backend: .NET Web API with EF Core + PostgreSQL
@@ -97,14 +104,14 @@
 - [x] Retire + sold workflow
 - [x] Dedicated deactivate workflow for applications (currently via edit form status dropdown)
 - [x] Bulk actions (checkbox selection + action bar)
-- [ ] Email alerts (warranty/cert/licence expiry)
+- [x] Email alerts (warranty/cert/licence expiry) — SMTP + Microsoft Graph providers, scheduled digests, alert history
 - [ ] Slack webhook alerts
 - [x] Reporting (5 pre-built reports: Asset Summary, Expiries, Licence Summary, Assignments, Asset Lifecycle + CSV export + Tools sidebar group)
 - [ ] SSO / OIDC integration
 - [ ] Attachment support
 - [ ] Azure deployment config
 - [x] CSV/Excel export: "Export" button on all list pages, downloads current filtered/sorted view as CSV (with selection support)
-- [ ] Duplicate detection: warn on create if similar record exists (fuzzy match on name/serial/email), offer to navigate to existing
+- [x] Duplicate detection: warn on create if similar record exists (fuzzy match on name/serial/email), offer to navigate to existing
 - [x] Data import (CSV upload): bulk import for all 5 entity types with validation preview, error reporting, template download
 - [x] Location detail page (/locations/:id): location info card, list of assets/people/certificates at that location (no map)
 - [ ] Depreciation tracking: depreciation method + useful life per asset type, auto-calculate book value, dashboard stat card
