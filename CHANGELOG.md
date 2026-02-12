@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-02-12 12:04 - Add Slack webhook alerts
+
+- New `SlackService` sends Block Kit formatted digest messages to a Slack webhook
+- Alert processing now supports Slack-only, email-only, or both channels simultaneously
+- `POST /api/v1/alerts/test-slack` endpoint to verify webhook configuration
+- Frontend: "Send Test Slack" button in Settings > Alerts > Actions card
+- No DB migration needed — `alerts.slack.webhookUrl` setting already exists
+
 ## 2026-02-12 10:46 - Grey out Entra-managed fields for SSO/SCIM users
 
 - Admin edit dialog: display name, email, and active toggle disabled for SSO users; role remains editable

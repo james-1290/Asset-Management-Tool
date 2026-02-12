@@ -6,6 +6,7 @@ import com.assetmanagement.api.dto.TestEmailResponse
 import com.assetmanagement.api.repository.AlertHistoryRepository
 import com.assetmanagement.api.service.AlertProcessingService
 import com.assetmanagement.api.service.EmailService
+import com.assetmanagement.api.service.SlackService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.ResponseEntity
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*
 class AlertsController(
     private val alertProcessingService: AlertProcessingService,
     private val emailService: EmailService,
+    private val slackService: SlackService,
     private val alertHistoryRepository: AlertHistoryRepository
 ) {
 
@@ -27,8 +29,8 @@ class AlertsController(
     fun sendNow(): ResponseEntity<Any> {
         if (!isAdmin()) return ResponseEntity.status(403).build()
 
-        if (!emailService.isConfigured()) {
-            return ResponseEntity.badRequest().body(mapOf("error" to "Email is not configured. Please set SMTP host, from address, and recipients in Alert Settings."))
+        if (!emailService.isConfigured() && !slackService.isConfigured()) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "Neither email nor Slack is configured. Please configure at least one delivery channel in Alert Settings."))
         }
 
         val result = alertProcessingService.processAlerts()
@@ -44,6 +46,18 @@ class AlertsController(
             ResponseEntity.ok(TestEmailResponse(true, "Test email sent to ${request.recipient}"))
         } catch (e: Exception) {
             ResponseEntity.ok(TestEmailResponse(false, "Failed to send test email: ${e.message}"))
+        }
+    }
+
+    @PostMapping("/test-slack")
+    fun testSlack(): ResponseEntity<TestEmailResponse> {
+        if (!isAdmin()) return ResponseEntity.status(403).build()
+
+        return try {
+            slackService.sendTestMessage()
+            ResponseEntity.ok(TestEmailResponse(true, "Test message sent to Slack"))
+        } catch (e: Exception) {
+            ResponseEntity.ok(TestEmailResponse(false, "Failed to send Slack message: ${e.message}"))
         }
     }
 

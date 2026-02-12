@@ -31,7 +31,8 @@ class AlertProcessingService(
     private val applicationRepository: ApplicationRepository,
     private val alertHistoryRepository: AlertHistoryRepository,
     private val systemSettingRepository: SystemSettingRepository,
-    private val emailService: EmailService
+    private val emailService: EmailService,
+    private val slackService: SlackService
 ) {
     private val log = LoggerFactory.getLogger(AlertProcessingService::class.java)
     private val dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy").withZone(ZoneId.systemDefault())
@@ -43,14 +44,14 @@ class AlertProcessingService(
         val runId = UUID.randomUUID()
         val now = Instant.now()
 
-        if (!emailService.isConfigured()) {
-            log.warn("Email not configured, skipping alert processing")
+        if (!emailService.isConfigured() && !slackService.isConfigured()) {
+            log.warn("Neither email nor Slack configured, skipping alert processing")
             return AlertRunResult(runId, 0, 0, 0, 0, emptyList(), now)
         }
 
         val recipients = emailService.getRecipients()
-        if (recipients.isEmpty()) {
-            log.warn("No recipients configured, skipping alert processing")
+        if (recipients.isEmpty() && !slackService.isConfigured()) {
+            log.warn("No email recipients and no Slack configured, skipping alert processing")
             return AlertRunResult(runId, 0, 0, 0, 0, emptyList(), now)
         }
 
@@ -132,7 +133,17 @@ class AlertProcessingService(
         val htmlBody = buildDigestHtml(orgName, warrantyItems, certificateItems, licenceItems)
 
         try {
-            emailService.sendDigestEmail(recipients, subject, htmlBody)
+            if (emailService.isConfigured() && recipients.isNotEmpty()) {
+                emailService.sendDigestEmail(recipients, subject, htmlBody)
+            }
+
+            if (slackService.isConfigured()) {
+                try {
+                    slackService.sendDigestMessage(orgName, warrantyItems, certificateItems, licenceItems)
+                } catch (e: Exception) {
+                    log.error("Failed to send Slack digest (email may have succeeded)", e)
+                }
+            }
 
             val recipientsStr = recipients.joinToString(",")
             allItems.forEach { item ->
@@ -151,7 +162,7 @@ class AlertProcessingService(
             log.info("Alert run {} complete: {} alerts sent to {} recipients",
                 runId, allItems.size, recipients.size)
         } catch (e: Exception) {
-            log.error("Failed to send alert email", e)
+            log.error("Failed to send alerts", e)
             throw e
         }
 

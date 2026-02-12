@@ -7,6 +7,7 @@ import {
   useAlertSettings,
   useUpdateAlertSettings,
   useSendTestEmail,
+  useSendTestSlack,
   useSendAlertsNow,
   useAlertHistory,
 } from "@/hooks/use-settings";
@@ -102,6 +103,7 @@ export function AlertsTab() {
   const { data: settings, isLoading } = useAlertSettings();
   const updateSettings = useUpdateAlertSettings();
   const sendTestEmail = useSendTestEmail();
+  const sendTestSlack = useSendTestSlack();
   const sendAlertsNow = useSendAlertsNow();
   const [historyPage, setHistoryPage] = useState(0);
   const { data: history } = useAlertHistory(historyPage);
@@ -135,6 +137,7 @@ export function AlertsTab() {
 
   const scheduleType = form.watch("scheduleType");
   const emailProvider = form.watch("emailProvider");
+  const slackWebhookUrl = form.watch("slackWebhookUrl");
   const showDaySelect = scheduleType === "weekly" || scheduleType === "every_other_week";
 
   useEffect(() => {
@@ -185,6 +188,21 @@ export function AlertsTab() {
       },
       onError: (err) => {
         toast.error(err.message || "Failed to send alerts");
+      },
+    });
+  }
+
+  function handleTestSlack() {
+    sendTestSlack.mutate(undefined, {
+      onSuccess: (result) => {
+        if (result.success) {
+          toast.success(result.message);
+        } else {
+          toast.error(result.message);
+        }
+      },
+      onError: (err) => {
+        toast.error(err.message || "Failed to send test Slack message");
       },
     });
   }
@@ -560,7 +578,7 @@ export function AlertsTab() {
           <CardHeader>
             <CardTitle>Slack</CardTitle>
             <CardDescription>
-              Configure a Slack webhook for alert notifications.
+              Slack alerts are sent alongside email when a webhook URL is configured.
             </CardDescription>
           </CardHeader>
           <CardContent className="max-w-md">
@@ -592,7 +610,7 @@ export function AlertsTab() {
         <CardHeader>
           <CardTitle>Actions</CardTitle>
           <CardDescription>
-            Test your email configuration or manually trigger alert processing.
+            Test your email/Slack configuration or manually trigger alert processing.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex gap-3">
@@ -601,6 +619,13 @@ export function AlertsTab() {
             onClick={() => setTestEmailOpen(true)}
           >
             Send Test Email
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleTestSlack}
+            disabled={sendTestSlack.isPending || !slackWebhookUrl}
+          >
+            {sendTestSlack.isPending ? "Sending..." : "Send Test Slack"}
           </Button>
           <Button
             variant="outline"
