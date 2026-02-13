@@ -82,6 +82,16 @@ data class SellAssetRequest(
     val notes: String? = null
 )
 
+data class BulkEditAssetsRequest(
+    val ids: List<UUID>,
+    val status: String? = null,
+    val locationId: UUID? = null,
+    val assignedPersonId: UUID? = null,
+    val clearAssignedPerson: Boolean = false,
+    val notes: String? = null,
+    val clearNotes: Boolean = false
+)
+
 data class AssetHistoryChangeDto(
     val fieldName: String,
     val oldValue: String?,

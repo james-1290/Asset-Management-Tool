@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-02-13 21:17 - Bulk edit for assets
+
+- **Backend**: New `POST /api/v1/assets/bulk-edit` endpoint — accepts optional fields (status, location, assigned person, notes) and applies only the provided fields to selected assets
+- **Audit trail**: Full field-level change tracking per asset; person assignment/unassignment logged to person history
+- **Frontend**: BulkEditDialog with checkbox-gated fields — only checked fields are sent in the request
+- **UI**: "Edit" button added to bulk action bar alongside existing Archive and status buttons
+- Fixed AuditService to map "BulkEdited" and "StatusChanged" actions to asset history
+
 ## 2026-02-13 21:00 - Update todo.md backlog
 
 - Removed "Relationship linking" (deemed low-value for actual workflow)

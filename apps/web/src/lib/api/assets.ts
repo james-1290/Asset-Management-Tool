@@ -7,6 +7,7 @@ import type {
   CheckinAssetRequest,
   RetireAssetRequest,
   SellAssetRequest,
+  BulkEditAssetsRequest,
 } from "../../types/asset";
 import type { AssetHistory } from "../../types/asset-history";
 import type { PagedResponse } from "../../types/paged-response";
@@ -77,6 +78,10 @@ export const assetsApi = {
 
   bulkStatus(ids: string[], status: string): Promise<{ succeeded: number; failed: number }> {
     return apiClient.post("/assets/bulk-status", { ids, status });
+  },
+
+  bulkEdit(request: BulkEditAssetsRequest): Promise<{ succeeded: number; failed: number }> {
+    return apiClient.post("/assets/bulk-edit", request);
   },
 
   exportCsv(params: Omit<AssetQueryParams, "page" | "pageSize"> & { ids?: string }): Promise<void> {

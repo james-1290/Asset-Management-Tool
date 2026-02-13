@@ -60,6 +60,8 @@ class AuditService(
         val eventType = when (entry.action) {
             "Created" -> AssetHistoryEventType.Created
             "Updated" -> AssetHistoryEventType.Edited
+            "BulkEdited" -> AssetHistoryEventType.Edited
+            "StatusChanged" -> AssetHistoryEventType.Edited
             "Archived" -> AssetHistoryEventType.Archived
             "CheckedOut" -> AssetHistoryEventType.CheckedOut
             "CheckedIn" -> AssetHistoryEventType.CheckedIn

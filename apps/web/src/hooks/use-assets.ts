@@ -8,6 +8,7 @@ import type {
   CheckinAssetRequest,
   RetireAssetRequest,
   SellAssetRequest,
+  BulkEditAssetsRequest,
 } from "../types/asset";
 import type { CheckAssetDuplicatesRequest } from "../types/duplicate-check";
 
@@ -164,6 +165,18 @@ export function useBulkStatusAssets() {
   return useMutation({
     mutationFn: ({ ids, status }: { ids: string[]; status: string }) =>
       assetsApi.bulkStatus(ids, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assetKeys.all });
+    },
+  });
+}
+
+export function useBulkEditAssets() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request: BulkEditAssetsRequest) =>
+      assetsApi.bulkEdit(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
     },

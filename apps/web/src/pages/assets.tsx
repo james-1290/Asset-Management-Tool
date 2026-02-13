@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Archive, RefreshCw } from "lucide-react";
+import { Plus, Archive, RefreshCw, Pencil } from "lucide-react";
 import { assetsApi } from "../lib/api/assets";
 import { getApiErrorMessage } from "../lib/api-client";
 import { ExportButton } from "../components/export-button";
@@ -14,6 +14,7 @@ import { DataTablePagination } from "../components/data-table-pagination";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import { AssetFormDialog } from "../components/assets/asset-form-dialog";
+import { BulkEditDialog } from "../components/assets/bulk-edit-dialog";
 import { AssetsToolbar } from "../components/assets/assets-toolbar";
 import { getAssetColumns } from "../components/assets/columns";
 import { ViewModeToggle } from "../components/view-mode-toggle";
@@ -26,6 +27,7 @@ import {
   useArchiveAsset,
   useBulkArchiveAssets,
   useBulkStatusAssets,
+  useBulkEditAssets,
   useCheckAssetDuplicates,
 } from "../hooks/use-assets";
 import { getSelectionColumn } from "../components/data-table-selection-column";
@@ -33,7 +35,7 @@ import { BulkActionBar } from "../components/bulk-action-bar";
 import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
 import { useSavedViews } from "../hooks/use-saved-views";
-import type { Asset } from "../types/asset";
+import type { Asset, BulkEditAssetsRequest } from "../types/asset";
 import type { AssetFormValues } from "../lib/schemas/asset";
 import type { CustomFieldDefinition } from "../types/custom-field";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
@@ -127,6 +129,7 @@ export default function AssetsPage() {
   const archiveMutation = useArchiveAsset();
   const bulkArchiveMutation = useBulkArchiveAssets();
   const bulkStatusMutation = useBulkStatusAssets();
+  const bulkEditMutation = useBulkEditAssets();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
@@ -137,6 +140,7 @@ export default function AssetsPage() {
   } | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
 
   // Saved views
   const { data: savedViews = [] } = useSavedViews("assets");
@@ -509,6 +513,19 @@ export default function AssetsPage() {
     });
   }
 
+  function handleBulkEdit(request: BulkEditAssetsRequest) {
+    bulkEditMutation.mutate(request, {
+      onSuccess: (result) => {
+        toast.success(`Updated ${result.succeeded} asset(s)`);
+        setRowSelection({});
+        setBulkEditOpen(false);
+      },
+      onError: () => {
+        toast.error("Failed to bulk edit assets");
+      },
+    });
+  }
+
   function handleBulkStatus(status: string) {
     bulkStatusMutation.mutate({ ids: selectedIds, status }, {
       onSuccess: (result) => {
@@ -627,6 +644,15 @@ export default function AssetsPage() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setBulkEditOpen(true)}
+                disabled={bulkEditMutation.isPending}
+              >
+                <Pencil className="mr-1 h-3 w-3" />
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setBulkArchiveOpen(true)}
                 disabled={bulkArchiveMutation.isPending}
               >
@@ -708,6 +734,15 @@ export default function AssetsPage() {
         confirmLabel="Archive"
         onConfirm={handleBulkArchive}
         loading={bulkArchiveMutation.isPending}
+      />
+
+      <BulkEditDialog
+        open={bulkEditOpen}
+        onOpenChange={setBulkEditOpen}
+        selectedIds={selectedIds}
+        locations={locations ?? []}
+        onSubmit={handleBulkEdit}
+        loading={bulkEditMutation.isPending}
       />
 
       {duplicateWarning && (
