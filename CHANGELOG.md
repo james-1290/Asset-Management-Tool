@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-02-13 21:00 - Update todo.md backlog
+
+- Removed "Relationship linking" (deemed low-value for actual workflow)
+- Added three new features to Later: Bulk edit, Asset cloning, Asset kits/bundles
+
 ## 2026-02-13 20:36 - Prevent deleting types that are in use
 
 - **Asset types**: Cannot delete an asset type if active (non-archived) assets reference it. Returns 409 with descriptive error message.
