@@ -133,13 +133,18 @@ class AssetsController(
             val cost = a.purchaseCost
             val months = a.depreciationMonths
             val pDate = a.purchaseDate
-            if (cost != null && months != null && months > 0 && pDate != null) {
-                val monthly = cost.divide(BigDecimal(months), 2, RoundingMode.HALF_UP)
-                val elapsed = ChronoUnit.DAYS.between(pDate, now).toBigDecimal()
-                    .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong().coerceIn(0, months.toLong())
-                val totalDepr = (monthly * BigDecimal(elapsed)).setScale(2, RoundingMode.HALF_UP)
-                csvTotalDepr = String.format("%.2f", totalDepr)
-                csvBookValue = String.format("%.2f", (cost - totalDepr).coerceAtLeast(BigDecimal.ZERO))
+            if (cost != null && months != null && months > 0) {
+                if (pDate != null) {
+                    val monthly = cost.divide(BigDecimal(months), 2, RoundingMode.HALF_UP)
+                    val elapsed = ChronoUnit.DAYS.between(pDate, now).toBigDecimal()
+                        .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong().coerceIn(0, months.toLong())
+                    val totalDepr = (monthly * BigDecimal(elapsed)).setScale(2, RoundingMode.HALF_UP)
+                    csvTotalDepr = String.format("%.2f", totalDepr)
+                    csvBookValue = String.format("%.2f", (cost - totalDepr).coerceAtLeast(BigDecimal.ZERO))
+                } else {
+                    csvTotalDepr = "0.00"
+                    csvBookValue = String.format("%.2f", cost)
+                }
             }
             writer.writeNext(arrayOf(
                 a.assetTag,
@@ -1001,13 +1006,19 @@ class AssetsController(
         val months = asset.depreciationMonths
         val purchaseDate = asset.purchaseDate
 
-        if (cost != null && months != null && months > 0 && purchaseDate != null) {
+        if (cost != null && months != null && months > 0) {
             monthlyDepreciation = cost.divide(BigDecimal(months), 2, RoundingMode.HALF_UP)
-            val elapsedMonths = ChronoUnit.DAYS.between(purchaseDate, Instant.now()).toBigDecimal()
-                .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong()
-            val cappedMonths = elapsedMonths.coerceIn(0, months.toLong())
-            totalDepreciation = (monthlyDepreciation * BigDecimal(cappedMonths)).setScale(2, RoundingMode.HALF_UP)
-            bookValue = (cost - totalDepreciation).coerceAtLeast(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP)
+            if (purchaseDate != null) {
+                val elapsedMonths = ChronoUnit.DAYS.between(purchaseDate, Instant.now()).toBigDecimal()
+                    .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong()
+                val cappedMonths = elapsedMonths.coerceIn(0, months.toLong())
+                totalDepreciation = (monthlyDepreciation * BigDecimal(cappedMonths)).setScale(2, RoundingMode.HALF_UP)
+                bookValue = (cost - totalDepreciation).coerceAtLeast(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP)
+            } else {
+                // No purchase date: no depreciation has occurred yet
+                totalDepreciation = BigDecimal.ZERO.setScale(2)
+                bookValue = cost.setScale(2, RoundingMode.HALF_UP)
+            }
         }
 
         return AssetDto(
