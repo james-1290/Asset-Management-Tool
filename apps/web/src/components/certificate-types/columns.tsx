@@ -31,11 +31,22 @@ export function getCertificateTypeColumns({
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => row.getValue("description") || "—",
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <button
+            type="button"
+            onClick={() => onEdit(row.original)}
+            className="font-medium text-foreground hover:text-primary transition-colors"
+          >
+            {row.original.name}
+          </button>
+          {row.original.description && (
+            <div className="text-xs text-muted-foreground truncate max-w-[300px]">
+              {row.original.description}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       id: "actions",

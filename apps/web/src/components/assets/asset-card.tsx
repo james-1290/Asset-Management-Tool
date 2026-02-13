@@ -1,4 +1,5 @@
-import { MapPin, Pencil, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { MapPin, Pencil, Trash2, User } from "lucide-react";
 import { Button } from "../ui/button";
 import { AssetStatusBadge } from "./asset-status-badge";
 import type { Asset } from "../../types/asset";
@@ -11,43 +12,61 @@ interface AssetCardProps {
 
 export function AssetCard({ asset, onEdit, onArchive }: AssetCardProps) {
   return (
-    <div className="group relative rounded-md border p-3 transition-colors hover:bg-muted/50">
-      <div className="mb-2 flex items-start justify-between gap-2">
+    <div className="group relative rounded-lg border bg-card p-4 transition-colors hover:bg-muted/40">
+      {/* Header: name + status */}
+      <div className="flex items-start justify-between gap-2 mb-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{asset.name}</p>
+          <Link
+            to={`/assets/${asset.id}`}
+            className="text-sm font-medium hover:underline underline-offset-2 truncate block"
+          >
+            {asset.name}
+          </Link>
           {asset.serialNumber && (
-            <p className="text-xs text-muted-foreground truncate">
-              S/N: {asset.serialNumber}
+            <p className="text-[11px] text-muted-foreground mt-0.5 font-mono truncate">
+              {asset.serialNumber}
             </p>
           )}
         </div>
         <AssetStatusBadge status={asset.status} />
       </div>
-      <div className="space-y-1 text-xs text-muted-foreground">
-        <p>{asset.assetTypeName}</p>
+
+      {/* Meta */}
+      <div className="space-y-1.5">
+        {asset.assetTypeName && (
+          <p className="text-xs text-muted-foreground">{asset.assetTypeName}</p>
+        )}
         {asset.locationName && (
-          <div className="flex items-center gap-1">
-            <MapPin className="h-3 w-3" />
-            <span>{asset.locationName}</span>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span className="truncate">{asset.locationName}</span>
+          </div>
+        )}
+        {asset.assignedPersonName && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <User className="h-3 w-3 shrink-0" />
+            <span className="truncate">{asset.assignedPersonName}</span>
           </div>
         )}
       </div>
-      <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+
+      {/* Hover actions */}
+      <div className="absolute right-2 top-2 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0"
+          className="h-6 w-6 p-0"
           onClick={() => onEdit(asset)}
         >
-          <Pencil className="h-3.5 w-3.5" />
+          <Pencil className="h-3 w-3" />
         </Button>
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
           onClick={() => onArchive(asset)}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-3 w-3" />
         </Button>
       </div>
     </div>

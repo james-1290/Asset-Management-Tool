@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-02-13 19:45 - Global design consistency across all pages
+
+- **Borderless tables**: All DataTable pages (certificates, applications, types, locations, people, audit log) now use `variant="borderless"` matching the assets page aesthetic
+- **Count badges**: All list pages now show a total count badge in the PageHeader actions area
+- **PageHeader consistency**: Reports, Settings, and Import pages now use the shared `PageHeader` component instead of manual `h1/p` elements
+- **FilterChip inline filters**: Certificates, Applications, and Audit Log toolbars converted from popover-based filters to inline `FilterChip` components
+- **Standardized search width**: All toolbar search inputs now use `max-w-[240px]`
+- **Compound name cells**: Certificates (ShieldCheck icon + serial number), Applications (AppWindow icon + licence key), People (AvatarPlaceholder + email), Locations (MapPin icon + city) now have rich compound name cells with icons and subtitles
+- **Assigned To columns**: Certificates and Applications tables now show an AvatarPlaceholder for the assigned person
+- **Type table simplification**: Asset Types, Certificate Types, and Application Types now show name + description in a single compound cell (description as subtitle)
+
 ## 2026-02-13 13:41 - Remove asset tag, add naming templates, enforce required fields
 
 - **Removed asset tag** from entire stack (~43 files). Asset tag column made nullable in DB, removed from all forms, columns, search, CSV import/export, dashboard widgets, and reports. Name is now the primary identifier.

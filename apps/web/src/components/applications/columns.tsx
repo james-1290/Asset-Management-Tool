@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, AppWindow } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { ApplicationStatusBadge } from "./application-status-badge";
+import { AvatarPlaceholder } from "../avatar-placeholder";
 import type { Application } from "../../types/application";
 
 interface ColumnActions {
@@ -45,12 +46,24 @@ export function getApplicationColumns({
         </Button>
       ),
       cell: ({ row }) => (
-        <Link
-          to={`/applications/${row.original.id}`}
-          className="font-medium text-primary hover:underline"
-        >
-          {row.original.name}
-        </Link>
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+            <AppWindow className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <Link
+              to={`/applications/${row.original.id}`}
+              className="font-medium text-foreground hover:text-primary transition-colors"
+            >
+              {row.original.name}
+            </Link>
+            {row.original.licenceKey && (
+              <div className="text-xs text-muted-foreground truncate">
+                {row.original.licenceKey}
+              </div>
+            )}
+          </div>
+        </div>
       ),
     },
     {
@@ -81,18 +94,17 @@ export function getApplicationColumns({
       cell: ({ row }) => row.original.publisher || "—",
     },
     {
-      accessorKey: "licenceType",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Licence Type
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => row.original.licenceType || "—",
+      accessorKey: "personName",
+      header: "Assigned To",
+      cell: ({ row }) => {
+        const name = row.original.personName;
+        return (
+          <div className="flex items-center gap-2">
+            <AvatarPlaceholder name={name} />
+            {name && <span className="text-sm">{name}</span>}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "expiryDate",

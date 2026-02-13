@@ -1,6 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, MapPin } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -33,23 +33,30 @@ export function getLocationColumns({
         </Button>
       ),
       cell: ({ row }) => (
-        <Link
-          to={`/locations/${row.original.id}`}
-          className="font-medium text-primary hover:underline"
-        >
-          {row.getValue("name")}
-        </Link>
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+            <MapPin className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <Link
+              to={`/locations/${row.original.id}`}
+              className="font-medium text-foreground hover:text-primary transition-colors"
+            >
+              {row.original.name}
+            </Link>
+            {row.original.city && (
+              <div className="text-xs text-muted-foreground truncate">
+                {row.original.city}
+              </div>
+            )}
+          </div>
+        </div>
       ),
     },
     {
       accessorKey: "address",
       header: "Address",
       cell: ({ row }) => row.getValue("address") || "—",
-    },
-    {
-      accessorKey: "city",
-      header: "City",
-      cell: ({ row }) => row.getValue("city") || "—",
     },
     {
       accessorKey: "country",

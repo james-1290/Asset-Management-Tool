@@ -257,11 +257,19 @@ export default function AuditLogPage() {
       <PageHeader
         title="Audit Log"
         description="View all actions performed across the system."
+        actions={
+          !isLoading && (
+            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+              {totalCount}
+            </span>
+          )
+        }
       />
 
       <DataTable
         columns={auditLogColumns}
         data={pagedResult?.items ?? []}
+        variant="borderless"
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
         manualPagination

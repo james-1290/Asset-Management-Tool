@@ -31,20 +31,28 @@ export function DataTablePagination({
   onPageSizeChange,
 }: DataTablePaginationProps) {
   const pageCount = Math.max(1, Math.ceil(totalCount / pageSize));
+  const start = Math.min((page - 1) * pageSize + 1, totalCount);
+  const end = Math.min(page * pageSize, totalCount);
 
   return (
-    <div className="flex items-center justify-between px-2">
-      <div className="text-sm text-muted-foreground">
-        {totalCount} result{totalCount !== 1 ? "s" : ""}
-      </div>
-      <div className="flex items-center gap-6 lg:gap-8">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-medium">Rows per page</p>
+    <div className="flex items-center justify-between">
+      <p className="text-xs text-muted-foreground tabular-nums">
+        {totalCount > 0 ? (
+          <>
+            {start}&ndash;{end} of {totalCount}
+          </>
+        ) : (
+          "No results"
+        )}
+      </p>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">Rows</span>
           <Select
             value={String(pageSize)}
             onValueChange={(value) => onPageSizeChange(Number(value))}
           >
-            <SelectTrigger className="h-8 w-[70px]">
+            <SelectTrigger className="h-7 w-[60px] text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent side="top">
@@ -56,45 +64,45 @@ export function DataTablePagination({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+        <span className="text-xs text-muted-foreground tabular-nums min-w-[80px] text-center">
           Page {page} of {pageCount}
-        </div>
-        <div className="flex items-center gap-1">
+        </span>
+        <div className="flex items-center gap-0.5">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-7 w-7"
             onClick={() => onPageChange(1)}
             disabled={page <= 1}
           >
-            <ChevronsLeft className="h-4 w-4" />
+            <ChevronsLeft className="h-3.5 w-3.5" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-7 w-7"
             onClick={() => onPageChange(page - 1)}
             disabled={page <= 1}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-7 w-7"
             onClick={() => onPageChange(page + 1)}
             disabled={page >= pageCount}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3.5 w-3.5" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-7 w-7"
             onClick={() => onPageChange(pageCount)}
             disabled={page >= pageCount}
           >
-            <ChevronsRight className="h-4 w-4" />
+            <ChevronsRight className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>

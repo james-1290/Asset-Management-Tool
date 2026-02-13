@@ -328,21 +328,29 @@ export default function LocationsPage() {
         title="Locations"
         description="Manage offices, warehouses, and other locations."
         actions={
-          <Button
-            onClick={() => {
-              setEditingLocation(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Location
-          </Button>
+          <div className="flex items-center gap-3">
+            {!isLoading && (
+              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                {totalCount}
+              </span>
+            )}
+            <Button
+              onClick={() => {
+                setEditingLocation(null);
+                setFormOpen(true);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Location
+            </Button>
+          </div>
         }
       />
 
       <DataTable
         columns={columns}
         data={pagedResult?.items ?? []}
+        variant="borderless"
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
         manualPagination

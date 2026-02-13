@@ -1,24 +1,24 @@
 export const STATUS_COLORS: Record<string, string> = {
-  Available: "#22c55e",
-  Assigned: "#3b82f6",
-  CheckedOut: "#f59e0b",
-  InMaintenance: "#eab308",
-  Retired: "#6b7280",
-  Sold: "#94a3b8",
-  Archived: "#9ca3af",
+  Available: "#10B981",
+  Assigned: "#3B82F6",
+  CheckedOut: "#F59E0B",
+  InMaintenance: "#8B5CF6",
+  Retired: "#6B7280",
+  Sold: "#9CA3AF",
+  Archived: "#D1D5DB",
 };
 
-export const BAR_CHART_COLOR = "hsl(var(--primary))";
+export const BAR_CHART_COLOR = "#3B82F6";
 
 export const CHART_PALETTE = [
-  "#3b82f6", // blue
-  "#22c55e", // green
-  "#f59e0b", // amber
-  "#8b5cf6", // violet
-  "#ec4899", // pink
-  "#14b8a6", // teal
-  "#f97316", // orange
-  "#6366f1", // indigo
-  "#ef4444", // red
-  "#06b6d4", // cyan
+  "#3B82F6", // blue
+  "#10B981", // emerald
+  "#F59E0B", // amber
+  "#8B5CF6", // violet
+  "#EF4444", // red
+  "#06B6D4", // cyan
+  "#F97316", // orange
+  "#EC4899", // pink
+  "#14B8A6", // teal
+  "#6366F1", // indigo
 ];
