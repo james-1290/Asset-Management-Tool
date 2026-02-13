@@ -847,6 +847,154 @@ class AssetsController(
     }
 
     // ──────────────────────────────────────────────────────────────────────────
+    // 12b. POST /bulk-edit — Bulk edit fields on multiple assets
+    // ──────────────────────────────────────────────────────────────────────────
+    @PostMapping("/bulk-edit")
+    fun bulkEdit(@RequestBody request: BulkEditAssetsRequest): ResponseEntity<Any> {
+        if (request.ids.isEmpty())
+            return ResponseEntity.badRequest().body(mapOf("error" to "No asset IDs provided."))
+
+        // Validate status if provided
+        var newStatus: AssetStatus? = null
+        if (!request.status.isNullOrBlank()) {
+            newStatus = try { AssetStatus.valueOf(request.status) } catch (_: Exception) {
+                return ResponseEntity.badRequest().body(mapOf("error" to "Invalid status: ${request.status}"))
+            }
+        }
+
+        // Validate location if provided
+        if (request.locationId != null) {
+            val location = locationRepository.findById(request.locationId).orElse(null)
+            if (location == null || location.isArchived)
+                return ResponseEntity.badRequest().body(mapOf("error" to "Location not found."))
+        }
+
+        // Validate assigned person if provided
+        if (request.assignedPersonId != null) {
+            val person = personRepository.findById(request.assignedPersonId).orElse(null)
+            if (person == null || person.isArchived)
+                return ResponseEntity.badRequest().body(mapOf("error" to "Assigned person not found."))
+        }
+
+        // Resolve names for audit logging (once, not per-asset)
+        val newLocationName = request.locationId?.let {
+            locationRepository.findById(it).orElse(null)?.name
+        }
+        val newPersonName = request.assignedPersonId?.let {
+            personRepository.findById(it).orElse(null)?.fullName
+        }
+
+        var succeeded = 0
+        var failed = 0
+
+        for (id in request.ids) {
+            val asset = assetRepository.findById(id).orElse(null)
+            if (asset == null || asset.isArchived) {
+                failed++
+                continue
+            }
+
+            val changes = mutableListOf<AuditChange>()
+            var oldAssignedPersonId: UUID? = null
+            var oldAssignedPersonName: String? = null
+            var assignmentChanged = false
+
+            // Status
+            if (newStatus != null && newStatus != asset.status) {
+                changes.add(AuditChange("Status", asset.status.name, newStatus.name))
+                asset.status = newStatus
+            }
+
+            // Location
+            if (request.locationId != null && request.locationId != asset.locationId) {
+                val oldName = asset.location?.name
+                changes.add(AuditChange("Location", oldName, newLocationName))
+                asset.locationId = request.locationId
+            }
+
+            // Assigned person: set or clear
+            if (request.clearAssignedPerson && asset.assignedPersonId != null) {
+                oldAssignedPersonId = asset.assignedPersonId
+                oldAssignedPersonName = asset.assignedPerson?.fullName
+                changes.add(AuditChange("Assigned To", oldAssignedPersonName, null))
+                asset.assignedPersonId = null
+                assignmentChanged = true
+            } else if (request.assignedPersonId != null && request.assignedPersonId != asset.assignedPersonId) {
+                oldAssignedPersonId = asset.assignedPersonId
+                oldAssignedPersonName = asset.assignedPerson?.fullName
+                changes.add(AuditChange("Assigned To", oldAssignedPersonName, newPersonName))
+                asset.assignedPersonId = request.assignedPersonId
+                assignmentChanged = true
+            }
+
+            // Notes: set or clear
+            if (request.clearNotes && asset.notes != null) {
+                changes.add(AuditChange("Notes", asset.notes, null))
+                asset.notes = null
+            } else if (request.notes != null && request.notes != asset.notes) {
+                changes.add(AuditChange("Notes", asset.notes, request.notes))
+                asset.notes = request.notes
+            }
+
+            if (changes.isEmpty()) {
+                // No actual changes for this asset
+                succeeded++
+                continue
+            }
+
+            asset.updatedAt = Instant.now()
+            assetRepository.save(asset)
+
+            auditService.log(
+                AuditEntry(
+                    action = "BulkEdited",
+                    entityType = "Asset",
+                    entityId = asset.id.toString(),
+                    entityName = asset.name,
+                    details = "Bulk edited asset \"${asset.name}\"",
+                    actorId = currentUserService.userId,
+                    actorName = currentUserService.userName,
+                    changes = changes
+                )
+            )
+
+            // Log assignment changes to person history
+            if (assignmentChanged) {
+                if (oldAssignedPersonId != null) {
+                    auditService.log(
+                        AuditEntry(
+                            action = "AssetUnassigned",
+                            entityType = "Person",
+                            entityId = oldAssignedPersonId.toString(),
+                            entityName = oldAssignedPersonName,
+                            details = "Asset \"${asset.name}\" unassigned from this person (bulk edit)",
+                            actorId = currentUserService.userId,
+                            actorName = currentUserService.userName
+                        )
+                    )
+                }
+                if (request.assignedPersonId != null) {
+                    auditService.log(
+                        AuditEntry(
+                            action = "AssetAssigned",
+                            entityType = "Person",
+                            entityId = request.assignedPersonId.toString(),
+                            entityName = newPersonName,
+                            details = "Asset \"${asset.name}\" assigned to this person (bulk edit)",
+                            actorId = currentUserService.userId,
+                            actorName = currentUserService.userName
+                        )
+                    )
+                }
+            }
+
+            succeeded++
+        }
+
+        return ResponseEntity.ok(BulkActionResponse(succeeded, failed))
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     // 13. DELETE /{id} — Archive (soft delete)
     // ──────────────────────────────────────────────────────────────────────────
     @DeleteMapping("/{id}")

@@ -72,6 +72,16 @@ export interface SellAssetRequest {
   notes?: string | null;
 }
 
+export interface BulkEditAssetsRequest {
+  ids: string[];
+  status?: string | null;
+  locationId?: string | null;
+  assignedPersonId?: string | null;
+  clearAssignedPerson?: boolean;
+  notes?: string | null;
+  clearNotes?: boolean;
+}
+
 export interface UpdateAssetRequest {
   name: string;
   serialNumber: string;
