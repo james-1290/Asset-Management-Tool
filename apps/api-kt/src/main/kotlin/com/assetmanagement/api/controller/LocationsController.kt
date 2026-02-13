@@ -109,7 +109,7 @@ class LocationsController(
             )
         }
         val assets = assetRepository.findAll(spec, Sort.by("name")).map { a ->
-            LocationAssetDto(a.id, a.name, a.assetTag, a.assetType?.name, a.status.name, a.assignedPerson?.fullName)
+            LocationAssetDto(a.id, a.name, a.assetType?.name, a.status.name, a.assignedPerson?.fullName)
         }
         return ResponseEntity.ok(assets)
     }

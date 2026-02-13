@@ -6,7 +6,6 @@ import java.util.*
 
 data class CheckAssetDuplicatesRequest(
     val name: String? = null,
-    val assetTag: String? = null,
     val serialNumber: String? = null,
     val excludeId: UUID? = null
 )

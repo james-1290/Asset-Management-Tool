@@ -48,6 +48,7 @@ export function AssetTypeFormDialog({
       name: "",
       description: "",
       defaultDepreciationMonths: "",
+      nameTemplate: "",
       customFields: [],
     },
   });
@@ -60,6 +61,7 @@ export function AssetTypeFormDialog({
         defaultDepreciationMonths: assetType?.defaultDepreciationMonths != null
           ? String(assetType.defaultDepreciationMonths)
           : "",
+        nameTemplate: assetType?.nameTemplate ?? "",
         customFields:
           assetType?.customFields?.map((cf, i) => ({
             id: cf.id,
@@ -127,6 +129,25 @@ export function AssetTypeFormDialog({
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="nameTemplate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name Template</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g. COAD-%SERIALNUMBER%"
+                      {...field}
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Auto-generates asset names. Variables: %SERIALNUMBER%, %ASSETTYPENAME%
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

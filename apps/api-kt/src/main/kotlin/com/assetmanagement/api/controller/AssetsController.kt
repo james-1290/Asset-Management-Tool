@@ -121,7 +121,7 @@ class AssetsController(
 
         val writer = CSVWriter(OutputStreamWriter(response.outputStream))
         writer.writeNext(arrayOf(
-            "AssetTag", "Name", "Status", "AssetType", "Location", "AssignedTo",
+            "Name", "Status", "AssetType", "Location", "AssignedTo",
             "SerialNumber", "PurchaseDate", "PurchaseCost", "WarrantyExpiryDate",
             "DepreciationMonths", "BookValue", "TotalDepreciation",
             "Notes", "CreatedAt", "UpdatedAt"
@@ -147,7 +147,6 @@ class AssetsController(
                 }
             }
             writer.writeNext(arrayOf(
-                a.assetTag,
                 a.name,
                 a.status.name,
                 a.assetType?.name ?: "",
@@ -185,17 +184,21 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     @PostMapping
     fun create(@RequestBody request: CreateAssetRequest): ResponseEntity<Any> {
+        // Validate required fields
+        if (request.name.isBlank())
+            return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
+        if (request.serialNumber.isBlank())
+            return ResponseEntity.badRequest().body(mapOf("error" to "Serial number is required."))
+
         // Validate AssetType exists
         val assetType = assetTypeRepository.findById(request.assetTypeId).orElse(null)
         if (assetType == null || assetType.isArchived)
             return ResponseEntity.badRequest().body(mapOf("error" to "Asset type not found."))
 
-        // Validate Location exists (if provided)
-        if (request.locationId != null) {
-            val location = locationRepository.findById(request.locationId).orElse(null)
-            if (location == null || location.isArchived)
-                return ResponseEntity.badRequest().body(mapOf("error" to "Location not found."))
-        }
+        // Validate Location exists (required)
+        val location = locationRepository.findById(request.locationId).orElse(null)
+        if (location == null || location.isArchived)
+            return ResponseEntity.badRequest().body(mapOf("error" to "Location not found."))
 
         // Validate AssignedPerson exists (if provided)
         if (request.assignedPersonId != null) {
@@ -203,10 +206,6 @@ class AssetsController(
             if (person == null || person.isArchived)
                 return ResponseEntity.badRequest().body(mapOf("error" to "Assigned person not found."))
         }
-
-        // Validate AssetTag unique
-        if (assetRepository.existsByAssetTag(request.assetTag))
-            return ResponseEntity.status(409).body(mapOf("error" to "An asset with this tag already exists."))
 
         // Parse status
         val status = if (!request.status.isNullOrBlank()) {
@@ -219,7 +218,6 @@ class AssetsController(
 
         val asset = Asset(
             name = request.name,
-            assetTag = request.assetTag,
             serialNumber = request.serialNumber,
             status = status,
             assetTypeId = request.assetTypeId,
@@ -261,7 +259,7 @@ class AssetsController(
                 entityType = "Asset",
                 entityId = asset.id.toString(),
                 entityName = asset.name,
-                details = "Created asset \"${asset.name}\" (${asset.assetTag})",
+                details = "Created asset \"${asset.name}\"",
                 actorId = currentUserService.userId,
                 actorName = currentUserService.userName
             )
@@ -282,17 +280,21 @@ class AssetsController(
         val asset = assetRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
 
+        // Validate required fields
+        if (request.name.isBlank())
+            return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
+        if (request.serialNumber.isBlank())
+            return ResponseEntity.badRequest().body(mapOf("error" to "Serial number is required."))
+
         // Validate AssetType exists
         val assetType = assetTypeRepository.findById(request.assetTypeId).orElse(null)
         if (assetType == null || assetType.isArchived)
             return ResponseEntity.badRequest().body(mapOf("error" to "Asset type not found."))
 
-        // Validate Location exists (if provided)
-        if (request.locationId != null) {
-            val location = locationRepository.findById(request.locationId).orElse(null)
-            if (location == null || location.isArchived)
-                return ResponseEntity.badRequest().body(mapOf("error" to "Location not found."))
-        }
+        // Validate Location exists (required)
+        val location = locationRepository.findById(request.locationId).orElse(null)
+        if (location == null || location.isArchived)
+            return ResponseEntity.badRequest().body(mapOf("error" to "Location not found."))
 
         // Validate AssignedPerson exists (if provided)
         if (request.assignedPersonId != null) {
@@ -300,11 +302,6 @@ class AssetsController(
             if (person == null || person.isArchived)
                 return ResponseEntity.badRequest().body(mapOf("error" to "Assigned person not found."))
         }
-
-        // Validate AssetTag unique (excluding self)
-        val existingByTag = assetRepository.findByAssetTag(request.assetTag)
-        if (existingByTag != null && existingByTag.id != id)
-            return ResponseEntity.status(409).body(mapOf("error" to "An asset with this tag already exists."))
 
         // Parse status
         var newStatus: AssetStatus? = null
@@ -318,7 +315,6 @@ class AssetsController(
         val changes = mutableListOf<AuditChange>()
 
         trackString(changes, "Name", asset.name, request.name)
-        trackString(changes, "Asset Tag", asset.assetTag, request.assetTag)
         trackString(changes, "Serial Number", asset.serialNumber, request.serialNumber)
         trackString(changes, "Notes", asset.notes, request.notes)
 
@@ -332,7 +328,7 @@ class AssetsController(
 
         if (request.locationId != asset.locationId) {
             val oldName = asset.location?.name
-            val newName = if (request.locationId != null) locationRepository.findById(request.locationId).orElse(null)?.name else null
+            val newName = locationRepository.findById(request.locationId).orElse(null)?.name
             changes.add(AuditChange("Location", oldName, newName))
         }
 
@@ -359,7 +355,6 @@ class AssetsController(
 
         // Apply changes
         asset.name = request.name
-        asset.assetTag = request.assetTag
         asset.serialNumber = request.serialNumber
         asset.assetTypeId = request.assetTypeId
         asset.locationId = request.locationId
@@ -417,7 +412,7 @@ class AssetsController(
                 entityType = "Asset",
                 entityId = asset.id.toString(),
                 entityName = asset.name,
-                details = "Updated asset \"${asset.name}\" (${asset.assetTag})",
+                details = "Updated asset \"${asset.name}\"",
                 actorId = currentUserService.userId,
                 actorName = currentUserService.userName,
                 changes = if (changes.isNotEmpty()) changes else null
@@ -432,7 +427,7 @@ class AssetsController(
                     entityType = "Person",
                     entityId = oldAssignedPersonId.toString(),
                     entityName = oldAssignedPersonName,
-                    details = "Asset \"${asset.name}\" (${asset.assetTag}) unassigned from this person",
+                    details = "Asset \"${asset.name}\" unassigned from this person",
                     actorId = currentUserService.userId,
                     actorName = currentUserService.userName
                 )
@@ -445,7 +440,7 @@ class AssetsController(
                     entityType = "Person",
                     entityId = newAssignedPersonId.toString(),
                     entityName = newAssignedPersonName,
-                    details = "Asset \"${asset.name}\" (${asset.assetTag}) assigned to this person",
+                    details = "Asset \"${asset.name}\" assigned to this person",
                     actorId = currentUserService.userId,
                     actorName = currentUserService.userName
                 )
@@ -547,7 +542,7 @@ class AssetsController(
                 entityType = "Person",
                 entityId = person.id.toString(),
                 entityName = person.fullName,
-                details = "Asset \"${asset.name}\" (${asset.assetTag}) checked out to this person",
+                details = "Asset \"${asset.name}\" checked out to this person",
                 actorId = currentUserService.userId,
                 actorName = currentUserService.userName
             )
@@ -615,7 +610,7 @@ class AssetsController(
                     entityType = "Person",
                     entityId = oldPersonId.toString(),
                     entityName = oldPersonName,
-                    details = "Asset \"${asset.name}\" (${asset.assetTag}) checked in from this person",
+                    details = "Asset \"${asset.name}\" checked in from this person",
                     actorId = currentUserService.userId,
                     actorName = currentUserService.userName
                 )
@@ -660,7 +655,7 @@ class AssetsController(
         asset.updatedAt = now
         assetRepository.save(asset)
 
-        var details = "Retired asset \"${asset.name}\" (${asset.assetTag})"
+        var details = "Retired asset \"${asset.name}\""
         if (request.notes != null) details += " — ${request.notes}"
 
         auditService.log(
@@ -684,7 +679,7 @@ class AssetsController(
                     entityType = "Person",
                     entityId = oldPersonId.toString(),
                     entityName = oldPersonName,
-                    details = "Asset \"${asset.name}\" (${asset.assetTag}) unassigned (asset retired)",
+                    details = "Asset \"${asset.name}\" unassigned (asset retired)",
                     actorId = currentUserService.userId,
                     actorName = currentUserService.userName
                 )
@@ -733,7 +728,7 @@ class AssetsController(
         asset.updatedAt = Instant.now()
         assetRepository.save(asset)
 
-        var details = "Sold asset \"${asset.name}\" (${asset.assetTag})"
+        var details = "Sold asset \"${asset.name}\""
         if (request.soldPrice != null)
             details += " for ${String.format("%.2f", request.soldPrice)}"
         if (request.notes != null)
@@ -760,7 +755,7 @@ class AssetsController(
                     entityType = "Person",
                     entityId = oldPersonId.toString(),
                     entityName = oldPersonName,
-                    details = "Asset \"${asset.name}\" (${asset.assetTag}) unassigned (asset sold)",
+                    details = "Asset \"${asset.name}\" unassigned (asset sold)",
                     actorId = currentUserService.userId,
                     actorName = currentUserService.userName
                 )
@@ -798,7 +793,7 @@ class AssetsController(
                     entityType = "Asset",
                     entityId = asset.id.toString(),
                     entityName = asset.name,
-                    details = "Bulk archived asset \"${asset.name}\" (${asset.assetTag})",
+                    details = "Bulk archived asset \"${asset.name}\"",
                     actorId = currentUserService.userId,
                     actorName = currentUserService.userName
                 )
@@ -839,7 +834,7 @@ class AssetsController(
                     entityType = "Asset",
                     entityId = asset.id.toString(),
                     entityName = asset.name,
-                    details = "Bulk status change \"${asset.name}\" (${asset.assetTag}): $oldStatus → $newStatus",
+                    details = "Bulk status change \"${asset.name}\": $oldStatus → $newStatus",
                     actorId = currentUserService.userId,
                     actorName = currentUserService.userName,
                     changes = listOf(AuditChange("Status", oldStatus.name, newStatus.name))
@@ -869,7 +864,7 @@ class AssetsController(
                 entityType = "Asset",
                 entityId = asset.id.toString(),
                 entityName = asset.name,
-                details = "Archived asset \"${asset.name}\" (${asset.assetTag})",
+                details = "Archived asset \"${asset.name}\"",
                 actorId = currentUserService.userId,
                 actorName = currentUserService.userName
             )
@@ -892,10 +887,6 @@ class AssetsController(
 
             val matchConditions = mutableListOf<Predicate>()
 
-            // Exact match on assetTag
-            if (!request.assetTag.isNullOrBlank())
-                matchConditions.add(cb.equal(cb.lower(root.get("assetTag")), request.assetTag.lowercase()))
-
             // Fuzzy match on name
             if (!request.name.isNullOrBlank())
                 matchConditions.add(cb.like(cb.lower(root.get("name")), "%${request.name.lowercase()}%"))
@@ -912,7 +903,7 @@ class AssetsController(
         }
 
         val results = assetRepository.findAll(spec, PageRequest.of(0, 5))
-            .content.map { DuplicateCheckResult(it.id, it.name, "Tag: ${it.assetTag}") }
+            .content.map { DuplicateCheckResult(it.id, it.name, "S/N: ${it.serialNumber ?: "—"}") }
 
         return ResponseEntity.ok(results)
     }
@@ -936,13 +927,13 @@ class AssetsController(
         if (typeId != null)
             predicates.add(cb.equal(root.get<UUID>("assetTypeId"), typeId))
 
-        // Search across name and asset tag
+        // Search across name and serial number
         if (!search.isNullOrBlank()) {
             val pattern = "%${search.lowercase()}%"
             predicates.add(
                 cb.or(
                     cb.like(cb.lower(root.get("name")), pattern),
-                    cb.like(cb.lower(root.get("assetTag")), pattern)
+                    cb.like(cb.lower(root.get("serialNumber")), pattern)
                 )
             )
         }
@@ -972,7 +963,6 @@ class AssetsController(
     private fun sortOf(sortBy: String, sortDir: String): Sort {
         val dir = if (sortDir.equals("desc", ignoreCase = true)) Sort.Direction.DESC else Sort.Direction.ASC
         val prop = when (sortBy.lowercase()) {
-            "assettag" -> "assetTag"
             "status" -> "status"
             "assettypename" -> "assetType.name"
             "locationname" -> "location.name"

@@ -26,7 +26,6 @@ export interface UpdateLocationRequest {
 export interface LocationAsset {
   id: string;
   name: string;
-  assetTag: string;
   assetTypeName: string | null;
   status: string;
   assignedPersonName: string | null;

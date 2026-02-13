@@ -110,14 +110,10 @@ export default function AssetDetailPage() {
 
     const data = {
       name: values.name,
-      assetTag: values.assetTag,
-      serialNumber: values.serialNumber || null,
+      serialNumber: values.serialNumber,
       status: values.status || "Available",
       assetTypeId: values.assetTypeId,
-      locationId:
-        values.locationId && values.locationId !== "none"
-          ? values.locationId
-          : null,
+      locationId: values.locationId,
       assignedPersonId:
         values.assignedPersonId && values.assignedPersonId !== "none"
           ? values.assignedPersonId
@@ -192,7 +188,7 @@ export default function AssetDetailPage() {
               </h1>
               <AssetStatusBadge status={asset.status} />
             </div>
-            <p className="text-sm text-muted-foreground">{asset.assetTag}</p>
+            <p className="text-sm text-muted-foreground">{asset.serialNumber}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -235,7 +231,6 @@ export default function AssetDetailPage() {
           </CardHeader>
           <CardContent>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-              <InfoItem label="Asset Tag" value={asset.assetTag} />
               <InfoItem label="Name" value={asset.name} />
               <InfoItem label="Type" value={asset.assetTypeName} />
               <InfoItem label="Serial Number" value={asset.serialNumber} />

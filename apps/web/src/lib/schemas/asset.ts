@@ -5,16 +5,15 @@ export const assetSchema = z.object({
     .string()
     .min(1, "Name is required")
     .max(200, "Name must be 200 characters or less"),
-  assetTag: z
+  serialNumber: z
     .string()
-    .min(1, "Asset tag is required")
-    .max(100, "Asset tag must be 100 characters or less"),
-  serialNumber: z.string().max(200).optional().or(z.literal("")),
+    .min(1, "Serial number is required")
+    .max(200, "Serial number must be 200 characters or less"),
   status: z.string().optional(),
   assetTypeId: z.string().min(1, "Asset type is required"),
-  locationId: z.string().optional().or(z.literal("")),
+  locationId: z.string().min(1, "Location is required"),
   assignedPersonId: z.string().optional().or(z.literal("")),
-  purchaseDate: z.string().optional().or(z.literal("")),
+  purchaseDate: z.string().min(1, "Purchase date is required"),
   purchaseCost: z
     .string()
     .optional()

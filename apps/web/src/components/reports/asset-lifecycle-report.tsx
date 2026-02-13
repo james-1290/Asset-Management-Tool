@@ -90,7 +90,6 @@ export function AssetLifecycleReport() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Asset Tag</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Purchase Date</TableHead>
                   <TableHead className="text-right">Age (days)</TableHead>
@@ -100,7 +99,6 @@ export function AssetLifecycleReport() {
                 {data.oldestAssets.map((asset) => (
                   <TableRow key={asset.id}>
                     <TableCell className="font-medium">{asset.name}</TableCell>
-                    <TableCell>{asset.assetTag}</TableCell>
                     <TableCell>{asset.assetTypeName}</TableCell>
                     <TableCell>
                       {new Date(asset.purchaseDate).toLocaleDateString()}
@@ -133,7 +131,6 @@ export function AssetLifecycleReport() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Asset Tag</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Warranty Expired</TableHead>
                   <TableHead className="text-right">Days Overdue</TableHead>
@@ -143,7 +140,6 @@ export function AssetLifecycleReport() {
                 {data.pastWarranty.map((asset) => (
                   <TableRow key={asset.id}>
                     <TableCell className="font-medium">{asset.name}</TableCell>
-                    <TableCell>{asset.assetTag}</TableCell>
                     <TableCell>{asset.assetTypeName}</TableCell>
                     <TableCell>
                       {new Date(asset.warrantyExpiryDate).toLocaleDateString()}

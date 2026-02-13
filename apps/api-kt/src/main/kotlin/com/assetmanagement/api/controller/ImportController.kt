@@ -45,7 +45,7 @@ class ImportController(
         private val LOCATION_HEADERS = arrayOf("Name", "Address", "City", "Country")
         private val PEOPLE_HEADERS = arrayOf("FullName", "Email", "Department", "JobTitle", "Location")
         private val ASSET_HEADERS = arrayOf(
-            "Name", "AssetTag", "SerialNumber", "AssetType", "Status",
+            "Name", "SerialNumber", "AssetType", "Status",
             "Location", "AssignedTo", "PurchaseDate", "PurchaseCost",
             "WarrantyExpiryDate", "DepreciationMonths", "Notes"
         )
@@ -282,13 +282,6 @@ class ImportController(
         val name = data["Name"]
         if (name.isNullOrBlank()) errors.add("Name is required")
         else if (name.length > 200) errors.add("Name must be 200 characters or less")
-
-        val assetTag = data["AssetTag"]
-        if (assetTag.isNullOrBlank()) errors.add("AssetTag is required")
-        else {
-            if (assetTag.length > 100) errors.add("AssetTag must be 100 characters or less")
-            if (assetRepository.existsByAssetTag(assetTag)) errors.add("AssetTag '$assetTag' already exists")
-        }
 
         val assetTypeName = data["AssetType"]
         if (assetTypeName.isNullOrBlank()) errors.add("AssetType is required")
@@ -527,7 +520,6 @@ class ImportController(
 
         val asset = Asset(
             name = data["Name"]!!,
-            assetTag = data["AssetTag"]!!,
             serialNumber = data["SerialNumber"],
             assetTypeId = assetType.id,
             status = status,
@@ -546,7 +538,7 @@ class ImportController(
             entityType = "Asset",
             entityId = asset.id.toString(),
             entityName = asset.name,
-            details = "Imported asset \"${asset.name}\" (${asset.assetTag}) via CSV",
+            details = "Imported asset \"${asset.name}\" via CSV",
             actorId = currentUserService.userId,
             actorName = currentUserService.userName
         ))

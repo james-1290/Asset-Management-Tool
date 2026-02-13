@@ -241,6 +241,7 @@ export default function AssetTypesPage() {
       defaultDepreciationMonths: values.defaultDepreciationMonths
         ? parseInt(values.defaultDepreciationMonths, 10)
         : null,
+      nameTemplate: values.nameTemplate || null,
       customFields,
     };
 

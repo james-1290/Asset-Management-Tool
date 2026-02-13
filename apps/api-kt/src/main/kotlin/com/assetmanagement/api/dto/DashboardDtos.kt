@@ -18,7 +18,6 @@ data class StatusBreakdownItemDto(
 data class WarrantyExpiryItemDto(
     val id: UUID,
     val name: String,
-    val assetTag: String,
     val assetTypeName: String,
     val warrantyExpiryDate: Instant,
     val daysUntilExpiry: Int
@@ -32,7 +31,6 @@ data class AssetsByGroupItemDto(
 data class CheckedOutAssetDto(
     val id: UUID,
     val name: String,
-    val assetTag: String,
     val assignedPersonName: String?,
     val updatedAt: Instant
 )
@@ -40,7 +38,6 @@ data class CheckedOutAssetDto(
 data class RecentlyAddedAssetDto(
     val id: UUID,
     val name: String,
-    val assetTag: String,
     val assetTypeName: String,
     val createdAt: Instant
 )
@@ -53,7 +50,6 @@ data class AssetsByAgeBucketDto(
 data class UnassignedAssetDto(
     val id: UUID,
     val name: String,
-    val assetTag: String,
     val assetTypeName: String
 )
 

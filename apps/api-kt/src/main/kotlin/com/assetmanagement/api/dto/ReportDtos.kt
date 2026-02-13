@@ -47,8 +47,7 @@ data class PersonAssignmentDto(
 
 data class AssignedAssetBriefDto(
     val id: UUID,
-    val name: String,
-    val assetTag: String
+    val name: String
 )
 
 data class AssignmentsReportDto(
@@ -66,7 +65,6 @@ data class AssetLifecycleReportDto(
 data class OldestAssetDto(
     val id: UUID,
     val name: String,
-    val assetTag: String,
     val assetTypeName: String,
     val purchaseDate: Instant,
     val ageDays: Int

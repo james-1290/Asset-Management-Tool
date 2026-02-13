@@ -64,12 +64,12 @@ export function AssetFormDialog({
 }: AssetFormDialogProps) {
   const isEditing = !!asset;
   const statusManuallySet = useRef(false);
+  const nameManuallyEdited = useRef(false);
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
     defaultValues: {
       name: "",
-      assetTag: "",
       serialNumber: "",
       status: "Available",
       assetTypeId: "",
@@ -85,6 +85,7 @@ export function AssetFormDialog({
   });
 
   const watchedAssetTypeId = form.watch("assetTypeId");
+  const watchedSerialNumber = form.watch("serialNumber");
   const { data: customFieldDefs } =
     useCustomFieldDefinitions(watchedAssetTypeId || undefined);
 
@@ -101,9 +102,25 @@ export function AssetFormDialog({
     }
   }, [watchedAssetTypeId, isEditing, assetTypes, form]);
 
+  // Auto-fill name from asset type nameTemplate (only when creating)
+  useEffect(() => {
+    if (isEditing || nameManuallyEdited.current) return;
+    if (!watchedAssetTypeId || !watchedSerialNumber) return;
+
+    const selectedType = assetTypes.find((t) => t.id === watchedAssetTypeId);
+    if (!selectedType?.nameTemplate) return;
+
+    let generatedName = selectedType.nameTemplate;
+    generatedName = generatedName.replace(/%SERIALNUMBER%/g, watchedSerialNumber);
+    generatedName = generatedName.replace(/%ASSETTYPENAME%/g, selectedType.name);
+
+    form.setValue("name", generatedName);
+  }, [watchedAssetTypeId, watchedSerialNumber, isEditing, assetTypes, form]);
+
   useEffect(() => {
     if (open) {
       statusManuallySet.current = false;
+      nameManuallyEdited.current = isEditing;
 
       const cfValues: Record<string, string> = {};
       if (asset?.customFieldValues) {
@@ -114,7 +131,6 @@ export function AssetFormDialog({
 
       form.reset({
         name: asset?.name ?? "",
-        assetTag: asset?.assetTag ?? "",
         serialNumber: asset?.serialNumber ?? "",
         status: asset?.status ?? "Available",
         assetTypeId: asset?.assetTypeId ?? "",
@@ -134,7 +150,7 @@ export function AssetFormDialog({
         customFieldValues: cfValues,
       });
     }
-  }, [open, asset, form]);
+  }, [open, asset, form, isEditing]);
 
   function handleAssignedPersonChange(personId: string) {
     form.setValue("assignedPersonId", personId);
@@ -168,39 +184,10 @@ export function AssetFormDialog({
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. MacBook Pro 16" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="assetTag"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Asset Tag</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. AST-001" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
                 name="assetTypeId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Asset Type</FormLabel>
+                    <FormLabel>Asset Type *</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
@@ -222,6 +209,43 @@ export function AssetFormDialog({
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="serialNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Serial Number *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. ABC123XYZ" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name *</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g. MacBook Pro 16"
+                      {...field}
+                      onChange={(e) => {
+                        nameManuallyEdited.current = true;
+                        field.onChange(e);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="status"
@@ -249,22 +273,6 @@ export function AssetFormDialog({
                   </FormItem>
                 )}
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="serialNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Serial Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Optional" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <FormField
                 control={form.control}
                 name="assignedPersonId"
@@ -287,18 +295,17 @@ export function AssetFormDialog({
               name="locationId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Location</FormLabel>
+                  <FormLabel>Location *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="None" />
+                        <SelectValue placeholder="Select location" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
                       {locations.map((l) => (
                         <SelectItem key={l.id} value={l.id}>
                           {l.name}
@@ -317,7 +324,7 @@ export function AssetFormDialog({
                 name="purchaseDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Purchase Date</FormLabel>
+                    <FormLabel>Purchase Date *</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>

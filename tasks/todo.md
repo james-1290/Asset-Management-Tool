@@ -116,5 +116,6 @@
 - [x] Data import (CSV upload): bulk import for all 5 entity types with validation preview, error reporting, template download
 - [x] Location detail page (/locations/:id): location info card, list of assets/people/certificates at that location (no map)
 - [x] Depreciation tracking: depreciation method + useful life per asset type, auto-calculate book value, dashboard stat card
+- [ ] Prevent deleting asset types that are in use on assets (return error if assets reference the type)
 - [ ] Relationship linking: many-to-many links between entities with type labels, "Related Items" section on detail pages
 - [x] Sidebar nav grouping: collapsible groups (Inventory, Certificates, Software, Organisation) with localStorage persistence

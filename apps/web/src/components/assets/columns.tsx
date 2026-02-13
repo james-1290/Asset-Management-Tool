@@ -49,27 +49,6 @@ export function getAssetColumns({
 }: ColumnActions): ColumnDef<Asset, unknown>[] {
   const baseColumns: ColumnDef<Asset, unknown>[] = [
     {
-      accessorKey: "assetTag",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Asset Tag
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <Link
-          to={`/assets/${row.original.id}`}
-          className="font-medium text-primary hover:underline"
-        >
-          {row.original.assetTag}
-        </Link>
-      ),
-    },
-    {
       accessorKey: "name",
       header: ({ column }) => (
         <Button
@@ -84,11 +63,16 @@ export function getAssetColumns({
       cell: ({ row }) => (
         <Link
           to={`/assets/${row.original.id}`}
-          className="hover:underline"
+          className="font-medium text-primary hover:underline"
         >
           {row.original.name}
         </Link>
       ),
+    },
+    {
+      accessorKey: "serialNumber",
+      header: "Serial Number",
+      cell: ({ row }) => row.getValue("serialNumber") || "—",
     },
     {
       accessorKey: "assetTypeName",

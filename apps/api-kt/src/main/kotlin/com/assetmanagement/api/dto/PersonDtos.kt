@@ -55,7 +55,6 @@ data class PersonHistoryDto(
 data class AssignedAssetDto(
     val id: UUID,
     val name: String,
-    val assetTag: String,
     val serialNumber: String?,
     val status: String,
     val assetTypeName: String,

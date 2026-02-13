@@ -105,7 +105,6 @@ class DashboardController(
             WarrantyExpiryItemDto(
                 id = a.id,
                 name = a.name,
-                assetTag = a.assetTag,
                 assetTypeName = a.assetType?.name ?: "",
                 warrantyExpiryDate = a.warrantyExpiryDate!!,
                 daysUntilExpiry = ChronoUnit.DAYS.between(now, a.warrantyExpiryDate!!).toInt()
@@ -174,7 +173,6 @@ class DashboardController(
             CheckedOutAssetDto(
                 id = a.id,
                 name = a.name,
-                assetTag = a.assetTag,
                 assignedPersonName = a.assignedPerson?.fullName,
                 updatedAt = a.updatedAt
             )
@@ -202,7 +200,6 @@ class DashboardController(
             RecentlyAddedAssetDto(
                 id = a.id,
                 name = a.name,
-                assetTag = a.assetTag,
                 assetTypeName = a.assetType?.name ?: "",
                 createdAt = a.createdAt
             )
@@ -262,7 +259,6 @@ class DashboardController(
             UnassignedAssetDto(
                 id = a.id,
                 name = a.name,
-                assetTag = a.assetTag,
                 assetTypeName = a.assetType?.name ?: ""
             )
         }

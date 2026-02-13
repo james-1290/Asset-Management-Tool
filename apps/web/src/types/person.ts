@@ -50,7 +50,6 @@ export interface PersonHistory {
 export interface AssignedAsset {
   id: string;
   name: string;
-  assetTag: string;
   serialNumber: string | null;
   status: string;
   assetTypeName: string;

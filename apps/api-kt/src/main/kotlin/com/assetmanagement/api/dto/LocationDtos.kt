@@ -31,7 +31,6 @@ data class UpdateLocationRequest(
 data class LocationAssetDto(
     val id: UUID,
     val name: String,
-    val assetTag: String,
     val assetTypeName: String?,
     val status: String,
     val assignedPersonName: String?

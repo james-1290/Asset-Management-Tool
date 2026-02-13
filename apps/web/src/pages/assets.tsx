@@ -43,7 +43,7 @@ import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-d
 // Map TanStack column IDs to backend sortBy values
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
-  assetTag: "assetTag",
+  serialNumber: "serialNumber",
   status: "status",
   assetTypeName: "assetTypeName",
   locationName: "locationName",
@@ -408,14 +408,10 @@ export default function AssetsPage() {
 
     const data = {
       name: values.name,
-      assetTag: values.assetTag,
-      serialNumber: values.serialNumber || null,
+      serialNumber: values.serialNumber,
       status: values.status || "Available",
       assetTypeId: values.assetTypeId,
-      locationId:
-        values.locationId && values.locationId !== "none"
-          ? values.locationId
-          : null,
+      locationId: values.locationId,
       assignedPersonId:
         values.assignedPersonId && values.assignedPersonId !== "none"
           ? values.assignedPersonId
@@ -467,7 +463,6 @@ export default function AssetsPage() {
       checkDuplicatesMutation.mutate(
         {
           name: data.name,
-          assetTag: data.assetTag,
           serialNumber: data.serialNumber || undefined,
         },
         {
@@ -686,7 +681,7 @@ export default function AssetsPage() {
           if (!open) setArchivingAsset(null);
         }}
         title="Delete asset"
-        description={`Are you sure you want to delete "${archivingAsset?.name}" (${archivingAsset?.assetTag})? This action can be undone later.`}
+        description={`Are you sure you want to delete "${archivingAsset?.name}"? This action can be undone later.`}
         confirmLabel="Delete"
         onConfirm={handleArchive}
         loading={archiveMutation.isPending}

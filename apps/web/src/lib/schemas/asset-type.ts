@@ -26,6 +26,7 @@ export const assetTypeSchema = z.object({
     .max(200, "Name must be 200 characters or less"),
   description: z.string().max(500).optional().or(z.literal("")),
   defaultDepreciationMonths: z.string().optional().or(z.literal("")),
+  nameTemplate: z.string().max(500).optional().or(z.literal("")),
   customFields: z.array(customFieldDefinitionSchema),
 });
 

@@ -40,7 +40,7 @@ export function UnassignedAssetsList({ data, isLoading }: UnassignedAssetsListPr
                     {asset.name}
                   </Link>
                   <p className="text-xs text-muted-foreground truncate">
-                    {asset.assetTag} &middot; {asset.assetTypeName}
+                    {asset.assetTypeName}
                   </p>
                 </div>
               </div>

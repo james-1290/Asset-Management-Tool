@@ -51,8 +51,6 @@ interface AssetTypeRepository : JpaRepository<AssetType, UUID>, JpaSpecification
 
 @Repository
 interface AssetRepository : JpaRepository<Asset, UUID>, JpaSpecificationExecutor<Asset> {
-    fun findByAssetTag(assetTag: String): Asset?
-    fun existsByAssetTag(assetTag: String): Boolean
     fun countByIsArchivedFalse(): Long
 }
 

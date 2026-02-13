@@ -6,7 +6,6 @@ export interface DuplicateCheckResult {
 
 export interface CheckAssetDuplicatesRequest {
   name?: string;
-  assetTag?: string;
   serialNumber?: string;
   excludeId?: string;
 }

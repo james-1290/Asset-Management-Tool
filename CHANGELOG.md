@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-02-13 13:41 - Remove asset tag, add naming templates, enforce required fields
+
+- **Removed asset tag** from entire stack (~43 files). Asset tag column made nullable in DB, removed from all forms, columns, search, CSV import/export, dashboard widgets, and reports. Name is now the primary identifier.
+- **Naming templates per asset type**: Asset types can define a `nameTemplate` (e.g., `COAD-%SERIALNUMBER%`) that auto-generates asset names during creation. Supports `%SERIALNUMBER%` and `%ASSETTYPENAME%` variables. Users can override the generated name.
+- **Required field enforcement**: Serial number, location, and purchase date are now mandatory on both frontend (zod validation) and backend (controller validation with 400 responses).
+- **Auto-fill depreciation**: When creating an asset, selecting an asset type with a default depreciation period auto-fills the depreciation months field.
+- DB migration V005: `asset_tag` nullable + dropped unique index, `name_template` added to `asset_types`
+
 ## 2026-02-13 12:31 - Fix depreciation without purchase date
 
 - Depreciation fields (monthly, total, book value) now compute even without a purchase date
