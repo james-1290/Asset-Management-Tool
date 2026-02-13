@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-02-13 20:36 - Prevent deleting types that are in use
+
+- **Asset types**: Cannot delete an asset type if active (non-archived) assets reference it. Returns 409 with descriptive error message.
+- **Certificate types**: Same protection — cannot delete if certificates reference the type.
+- **Application types**: Same protection — cannot delete if applications reference the type.
+- **Bulk archive**: Skips types that are in use (counts as failed in the response).
+- **Frontend**: Error toasts now surface the server's specific error message (e.g. "Cannot delete 'Laptop' because it is used by 11 asset(s)").
+
 ## 2026-02-13 19:45 - Global design consistency across all pages
 
 - **Borderless tables**: All DataTable pages (certificates, applications, types, locations, people, audit log) now use `variant="borderless"` matching the assets page aesthetic

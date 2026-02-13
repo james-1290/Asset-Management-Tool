@@ -5,6 +5,7 @@ import com.assetmanagement.api.model.ApplicationType
 import com.assetmanagement.api.model.CustomFieldDefinition
 import com.assetmanagement.api.model.enums.CustomFieldType
 import com.assetmanagement.api.model.enums.EntityType
+import com.assetmanagement.api.repository.ApplicationRepository
 import com.assetmanagement.api.repository.ApplicationTypeRepository
 import com.assetmanagement.api.repository.CustomFieldDefinitionRepository
 import com.assetmanagement.api.service.AuditEntry
@@ -24,6 +25,7 @@ import java.util.*
 @RequestMapping("/api/v1/applicationtypes")
 class ApplicationTypesController(
     private val applicationTypeRepository: ApplicationTypeRepository,
+    private val applicationRepository: ApplicationRepository,
     private val customFieldDefinitionRepository: CustomFieldDefinitionRepository,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
@@ -106,6 +108,7 @@ class ApplicationTypesController(
     fun bulkArchive(@RequestBody request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {
         var s = 0; var f = 0
         request.ids.forEach { id -> val t = applicationTypeRepository.findById(id).orElse(null); if (t == null || t.isArchived) { f++; return@forEach }
+            val count = applicationRepository.countByApplicationTypeIdAndIsArchivedFalse(id); if (count > 0) { f++; return@forEach }
             t.isArchived = true; t.updatedAt = Instant.now(); applicationTypeRepository.save(t)
             auditService.log(AuditEntry("Archived", "ApplicationType", t.id.toString(), t.name, "Bulk archived", currentUserService.userId, currentUserService.userName)); s++ }
         return ResponseEntity.ok(BulkActionResponse(s, f))
@@ -114,6 +117,10 @@ class ApplicationTypesController(
     @DeleteMapping("/{id}")
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
         val t = applicationTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+        val appCount = applicationRepository.countByApplicationTypeIdAndIsArchivedFalse(id)
+        if (appCount > 0) {
+            return ResponseEntity.status(409).body(mapOf("error" to "Cannot delete \"${t.name}\" because it is used by $appCount application(s). Reassign or delete those applications first."))
+        }
         t.isArchived = true; t.updatedAt = Instant.now(); applicationTypeRepository.save(t)
         auditService.log(AuditEntry("Archived", "ApplicationType", t.id.toString(), t.name,
             "Archived application type \"${t.name}\"", currentUserService.userId, currentUserService.userName))
