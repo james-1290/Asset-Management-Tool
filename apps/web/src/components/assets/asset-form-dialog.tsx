@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -30,6 +30,7 @@ import { PersonCombobox } from "../person-combobox";
 import { CustomFieldsSection } from "./custom-fields-section";
 import { assetSchema, type AssetFormValues } from "../../lib/schemas/asset";
 import { useCustomFieldDefinitions } from "../../hooks/use-asset-types";
+import { useAssetTemplates } from "../../hooks/use-asset-templates";
 import type { Asset } from "../../types/asset";
 import type { AssetType } from "../../types/asset-type";
 import type { Location } from "../../types/location";
@@ -51,6 +52,7 @@ interface AssetFormDialogProps {
   locations: Location[];
   onSubmit: (values: AssetFormValues) => void;
   loading?: boolean;
+  initialValues?: Partial<AssetFormValues>;
 }
 
 export function AssetFormDialog({
@@ -61,10 +63,12 @@ export function AssetFormDialog({
   locations,
   onSubmit,
   loading,
+  initialValues,
 }: AssetFormDialogProps) {
   const isEditing = !!asset;
   const statusManuallySet = useRef(false);
   const nameManuallyEdited = useRef(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
@@ -88,6 +92,9 @@ export function AssetFormDialog({
   const watchedSerialNumber = form.watch("serialNumber");
   const { data: customFieldDefs } =
     useCustomFieldDefinitions(watchedAssetTypeId || undefined);
+  const { data: templates } = useAssetTemplates(
+    !isEditing && watchedAssetTypeId ? watchedAssetTypeId : undefined,
+  );
 
   // Auto-fill depreciation months from asset type default (only when creating)
   useEffect(() => {
@@ -117,10 +124,18 @@ export function AssetFormDialog({
     form.setValue("name", generatedName);
   }, [watchedAssetTypeId, watchedSerialNumber, isEditing, assetTypes, form]);
 
+  // Reset template picker when asset type changes
+  useEffect(() => {
+    if (!isEditing) {
+      setSelectedTemplateId("");
+    }
+  }, [watchedAssetTypeId, isEditing]);
+
   useEffect(() => {
     if (open) {
       statusManuallySet.current = false;
       nameManuallyEdited.current = isEditing;
+      setSelectedTemplateId("");
 
       const cfValues: Record<string, string> = {};
       if (asset?.customFieldValues) {
@@ -129,7 +144,7 @@ export function AssetFormDialog({
         }
       }
 
-      form.reset({
+      const defaultValues: AssetFormValues = {
         name: asset?.name ?? "",
         serialNumber: asset?.serialNumber ?? "",
         status: asset?.status ?? "Available",
@@ -148,9 +163,17 @@ export function AssetFormDialog({
           : "",
         notes: asset?.notes ?? "",
         customFieldValues: cfValues,
-      });
+      };
+
+      // Apply initialValues for cloning (create mode only)
+      if (!isEditing && initialValues) {
+        form.reset({ ...defaultValues, ...initialValues });
+        nameManuallyEdited.current = false;
+      } else {
+        form.reset(defaultValues);
+      }
     }
-  }, [open, asset, form, isEditing]);
+  }, [open, asset, form, isEditing, initialValues]);
 
   function handleAssignedPersonChange(personId: string) {
     form.setValue("assignedPersonId", personId);
@@ -169,6 +192,40 @@ export function AssetFormDialog({
   function handleStatusChange(status: string) {
     statusManuallySet.current = true;
     form.setValue("status", status);
+  }
+
+  function handleTemplateChange(templateId: string) {
+    setSelectedTemplateId(templateId);
+    if (templateId === "__none__" || !templateId) return;
+
+    const template = templates?.find((t) => t.id === templateId);
+    if (!template) return;
+
+    // Apply template defaults — only fill empty fields
+    if (template.purchaseCost != null && !form.getValues("purchaseCost")) {
+      form.setValue("purchaseCost", String(template.purchaseCost));
+    }
+    if (template.depreciationMonths != null && !form.getValues("depreciationMonths")) {
+      form.setValue("depreciationMonths", String(template.depreciationMonths));
+    }
+    if (template.locationId && !form.getValues("locationId")) {
+      form.setValue("locationId", template.locationId);
+    }
+    if (template.notes && !form.getValues("notes")) {
+      form.setValue("notes", template.notes);
+    }
+
+    // Merge custom field values
+    if (template.customFieldValues?.length) {
+      const currentCfv = form.getValues("customFieldValues") ?? {};
+      const merged = { ...currentCfv };
+      for (const cfv of template.customFieldValues) {
+        if (!merged[cfv.fieldDefinitionId]) {
+          merged[cfv.fieldDefinitionId] = cfv.value ?? "";
+        }
+      }
+      form.setValue("customFieldValues", merged);
+    }
   }
 
   return (
@@ -223,6 +280,28 @@ export function AssetFormDialog({
                 )}
               />
             </div>
+
+            {!isEditing && watchedAssetTypeId && templates && templates.length > 0 && (
+              <div>
+                <label className="text-sm font-medium">Template</label>
+                <Select
+                  value={selectedTemplateId}
+                  onValueChange={handleTemplateChange}
+                >
+                  <SelectTrigger className="w-full mt-1.5">
+                    <SelectValue placeholder="Apply a template (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">None</SelectItem>
+                    {templates.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <FormField
               control={form.control}

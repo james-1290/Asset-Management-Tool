@@ -143,3 +143,9 @@ interface AlertHistoryRepository : JpaRepository<AlertHistory, UUID> {
     fun existsByEntityTypeAndEntityIdAndThresholdDays(entityType: String, entityId: UUID, thresholdDays: Int): Boolean
     fun findAllByOrderBySentAtDesc(pageable: Pageable): Page<AlertHistory>
 }
+
+@Repository
+interface AssetTemplateRepository : JpaRepository<AssetTemplate, UUID> {
+    fun findByAssetTypeIdAndIsArchivedFalse(assetTypeId: UUID): List<AssetTemplate>
+    fun findByIsArchivedFalse(): List<AssetTemplate>
+}

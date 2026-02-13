@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-02-13 21:55 - Asset templates + asset cloning
+
+- **New entity: Asset Templates** — saved presets per asset type with default values for cost, depreciation, location, notes, and custom fields
+- **Backend**: Full CRUD at `POST/GET/PUT/DELETE /api/v1/asset-templates` with optional `?assetTypeId=` filter, custom field value support, and audit logging
+- **DB migration**: V006 — `asset_templates` table; custom field values reuse existing `custom_field_values` table
+- **Frontend**: Templates list page at `/asset-templates` with asset type filter, form dialog with custom fields support
+- **Template picker**: When creating a new asset, selecting an asset type shows a "Template" dropdown to pre-fill form fields (only fills empty fields)
+- **Asset cloning**: Clone button on asset detail page opens create form pre-filled from the source asset (type, location, cost, depreciation, notes, custom fields retained; name, serial number, assigned person cleared; status set to Available)
+- **Navigation**: Added "Asset Templates" under Inventory group in sidebar
+
 ## 2026-02-13 21:17 - Bulk edit for assets
 
 - **Backend**: New `POST /api/v1/assets/bulk-edit` endpoint — accepts optional fields (status, location, assigned person, notes) and applies only the provided fields to selected assets
