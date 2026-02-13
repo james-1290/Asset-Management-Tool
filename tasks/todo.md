@@ -117,6 +117,8 @@
 - [x] Location detail page (/locations/:id): location info card, list of assets/people/certificates at that location (no map)
 - [x] Depreciation tracking: depreciation method + useful life per asset type, auto-calculate book value, dashboard stat card
 - [x] Prevent deleting asset types that are in use on assets (return error if assets reference the type)
-- [ ] Relationship linking: many-to-many links between entities with type labels, "Related Items" section on detail pages
+- [ ] Bulk edit: select multiple assets, update shared fields across all at once (location, status, assigned person, etc.)
+- [ ] Asset cloning: "Create another like this" button on asset detail page, pre-fills form from existing asset
+- [ ] Asset kits / bundles: define kit templates (e.g. "New starter kit: laptop + monitor + keyboard"), assign or check out entire bundle at once, support bulk ordering
 - [x] Sidebar nav grouping: collapsible groups (Inventory, Certificates, Software, Organisation) with localStorage persistence
 - [x] Global design consistency: borderless tables, inline FilterChip filters, compound name cells, count badges, standardized toolbar layouts, dashboard redesign
