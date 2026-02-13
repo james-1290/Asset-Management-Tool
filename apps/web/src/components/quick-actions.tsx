@@ -70,14 +70,14 @@ export function QuickActions() {
     createAsset.mutate(
       {
         name: values.name,
-        assetTag: values.assetTag,
-        serialNumber: values.serialNumber || undefined,
+        serialNumber: values.serialNumber,
         status: values.status || "Available",
         assetTypeId: values.assetTypeId,
-        locationId: values.locationId && values.locationId !== "none" ? values.locationId : undefined,
+        locationId: values.locationId,
         assignedPersonId: values.assignedPersonId && values.assignedPersonId !== "none" ? values.assignedPersonId : undefined,
         purchaseDate: values.purchaseDate || undefined,
         purchaseCost: values.purchaseCost ? Number(values.purchaseCost) : undefined,
+        depreciationMonths: values.depreciationMonths ? Number(values.depreciationMonths) : undefined,
         warrantyExpiryDate: values.warrantyExpiryDate || undefined,
         notes: values.notes || undefined,
         customFieldValues: cfValues.length > 0 ? cfValues : undefined,
@@ -98,7 +98,6 @@ export function QuickActions() {
     checkAssetDuplicates.mutate(
       {
         name: values.name,
-        assetTag: values.assetTag,
         serialNumber: values.serialNumber || undefined,
       },
       {

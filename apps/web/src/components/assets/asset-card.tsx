@@ -1,4 +1,4 @@
-import { MapPin, Tag, Pencil, Trash2 } from "lucide-react";
+import { MapPin, Pencil, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { AssetStatusBadge } from "./asset-status-badge";
 import type { Asset } from "../../types/asset";
@@ -15,10 +15,11 @@ export function AssetCard({ asset, onEdit, onArchive }: AssetCardProps) {
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{asset.name}</p>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Tag className="h-3 w-3" />
-            <span>{asset.assetTag}</span>
-          </div>
+          {asset.serialNumber && (
+            <p className="text-xs text-muted-foreground truncate">
+              S/N: {asset.serialNumber}
+            </p>
+          )}
         </div>
         <AssetStatusBadge status={asset.status} />
       </div>

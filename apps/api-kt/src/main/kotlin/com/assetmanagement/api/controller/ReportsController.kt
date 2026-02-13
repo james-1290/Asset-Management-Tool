@@ -363,7 +363,7 @@ class ReportsController(
                 email = p.email,
                 assignedAssetCount = activeAssets.size,
                 assets = activeAssets.map { a ->
-                    AssignedAssetBriefDto(id = a.id, name = a.name, assetTag = a.assetTag)
+                    AssignedAssetBriefDto(id = a.id, name = a.name)
                 }
             )
         }.sortedByDescending { it.assignedAssetCount }
@@ -372,19 +372,19 @@ class ReportsController(
 
         if (format.equals("csv", ignoreCase = true)) {
             return csvResponse("assignments.csv") { writer ->
-                writer.writeNext(arrayOf("Person", "Email", "AssetCount", "AssetName", "AssetTag"))
+                writer.writeNext(arrayOf("Person", "Email", "AssetCount", "AssetName"))
                 personDtos.forEach { person ->
                     if (person.assets.isEmpty()) {
                         writer.writeNext(arrayOf(
                             person.fullName, person.email ?: "",
-                            person.assignedAssetCount.toString(), "", ""
+                            person.assignedAssetCount.toString(), ""
                         ))
                     } else {
                         person.assets.forEach { asset ->
                             writer.writeNext(arrayOf(
                                 person.fullName, person.email ?: "",
                                 person.assignedAssetCount.toString(),
-                                asset.name, asset.assetTag
+                                asset.name
                             ))
                         }
                     }
@@ -427,7 +427,6 @@ class ReportsController(
             WarrantyExpiryItemDto(
                 id = a.id,
                 name = a.name,
-                assetTag = a.assetTag,
                 assetTypeName = a.assetType?.name ?: "",
                 warrantyExpiryDate = a.warrantyExpiryDate!!,
                 daysUntilExpiry = ChronoUnit.DAYS.between(now, a.warrantyExpiryDate!!).toInt()
@@ -448,7 +447,6 @@ class ReportsController(
             OldestAssetDto(
                 id = a.id,
                 name = a.name,
-                assetTag = a.assetTag,
                 assetTypeName = a.assetType?.name ?: "",
                 purchaseDate = a.purchaseDate!!,
                 ageDays = ChronoUnit.DAYS.between(a.purchaseDate!!, now).toInt()
@@ -461,20 +459,20 @@ class ReportsController(
                 byAge.forEach { writer.writeNext(arrayOf(it.bucket, it.count.toString())) }
                 writer.writeNext(arrayOf("", ""))
                 writer.writeNext(arrayOf("Past Warranty Assets", ""))
-                writer.writeNext(arrayOf("Name", "AssetTag", "Type", "WarrantyExpiry", "DaysOverdue"))
+                writer.writeNext(arrayOf("Name", "Type", "WarrantyExpiry", "DaysOverdue"))
                 pastWarranty.forEach { item ->
                     writer.writeNext(arrayOf(
-                        item.name, item.assetTag, item.assetTypeName,
+                        item.name, item.assetTypeName,
                         dateFormat.format(item.warrantyExpiryDate),
                         Math.abs(item.daysUntilExpiry).toString()
                     ))
                 }
                 writer.writeNext(arrayOf("", ""))
                 writer.writeNext(arrayOf("Oldest Assets", ""))
-                writer.writeNext(arrayOf("Name", "AssetTag", "Type", "PurchaseDate", "AgeDays"))
+                writer.writeNext(arrayOf("Name", "Type", "PurchaseDate", "AgeDays"))
                 oldestAssets.forEach { item ->
                     writer.writeNext(arrayOf(
-                        item.name, item.assetTag, item.assetTypeName,
+                        item.name, item.assetTypeName,
                         dateFormat.format(item.purchaseDate),
                         item.ageDays.toString()
                     ))

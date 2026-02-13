@@ -40,7 +40,7 @@ export function RecentlyAddedList({ data, isLoading }: RecentlyAddedListProps) {
                     {asset.name}
                   </Link>
                   <p className="text-xs text-muted-foreground truncate">
-                    {asset.assetTag} &middot; {asset.assetTypeName}
+                    {asset.assetTypeName}
                   </p>
                 </div>
                 <span className="text-xs text-muted-foreground shrink-0 ml-2">

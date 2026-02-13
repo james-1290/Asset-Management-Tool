@@ -4,6 +4,7 @@
 
 ## Done
 
+- [x] Depreciation tracking (straight-line, per-asset-type defaults, computed on-the-fly, dashboard stat card)
 - [x] SAML 2.0 SSO with Microsoft Entra ID (SP-initiated, JIT provisioning, toggleable)
 - [x] SCIM 2.0 provisioning server (user lifecycle management from Entra)
 - [x] Auth guards for SSO users (reject local login, block password reset)
@@ -114,6 +115,7 @@
 - [x] Duplicate detection: warn on create if similar record exists (fuzzy match on name/serial/email), offer to navigate to existing
 - [x] Data import (CSV upload): bulk import for all 5 entity types with validation preview, error reporting, template download
 - [x] Location detail page (/locations/:id): location info card, list of assets/people/certificates at that location (no map)
-- [ ] Depreciation tracking: depreciation method + useful life per asset type, auto-calculate book value, dashboard stat card
+- [x] Depreciation tracking: depreciation method + useful life per asset type, auto-calculate book value, dashboard stat card
+- [ ] Prevent deleting asset types that are in use on assets (return error if assets reference the type)
 - [ ] Relationship linking: many-to-many links between entities with type labels, "Related Items" section on detail pages
 - [x] Sidebar nav grouping: collapsible groups (Inventory, Certificates, Software, Organisation) with localStorage persistence

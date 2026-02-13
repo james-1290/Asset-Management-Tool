@@ -102,7 +102,7 @@ export function AssignmentsReport() {
                     </TableCell>
                     <TableCell className="max-w-xs truncate">
                       {person.assets
-                        .map((a) => `${a.name} (${a.assetTag})`)
+                        .map((a) => a.name)
                         .join(", ")}
                     </TableCell>
                   </TableRow>

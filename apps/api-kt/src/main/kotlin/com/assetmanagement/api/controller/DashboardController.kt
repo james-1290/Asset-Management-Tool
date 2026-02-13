@@ -9,6 +9,7 @@ import jakarta.persistence.Tuple
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
@@ -31,7 +32,35 @@ class DashboardController(
             BigDecimal::class.java
         ).singleResult ?: BigDecimal.ZERO
 
-        return ResponseEntity.ok(DashboardSummaryDto(totalAssets, totalValue))
+        // Compute total book value (purchase cost minus straight-line depreciation)
+        @Suppress("UNCHECKED_CAST")
+        val depreciableAssets = em.createQuery(
+            """SELECT a.purchaseCost, a.purchaseDate, a.depreciationMonths
+               FROM com.assetmanagement.api.model.Asset a
+               WHERE a.isArchived = false
+               AND a.purchaseCost IS NOT NULL
+               AND a.purchaseDate IS NOT NULL"""
+        ).resultList as List<Array<Any>>
+
+        val now = Instant.now()
+        var totalBookValue = BigDecimal.ZERO
+        for (row in depreciableAssets) {
+            val cost = row[0] as BigDecimal
+            val purchaseDate = row[1] as Instant
+            val months = row[2] as? Int
+
+            if (months != null && months > 0) {
+                val monthly = cost.divide(BigDecimal(months), 2, RoundingMode.HALF_UP)
+                val elapsed = ChronoUnit.DAYS.between(purchaseDate, now).toBigDecimal()
+                    .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong().coerceIn(0, months.toLong())
+                val totalDepr = (monthly * BigDecimal(elapsed)).setScale(2, RoundingMode.HALF_UP)
+                totalBookValue += (cost - totalDepr).coerceAtLeast(BigDecimal.ZERO)
+            } else {
+                totalBookValue += cost
+            }
+        }
+
+        return ResponseEntity.ok(DashboardSummaryDto(totalAssets, totalValue, totalBookValue.setScale(2, RoundingMode.HALF_UP)))
     }
 
     // 2. GET /status-breakdown - group by AssetStatus
@@ -76,7 +105,6 @@ class DashboardController(
             WarrantyExpiryItemDto(
                 id = a.id,
                 name = a.name,
-                assetTag = a.assetTag,
                 assetTypeName = a.assetType?.name ?: "",
                 warrantyExpiryDate = a.warrantyExpiryDate!!,
                 daysUntilExpiry = ChronoUnit.DAYS.between(now, a.warrantyExpiryDate!!).toInt()
@@ -145,7 +173,6 @@ class DashboardController(
             CheckedOutAssetDto(
                 id = a.id,
                 name = a.name,
-                assetTag = a.assetTag,
                 assignedPersonName = a.assignedPerson?.fullName,
                 updatedAt = a.updatedAt
             )
@@ -173,7 +200,6 @@ class DashboardController(
             RecentlyAddedAssetDto(
                 id = a.id,
                 name = a.name,
-                assetTag = a.assetTag,
                 assetTypeName = a.assetType?.name ?: "",
                 createdAt = a.createdAt
             )
@@ -233,7 +259,6 @@ class DashboardController(
             UnassignedAssetDto(
                 id = a.id,
                 name = a.name,
-                assetTag = a.assetTag,
                 assetTypeName = a.assetType?.name ?: ""
             )
         }

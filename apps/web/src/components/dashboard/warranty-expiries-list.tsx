@@ -100,7 +100,7 @@ export function WarrantyExpiriesList({
                     {item.name}
                   </Link>
                   <p className="text-xs text-muted-foreground truncate">
-                    {item.assetTag} &middot; {item.assetTypeName}
+                    {item.assetTypeName}
                   </p>
                 </div>
                 <div className="ml-2 shrink-0 flex items-center gap-2">

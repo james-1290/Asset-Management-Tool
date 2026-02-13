@@ -7,7 +7,7 @@ import java.util.*
 data class AssetDto(
     val id: UUID,
     val name: String,
-    val assetTag: String,
+    val assetTag: String? = null,
     val serialNumber: String?,
     val status: String,
     val assetTypeId: UUID,
@@ -20,6 +20,9 @@ data class AssetDto(
     val purchaseCost: BigDecimal?,
     val warrantyExpiryDate: Instant?,
     val depreciationMonths: Int? = null,
+    val bookValue: BigDecimal? = null,
+    val totalDepreciation: BigDecimal? = null,
+    val monthlyDepreciation: BigDecimal? = null,
     val soldDate: Instant?,
     val soldPrice: BigDecimal?,
     val retiredDate: Instant?,
@@ -32,30 +35,30 @@ data class AssetDto(
 
 data class CreateAssetRequest(
     val name: String,
-    val assetTag: String,
-    val serialNumber: String? = null,
+    val serialNumber: String,
     val status: String? = null,
     val assetTypeId: UUID,
-    val locationId: UUID? = null,
+    val locationId: UUID,
     val assignedPersonId: UUID? = null,
-    val purchaseDate: Instant? = null,
+    val purchaseDate: Instant,
     val purchaseCost: BigDecimal? = null,
     val warrantyExpiryDate: Instant? = null,
+    val depreciationMonths: Int? = null,
     val notes: String? = null,
     val customFieldValues: List<CustomFieldValueInput>? = null
 )
 
 data class UpdateAssetRequest(
     val name: String,
-    val assetTag: String,
-    val serialNumber: String? = null,
+    val serialNumber: String,
     val status: String? = null,
     val assetTypeId: UUID,
-    val locationId: UUID? = null,
+    val locationId: UUID,
     val assignedPersonId: UUID? = null,
-    val purchaseDate: Instant? = null,
+    val purchaseDate: Instant,
     val purchaseCost: BigDecimal? = null,
     val warrantyExpiryDate: Instant? = null,
+    val depreciationMonths: Int? = null,
     val notes: String? = null,
     val customFieldValues: List<CustomFieldValueInput>? = null
 )

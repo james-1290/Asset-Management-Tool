@@ -39,11 +39,11 @@ export function CheckedOutList({ data, isLoading }: CheckedOutListProps) {
                   >
                     {asset.name}
                   </Link>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {asset.assetTag}
-                    {asset.assignedPersonName &&
-                      ` \u00B7 ${asset.assignedPersonName}`}
-                  </p>
+                  {asset.assignedPersonName && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      {asset.assignedPersonName}
+                    </p>
+                  )}
                 </div>
                 <span className="text-xs text-muted-foreground shrink-0 ml-2">
                   {new Date(asset.updatedAt).toLocaleDateString()}

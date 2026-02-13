@@ -23,6 +23,12 @@ class AssetType(
     @Column(name = "created_at", nullable = false)
     var createdAt: Instant = Instant.now(),
 
+    @Column(name = "default_depreciation_months")
+    var defaultDepreciationMonths: Int? = null,
+
+    @Column(name = "name_template", length = 500)
+    var nameTemplate: String? = null,
+
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = Instant.now(),
 

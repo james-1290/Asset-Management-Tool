@@ -110,14 +110,10 @@ export default function AssetDetailPage() {
 
     const data = {
       name: values.name,
-      assetTag: values.assetTag,
-      serialNumber: values.serialNumber || null,
+      serialNumber: values.serialNumber,
       status: values.status || "Available",
       assetTypeId: values.assetTypeId,
-      locationId:
-        values.locationId && values.locationId !== "none"
-          ? values.locationId
-          : null,
+      locationId: values.locationId,
       assignedPersonId:
         values.assignedPersonId && values.assignedPersonId !== "none"
           ? values.assignedPersonId
@@ -130,6 +126,9 @@ export default function AssetDetailPage() {
         : null,
       warrantyExpiryDate: values.warrantyExpiryDate
         ? `${values.warrantyExpiryDate}T00:00:00Z`
+        : null,
+      depreciationMonths: values.depreciationMonths
+        ? parseInt(values.depreciationMonths, 10)
         : null,
       notes: values.notes || null,
       customFieldValues,
@@ -189,7 +188,7 @@ export default function AssetDetailPage() {
               </h1>
               <AssetStatusBadge status={asset.status} />
             </div>
-            <p className="text-sm text-muted-foreground">{asset.assetTag}</p>
+            <p className="text-sm text-muted-foreground">{asset.serialNumber}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -232,7 +231,6 @@ export default function AssetDetailPage() {
           </CardHeader>
           <CardContent>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-              <InfoItem label="Asset Tag" value={asset.assetTag} />
               <InfoItem label="Name" value={asset.name} />
               <InfoItem label="Type" value={asset.assetTypeName} />
               <InfoItem label="Serial Number" value={asset.serialNumber} />
@@ -242,6 +240,14 @@ export default function AssetDetailPage() {
               <InfoItem label="Purchase Cost" value={formatCurrency(asset.purchaseCost)} />
               <InfoItem label="Warranty Expiry" value={formatDate(asset.warrantyExpiryDate)} />
               <InfoItem label="Status" value={asset.status} />
+              {asset.depreciationMonths != null && (
+                <>
+                  <InfoItem label="Depreciation Period" value={`${asset.depreciationMonths} months`} />
+                  <InfoItem label="Monthly Depreciation" value={formatCurrency(asset.monthlyDepreciation)} />
+                  <InfoItem label="Total Depreciation" value={formatCurrency(asset.totalDepreciation)} />
+                  <InfoItem label="Book Value" value={formatCurrency(asset.bookValue)} />
+                </>
+              )}
               {asset.retiredDate && (
                 <InfoItem label="Retired Date" value={formatDate(asset.retiredDate)} />
               )}

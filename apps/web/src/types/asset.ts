@@ -12,7 +12,7 @@ import type { CustomFieldValueDto, CustomFieldValueInput } from "./custom-field"
 export interface Asset {
   id: string;
   name: string;
-  assetTag: string;
+  assetTag?: string | null;
   serialNumber: string | null;
   status: AssetStatus;
   assetTypeId: string;
@@ -24,6 +24,10 @@ export interface Asset {
   purchaseDate: string | null;
   purchaseCost: number | null;
   warrantyExpiryDate: string | null;
+  depreciationMonths: number | null;
+  bookValue: number | null;
+  totalDepreciation: number | null;
+  monthlyDepreciation: number | null;
   soldDate: string | null;
   soldPrice: number | null;
   retiredDate: string | null;
@@ -36,15 +40,15 @@ export interface Asset {
 
 export interface CreateAssetRequest {
   name: string;
-  assetTag: string;
-  serialNumber?: string | null;
+  serialNumber: string;
   status?: string | null;
   assetTypeId: string;
-  locationId?: string | null;
+  locationId: string;
   assignedPersonId?: string | null;
-  purchaseDate?: string | null;
+  purchaseDate: string;
   purchaseCost?: number | null;
   warrantyExpiryDate?: string | null;
+  depreciationMonths?: number | null;
   notes?: string | null;
   customFieldValues?: CustomFieldValueInput[];
 }
@@ -70,15 +74,15 @@ export interface SellAssetRequest {
 
 export interface UpdateAssetRequest {
   name: string;
-  assetTag: string;
-  serialNumber?: string | null;
+  serialNumber: string;
   status?: string | null;
   assetTypeId: string;
-  locationId?: string | null;
+  locationId: string;
   assignedPersonId?: string | null;
-  purchaseDate?: string | null;
+  purchaseDate: string;
   purchaseCost?: number | null;
   warrantyExpiryDate?: string | null;
+  depreciationMonths?: number | null;
   notes?: string | null;
   customFieldValues?: CustomFieldValueInput[];
 }

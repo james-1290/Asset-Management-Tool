@@ -50,7 +50,6 @@ export interface PersonAssignment {
 export interface AssignedAssetBrief {
   id: string;
   name: string;
-  assetTag: string;
 }
 
 export interface AssignmentsReport {
@@ -62,7 +61,6 @@ export interface AssignmentsReport {
 export interface OldestAsset {
   id: string;
   name: string;
-  assetTag: string;
   assetTypeName: string;
   purchaseDate: string;
   ageDays: number;

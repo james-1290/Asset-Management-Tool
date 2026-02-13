@@ -4,6 +4,8 @@ export interface AssetType {
   id: string;
   name: string;
   description: string | null;
+  defaultDepreciationMonths: number | null;
+  nameTemplate: string | null;
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
@@ -13,11 +15,15 @@ export interface AssetType {
 export interface CreateAssetTypeRequest {
   name: string;
   description?: string | null;
+  defaultDepreciationMonths?: number | null;
+  nameTemplate?: string | null;
   customFields?: CustomFieldDefinitionInput[];
 }
 
 export interface UpdateAssetTypeRequest {
   name: string;
   description?: string | null;
+  defaultDepreciationMonths?: number | null;
+  nameTemplate?: string | null;
   customFields?: CustomFieldDefinitionInput[];
 }

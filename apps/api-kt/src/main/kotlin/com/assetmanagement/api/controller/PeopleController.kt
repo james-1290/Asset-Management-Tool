@@ -105,7 +105,7 @@ class PeopleController(
             cb.and(cb.equal(root.get<UUID>("assignedPersonId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
         }
         val assets = assetRepository.findAll(spec, Sort.by("name")).map { a ->
-            AssignedAssetDto(a.id, a.name, a.assetTag, a.serialNumber, a.status.name, a.assetType?.name ?: "", a.location?.name)
+            AssignedAssetDto(a.id, a.name, a.serialNumber, a.status.name, a.assetType?.name ?: "", a.location?.name)
         }
         return ResponseEntity.ok(assets)
     }

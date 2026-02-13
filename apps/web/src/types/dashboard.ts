@@ -1,6 +1,7 @@
 export interface DashboardSummary {
   totalAssets: number;
   totalValue: number;
+  totalBookValue: number;
 }
 
 export interface StatusBreakdownItem {
@@ -11,7 +12,6 @@ export interface StatusBreakdownItem {
 export interface WarrantyExpiryItem {
   id: string;
   name: string;
-  assetTag: string;
   assetTypeName: string;
   warrantyExpiryDate: string;
   daysUntilExpiry: number;
@@ -25,7 +25,6 @@ export interface AssetsByGroupItem {
 export interface CheckedOutAsset {
   id: string;
   name: string;
-  assetTag: string;
   assignedPersonName: string | null;
   updatedAt: string;
 }
@@ -33,7 +32,6 @@ export interface CheckedOutAsset {
 export interface RecentlyAddedAsset {
   id: string;
   name: string;
-  assetTag: string;
   assetTypeName: string;
   createdAt: string;
 }
@@ -46,7 +44,6 @@ export interface AssetsByAgeBucket {
 export interface UnassignedAsset {
   id: string;
   name: string;
-  assetTag: string;
   assetTypeName: string;
 }
 

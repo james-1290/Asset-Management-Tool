@@ -208,7 +208,6 @@ export default function PersonDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Asset Tag</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Status</TableHead>
@@ -222,14 +221,6 @@ export default function PersonDetailPage() {
                           <Link
                             to={`/assets/${asset.id}`}
                             className="font-medium text-primary hover:underline"
-                          >
-                            {asset.assetTag}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <Link
-                            to={`/assets/${asset.id}`}
-                            className="hover:underline"
                           >
                             {asset.name}
                           </Link>

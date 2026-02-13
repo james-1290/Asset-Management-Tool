@@ -29,8 +29,8 @@ class SearchController(
 
         val assets = assetRepository.findAll({ root, _, cb ->
             cb.and(cb.equal(root.get<Boolean>("isArchived"), false),
-                cb.or(cb.like(cb.lower(root.get("name")), pattern), cb.like(cb.lower(root.get("assetTag")), pattern)))
-        }, PageRequest.of(0, lim, Sort.by("name"))).content.map { SearchResultItem(it.id, it.name, "Tag: ${it.assetTag}") }
+                cb.or(cb.like(cb.lower(root.get("name")), pattern), cb.like(cb.lower(root.get("serialNumber")), pattern)))
+        }, PageRequest.of(0, lim, Sort.by("name"))).content.map { SearchResultItem(it.id, it.name, "S/N: ${it.serialNumber ?: "—"}") }
 
         val certs = certificateRepository.findAll({ root, _, cb ->
             cb.and(cb.equal(root.get<Boolean>("isArchived"), false), cb.like(cb.lower(root.get("name")), pattern))

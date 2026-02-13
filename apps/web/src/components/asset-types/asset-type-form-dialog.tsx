@@ -47,6 +47,8 @@ export function AssetTypeFormDialog({
     defaultValues: {
       name: "",
       description: "",
+      defaultDepreciationMonths: "",
+      nameTemplate: "",
       customFields: [],
     },
   });
@@ -56,6 +58,10 @@ export function AssetTypeFormDialog({
       form.reset({
         name: assetType?.name ?? "",
         description: assetType?.description ?? "",
+        defaultDepreciationMonths: assetType?.defaultDepreciationMonths != null
+          ? String(assetType.defaultDepreciationMonths)
+          : "",
+        nameTemplate: assetType?.nameTemplate ?? "",
         customFields:
           assetType?.customFields?.map((cf, i) => ({
             id: cf.id,
@@ -104,6 +110,44 @@ export function AssetTypeFormDialog({
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="defaultDepreciationMonths"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default Depreciation (months)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="e.g. 36"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="nameTemplate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name Template</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g. COAD-%SERIALNUMBER%"
+                      {...field}
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Auto-generates asset names. Variables: %SERIALNUMBER%, %ASSETTYPENAME%
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
