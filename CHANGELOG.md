@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-02-13 12:31 - Fix depreciation without purchase date
+
+- Depreciation fields (monthly, total, book value) now compute even without a purchase date
+- Without purchase date: monthly depreciation shown, total depreciation = £0, book value = full cost
+- Fix applies to both API responses and CSV export
+
 ## 2026-02-12 17:37 - Add depreciation tracking
 
 - Straight-line depreciation computed on-the-fly: `bookValue`, `totalDepreciation`, `monthlyDepreciation`
