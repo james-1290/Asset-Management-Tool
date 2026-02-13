@@ -15,14 +15,16 @@ export function ApplicationTypesToolbar({
   onSearchChange,
 }: ApplicationTypesToolbarProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-1 items-center gap-2">
       <Input
         placeholder="Search application types…"
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        className="max-w-sm"
+        className="max-w-[240px]"
       />
-      <ColumnToggle table={table} />
+      <div className="ml-auto">
+        <ColumnToggle table={table} />
+      </div>
     </div>
   );
 }

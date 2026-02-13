@@ -168,7 +168,10 @@ export function AppSidebar() {
       <SidebarHeader className="border-b h-14 px-3 !flex-row items-center">
         {/* Expanded: title + collapse chevron */}
         <div className="flex flex-1 items-center gap-2 overflow-hidden group-data-[collapsible=icon]:hidden">
-          <span className="text-lg font-semibold truncate">Asset Manager</span>
+          <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary text-primary-foreground text-xs font-semibold shrink-0">
+            AM
+          </div>
+          <span className="text-sm font-semibold truncate">Asset Manager</span>
           <div className="ml-auto">
             <Button
               variant="ghost"

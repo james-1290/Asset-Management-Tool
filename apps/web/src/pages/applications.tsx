@@ -499,21 +499,29 @@ export default function ApplicationsPage() {
         title="Applications / Licences"
         description="Track software applications, licence keys, and renewal dates."
         actions={
-          <Button
-            onClick={() => {
-              setEditingApplication(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Application
-          </Button>
+          <div className="flex items-center gap-3">
+            {!isLoading && (
+              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                {totalCount}
+              </span>
+            )}
+            <Button
+              onClick={() => {
+                setEditingApplication(null);
+                setFormOpen(true);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Application
+            </Button>
+          </div>
         }
       />
 
       <DataTable
         columns={columns}
         data={pagedResult?.items ?? []}
+        variant="borderless"
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
         rowSelection={rowSelection}

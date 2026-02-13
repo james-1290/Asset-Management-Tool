@@ -41,6 +41,7 @@ interface DataTableProps<TData, TValue> {
   paginationControls?: ReactNode;
   hideTable?: boolean;
   children?: ReactNode;
+  variant?: "default" | "borderless";
 }
 
 export function DataTable<TData, TValue>({
@@ -63,6 +64,7 @@ export function DataTable<TData, TValue>({
   paginationControls,
   hideTable,
   children,
+  variant = "default",
 }: DataTableProps<TData, TValue>) {
   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialColumnFilters ?? []);
@@ -101,7 +103,7 @@ export function DataTable<TData, TValue>({
       {hideTable ? (
         children
       ) : (
-        <div className="rounded-md border">
+        <div className={variant === "borderless" ? "" : "rounded-md border"}>
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (

@@ -1,4 +1,5 @@
 import { useSearchParams } from "react-router-dom";
+import { PageHeader } from "@/components/page-header";
 import { useAuth } from "@/contexts/auth-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProfileTab } from "@/components/settings/profile-tab";
@@ -23,12 +24,10 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your profile, users, alerts, and system settings.
-        </p>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Manage your profile, users, alerts, and system settings."
+      />
 
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>

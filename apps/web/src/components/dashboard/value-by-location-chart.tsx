@@ -4,7 +4,6 @@ import {
   Cell,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
@@ -27,11 +26,19 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+const tooltipStyle = {
+  borderRadius: "8px",
+  border: "1px solid var(--color-border)",
+  backgroundColor: "var(--color-card)",
+  fontSize: "12px",
+  boxShadow: "0 2px 8px rgb(0 0 0 / 0.06)",
+};
+
 export function ValueByLocationChart({ data, isLoading }: ValueByLocationChartProps) {
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle>Value by Location</CardTitle>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium">Value by Location</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 min-h-0">
         {isLoading ? (
@@ -44,17 +51,28 @@ export function ValueByLocationChart({ data, isLoading }: ValueByLocationChartPr
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
-              margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+              margin={{ top: 4, right: 4, left: -4, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="locationName" tick={{ fontSize: 12 }} />
+              <XAxis
+                dataKey="locationName"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: "var(--color-muted-foreground)" }}
+              />
               <YAxis
                 tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: "var(--color-muted-foreground)" }}
               />
               <Tooltip
                 formatter={(value) => [formatCurrency(value as number), "Value"]}
+                cursor={{ fill: "var(--color-muted)", opacity: 0.4 }}
+                contentStyle={tooltipStyle}
               />
-              <Bar dataKey="totalValue" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="totalValue" radius={[3, 3, 0, 0]}>
                 {data.map((_, i) => (
                   <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />
                 ))}

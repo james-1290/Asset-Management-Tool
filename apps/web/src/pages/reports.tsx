@@ -1,4 +1,5 @@
 import { useSearchParams } from "react-router-dom";
+import { PageHeader } from "@/components/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AssetSummaryReport } from "@/components/reports/asset-summary-report";
 import { ExpiriesReport } from "@/components/reports/expiries-report";
@@ -30,12 +31,10 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
-        <p className="text-muted-foreground mt-1">
-          Pre-built reports with exportable summaries.
-        </p>
-      </div>
+      <PageHeader
+        title="Reports"
+        description="Pre-built reports with exportable summaries."
+      />
 
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>

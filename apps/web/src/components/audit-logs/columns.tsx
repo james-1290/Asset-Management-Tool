@@ -78,7 +78,7 @@ export const auditLogColumns: ColumnDef<AuditLogEntry, unknown>[] = [
         return (
           <Link
             to={`/assets/${entityId}`}
-            className="font-medium text-primary hover:underline"
+            className="font-medium text-foreground hover:text-primary transition-colors"
           >
             {displayText}
           </Link>

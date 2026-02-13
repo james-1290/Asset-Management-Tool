@@ -77,25 +77,26 @@ export const WIDGET_MIN_SIZES: Record<WidgetId, { minW: number; minH: number; ma
 };
 
 const DEFAULT_LG_LAYOUT: LayoutItem[] = [
-  // Row 0: stat cards (4 across)
+  // Row 0: overview stats — what you have
   { i: "totalAssets", x: 0, y: 0, w: 3, h: 2 },
   { i: "totalValue", x: 3, y: 0, w: 3, h: 2 },
-  { i: "recentlyAdded", x: 6, y: 0, w: 3, h: 2 },
-  { i: "unassignedAssets", x: 9, y: 0, w: 3, h: 2 },
-  // Row 1: stat cards (4 across)
-  { i: "totalBookValue", x: 0, y: 2, w: 3, h: 2 },
+  { i: "totalBookValue", x: 6, y: 0, w: 3, h: 2 },
+  { i: "recentlyAdded", x: 9, y: 0, w: 3, h: 2 },
+  // Row 1: operational stats — what needs attention
+  { i: "unassignedAssets", x: 0, y: 2, w: 3, h: 2 },
   { i: "checkedOut", x: 3, y: 2, w: 3, h: 2 },
   { i: "warrantyExpiries", x: 6, y: 2, w: 3, h: 2 },
   { i: "certificateExpiries", x: 9, y: 2, w: 3, h: 2 },
-  // Row 2
+  // Row 2: licence expiries standalone
   { i: "licenceExpiries", x: 0, y: 4, w: 3, h: 2 },
-  // Charts
-  { i: "statusBreakdown", x: 0, y: 6, w: 6, h: 5 },
-  { i: "assetsByType", x: 6, y: 4, w: 6, h: 5 },
-  { i: "assetsByLocation", x: 0, y: 9, w: 6, h: 5 },
-  { i: "assetsByAge", x: 6, y: 9, w: 6, h: 5 },
-  { i: "valueByLocation", x: 0, y: 14, w: 6, h: 5 },
-  { i: "recentActivity", x: 6, y: 14, w: 6, h: 5 },
+  // Primary charts: status + activity side by side (activity gets more height for scrolling)
+  { i: "statusBreakdown", x: 0, y: 6, w: 5, h: 5 },
+  { i: "recentActivity", x: 5, y: 6, w: 7, h: 5 },
+  // Secondary charts
+  { i: "assetsByType", x: 0, y: 11, w: 6, h: 5 },
+  { i: "assetsByLocation", x: 6, y: 11, w: 6, h: 5 },
+  { i: "assetsByAge", x: 0, y: 16, w: 6, h: 5 },
+  { i: "valueByLocation", x: 6, y: 16, w: 6, h: 5 },
 ];
 
 const DEFAULT_MD_LAYOUT: LayoutItem[] = [

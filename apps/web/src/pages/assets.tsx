@@ -552,23 +552,30 @@ export default function AssetsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Assets"
-        description="Manage hardware and software assets."
         actions={
-          <Button
-            onClick={() => {
-              setEditingAsset(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Asset
-          </Button>
+          <div className="flex items-center gap-3">
+            {!isLoading && (
+              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                {totalCount}
+              </span>
+            )}
+            <Button
+              onClick={() => {
+                setEditingAsset(null);
+                setFormOpen(true);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Asset
+            </Button>
+          </div>
         }
       />
 
       <DataTable
         columns={columns}
         data={pagedResult?.items ?? []}
+        variant="borderless"
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
         rowSelection={rowSelection}
@@ -581,32 +588,38 @@ export default function AssetsPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+          <div className="space-y-2">
+            {/* Row 1: Data controls (left) | View controls (right) */}
+            <div className="flex items-center justify-between gap-4">
               <AssetsToolbar
-              table={table}
-              search={searchInput}
-              onSearchChange={setSearchInput}
-              status={statusParam}
-              onStatusChange={handleStatusChange}
-              includeRetired={includeRetired}
-              onIncludeRetiredChange={handleIncludeRetiredChange}
-              includeSold={includeSold}
-              onIncludeSoldChange={handleIncludeSoldChange}
-              typeId={typeIdParam}
-              onTypeIdChange={handleTypeIdChange}
-              assetTypes={assetTypes ?? []}
-            />
-            <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
-            <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
-            <SavedViewSelector
-              entityType="assets"
-              activeViewId={activeViewId}
-              onApplyView={applyView}
-              onResetToDefault={handleResetToDefault}
-              getCurrentConfiguration={getCurrentConfiguration}
-            />
+                table={table}
+                search={searchInput}
+                onSearchChange={setSearchInput}
+                status={statusParam}
+                onStatusChange={handleStatusChange}
+                includeRetired={includeRetired}
+                onIncludeRetiredChange={handleIncludeRetiredChange}
+                includeSold={includeSold}
+                onIncludeSoldChange={handleIncludeSoldChange}
+                typeId={typeIdParam}
+                onTypeIdChange={handleTypeIdChange}
+                assetTypes={assetTypes ?? []}
+                locations={locations ?? []}
+              />
+              <div className="flex items-center gap-1.5">
+                <SavedViewSelector
+                  entityType="assets"
+                  activeViewId={activeViewId}
+                  onApplyView={applyView}
+                  onResetToDefault={handleResetToDefault}
+                  getCurrentConfiguration={getCurrentConfiguration}
+                />
+                <div className="w-px h-5 bg-border" />
+                <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+                <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
+              </div>
             </div>
+            {/* Row 2: Bulk actions (only when selected) */}
             <BulkActionBar
               selectedCount={selectedCount}
               onClearSelection={() => setRowSelection({})}

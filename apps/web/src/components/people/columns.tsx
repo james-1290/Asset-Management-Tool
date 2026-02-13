@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { AvatarPlaceholder } from "../avatar-placeholder";
 import type { Person } from "../../types/person";
 
 interface ColumnActions {
@@ -33,18 +34,23 @@ export function getPersonColumns({
         </Button>
       ),
       cell: ({ row }) => (
-        <Link
-          to={`/people/${row.original.id}`}
-          className="font-medium text-primary hover:underline"
-        >
-          {row.original.fullName}
-        </Link>
+        <div className="flex items-center gap-3">
+          <AvatarPlaceholder name={row.original.fullName} size="md" />
+          <div className="min-w-0">
+            <Link
+              to={`/people/${row.original.id}`}
+              className="font-medium text-foreground hover:text-primary transition-colors"
+            >
+              {row.original.fullName}
+            </Link>
+            {row.original.email && (
+              <div className="text-xs text-muted-foreground truncate">
+                {row.original.email}
+              </div>
+            )}
+          </div>
+        </div>
       ),
-    },
-    {
-      accessorKey: "email",
-      header: "Email",
-      cell: ({ row }) => row.getValue("email") || "—",
     },
     {
       accessorKey: "department",

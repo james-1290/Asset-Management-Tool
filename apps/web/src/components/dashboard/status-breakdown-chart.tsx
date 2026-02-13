@@ -20,6 +20,14 @@ const STATUS_LABELS: Record<string, string> = {
   Archived: "Archived",
 };
 
+const tooltipStyle = {
+  borderRadius: "8px",
+  border: "1px solid var(--color-border)",
+  backgroundColor: "var(--color-card)",
+  fontSize: "12px",
+  boxShadow: "0 2px 8px rgb(0 0 0 / 0.06)",
+};
+
 export function StatusBreakdownChart({
   data,
   isLoading,
@@ -32,13 +40,13 @@ export function StatusBreakdownChart({
 
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle>Asset Status Breakdown</CardTitle>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium">Status Breakdown</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <Skeleton className="h-[200px] w-[200px] rounded-full" />
+            <Skeleton className="h-[180px] w-[180px] rounded-full" />
           </div>
         ) : !data || data.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-12">
@@ -52,9 +60,9 @@ export function StatusBreakdownChart({
                 dataKey="count"
                 nameKey="status"
                 cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={90}
+                cy="45%"
+                innerRadius={55}
+                outerRadius={80}
                 paddingAngle={2}
                 style={{ cursor: "pointer" }}
                 onClick={(_data, index) => {
@@ -65,6 +73,7 @@ export function StatusBreakdownChart({
                   <Cell
                     key={entry.status}
                     fill={STATUS_COLORS[entry.status] ?? "#8884d8"}
+                    stroke="none"
                   />
                 ))}
               </Pie>
@@ -73,9 +82,15 @@ export function StatusBreakdownChart({
                   value,
                   STATUS_LABELS[name as string] ?? name,
                 ]}
+                contentStyle={tooltipStyle}
               />
               <Legend
-                formatter={(value: string) => STATUS_LABELS[value] ?? value}
+                iconSize={8}
+                formatter={(value: string) => (
+                  <span className="text-xs text-muted-foreground">
+                    {STATUS_LABELS[value] ?? value}
+                  </span>
+                )}
               />
             </PieChart>
           </ResponsiveContainer>
