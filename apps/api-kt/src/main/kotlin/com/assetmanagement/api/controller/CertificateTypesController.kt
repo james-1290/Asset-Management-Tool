@@ -5,6 +5,7 @@ import com.assetmanagement.api.model.CertificateType
 import com.assetmanagement.api.model.CustomFieldDefinition
 import com.assetmanagement.api.model.enums.CustomFieldType
 import com.assetmanagement.api.model.enums.EntityType
+import com.assetmanagement.api.repository.CertificateRepository
 import com.assetmanagement.api.repository.CertificateTypeRepository
 import com.assetmanagement.api.repository.CustomFieldDefinitionRepository
 import com.assetmanagement.api.service.AuditEntry
@@ -24,6 +25,7 @@ import java.util.*
 @RequestMapping("/api/v1/certificatetypes")
 class CertificateTypesController(
     private val certificateTypeRepository: CertificateTypeRepository,
+    private val certificateRepository: CertificateRepository,
     private val customFieldDefinitionRepository: CustomFieldDefinitionRepository,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
@@ -106,6 +108,7 @@ class CertificateTypesController(
     fun bulkArchive(@RequestBody request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {
         var s = 0; var f = 0
         request.ids.forEach { id -> val t = certificateTypeRepository.findById(id).orElse(null); if (t == null || t.isArchived) { f++; return@forEach }
+            val count = certificateRepository.countByCertificateTypeIdAndIsArchivedFalse(id); if (count > 0) { f++; return@forEach }
             t.isArchived = true; t.updatedAt = Instant.now(); certificateTypeRepository.save(t)
             auditService.log(AuditEntry("Archived", "CertificateType", t.id.toString(), t.name, "Bulk archived", currentUserService.userId, currentUserService.userName)); s++ }
         return ResponseEntity.ok(BulkActionResponse(s, f))
@@ -114,6 +117,10 @@ class CertificateTypesController(
     @DeleteMapping("/{id}")
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
         val t = certificateTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+        val certCount = certificateRepository.countByCertificateTypeIdAndIsArchivedFalse(id)
+        if (certCount > 0) {
+            return ResponseEntity.status(409).body(mapOf("error" to "Cannot delete \"${t.name}\" because it is used by $certCount certificate(s). Reassign or delete those certificates first."))
+        }
         t.isArchived = true; t.updatedAt = Instant.now(); certificateTypeRepository.save(t)
         auditService.log(AuditEntry("Archived", "CertificateType", t.id.toString(), t.name,
             "Archived certificate type \"${t.name}\"", currentUserService.userId, currentUserService.userName))

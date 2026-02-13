@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "../lib/api-client";
 import { Plus, Trash2 } from "lucide-react";
 import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
@@ -273,8 +274,8 @@ export default function ApplicationTypesPage() {
         toast.success("Application type deleted");
         setArchivingApplicationType(null);
       },
-      onError: () => {
-        toast.error("Failed to delete application type");
+      onError: (error) => {
+        toast.error(getApiErrorMessage(error, "Failed to delete application type"));
       },
     });
   }

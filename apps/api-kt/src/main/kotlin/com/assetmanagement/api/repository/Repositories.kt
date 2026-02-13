@@ -52,6 +52,7 @@ interface AssetTypeRepository : JpaRepository<AssetType, UUID>, JpaSpecification
 @Repository
 interface AssetRepository : JpaRepository<Asset, UUID>, JpaSpecificationExecutor<Asset> {
     fun countByIsArchivedFalse(): Long
+    fun countByAssetTypeIdAndIsArchivedFalse(assetTypeId: UUID): Long
 }
 
 @Repository
@@ -69,6 +70,7 @@ interface CertificateTypeRepository : JpaRepository<CertificateType, UUID>, JpaS
 @Repository
 interface CertificateRepository : JpaRepository<Certificate, UUID>, JpaSpecificationExecutor<Certificate> {
     fun countByIsArchivedFalse(): Long
+    fun countByCertificateTypeIdAndIsArchivedFalse(certificateTypeId: UUID): Long
 }
 
 @Repository
@@ -86,6 +88,7 @@ interface ApplicationTypeRepository : JpaRepository<ApplicationType, UUID>, JpaS
 @Repository
 interface ApplicationRepository : JpaRepository<Application, UUID>, JpaSpecificationExecutor<Application> {
     fun countByIsArchivedFalse(): Long
+    fun countByApplicationTypeIdAndIsArchivedFalse(applicationTypeId: UUID): Long
 }
 
 @Repository

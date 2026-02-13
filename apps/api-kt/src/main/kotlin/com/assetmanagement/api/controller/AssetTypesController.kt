@@ -5,6 +5,7 @@ import com.assetmanagement.api.model.AssetType
 import com.assetmanagement.api.model.CustomFieldDefinition
 import com.assetmanagement.api.model.enums.CustomFieldType
 import com.assetmanagement.api.model.enums.EntityType
+import com.assetmanagement.api.repository.AssetRepository
 import com.assetmanagement.api.repository.AssetTypeRepository
 import com.assetmanagement.api.repository.CustomFieldDefinitionRepository
 import com.assetmanagement.api.service.AuditEntry
@@ -24,6 +25,7 @@ import java.util.*
 @RequestMapping("/api/v1/assettypes")
 class AssetTypesController(
     private val assetTypeRepository: AssetTypeRepository,
+    private val assetRepository: AssetRepository,
     private val customFieldDefinitionRepository: CustomFieldDefinitionRepository,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
@@ -124,6 +126,8 @@ class AssetTypesController(
         request.ids.forEach { id ->
             val type = assetTypeRepository.findById(id).orElse(null)
             if (type == null || type.isArchived) { failed++; return@forEach }
+            val assetCount = assetRepository.countByAssetTypeIdAndIsArchivedFalse(id)
+            if (assetCount > 0) { failed++; return@forEach }
             type.isArchived = true; type.updatedAt = Instant.now(); assetTypeRepository.save(type)
             auditService.log(AuditEntry("Archived", "AssetType", type.id.toString(), type.name,
                 "Bulk archived asset type \"${type.name}\"", currentUserService.userId, currentUserService.userName))
@@ -135,6 +139,10 @@ class AssetTypesController(
     @DeleteMapping("/{id}")
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
         val type = assetTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+        val assetCount = assetRepository.countByAssetTypeIdAndIsArchivedFalse(id)
+        if (assetCount > 0) {
+            return ResponseEntity.status(409).body(mapOf("error" to "Cannot delete \"${type.name}\" because it is used by $assetCount asset(s). Reassign or delete those assets first."))
+        }
         type.isArchived = true; type.updatedAt = Instant.now(); assetTypeRepository.save(type)
         auditService.log(AuditEntry("Archived", "AssetType", type.id.toString(), type.name,
             "Archived asset type \"${type.name}\"", currentUserService.userId, currentUserService.userName))
