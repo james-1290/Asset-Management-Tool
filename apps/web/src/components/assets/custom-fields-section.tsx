@@ -16,14 +16,14 @@ import {
   FormMessage,
 } from "../ui/form";
 import type { CustomFieldDefinition } from "../../types/custom-field";
-import type { AssetFormValues } from "../../lib/schemas/asset";
 
 interface CustomFieldsSectionProps {
   definitions: CustomFieldDefinition[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function CustomFieldsSection({ definitions }: CustomFieldsSectionProps) {
-  const form = useFormContext<AssetFormValues>();
+  const form = useFormContext<{ customFieldValues?: Record<string, string | undefined> }>();
 
   if (definitions.length === 0) return null;
 

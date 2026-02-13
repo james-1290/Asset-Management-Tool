@@ -77,6 +77,7 @@ const navStructure: NavEntry[] = [
     children: [
       { title: "Assets", url: "/assets", icon: Monitor },
       { title: "Asset Types", url: "/asset-types", icon: Tag },
+      { title: "Asset Templates", url: "/asset-templates", icon: Tag },
     ],
   },
   {

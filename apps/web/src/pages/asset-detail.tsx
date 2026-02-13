@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil, LogOut, LogIn, Archive, PoundSterling } from "lucide-react";
+import { ArrowLeft, Pencil, LogOut, LogIn, Archive, PoundSterling, Copy } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import {
@@ -21,6 +21,7 @@ import { SellAssetDialog } from "../components/assets/sell-asset-dialog";
 import {
   useAsset,
   useAssetHistory,
+  useCreateAsset,
   useUpdateAsset,
   useCheckoutAsset,
   useCheckinAsset,
@@ -85,6 +86,7 @@ export default function AssetDetailPage() {
   const { data: history, isLoading: historyLoading } = useAssetHistory(id!, HISTORY_PREVIEW_LIMIT);
   const { data: assetTypes } = useAssetTypes();
   const { data: locations } = useLocations();
+  const createMutation = useCreateAsset();
   const updateMutation = useUpdateAsset();
   const checkoutMutation = useCheckoutAsset();
   const checkinMutation = useCheckinAsset();
@@ -92,6 +94,7 @@ export default function AssetDetailPage() {
   const sellMutation = useSellAsset();
 
   const [formOpen, setFormOpen] = useState(false);
+  const [cloneFormOpen, setCloneFormOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkinOpen, setCheckinOpen] = useState(false);
@@ -146,6 +149,76 @@ export default function AssetDetailPage() {
         },
       },
     );
+  }
+
+  function handleCloneSubmit(values: AssetFormValues) {
+    const customFieldValues = Object.entries(values.customFieldValues ?? {})
+      .filter(([, v]) => v != null && v !== "" && v !== "__none__")
+      .map(([fieldDefinitionId, value]) => ({
+        fieldDefinitionId,
+        value: value!,
+      }));
+
+    createMutation.mutate({
+      name: values.name,
+      serialNumber: values.serialNumber,
+      status: values.status || "Available",
+      assetTypeId: values.assetTypeId,
+      locationId: values.locationId,
+      assignedPersonId:
+        values.assignedPersonId && values.assignedPersonId !== "none"
+          ? values.assignedPersonId
+          : null,
+      purchaseDate: values.purchaseDate
+        ? `${values.purchaseDate}T00:00:00Z`
+        : values.purchaseDate,
+      purchaseCost: values.purchaseCost
+        ? parseFloat(values.purchaseCost)
+        : null,
+      warrantyExpiryDate: values.warrantyExpiryDate
+        ? `${values.warrantyExpiryDate}T00:00:00Z`
+        : null,
+      depreciationMonths: values.depreciationMonths
+        ? parseInt(values.depreciationMonths, 10)
+        : null,
+      notes: values.notes || null,
+      customFieldValues,
+    } as Parameters<typeof createMutation.mutate>[0], {
+      onSuccess: (newAsset) => {
+        toast.success("Asset cloned successfully");
+        setCloneFormOpen(false);
+        navigate(`/assets/${newAsset.id}`);
+      },
+      onError: () => {
+        toast.error("Failed to clone asset");
+      },
+    });
+  }
+
+  function getCloneInitialValues(): Partial<AssetFormValues> | undefined {
+    if (!asset) return undefined;
+
+    const cfValues: Record<string, string> = {};
+    if (asset.customFieldValues) {
+      for (const v of asset.customFieldValues) {
+        cfValues[v.fieldDefinitionId] = v.value ?? "";
+      }
+    }
+
+    return {
+      assetTypeId: asset.assetTypeId,
+      locationId: asset.locationId ?? "",
+      purchaseCost: asset.purchaseCost != null ? String(asset.purchaseCost) : "",
+      depreciationMonths: asset.depreciationMonths != null ? String(asset.depreciationMonths) : "",
+      notes: asset.notes ?? "",
+      status: "Available",
+      customFieldValues: cfValues,
+      // Intentionally blank: name, serialNumber, warrantyExpiryDate, assignedPersonId
+      name: "",
+      serialNumber: "",
+      warrantyExpiryDate: "",
+      assignedPersonId: "",
+    };
   }
 
   if (isLoading) {
@@ -216,6 +289,10 @@ export default function AssetDetailPage() {
               </Button>
             </>
           )}
+          <Button variant="outline" onClick={() => setCloneFormOpen(true)}>
+            <Copy className="mr-2 h-4 w-4" />
+            Clone
+          </Button>
           <Button onClick={() => setFormOpen(true)}>
             <Pencil className="mr-2 h-4 w-4" />
             Edit
@@ -313,6 +390,16 @@ export default function AssetDetailPage() {
         locations={locations ?? []}
         onSubmit={handleFormSubmit}
         loading={updateMutation.isPending}
+      />
+
+      <AssetFormDialog
+        open={cloneFormOpen}
+        onOpenChange={setCloneFormOpen}
+        assetTypes={assetTypes ?? []}
+        locations={locations ?? []}
+        onSubmit={handleCloneSubmit}
+        loading={createMutation.isPending}
+        initialValues={getCloneInitialValues()}
       />
 
       <AssetHistoryDialog

@@ -21,6 +21,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/people": "People",
   "/locations": "Locations",
   "/asset-types": "Asset Types",
+  "/asset-templates": "Asset Templates",
   "/certificate-types": "Certificate Types",
   "/application-types": "Application Types",
   "/audit-log": "Audit Log",
