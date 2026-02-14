@@ -26,6 +26,8 @@ class PeopleController(
     private val personRepository: PersonRepository,
     private val locationRepository: LocationRepository,
     private val assetRepository: AssetRepository,
+    private val certificateRepository: CertificateRepository,
+    private val applicationRepository: ApplicationRepository,
     private val personHistoryRepository: PersonHistoryRepository,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
@@ -209,6 +211,51 @@ class PeopleController(
             .content.map { DuplicateCheckResult(it.id, it.fullName, "Email: ${it.email ?: "N/A"}") }
 
         return ResponseEntity.ok(results)
+    }
+
+    @GetMapping("/{id}/summary")
+    fun getSummary(@PathVariable id: UUID): ResponseEntity<PersonSummaryDto> {
+        if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()
+
+        val assetSpec = Specification<com.assetmanagement.api.model.Asset> { root, _, cb ->
+            cb.and(cb.equal(root.get<UUID>("assignedPersonId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
+        }
+        val certSpec = Specification<com.assetmanagement.api.model.Certificate> { root, _, cb ->
+            cb.and(cb.equal(root.get<UUID>("personId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
+        }
+        val appSpec = Specification<com.assetmanagement.api.model.Application> { root, _, cb ->
+            cb.and(cb.equal(root.get<UUID>("personId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
+        }
+
+        return ResponseEntity.ok(PersonSummaryDto(
+            assetCount = assetRepository.count(assetSpec).toInt(),
+            certificateCount = certificateRepository.count(certSpec).toInt(),
+            applicationCount = applicationRepository.count(appSpec).toInt()
+        ))
+    }
+
+    @GetMapping("/{id}/certificates")
+    fun getAssignedCertificates(@PathVariable id: UUID): ResponseEntity<Any> {
+        if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()
+        val spec = Specification<com.assetmanagement.api.model.Certificate> { root, _, cb ->
+            cb.and(cb.equal(root.get<UUID>("personId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
+        }
+        val certs = certificateRepository.findAll(spec, Sort.by("name")).map { c ->
+            AssignedCertificateDto(c.id, c.name, c.certificateType?.name ?: "", c.status.name, c.expiryDate)
+        }
+        return ResponseEntity.ok(certs)
+    }
+
+    @GetMapping("/{id}/applications")
+    fun getAssignedApplications(@PathVariable id: UUID): ResponseEntity<Any> {
+        if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()
+        val spec = Specification<com.assetmanagement.api.model.Application> { root, _, cb ->
+            cb.and(cb.equal(root.get<UUID>("personId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
+        }
+        val apps = applicationRepository.findAll(spec, Sort.by("name")).map { a ->
+            AssignedApplicationDto(a.id, a.name, a.applicationType?.name ?: "", a.status.name, a.licenceType?.name, a.expiryDate)
+        }
+        return ResponseEntity.ok(apps)
     }
 
     private fun buildSpec(search: String?): Specification<Person> = Specification { root, _, cb ->

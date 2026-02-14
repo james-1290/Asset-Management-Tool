@@ -19,6 +19,9 @@ const personKeys = {
   search: (q: string) => ["people", "search", q] as const,
   history: (id: string, limit?: number) => ["people", id, "history", limit] as const,
   assets: (id: string) => ["people", id, "assets"] as const,
+  summary: (id: string) => ["people", id, "summary"] as const,
+  certificates: (id: string) => ["people", id, "certificates"] as const,
+  applications: (id: string) => ["people", id, "applications"] as const,
 };
 
 export function usePeople() {
@@ -62,6 +65,27 @@ export function usePersonAssets(id: string) {
   return useQuery({
     queryKey: personKeys.assets(id),
     queryFn: () => peopleApi.getAssignedAssets(id),
+  });
+}
+
+export function usePersonSummary(id: string) {
+  return useQuery({
+    queryKey: personKeys.summary(id),
+    queryFn: () => peopleApi.getSummary(id),
+  });
+}
+
+export function usePersonCertificates(id: string) {
+  return useQuery({
+    queryKey: personKeys.certificates(id),
+    queryFn: () => peopleApi.getCertificates(id),
+  });
+}
+
+export function usePersonApplications(id: string) {
+  return useQuery({
+    queryKey: personKeys.applications(id),
+    queryFn: () => peopleApi.getApplications(id),
   });
 }
 

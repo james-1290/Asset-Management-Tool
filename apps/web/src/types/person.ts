@@ -55,3 +55,26 @@ export interface AssignedAsset {
   assetTypeName: string;
   locationName: string | null;
 }
+
+export interface PersonSummary {
+  assetCount: number;
+  certificateCount: number;
+  applicationCount: number;
+}
+
+export interface AssignedCertificate {
+  id: string;
+  name: string;
+  certificateTypeName: string;
+  status: string;
+  expiryDate: string | null;
+}
+
+export interface AssignedApplication {
+  id: string;
+  name: string;
+  applicationTypeName: string;
+  status: string;
+  licenceType: string | null;
+  expiryDate: string | null;
+}

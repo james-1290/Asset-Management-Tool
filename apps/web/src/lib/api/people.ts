@@ -4,6 +4,9 @@ import type {
   PersonSearchResult,
   PersonHistory,
   AssignedAsset,
+  PersonSummary,
+  AssignedCertificate,
+  AssignedApplication,
   CreatePersonRequest,
   UpdatePersonRequest,
 } from "../../types/person";
@@ -70,5 +73,17 @@ export const peopleApi = {
 
   checkDuplicates(data: CheckPersonDuplicatesRequest): Promise<DuplicateCheckResult[]> {
     return apiClient.post<DuplicateCheckResult[]>("/people/check-duplicates", data);
+  },
+
+  getSummary(id: string): Promise<PersonSummary> {
+    return apiClient.get<PersonSummary>(`/people/${id}/summary`);
+  },
+
+  getCertificates(id: string): Promise<AssignedCertificate[]> {
+    return apiClient.get<AssignedCertificate[]>(`/people/${id}/certificates`);
+  },
+
+  getApplications(id: string): Promise<AssignedApplication[]> {
+    return apiClient.get<AssignedApplication[]>(`/people/${id}/applications`);
   },
 };
