@@ -120,6 +120,5 @@
 - [x] Bulk edit: select multiple assets, update shared fields across all at once (location, status, assigned person, etc.)
 - [x] Asset cloning: "Create another like this" button on asset detail page, pre-fills form from existing asset
 - [x] Asset templates: saved presets per asset type, template picker in asset creation form
-- [ ] Asset kits / bundles: define kit templates (e.g. "New starter kit: laptop + monitor + keyboard"), assign or check out entire bundle at once, support bulk ordering
 - [x] Sidebar nav grouping: collapsible groups (Inventory, Certificates, Software, Organisation) with localStorage persistence
 - [x] Global design consistency: borderless tables, inline FilterChip filters, compound name cells, count badges, standardized toolbar layouts, dashboard redesign
