@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, Loader2, ChevronDown, ChevronRight } from "lucide-react";
+import { Download, Loader2, Printer, ChevronDown, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useDepreciationReport } from "@/hooks/use-reports";
@@ -43,7 +43,7 @@ export function DepreciationReport() {
   const [locationId, setLocationId] = useState<string | undefined>(undefined);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  const { data, isLoading } = useDepreciationReport(assetTypeId, locationId);
+  const { data, isLoading, dataUpdatedAt } = useDepreciationReport(assetTypeId, locationId);
   const { data: assetTypes } = useAssetTypes();
   const { data: locations } = useLocations();
 
@@ -118,6 +118,13 @@ export function DepreciationReport() {
         </Card>
       </div>
 
+      {/* Timestamp */}
+      {dataUpdatedAt > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Generated: {new Date(dataUpdatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+        </p>
+      )}
+
       {/* Filters + Export */}
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
@@ -171,12 +178,27 @@ export function DepreciationReport() {
           <Button variant="ghost" size="sm" onClick={collapseAll}>
             Collapse All
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="no-print">
+            <Printer className="mr-2 h-4 w-4" />
+            Print
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} className="no-print">
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
         </div>
       </div>
+
+      {/* Filter summary */}
+      {(assetTypeId || locationId) && (
+        <p className="text-xs text-muted-foreground">
+          Filtered by:{" "}
+          {[
+            assetTypeId && `Asset Type = ${assetTypes?.find((t) => t.id === assetTypeId)?.name ?? assetTypeId}`,
+            locationId && `Location = ${locations?.find((l) => l.id === locationId)?.name ?? locationId}`,
+          ].filter(Boolean).join(", ")}
+        </p>
+      )}
 
       {/* Grouped Table */}
       {data.groups.length === 0 ? (

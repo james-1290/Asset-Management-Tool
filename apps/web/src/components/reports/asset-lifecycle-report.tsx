@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { useAssetLifecycleReport } from "@/hooks/use-reports";
 import { reportsApi } from "@/lib/api/reports";
@@ -27,7 +27,7 @@ export function AssetLifecycleReport() {
     from: `${year}-01-01`,
     to: `${year}-12-31`,
   });
-  const { data, isLoading } = useAssetLifecycleReport(dateRange.from, dateRange.to);
+  const { data, isLoading, dataUpdatedAt } = useAssetLifecycleReport(dateRange.from, dateRange.to);
 
   async function handleExport() {
     try {
@@ -51,16 +51,35 @@ export function AssetLifecycleReport() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <DateRangePicker
-          value={dateRange}
-          onChange={setDateRange}
-          defaultPreset="thisYear"
-        />
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="space-y-1">
+          <DateRangePicker
+            value={dateRange}
+            onChange={setDateRange}
+            defaultPreset="thisYear"
+          />
+          {dataUpdatedAt > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Generated: {new Date(dataUpdatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="no-print">
+            <Printer className="mr-2 h-4 w-4" />
+            Print
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} className="no-print">
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
+
+      {(dateRange.from || dateRange.to) && (
+        <p className="text-xs text-muted-foreground">
+          Showing: {dateRange.from ?? "start"} to {dateRange.to ?? "end"}
+        </p>
+      )}
 
       <Card>
         <CardHeader>

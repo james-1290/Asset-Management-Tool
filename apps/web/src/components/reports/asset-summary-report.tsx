@@ -1,4 +1,4 @@
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { useAssetSummaryReport } from "@/hooks/use-reports";
 import { reportsApi } from "@/lib/api/reports";
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 
 export function AssetSummaryReport() {
-  const { data, isLoading } = useAssetSummaryReport();
+  const { data, isLoading, dataUpdatedAt } = useAssetSummaryReport();
 
   async function handleExport() {
     try {
@@ -44,11 +44,23 @@ export function AssetSummaryReport() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div />
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
+        <div>
+          {dataUpdatedAt > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Generated: {new Date(dataUpdatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="no-print">
+            <Printer className="mr-2 h-4 w-4" />
+            Print
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} className="no-print">
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

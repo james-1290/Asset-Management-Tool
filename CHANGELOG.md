@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-14 16:59 - Reports minor polish: timestamps, filter summaries, print button
+
+- **Report generation timestamp**: All 6 report components now show "Generated: [datetime]" using React Query's `dataUpdatedAt`, updating on each refetch
+- **Filter summary line**: Reports with date ranges (Expiries, Licence Summary, Asset Lifecycle) show the active date range; Depreciation report shows active asset type/location filters
+- **Print button**: Added `Printer` icon button (outline, sm) next to Export CSV on all reports, calls `window.print()`
+- **Print-friendly CSS**: Added `@media print` rules to `index.css` — hides sidebar/nav/buttons, full-width main content, clean table borders, page break utility class
+
 ## 2026-02-14 15:12 - Security audit: comprehensive hardening (Phases 1-3)
 
 ### Phase 1 — Security Critical
