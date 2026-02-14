@@ -71,3 +71,31 @@ export interface AssetLifecycleReport {
   pastWarranty: WarrantyExpiryItem[];
   oldestAssets: OldestAsset[];
 }
+
+export interface DepreciationAsset {
+  id: string;
+  name: string;
+  assetTypeName: string;
+  purchaseDate: string | null;
+  originalCost: number;
+  depreciationMethod: string;
+  usefulLifeYears: number | null;
+  accumulatedDepreciation: number;
+  currentBookValue: number;
+  remainingUsefulLifeMonths: number | null;
+}
+
+export interface DepreciationGroup {
+  assetTypeName: string;
+  subtotalOriginalCost: number;
+  subtotalAccumulatedDepreciation: number;
+  subtotalBookValue: number;
+  assets: DepreciationAsset[];
+}
+
+export interface DepreciationReport {
+  totalOriginalCost: number;
+  totalAccumulatedDepreciation: number;
+  totalBookValue: number;
+  groups: DepreciationGroup[];
+}

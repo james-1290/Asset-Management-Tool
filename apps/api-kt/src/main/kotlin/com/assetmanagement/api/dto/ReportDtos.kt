@@ -69,3 +69,31 @@ data class OldestAssetDto(
     val purchaseDate: Instant,
     val ageDays: Int
 )
+
+data class DepreciationReportDto(
+    val totalOriginalCost: BigDecimal,
+    val totalAccumulatedDepreciation: BigDecimal,
+    val totalBookValue: BigDecimal,
+    val groups: List<DepreciationGroupDto>
+)
+
+data class DepreciationGroupDto(
+    val assetTypeName: String,
+    val subtotalOriginalCost: BigDecimal,
+    val subtotalAccumulatedDepreciation: BigDecimal,
+    val subtotalBookValue: BigDecimal,
+    val assets: List<DepreciationAssetDto>
+)
+
+data class DepreciationAssetDto(
+    val id: UUID,
+    val name: String,
+    val assetTypeName: String,
+    val purchaseDate: Instant?,
+    val originalCost: BigDecimal,
+    val depreciationMethod: String,
+    val usefulLifeYears: Int?,
+    val accumulatedDepreciation: BigDecimal,
+    val currentBookValue: BigDecimal,
+    val remainingUsefulLifeMonths: Int?
+)

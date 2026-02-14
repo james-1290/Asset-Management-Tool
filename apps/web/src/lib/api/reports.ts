@@ -5,6 +5,7 @@ import type {
   LicenceSummaryReport,
   AssignmentsReport,
   AssetLifecycleReport,
+  DepreciationReport,
 } from "../../types/report";
 
 function buildParams(entries: Record<string, string | number | undefined>): string {
@@ -60,5 +61,14 @@ export const reportsApi = {
   downloadAssetLifecycleCsv(from?: string, to?: string): Promise<void> {
     const params = buildParams({ from, to, format: "csv" });
     return apiClient.downloadCsv(`/reports/asset-lifecycle${params}`, undefined, "asset-lifecycle-report.csv");
+  },
+
+  getDepreciation(assetTypeId?: string, locationId?: string): Promise<DepreciationReport> {
+    return apiClient.get<DepreciationReport>(`/reports/depreciation${buildParams({ assetTypeId, locationId })}`);
+  },
+
+  downloadDepreciationCsv(assetTypeId?: string, locationId?: string): Promise<void> {
+    const params = buildParams({ assetTypeId, locationId, format: "csv" });
+    return apiClient.downloadCsv(`/reports/depreciation${params}`, undefined, "depreciation-report.csv");
   },
 };

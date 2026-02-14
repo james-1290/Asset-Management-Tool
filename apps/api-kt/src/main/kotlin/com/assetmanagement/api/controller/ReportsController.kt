@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*
 import java.io.ByteArrayOutputStream
 import java.io.OutputStreamWriter
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -549,5 +550,124 @@ class ReportsController(
                 oldestAssets = oldestAssets
             )
         )
+    }
+
+    // ========================================================================
+    // 6. GET /depreciation
+    // ========================================================================
+    @GetMapping("/depreciation")
+    fun depreciation(
+        @RequestParam(required = false) assetTypeId: UUID?,
+        @RequestParam(required = false) locationId: UUID?,
+        @RequestParam(required = false) format: String?
+    ): ResponseEntity<*> {
+        val now = Instant.now()
+
+        // Build dynamic JPQL query with optional filters
+        val jpql = StringBuilder(
+            """SELECT a FROM com.assetmanagement.api.model.Asset a
+               LEFT JOIN FETCH a.assetType
+               WHERE a.isArchived = false
+               AND a.purchaseCost IS NOT NULL
+               AND a.purchaseDate IS NOT NULL"""
+        )
+        if (assetTypeId != null) jpql.append(" AND a.assetTypeId = :assetTypeId")
+        if (locationId != null) jpql.append(" AND a.locationId = :locationId")
+        jpql.append(" ORDER BY a.assetType.name ASC, a.name ASC")
+
+        val query = em.createQuery(jpql.toString())
+        if (assetTypeId != null) query.setParameter("assetTypeId", assetTypeId)
+        if (locationId != null) query.setParameter("locationId", locationId)
+
+        @Suppress("UNCHECKED_CAST")
+        val assets = query.resultList as List<com.assetmanagement.api.model.Asset>
+
+        // Calculate depreciation per asset
+        val assetDtos = assets.map { a ->
+            val cost = a.purchaseCost!!
+            val purchaseDate = a.purchaseDate!!
+            val depMonths = a.depreciationMonths ?: a.assetType?.defaultDepreciationMonths
+            val usefulLifeYears = if (depMonths != null && depMonths > 0) depMonths / 12 else null
+
+            val accumulatedDepreciation: BigDecimal
+            val currentBookValue: BigDecimal
+            val remainingUsefulLifeMonths: Int?
+
+            if (depMonths != null && depMonths > 0) {
+                val monthly = cost.divide(BigDecimal(depMonths), 4, RoundingMode.HALF_UP)
+                val elapsedDays = ChronoUnit.DAYS.between(purchaseDate, now)
+                val elapsedMonths = BigDecimal(elapsedDays)
+                    .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong()
+                    .coerceIn(0, depMonths.toLong())
+                accumulatedDepreciation = (monthly * BigDecimal(elapsedMonths))
+                    .setScale(2, RoundingMode.HALF_UP)
+                    .coerceAtMost(cost)
+                currentBookValue = (cost - accumulatedDepreciation).coerceAtLeast(BigDecimal.ZERO)
+                val totalElapsedMonths = BigDecimal(ChronoUnit.DAYS.between(purchaseDate, now))
+                    .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong()
+                remainingUsefulLifeMonths = (depMonths - totalElapsedMonths).coerceAtLeast(0).toInt()
+            } else {
+                // No depreciation configured — book value = purchase cost
+                accumulatedDepreciation = BigDecimal.ZERO
+                currentBookValue = cost
+                remainingUsefulLifeMonths = null
+            }
+
+            DepreciationAssetDto(
+                id = a.id,
+                name = a.name,
+                assetTypeName = a.assetType?.name ?: "",
+                purchaseDate = a.purchaseDate,
+                originalCost = cost,
+                depreciationMethod = if (depMonths != null && depMonths > 0) "Straight-Line" else "None",
+                usefulLifeYears = usefulLifeYears,
+                accumulatedDepreciation = accumulatedDepreciation,
+                currentBookValue = currentBookValue,
+                remainingUsefulLifeMonths = remainingUsefulLifeMonths
+            )
+        }
+
+        // Group by asset type
+        val groups = assetDtos.groupBy { it.assetTypeName }.map { (typeName, typeAssets) ->
+            DepreciationGroupDto(
+                assetTypeName = typeName,
+                subtotalOriginalCost = typeAssets.sumOf { it.originalCost },
+                subtotalAccumulatedDepreciation = typeAssets.sumOf { it.accumulatedDepreciation },
+                subtotalBookValue = typeAssets.sumOf { it.currentBookValue },
+                assets = typeAssets
+            )
+        }
+
+        val report = DepreciationReportDto(
+            totalOriginalCost = groups.sumOf { it.subtotalOriginalCost },
+            totalAccumulatedDepreciation = groups.sumOf { it.subtotalAccumulatedDepreciation },
+            totalBookValue = groups.sumOf { it.subtotalBookValue },
+            groups = groups
+        )
+
+        if (format.equals("csv", ignoreCase = true)) {
+            return csvResponse("depreciation-report.csv") { writer ->
+                writer.writeNext(arrayOf(
+                    "Asset Name", "Asset Type", "Purchase Date", "Original Cost",
+                    "Method", "Useful Life (Years)", "Accumulated Depreciation",
+                    "Book Value", "Remaining Life (Months)"
+                ))
+                assetDtos.forEach { a ->
+                    writer.writeNext(CsvUtils.sanitizeRow(arrayOf(
+                        a.name,
+                        a.assetTypeName,
+                        a.purchaseDate?.let { dateFormat.format(it) } ?: "",
+                        a.originalCost.toPlainString(),
+                        a.depreciationMethod,
+                        a.usefulLifeYears?.toString() ?: "",
+                        a.accumulatedDepreciation.toPlainString(),
+                        a.currentBookValue.toPlainString(),
+                        a.remainingUsefulLifeMonths?.toString() ?: ""
+                    )))
+                }
+            }
+        }
+
+        return ResponseEntity.ok(report)
     }
 }

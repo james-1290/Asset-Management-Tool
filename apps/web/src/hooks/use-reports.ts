@@ -10,6 +10,8 @@ const reportKeys = {
   assignments: ["reports", "assignments"] as const,
   assetLifecycle: (from?: string, to?: string) =>
     ["reports", "asset-lifecycle", from, to] as const,
+  depreciation: (assetTypeId?: string, locationId?: string) =>
+    ["reports", "depreciation", assetTypeId, locationId] as const,
 };
 
 export function useAssetSummaryReport(enabled: boolean = true) {
@@ -65,6 +67,19 @@ export function useAssetLifecycleReport(
   return useQuery({
     queryKey: reportKeys.assetLifecycle(from, to),
     queryFn: () => reportsApi.getAssetLifecycle(from, to),
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
+export function useDepreciationReport(
+  assetTypeId?: string,
+  locationId?: string,
+  enabled: boolean = true
+) {
+  return useQuery({
+    queryKey: reportKeys.depreciation(assetTypeId, locationId),
+    queryFn: () => reportsApi.getDepreciation(assetTypeId, locationId),
     staleTime: 60_000,
     enabled,
   });
