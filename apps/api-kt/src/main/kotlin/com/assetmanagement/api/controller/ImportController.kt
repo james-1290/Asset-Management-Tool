@@ -11,6 +11,7 @@ import com.opencsv.CSVReaderBuilder
 import com.opencsv.CSVWriter
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import java.io.ByteArrayOutputStream
@@ -26,6 +27,7 @@ import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/import")
+@PreAuthorize("hasRole('Admin')")
 class ImportController(
     private val locationRepository: LocationRepository,
     private val personRepository: PersonRepository,

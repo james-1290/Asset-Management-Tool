@@ -76,13 +76,18 @@ class SamlAuthSuccessHandler(
             return updateIfNeeded(user, email, displayName)
         }
 
-        // 2. Try by email — link existing local user to SSO
-        userRepository.findByEmail(email)?.let { user ->
-            user.externalId = externalId
-            user.authProvider = "SAML"
-            user.displayName = displayName
-            user.updatedAt = Instant.now()
-            return userRepository.save(user)
+        // 2. Try by email — only auto-link if user is already SSO-provisioned (SAML/SCIM)
+        //    Local users are NOT silently linked to prevent account takeover
+        if (email.isNotBlank()) {
+            userRepository.findByEmail(email)?.let { user ->
+                if (user.authProvider == "SAML" || user.authProvider == "SCIM") {
+                    user.externalId = externalId
+                    user.displayName = displayName
+                    user.updatedAt = Instant.now()
+                    return userRepository.save(user)
+                }
+                log.warn("SAML login: email {} matches local user {}, refusing auto-link", email, user.id)
+            }
         }
 
         // 3. Create new user
