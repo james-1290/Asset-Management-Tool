@@ -68,7 +68,7 @@ class SearchController(
             val extra = if (cert.expiryDate != null) {
                 val daysUntil = ChronoUnit.DAYS.between(Instant.now(), cert.expiryDate)
                 if (daysUntil in 0..90) "Expires in $daysUntil days"
-                else if (daysUntil < 0) "Expired"
+                else if (daysUntil < 0 && daysUntil >= -90) "Expired"
                 else cert.status.name
             } else {
                 cert.status.name
@@ -119,7 +119,7 @@ class SearchController(
         }
         val locationCount = locationRepository.count(locationSpec).toInt()
         val locations = locationRepository.findAll(locationSpec, PageRequest.of(0, lim, Sort.by("name"))).content.map { loc ->
-            val subtitle = loc.city
+            val subtitle = listOfNotNull(loc.city, loc.country).joinToString(", ").ifEmpty { null }
             val locAssetCount = try {
                 loc.assets.count { !it.isArchived }
             } catch (_: Exception) {
