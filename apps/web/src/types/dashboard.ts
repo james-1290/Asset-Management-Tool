@@ -85,3 +85,9 @@ export interface ApplicationSummary {
   pendingRenewal: number;
   suspended: number;
 }
+
+export interface InventorySnapshotItem {
+  label: string;
+  count: number;
+  filterUrl: string;
+}

@@ -22,6 +22,7 @@ const dashboardKeys = {
   licenceExpiries: (days: number) =>
     ["dashboard", "licence-expiries", days] as const,
   applicationSummary: ["dashboard", "application-summary"] as const,
+  inventorySnapshot: ["dashboard", "inventory-snapshot"] as const,
 };
 
 export function useDashboardSummary(enabled: boolean = true) {
@@ -169,6 +170,15 @@ export function useApplicationSummary(enabled: boolean = true) {
   return useQuery({
     queryKey: dashboardKeys.applicationSummary,
     queryFn: dashboardApi.getApplicationSummary,
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
+export function useInventorySnapshot(enabled: boolean = true) {
+  return useQuery({
+    queryKey: dashboardKeys.inventorySnapshot,
+    queryFn: dashboardApi.getInventorySnapshot,
     staleTime: 60_000,
     enabled,
   });

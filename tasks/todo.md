@@ -101,6 +101,8 @@
 
 - [x] Backend migration: ASP.NET Core + PostgreSQL → Spring Boot Kotlin + MySQL (all 21 controllers, 33 tables, JWT auth, audit logging, CSV import/export, custom fields)
 
+- [x] Security hardening audit: input validation, audit logging, security headers, startup warnings, DB indexes, frontend guards
+
 ## Later
 - [x] Retire + sold workflow
 - [x] Dedicated deactivate workflow for applications (currently via edit form status dropdown)

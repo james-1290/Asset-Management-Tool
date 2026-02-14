@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
+import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.util.*
 
@@ -378,6 +379,113 @@ class DashboardController(
                 status = app.status.name
             )
         }
+        return ResponseEntity.ok(items)
+    }
+
+    // 15. GET /inventory-snapshot - aggregated inventory stats
+    @GetMapping("/inventory-snapshot")
+    fun getInventorySnapshot(): ResponseEntity<List<InventorySnapshotItemDto>> {
+        val items = mutableListOf<InventorySnapshotItemDto>()
+
+        // Spare per asset type: status=Available, assignedPerson IS NULL, not archived
+        @Suppress("UNCHECKED_CAST")
+        val spareResults = em.createQuery(
+            """SELECT t.name, COUNT(a) FROM com.assetmanagement.api.model.Asset a
+               JOIN a.assetType t
+               WHERE a.isArchived = false
+               AND a.status = :status
+               AND a.assignedPersonId IS NULL
+               GROUP BY t.name
+               ORDER BY t.name ASC"""
+        ).setParameter("status", AssetStatus.Available)
+         .resultList as List<Array<Any>>
+
+        for (row in spareResults) {
+            val typeName = row[0] as String
+            val count = (row[1] as Long).toInt()
+            items.add(InventorySnapshotItemDto(
+                label = "Spare $typeName",
+                count = count,
+                filterUrl = "/assets?status=Available&assetType=$typeName"
+            ))
+        }
+
+        // Expiring this month: warranties + certificates + licences
+        val now = Instant.now()
+        val endOfMonth = now.atZone(ZoneOffset.UTC)
+            .withDayOfMonth(1)
+            .plusMonths(1)
+            .toInstant()
+
+        val warrantyExpiringCount = em.createQuery(
+            """SELECT COUNT(a) FROM com.assetmanagement.api.model.Asset a
+               WHERE a.isArchived = false
+               AND a.warrantyExpiryDate IS NOT NULL
+               AND a.warrantyExpiryDate >= :now
+               AND a.warrantyExpiryDate < :endOfMonth""",
+            java.lang.Long::class.java
+        ).setParameter("now", now)
+         .setParameter("endOfMonth", endOfMonth)
+         .singleResult.toInt()
+
+        val certExpiringCount = em.createQuery(
+            """SELECT COUNT(c) FROM com.assetmanagement.api.model.Certificate c
+               WHERE c.isArchived = false
+               AND c.expiryDate IS NOT NULL
+               AND c.expiryDate >= :now
+               AND c.expiryDate < :endOfMonth""",
+            java.lang.Long::class.java
+        ).setParameter("now", now)
+         .setParameter("endOfMonth", endOfMonth)
+         .singleResult.toInt()
+
+        val licenceExpiringCount = em.createQuery(
+            """SELECT COUNT(app) FROM com.assetmanagement.api.model.Application app
+               WHERE app.isArchived = false
+               AND app.expiryDate IS NOT NULL
+               AND app.expiryDate >= :now
+               AND app.expiryDate < :endOfMonth""",
+            java.lang.Long::class.java
+        ).setParameter("now", now)
+         .setParameter("endOfMonth", endOfMonth)
+         .singleResult.toInt()
+
+        items.add(InventorySnapshotItemDto(
+            label = "Expiring This Month",
+            count = warrantyExpiringCount + certExpiringCount + licenceExpiringCount,
+            filterUrl = "/assets?sortBy=warrantyExpiryDate&sortDir=asc"
+        ))
+
+        // Checked out count
+        val checkedOutCount = em.createQuery(
+            """SELECT COUNT(a) FROM com.assetmanagement.api.model.Asset a
+               WHERE a.isArchived = false
+               AND a.status = :status""",
+            java.lang.Long::class.java
+        ).setParameter("status", AssetStatus.CheckedOut)
+         .singleResult.toInt()
+
+        items.add(InventorySnapshotItemDto(
+            label = "Checked Out",
+            count = checkedOutCount,
+            filterUrl = "/assets?status=CheckedOut"
+        ))
+
+        // In maintenance count
+        val inMaintenanceCount = em.createQuery(
+            """SELECT COUNT(a) FROM com.assetmanagement.api.model.Asset a
+               WHERE a.isArchived = false
+               AND a.status = :status""",
+            java.lang.Long::class.java
+        ).setParameter("status", AssetStatus.InMaintenance)
+         .singleResult.toInt()
+
+        items.add(InventorySnapshotItemDto(
+            label = "In Maintenance",
+            count = inMaintenanceCount,
+            filterUrl = "/assets?status=InMaintenance"
+        ))
+
         return ResponseEntity.ok(items)
     }
 
