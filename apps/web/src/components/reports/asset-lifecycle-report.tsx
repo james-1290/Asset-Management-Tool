@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAssetLifecycleReport } from "@/hooks/use-reports";
@@ -18,13 +19,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DateRangePicker, type DateRange } from "./date-range-picker";
 
 export function AssetLifecycleReport() {
-  const { data, isLoading } = useAssetLifecycleReport();
+  const year = new Date().getFullYear();
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: `${year}-01-01`,
+    to: `${year}-12-31`,
+  });
+  const { data, isLoading } = useAssetLifecycleReport(dateRange.from, dateRange.to);
 
   async function handleExport() {
     try {
-      await reportsApi.downloadAssetLifecycleCsv();
+      await reportsApi.downloadAssetLifecycleCsv(dateRange.from, dateRange.to);
       toast.success("CSV exported");
     } catch {
       toast.error("Export failed");
@@ -44,7 +51,11 @@ export function AssetLifecycleReport() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div />
+        <DateRangePicker
+          value={dateRange}
+          onChange={setDateRange}
+          defaultPreset="thisYear"
+        />
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Download className="mr-2 h-4 w-4" />
           Export CSV
@@ -83,7 +94,7 @@ export function AssetLifecycleReport() {
         <CardContent>
           {data.oldestAssets.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              No assets with purchase dates recorded.
+              No assets with purchase dates in the selected range.
             </p>
           ) : (
             <Table>
@@ -124,7 +135,7 @@ export function AssetLifecycleReport() {
         <CardContent>
           {data.pastWarranty.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              No assets past warranty.
+              No assets past warranty in the selected range.
             </p>
           ) : (
             <Table>
