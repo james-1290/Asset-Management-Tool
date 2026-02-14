@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
+import { useAuth } from "@/contexts/auth-context"
 import { NavLink, useLocation } from "react-router-dom"
 import {
   LayoutDashboard,
@@ -142,6 +143,7 @@ function saveGroupState(state: Record<string, boolean>) {
 
 export function AppSidebar() {
   const { toggleSidebar } = useSidebar()
+  const { isAdmin } = useAuth()
   const location = useLocation()
   const [groupState, setGroupState] = useState<Record<string, boolean>>(loadGroupState)
 
@@ -163,6 +165,18 @@ export function AppSidebar() {
       if (child.url === "/") return location.pathname === "/"
       return location.pathname.startsWith(child.url)
     })
+
+  // Filter admin-only items
+  const filteredNav = navStructure.map((entry) => {
+    if (entry.kind === "group" && entry.title === "Tools") {
+      const children = entry.children.filter((child) => {
+        if (child.url === "/tools/import") return isAdmin
+        return true
+      })
+      return children.length > 0 ? { ...entry, children } : null
+    }
+    return entry
+  }).filter(Boolean) as NavEntry[]
 
   return (
     <Sidebar collapsible="icon">
@@ -208,7 +222,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navStructure.map((entry) => {
+              {filteredNav.map((entry) => {
                 if (entry.kind === "standalone") {
                   return (
                     <SidebarMenuItem key={entry.title}>

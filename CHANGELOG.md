@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-02-14 15:12 - Security audit: comprehensive hardening (Phases 1-3)
+
+### Phase 1 — Security Critical
+- **Startup security validator**: Warns on default JWT secret, admin password, SCIM token, and Swagger enabled at startup
+- **Input validation**: Added Jakarta Bean Validation annotations (`@NotBlank`, `@Size`, `@Email`) to all auth and user DTOs, with `@Valid` on controller methods
+- **Validation error handler**: Returns structured error responses with field-level details
+- **Password policy**: Minimum password length increased from 6 to 8 characters
+- **CSV injection fix**: Added `|` (pipe) and `` ` `` (backtick) to dangerous prefix sanitization list
+- **SSO open redirect prevention**: Frontend now validates SSO URLs are relative or same-origin before redirecting
+- **Swagger disabled by default**: `SWAGGER_ENABLED` now defaults to `false` (set to `true` via env var for local dev)
+- **Login audit logging**: All login attempts (success and failure) now written to audit log with details
+
+### Phase 2 — Security Hardening
+- **Security headers**: Added `Referrer-Policy: strict-origin-when-cross-origin` and `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()` to both SAML and API filter chains
+- **JWT filter logging**: Invalid JWT tokens now logged at WARN level with SecurityContext cleared explicitly
+- **Error correlation IDs**: Generic 500 errors now include a UUID `errorId` for log correlation
+- **Database indexes**: Added missing indexes on `audit_logs.actor_id`, `custom_field_values.entity_id`, and `user_roles.user_id` (V007 migration)
+
+### Phase 3 — Code Quality
+- **Standardized authorization**: Replaced manual `isAdmin()` checks in SettingsController with declarative `@PreAuthorize("hasRole('Admin')")` annotations
+- **Import page visibility**: Sidebar now hides "Import Data" link from non-admin users
+
+### DB Migration
+- V007: `add_foreign_key_indexes` — adds 3 new performance indexes
+
 ## 2026-02-14 14:34 - Security hardening round 2c (SAML account takeover + import auth)
 
 - **SAML account takeover prevention**: Email-based auto-linking now only applies to users with `authProvider` of `SAML` or `SCIM` — local users are never silently linked to an SSO identity, preventing account takeover via a malicious IdP

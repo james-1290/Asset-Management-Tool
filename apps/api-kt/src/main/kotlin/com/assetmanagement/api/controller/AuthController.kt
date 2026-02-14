@@ -5,8 +5,11 @@ import com.assetmanagement.api.dto.LoginResponse
 import com.assetmanagement.api.dto.SsoConfigResponse
 import com.assetmanagement.api.dto.UserProfileResponse
 import com.assetmanagement.api.repository.UserRepository
+import com.assetmanagement.api.service.AuditEntry
+import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
 import com.assetmanagement.api.service.TokenService
+import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -19,32 +22,46 @@ class AuthController(
     private val tokenService: TokenService,
     private val passwordEncoder: PasswordEncoder,
     private val currentUserService: CurrentUserService,
+    private val auditService: AuditService,
     @Value("\${saml.enabled:false}") private val samlEnabled: Boolean,
     @Value("\${saml.registration-id:entra}") private val samlRegistrationId: String,
     @Value("\${auth.local-login.enabled:true}") private val localLoginEnabled: Boolean
 ) {
 
     @PostMapping("/login")
-    fun login(@RequestBody request: LoginRequest): ResponseEntity<Any> {
+    fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<Any> {
         if (!localLoginEnabled) {
             return ResponseEntity.status(404).body(mapOf("error" to "Local login is disabled. Use SSO to sign in."))
         }
 
         val user = userRepository.findByUsername(request.username)
-            ?: return ResponseEntity.status(401).body(mapOf("error" to "Invalid username or password."))
+        if (user == null) {
+            auditService.log(AuditEntry("LoginFailed", "User", "", request.username,
+                "Failed login attempt — user not found", null, request.username))
+            return ResponseEntity.status(401).body(mapOf("error" to "Invalid username or password."))
+        }
 
         if (user.authProvider != "LOCAL")
             return ResponseEntity.status(401).body(mapOf("error" to "This account uses SSO. Please sign in with your identity provider."))
 
-        if (!user.isActive)
+        if (!user.isActive) {
+            auditService.log(AuditEntry("LoginFailed", "User", user.id.toString(), request.username,
+                "Failed login attempt — account inactive", null, request.username))
             return ResponseEntity.status(401).body(mapOf("error" to "Invalid username or password."))
+        }
 
         val passwordHash = user.passwordHash
-        if (passwordHash == null || !passwordEncoder.matches(request.password, passwordHash))
+        if (passwordHash == null || !passwordEncoder.matches(request.password, passwordHash)) {
+            auditService.log(AuditEntry("LoginFailed", "User", user.id.toString(), request.username,
+                "Failed login attempt — invalid password", null, request.username))
             return ResponseEntity.status(401).body(mapOf("error" to "Invalid username or password."))
+        }
 
         val roles = user.userRoles.mapNotNull { it.role?.name }
         val token = tokenService.generateToken(user, roles)
+
+        auditService.log(AuditEntry("Login", "User", user.id.toString(), user.displayName,
+            "User logged in successfully", user.id, user.username))
 
         return ResponseEntity.ok(LoginResponse(
             token = token,

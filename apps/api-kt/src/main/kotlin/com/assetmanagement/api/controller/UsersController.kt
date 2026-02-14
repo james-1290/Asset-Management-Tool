@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 import java.net.URI
 import java.time.Instant
@@ -52,10 +53,10 @@ class UsersController(
 
     @PostMapping
     @PreAuthorize("hasRole('Admin')")
-    fun create(@RequestBody request: CreateUserRequest): ResponseEntity<Any> {
+    fun create(@Valid @RequestBody request: CreateUserRequest): ResponseEntity<Any> {
         if (userRepository.existsByUsername(request.username)) return ResponseEntity.status(409).body(mapOf("error" to "Username is already taken."))
         if (userRepository.existsByEmail(request.email)) return ResponseEntity.status(409).body(mapOf("error" to "Email is already in use."))
-        if (request.password.length < 6) return ResponseEntity.badRequest().body(mapOf("error" to "Password must be at least 6 characters."))
+        if (request.password.length < 8) return ResponseEntity.badRequest().body(mapOf("error" to "Password must be at least 8 characters."))
         val role = roleRepository.findByName(request.role) ?: return ResponseEntity.badRequest().body(mapOf("error" to "Role '${request.role}' not found."))
 
         val user = User(username = request.username, displayName = request.displayName, email = request.email,
@@ -72,7 +73,7 @@ class UsersController(
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('Admin')")
-    fun update(@PathVariable id: UUID, @RequestBody request: UpdateUserRequest): ResponseEntity<Any> {
+    fun update(@PathVariable id: UUID, @Valid @RequestBody request: UpdateUserRequest): ResponseEntity<Any> {
         val user = userRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
 
         val isSsoUser = user.authProvider != "LOCAL"
@@ -119,11 +120,11 @@ class UsersController(
 
     @PutMapping("/{id}/password")
     @PreAuthorize("hasRole('Admin')")
-    fun resetPassword(@PathVariable id: UUID, @RequestBody request: ResetPasswordRequest): ResponseEntity<Any> {
+    fun resetPassword(@PathVariable id: UUID, @Valid @RequestBody request: ResetPasswordRequest): ResponseEntity<Any> {
         val user = userRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         if (user.authProvider != "LOCAL")
             return ResponseEntity.badRequest().body(mapOf("error" to "Cannot reset password for SSO users."))
-        if (request.newPassword.length < 6) return ResponseEntity.badRequest().body(mapOf("error" to "Password must be at least 6 characters."))
+        if (request.newPassword.length < 8) return ResponseEntity.badRequest().body(mapOf("error" to "Password must be at least 8 characters."))
         user.passwordHash = passwordEncoder.encode(request.newPassword); user.updatedAt = Instant.now()
         userRepository.save(user)
         auditService.log(AuditEntry("PasswordReset", "User", user.id.toString(), user.displayName,

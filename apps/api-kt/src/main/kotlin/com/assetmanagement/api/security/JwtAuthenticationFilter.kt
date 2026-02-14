@@ -24,6 +24,8 @@ class JwtAuthenticationFilter(
     private val userRepository: UserRepository
 ) : OncePerRequestFilter() {
 
+    private val log = org.slf4j.LoggerFactory.getLogger(JwtAuthenticationFilter::class.java)
+
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
@@ -66,8 +68,9 @@ class JwtAuthenticationFilter(
                     authorities
                 )
                 SecurityContextHolder.getContext().authentication = auth
-            } catch (_: Exception) {
-                // Invalid token — continue without auth
+            } catch (e: Exception) {
+                log.warn("Invalid JWT token: {}", e.message)
+                SecurityContextHolder.clearContext()
             }
         }
         filterChain.doFilter(request, response)
