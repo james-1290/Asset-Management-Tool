@@ -406,7 +406,7 @@ class DashboardController(
             items.add(InventorySnapshotItemDto(
                 label = "Spare $typeName",
                 count = count,
-                filterUrl = "/assets?status=Available&assetType=$typeName"
+                filterUrl = "/assets?status=Available&assetType=${java.net.URLEncoder.encode(typeName, java.nio.charset.StandardCharsets.UTF_8)}"
             ))
         }
 
@@ -453,7 +453,7 @@ class DashboardController(
         items.add(InventorySnapshotItemDto(
             label = "Expiring This Month",
             count = warrantyExpiringCount + certExpiringCount + licenceExpiringCount,
-            filterUrl = "/assets?sortBy=warrantyExpiryDate&sortDir=asc"
+            filterUrl = "/reports?tab=expiries"
         ))
 
         // Checked out count
