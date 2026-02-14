@@ -2,6 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Application
+import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.ApplicationHistoryEventType
 import com.assetmanagement.api.model.enums.ApplicationStatus
@@ -113,7 +114,7 @@ class ApplicationsController(
             )
         )
         applications.forEach { a ->
-            writer.writeNext(
+            writer.writeNext(CsvUtils.sanitizeRow(
                 arrayOf(
                     a.name,
                     a.applicationType?.name ?: "",
@@ -131,7 +132,7 @@ class ApplicationsController(
                     dateFormat.format(a.createdAt),
                     dateFormat.format(a.updatedAt)
                 )
-            )
+            ))
         }
         writer.flush()
     }

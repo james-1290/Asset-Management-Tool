@@ -2,6 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Location
+import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.repository.AssetRepository
 import com.assetmanagement.api.repository.LocationRepository
 import com.assetmanagement.api.repository.PersonRepository
@@ -86,8 +87,8 @@ class LocationsController(
         val writer = CSVWriter(OutputStreamWriter(response.outputStream))
         writer.writeNext(arrayOf("Name", "Address", "City", "Country", "CreatedAt", "UpdatedAt"))
         locations.forEach { l ->
-            writer.writeNext(arrayOf(l.name, l.address ?: "", l.city ?: "", l.country ?: "",
-                dateFormat.format(l.createdAt), dateFormat.format(l.updatedAt)))
+            writer.writeNext(CsvUtils.sanitizeRow(arrayOf(l.name, l.address ?: "", l.city ?: "", l.country ?: "",
+                dateFormat.format(l.createdAt), dateFormat.format(l.updatedAt))))
         }
         writer.flush()
     }

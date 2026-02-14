@@ -2,6 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.enums.AssetStatus
+import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.model.enums.ApplicationStatus
 import com.assetmanagement.api.model.enums.CertificateStatus
 import com.opencsv.CSVWriter
@@ -130,17 +131,17 @@ class ReportsController(
         if (format.equals("csv", ignoreCase = true)) {
             return csvResponse("asset-summary.csv") { writer ->
                 writer.writeNext(arrayOf("Metric", "Value"))
-                writer.writeNext(arrayOf("Total Assets", totalAssets.toString()))
-                writer.writeNext(arrayOf("Total Value", totalValue.toPlainString()))
+                writer.writeNext(CsvUtils.sanitizeRow(arrayOf("Total Assets", totalAssets.toString())))
+                writer.writeNext(CsvUtils.sanitizeRow(arrayOf("Total Value", totalValue.toPlainString())))
                 writer.writeNext(arrayOf("", ""))
                 writer.writeNext(arrayOf("Status", "Count"))
-                byStatus.forEach { writer.writeNext(arrayOf(it.status, it.count.toString())) }
+                byStatus.forEach { writer.writeNext(CsvUtils.sanitizeRow(arrayOf(it.status, it.count.toString()))) }
                 writer.writeNext(arrayOf("", ""))
                 writer.writeNext(arrayOf("Type", "Count"))
-                byType.forEach { writer.writeNext(arrayOf(it.label, it.count.toString())) }
+                byType.forEach { writer.writeNext(CsvUtils.sanitizeRow(arrayOf(it.label, it.count.toString()))) }
                 writer.writeNext(arrayOf("", ""))
                 writer.writeNext(arrayOf("Location", "Count"))
-                byLocation.forEach { writer.writeNext(arrayOf(it.label, it.count.toString())) }
+                byLocation.forEach { writer.writeNext(CsvUtils.sanitizeRow(arrayOf(it.label, it.count.toString()))) }
             }
         }
 
@@ -239,11 +240,11 @@ class ReportsController(
             return csvResponse("expiries.csv") { writer ->
                 writer.writeNext(arrayOf("Category", "Name", "Type", "ExpiryDate", "DaysUntilExpiry", "Status"))
                 items.forEach { item ->
-                    writer.writeNext(arrayOf(
+                    writer.writeNext(CsvUtils.sanitizeRow(arrayOf(
                         item.category, item.name, item.typeName,
                         dateFormat.format(item.expiryDate),
                         item.daysUntilExpiry.toString(), item.status
-                    ))
+                    )))
                 }
             }
         }
@@ -305,21 +306,21 @@ class ReportsController(
         if (format.equals("csv", ignoreCase = true)) {
             return csvResponse("licence-summary.csv") { writer ->
                 writer.writeNext(arrayOf("Metric", "Value"))
-                writer.writeNext(arrayOf("Total Applications", total.toString()))
-                writer.writeNext(arrayOf("Active", active.toString()))
-                writer.writeNext(arrayOf("Expired", expired.toString()))
-                writer.writeNext(arrayOf("Pending Renewal", pendingRenewal.toString()))
-                writer.writeNext(arrayOf("Suspended", suspended.toString()))
-                writer.writeNext(arrayOf("Total Spend", totalSpend.toPlainString()))
+                writer.writeNext(CsvUtils.sanitizeRow(arrayOf("Total Applications", total.toString())))
+                writer.writeNext(CsvUtils.sanitizeRow(arrayOf("Active", active.toString())))
+                writer.writeNext(CsvUtils.sanitizeRow(arrayOf("Expired", expired.toString())))
+                writer.writeNext(CsvUtils.sanitizeRow(arrayOf("Pending Renewal", pendingRenewal.toString())))
+                writer.writeNext(CsvUtils.sanitizeRow(arrayOf("Suspended", suspended.toString())))
+                writer.writeNext(CsvUtils.sanitizeRow(arrayOf("Total Spend", totalSpend.toPlainString())))
                 writer.writeNext(arrayOf("", ""))
                 writer.writeNext(arrayOf("Expiring Soon", ""))
                 writer.writeNext(arrayOf("Name", "Type", "ExpiryDate", "DaysUntilExpiry", "Status"))
                 expiringSoon.forEach { item ->
-                    writer.writeNext(arrayOf(
+                    writer.writeNext(CsvUtils.sanitizeRow(arrayOf(
                         item.name, item.applicationTypeName,
                         dateFormat.format(item.expiryDate),
                         item.daysUntilExpiry.toString(), item.status
-                    ))
+                    )))
                 }
             }
         }
@@ -375,17 +376,17 @@ class ReportsController(
                 writer.writeNext(arrayOf("Person", "Email", "AssetCount", "AssetName"))
                 personDtos.forEach { person ->
                     if (person.assets.isEmpty()) {
-                        writer.writeNext(arrayOf(
+                        writer.writeNext(CsvUtils.sanitizeRow(arrayOf(
                             person.fullName, person.email ?: "",
                             person.assignedAssetCount.toString(), ""
-                        ))
+                        )))
                     } else {
                         person.assets.forEach { asset ->
-                            writer.writeNext(arrayOf(
+                            writer.writeNext(CsvUtils.sanitizeRow(arrayOf(
                                 person.fullName, person.email ?: "",
                                 person.assignedAssetCount.toString(),
                                 asset.name
-                            ))
+                            )))
                         }
                     }
                 }
@@ -456,26 +457,26 @@ class ReportsController(
         if (format.equals("csv", ignoreCase = true)) {
             return csvResponse("asset-lifecycle.csv") { writer ->
                 writer.writeNext(arrayOf("Age Bucket", "Count"))
-                byAge.forEach { writer.writeNext(arrayOf(it.bucket, it.count.toString())) }
+                byAge.forEach { writer.writeNext(CsvUtils.sanitizeRow(arrayOf(it.bucket, it.count.toString()))) }
                 writer.writeNext(arrayOf("", ""))
                 writer.writeNext(arrayOf("Past Warranty Assets", ""))
                 writer.writeNext(arrayOf("Name", "Type", "WarrantyExpiry", "DaysOverdue"))
                 pastWarranty.forEach { item ->
-                    writer.writeNext(arrayOf(
+                    writer.writeNext(CsvUtils.sanitizeRow(arrayOf(
                         item.name, item.assetTypeName,
                         dateFormat.format(item.warrantyExpiryDate),
                         Math.abs(item.daysUntilExpiry).toString()
-                    ))
+                    )))
                 }
                 writer.writeNext(arrayOf("", ""))
                 writer.writeNext(arrayOf("Oldest Assets", ""))
                 writer.writeNext(arrayOf("Name", "Type", "PurchaseDate", "AgeDays"))
                 oldestAssets.forEach { item ->
-                    writer.writeNext(arrayOf(
+                    writer.writeNext(CsvUtils.sanitizeRow(arrayOf(
                         item.name, item.assetTypeName,
                         dateFormat.format(item.purchaseDate),
                         item.ageDays.toString()
-                    ))
+                    )))
                 }
             }
         }

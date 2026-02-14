@@ -20,11 +20,16 @@ class AuthController(
     private val passwordEncoder: PasswordEncoder,
     private val currentUserService: CurrentUserService,
     @Value("\${saml.enabled:false}") private val samlEnabled: Boolean,
-    @Value("\${saml.registration-id:entra}") private val samlRegistrationId: String
+    @Value("\${saml.registration-id:entra}") private val samlRegistrationId: String,
+    @Value("\${auth.local-login.enabled:true}") private val localLoginEnabled: Boolean
 ) {
 
     @PostMapping("/login")
     fun login(@RequestBody request: LoginRequest): ResponseEntity<Any> {
+        if (!localLoginEnabled) {
+            return ResponseEntity.status(404).body(mapOf("error" to "Local login is disabled. Use SSO to sign in."))
+        }
+
         val user = userRepository.findByUsername(request.username)
             ?: return ResponseEntity.status(401).body(mapOf("error" to "Invalid username or password."))
 

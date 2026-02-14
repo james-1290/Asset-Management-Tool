@@ -2,6 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.AuditLogDto
 import com.assetmanagement.api.dto.PagedResponse
+import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.model.AuditLog
 import com.assetmanagement.api.repository.AuditLogRepository
 import com.opencsv.CSVWriter
@@ -50,8 +51,8 @@ class AuditLogsController(
         val writer = CSVWriter(OutputStreamWriter(response.outputStream))
         writer.writeNext(arrayOf("Timestamp", "ActorName", "Action", "EntityType", "EntityName", "Details", "Source"))
         logs.forEach { l ->
-            writer.writeNext(arrayOf(dateFormat.format(l.timestamp), l.actorName, l.action, l.entityType,
-                l.entityName ?: "", l.details ?: "", l.source.name))
+            writer.writeNext(CsvUtils.sanitizeRow(arrayOf(dateFormat.format(l.timestamp), l.actorName, l.action, l.entityType,
+                l.entityName ?: "", l.details ?: "", l.source.name)))
         }
         writer.flush()
     }

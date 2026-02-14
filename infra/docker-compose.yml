@@ -4,7 +4,7 @@ services:
     container_name: assetmgmt-db
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-assetmgmt}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -22,7 +22,7 @@ services:
     container_name: assetmgmt-mysql
     restart: unless-stopped
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-assetmgmt}
@@ -39,8 +39,8 @@ services:
     container_name: assetmgmt-mailhog
     restart: unless-stopped
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
 
 volumes:
   pgdata:

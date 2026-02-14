@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-02-14 14:00 - Security hardening round 2 (Entra-only auth strategy)
+
+- **JWT isActive check**: JWT filter now verifies user exists and is active in DB on every authenticated request — deactivated user tokens are immediately rejected
+- **CSV formula injection**: All 7 CSV export endpoints sanitize cell values — strings starting with `=`, `+`, `-`, `@`, `\t`, `\r` are prefixed with `'` to prevent spreadsheet formula injection
+- **Local login gating**: `POST /api/v1/auth/login` can be disabled via `LOCAL_LOGIN_ENABLED=false` env var (returns 404); admin user seeding also skipped when disabled
+- **SCIM constant-time comparison**: Bearer token validation uses `MessageDigest.isEqual()` instead of `!=` to prevent timing attacks
+- **HTTP security headers**: Added `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Strict-Transport-Security` (1 year, includeSubDomains) to both API and SAML filter chains
+- **CORS explicit headers**: Replaced wildcard `allowedHeaders: *` with explicit `Content-Type, Authorization, X-Requested-With`
+- **Swagger production toggle**: Swagger UI and API docs can be disabled via `SWAGGER_ENABLED=false` env var
+- **Docker localhost binding**: All container ports (MySQL 3306, PostgreSQL 5432, MailHog 1025/8025) now bind to `127.0.0.1` only — not exposed on network interfaces
+- **Global exception handler**: Unhandled exceptions return generic `{"error": "An internal error occurred"}` — no stack traces leaked to clients
+- No DB migrations
+
 ## 2026-02-14 13:27 - Security hardening (env-var overrides for production)
 
 - **JWT key**: Now configurable via `JWT_KEY` env var (dev default preserved)
