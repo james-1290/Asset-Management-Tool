@@ -4,6 +4,15 @@
 
 After ANY backend changes (new endpoints, migrations, model changes, controller updates), ALWAYS restart the API server before testing. Kill the old process and start a new one. Never assume the API is already stopped — verify with `lsof` or `ps`. This is the #1 source of bugs in this project.
 
+## Always Leave Services Running
+
+After completing any work, ALWAYS ensure the following services are running before finishing:
+1. **Docker infrastructure**: `cd infra && docker compose up -d` (MySQL, PostgreSQL, MailHog)
+2. **API server**: Build the JAR then run it: `cd apps/api-kt && JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home" java -jar build/libs/asset-management-api-1.0.0.jar`
+3. **Verify**: Confirm login works with `curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5115/api/v1/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"admin123"}'` — should return 200
+
+Never leave the user with a stopped API or database. If you killed a process for testing, restart it before declaring done.
+
 ## Database Migrations
 
 When adding or modifying database models/columns, ALWAYS create and apply the EF migration before testing. Never skip this step. After migration, verify the table/column exists. If adding a new column to existing records, implement a backfill strategy.
