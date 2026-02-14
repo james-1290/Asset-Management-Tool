@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-02-14 14:23 - Security hardening round 2b (follow-up fixes)
+
+- **SAML isActive check**: SAML auth handler now rejects deactivated users before issuing JWT — redirects to `/login?error=account_disabled`
+- **Audit logs authorization**: `AuditLogsController` now requires Admin role via `@PreAuthorize("hasRole('Admin')")` — previously accessible to any authenticated user
+- No DB migrations
+
 ## 2026-02-14 14:00 - Security hardening round 2 (Entra-only auth strategy)
 
 - **JWT isActive check**: JWT filter now verifies user exists and is active in DB on every authenticated request — deactivated user tokens are immediately rejected
