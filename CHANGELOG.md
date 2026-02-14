@@ -1,11 +1,27 @@
 # Changelog
 
-## 2026-02-14 16:59 - Reports minor polish: timestamps, filter summaries, print button
+## 2026-02-14 17:01 — Phase A: Smart Dashboard + Search + People 360 + Reports Polish
 
-- **Report generation timestamp**: All 6 report components now show "Generated: [datetime]" using React Query's `dataUpdatedAt`, updating on each refetch
-- **Filter summary line**: Reports with date ranges (Expiries, Licence Summary, Asset Lifecycle) show the active date range; Depreciation report shows active asset type/location filters
-- **Print button**: Added `Printer` icon button (outline, sm) next to Export CSV on all reports, calls `window.print()`
-- **Print-friendly CSS**: Added `@media print` rules to `index.css` — hides sidebar/nav/buttons, full-width main content, clean table borders, page break utility class
+### Dashboard
+- New **Inventory Snapshot** widget: spare counts per asset type, expiring this month, checked out, in maintenance — each card clickable to filtered list
+
+### Global Search (Cmd+K)
+- Rich result previews: asset type/status, department/job title, expiry countdown, asset counts shown inline
+- Category counts in group headers (e.g. "Assets (12)")
+- Recent searches stored in localStorage, shown when input is empty
+
+### People
+- **360 view**: summary strip with entity counts, tabbed layout (Assets, Certificates, Applications, History)
+- New backend endpoints: person summary, person certificates, person applications
+- **Offboarding workflow**: "Offboard / Reclaim Assets" dialog — per-item transfer to another person, mark as available, or keep — all in one batch with audit trail
+- Optional person archival during offboarding
+
+### Reports
+- **Date range controls** on Expiries, Asset Lifecycle, and Licence Summary reports (presets + custom date picker)
+- New **Depreciation Report** (6th tab): summary cards (total cost, accumulated depreciation, book value), grouped-by-type table, asset type/location filters, CSV export
+- **Print button** with print-friendly CSS on all 6 reports
+- Generation timestamps and filter summary lines on all reports
+- CSV exports respect active date ranges and filters
 
 ## 2026-02-14 15:12 - Security audit: comprehensive hardening (Phases 1-3)
 
