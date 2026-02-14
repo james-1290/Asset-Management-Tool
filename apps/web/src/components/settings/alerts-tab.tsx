@@ -142,7 +142,13 @@ export function AlertsTab() {
 
   useEffect(() => {
     if (settings) {
-      form.reset(settings);
+      form.reset({
+        ...settings,
+        // Clear masked secrets so placeholders show instead
+        smtpPassword: settings.smtpPassword === "********" ? "" : settings.smtpPassword,
+        graphClientSecret: settings.graphClientSecret === "********" ? "" : settings.graphClientSecret,
+        slackWebhookUrl: settings.slackWebhookUrl?.endsWith("...") ? "" : settings.slackWebhookUrl,
+      });
     }
   }, [settings, form]);
 
@@ -469,7 +475,7 @@ export function AlertsTab() {
                     <FormItem>
                       <FormLabel>SMTP Password</FormLabel>
                       <FormControl>
-                        <Input type="password" {...field} />
+                        <Input type="password" placeholder="Leave blank to keep current" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -528,7 +534,7 @@ export function AlertsTab() {
                     <FormItem>
                       <FormLabel>Client Secret</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="Client secret value" {...field} />
+                        <Input type="password" placeholder="Leave blank to keep current" {...field} />
                       </FormControl>
                       <FormDescription>Enterprise App client secret</FormDescription>
                       <FormMessage />

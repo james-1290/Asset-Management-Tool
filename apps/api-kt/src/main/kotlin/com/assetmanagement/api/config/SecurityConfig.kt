@@ -4,10 +4,12 @@ import com.assetmanagement.api.security.JwtAuthenticationFilter
 import com.assetmanagement.api.security.SamlAuthSuccessHandler
 import com.assetmanagement.api.security.ScimAuthFilter
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -18,9 +20,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
-    private val corsConfig: CorsConfig
+    private val corsConfig: CorsConfig,
+    @Value("\${scim.enabled:false}") private val scimEnabled: Boolean
 ) {
 
     @Autowired(required = false)
@@ -57,7 +61,7 @@ class SecurityConfig(
                     .requestMatchers("/api/v1/auth/login").permitAll()
                     .requestMatchers("/api/v1/auth/sso-config").permitAll()
                     .requestMatchers("/api/v1/health").permitAll()
-                    .requestMatchers("/scim/v2/**").permitAll()
+                    .apply { if (scimEnabled) requestMatchers("/scim/v2/**").permitAll() }
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                     .anyRequest().authenticated()
             }

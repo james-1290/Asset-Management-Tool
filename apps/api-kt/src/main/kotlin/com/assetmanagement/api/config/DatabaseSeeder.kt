@@ -9,6 +9,7 @@ import com.assetmanagement.api.repository.SystemSettingRepository
 import com.assetmanagement.api.repository.UserRepository
 import com.assetmanagement.api.repository.UserRoleRepository
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Component
@@ -18,7 +19,8 @@ class DatabaseSeeder(
     private val roleRepository: RoleRepository,
     private val userRepository: UserRepository,
     private val userRoleRepository: UserRoleRepository,
-    private val systemSettingRepository: SystemSettingRepository
+    private val systemSettingRepository: SystemSettingRepository,
+    @Value("\${app.admin.password:admin123}") private val adminPassword: String
 ) : CommandLineRunner {
 
     private val log = LoggerFactory.getLogger(DatabaseSeeder::class.java)
@@ -37,7 +39,7 @@ class DatabaseSeeder(
 
             val user = User(
                 username = "admin",
-                passwordHash = passwordEncoder.encode("admin123"),
+                passwordHash = passwordEncoder.encode(adminPassword),
                 email = "admin@localhost",
                 displayName = "Administrator"
             )

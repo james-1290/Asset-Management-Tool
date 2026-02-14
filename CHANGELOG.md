@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-02-14 13:27 - Security hardening (env-var overrides for production)
+
+- **JWT key**: Now configurable via `JWT_KEY` env var (dev default preserved)
+- **DB credentials**: Configurable via `DB_USERNAME`/`DB_PASSWORD` env vars (dev defaults `root/root` preserved)
+- **Admin password**: Configurable via `ADMIN_PASSWORD` env var (dev default `admin123` preserved)
+- **SCIM endpoint locked down**: `/scim/v2/**` no longer uses `permitAll()` when `scim.enabled=false` (default) — unauthenticated requests now get 403 instead of passing through
+- **SCIM bearer token**: Configurable via `SCIM_BEARER_TOKEN` env var (already was, unchanged)
+- **Secrets masked in API**: `GET /api/v1/settings/alerts` now returns `********` for `smtpPassword` and `graphClientSecret`, truncates `slackWebhookUrl`; PUT endpoint skips masked values to preserve existing secrets
+- **Users listing requires Admin role**: `GET /api/v1/users` now has `@PreAuthorize("hasRole('Admin')")` matching all other user endpoints
+- **`@EnableMethodSecurity` added**: `@PreAuthorize` annotations on controllers are now actually enforced (was missing, annotations were silently ignored)
+- **Frontend**: Alerts settings form clears masked password values, shows "Leave blank to keep current" placeholder
+- No DB migrations
+
 ## 2026-02-13 21:55 - Asset templates + asset cloning
 
 - **New entity: Asset Templates** — saved presets per asset type with default values for cost, depreciation, location, notes, and custom fields
