@@ -2,6 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Asset
+import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.AssetStatus
 import com.assetmanagement.api.repository.*
@@ -146,7 +147,7 @@ class AssetsController(
                     csvBookValue = String.format("%.2f", cost)
                 }
             }
-            writer.writeNext(arrayOf(
+            writer.writeNext(CsvUtils.sanitizeRow(arrayOf(
                 a.name,
                 a.status.name,
                 a.assetType?.name ?: "",
@@ -162,7 +163,7 @@ class AssetsController(
                 a.notes ?: "",
                 dateFormat.format(a.createdAt),
                 dateFormat.format(a.updatedAt)
-            ))
+            )))
         }
         writer.flush()
     }

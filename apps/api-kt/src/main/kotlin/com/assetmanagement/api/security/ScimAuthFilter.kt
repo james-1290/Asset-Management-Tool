@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import java.security.MessageDigest
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -35,7 +36,7 @@ class ScimAuthFilter(
         }
 
         val token = authHeader.substring(7)
-        if (token != bearerToken) {
+        if (!MessageDigest.isEqual(token.toByteArray(), bearerToken.toByteArray())) {
             sendScimError(response, 401, "Invalid bearer token")
             return
         }

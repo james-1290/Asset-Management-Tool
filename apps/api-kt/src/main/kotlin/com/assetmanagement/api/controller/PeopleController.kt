@@ -2,6 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Person
+import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.repository.*
 import com.assetmanagement.api.service.*
 import com.opencsv.CSVWriter
@@ -74,8 +75,8 @@ class PeopleController(
         val writer = CSVWriter(OutputStreamWriter(response.outputStream))
         writer.writeNext(arrayOf("FullName", "Email", "Department", "JobTitle", "Location", "CreatedAt", "UpdatedAt"))
         people.forEach { p ->
-            writer.writeNext(arrayOf(p.fullName, p.email ?: "", p.department ?: "", p.jobTitle ?: "",
-                p.location?.name ?: "", dateFormat.format(p.createdAt), dateFormat.format(p.updatedAt)))
+            writer.writeNext(CsvUtils.sanitizeRow(arrayOf(p.fullName, p.email ?: "", p.department ?: "", p.jobTitle ?: "",
+                p.location?.name ?: "", dateFormat.format(p.createdAt), dateFormat.format(p.updatedAt))))
         }
         writer.flush()
     }

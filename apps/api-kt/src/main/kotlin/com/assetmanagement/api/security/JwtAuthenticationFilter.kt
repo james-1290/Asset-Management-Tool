@@ -1,5 +1,6 @@
 package com.assetmanagement.api.security
 
+import com.assetmanagement.api.repository.UserRepository
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
@@ -13,12 +14,14 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import java.nio.charset.StandardCharsets
+import java.util.*
 
 @Component
 class JwtAuthenticationFilter(
     @Value("\${jwt.key}") private val jwtKey: String,
     @Value("\${jwt.issuer}") private val jwtIssuer: String,
-    @Value("\${jwt.audience}") private val jwtAudience: String
+    @Value("\${jwt.audience}") private val jwtAudience: String,
+    private val userRepository: UserRepository
 ) : OncePerRequestFilter() {
 
     override fun doFilterInternal(
@@ -40,6 +43,14 @@ class JwtAuthenticationFilter(
                     .payload
 
                 val userId = claims.subject
+
+                // Reject tokens for deactivated or deleted users
+                val user = userRepository.findById(UUID.fromString(userId)).orElse(null)
+                if (user == null || !user.isActive) {
+                    filterChain.doFilter(request, response)
+                    return
+                }
+
                 val username = claims["unique_name"] as? String ?: ""
                 val roles = (claims["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] as? List<*>)
                     ?.mapNotNull { it as? String }

@@ -2,6 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Certificate
+import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.CertificateStatus
 import com.assetmanagement.api.repository.*
@@ -284,7 +285,7 @@ class CertificatesController(
             )
         )
         certificates.forEach { c ->
-            writer.writeNext(
+            writer.writeNext(CsvUtils.sanitizeRow(
                 arrayOf(
                     c.name,
                     c.certificateType?.name ?: "",
@@ -298,7 +299,7 @@ class CertificatesController(
                     dateFormat.format(c.createdAt),
                     dateFormat.format(c.updatedAt)
                 )
-            )
+            ))
         }
         writer.flush()
     }

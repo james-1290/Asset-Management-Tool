@@ -46,6 +46,15 @@ class SecurityConfig(
             }
             .saml2Metadata { }
 
+        http.headers { headers ->
+            headers.frameOptions { it.deny() }
+            headers.contentTypeOptions { }
+            headers.httpStrictTransportSecurity { hsts ->
+                hsts.includeSubDomains(true)
+                hsts.maxAgeInSeconds(31536000)
+            }
+        }
+
         return http.build()
     }
 
@@ -66,6 +75,15 @@ class SecurityConfig(
                     .anyRequest().authenticated()
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+
+        http.headers { headers ->
+            headers.frameOptions { it.deny() }
+            headers.contentTypeOptions { }
+            headers.httpStrictTransportSecurity { hsts ->
+                hsts.includeSubDomains(true)
+                hsts.maxAgeInSeconds(31536000)
+            }
+        }
 
         scimAuthFilter?.let { filter ->
             http.addFilterBefore(filter, JwtAuthenticationFilter::class.java)

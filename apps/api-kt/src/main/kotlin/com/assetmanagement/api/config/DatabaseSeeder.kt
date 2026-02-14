@@ -20,7 +20,8 @@ class DatabaseSeeder(
     private val userRepository: UserRepository,
     private val userRoleRepository: UserRoleRepository,
     private val systemSettingRepository: SystemSettingRepository,
-    @Value("\${app.admin.password:admin123}") private val adminPassword: String
+    @Value("\${app.admin.password:admin123}") private val adminPassword: String,
+    @Value("\${auth.local-login.enabled:true}") private val localLoginEnabled: Boolean
 ) : CommandLineRunner {
 
     private val log = LoggerFactory.getLogger(DatabaseSeeder::class.java)
@@ -32,21 +33,25 @@ class DatabaseSeeder(
     }
 
     private fun seedRoles() {
-        // Seed Admin role + admin user
+        // Seed Admin role + admin user (only when local login is enabled)
         if (roleRepository.findByName("Admin") == null) {
             val role = Role(name = "Admin", description = "Full system administrator")
             roleRepository.save(role)
 
-            val user = User(
-                username = "admin",
-                passwordHash = passwordEncoder.encode(adminPassword),
-                email = "admin@localhost",
-                displayName = "Administrator"
-            )
-            userRepository.save(user)
+            if (localLoginEnabled) {
+                val user = User(
+                    username = "admin",
+                    passwordHash = passwordEncoder.encode(adminPassword),
+                    email = "admin@localhost",
+                    displayName = "Administrator"
+                )
+                userRepository.save(user)
 
-            userRoleRepository.save(UserRole(userId = user.id, roleId = role.id))
-            log.info("Seeded Admin role and admin user")
+                userRoleRepository.save(UserRole(userId = user.id, roleId = role.id))
+                log.info("Seeded Admin role and admin user")
+            } else {
+                log.info("Seeded Admin role (local login disabled — no admin user created)")
+            }
         }
 
         // Seed User role
