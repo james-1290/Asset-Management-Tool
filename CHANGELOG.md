@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-02-14 14:34 - Security hardening round 2c (SAML account takeover + import auth)
+
+- **SAML account takeover prevention**: Email-based auto-linking now only applies to users with `authProvider` of `SAML` or `SCIM` — local users are never silently linked to an SSO identity, preventing account takeover via a malicious IdP
+- **Import controller authorization**: `ImportController` now requires Admin role via `@PreAuthorize("hasRole('Admin')")` — previously any authenticated user could bulk-import data
+- No DB migrations
+
 ## 2026-02-14 14:23 - Security hardening round 2b (follow-up fixes)
 
 - **SAML isActive check**: SAML auth handler now rejects deactivated users before issuing JWT — redirects to `/login?error=account_disabled`
