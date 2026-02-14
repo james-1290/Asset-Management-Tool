@@ -56,6 +56,13 @@ class SamlAuthSuccessHandler(
         log.info("SAML login: externalId={}, email={}, displayName={}", externalId, email, displayName)
 
         val user = findOrCreateUser(externalId, email, displayName)
+
+        if (!user.isActive) {
+            log.warn("SAML login rejected: user {} is deactivated", user.id)
+            response.sendRedirect("$frontendOrigin/login?error=account_disabled")
+            return
+        }
+
         val roles = user.userRoles.mapNotNull { it.role?.name }
         val jwt = tokenService.generateToken(user, roles)
 

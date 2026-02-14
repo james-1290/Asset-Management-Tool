@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 import java.io.OutputStreamWriter
 import java.time.ZoneOffset
@@ -19,6 +20,7 @@ import java.time.format.DateTimeFormatter
 
 @RestController
 @RequestMapping("/api/v1/auditlogs")
+@PreAuthorize("hasRole('Admin')")
 class AuditLogsController(
     private val auditLogRepository: AuditLogRepository
 ) {
