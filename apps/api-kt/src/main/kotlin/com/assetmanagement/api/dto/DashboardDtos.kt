@@ -91,3 +91,9 @@ data class ApplicationSummaryDto(
     val pendingRenewal: Int,
     val suspended: Int
 )
+
+data class InventorySnapshotItemDto(
+    val label: String,
+    val count: Int,
+    val filterUrl: String
+)

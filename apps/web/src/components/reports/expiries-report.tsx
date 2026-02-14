@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { useExpiriesReport } from "@/hooks/use-reports";
 import { reportsApi } from "@/lib/api/reports";
@@ -13,13 +13,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -27,8 +20,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DateRangePicker, type DateRange } from "./date-range-picker";
 
-const DAY_OPTIONS = [7, 14, 30, 60, 90];
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 function categoryColor(category: string) {
   switch (category) {
@@ -44,12 +46,15 @@ function categoryColor(category: string) {
 }
 
 export function ExpiriesReport() {
-  const [days, setDays] = useState(30);
-  const { data, isLoading } = useExpiriesReport(days);
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: todayISO(),
+    to: addDays(todayISO(), 30),
+  });
+  const { data, isLoading, dataUpdatedAt } = useExpiriesReport(dateRange.from, dateRange.to);
 
   async function handleExport() {
     try {
-      await reportsApi.downloadExpiriesCsv(days);
+      await reportsApi.downloadExpiriesCsv(dateRange.from, dateRange.to);
       toast.success("CSV exported");
     } catch {
       toast.error("Export failed");
@@ -69,26 +74,35 @@ export function ExpiriesReport() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Expiring within</span>
-          <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DAY_OPTIONS.map((d) => (
-                <SelectItem key={d} value={String(d)}>
-                  {d} days
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="space-y-1">
+          <DateRangePicker
+            value={dateRange}
+            onChange={setDateRange}
+            defaultPreset="next30"
+          />
+          {dataUpdatedAt > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Generated: {new Date(dataUpdatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </p>
+          )}
         </div>
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="no-print">
+            <Printer className="mr-2 h-4 w-4" />
+            Print
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} className="no-print">
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
+
+      {(dateRange.from || dateRange.to) && (
+        <p className="text-xs text-muted-foreground">
+          Showing: {dateRange.from ?? "start"} to {dateRange.to ?? "end"}
+        </p>
+      )}
 
       <Card>
         <CardHeader>
@@ -102,7 +116,7 @@ export function ExpiriesReport() {
         <CardContent>
           {data.items.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              No expiries in the next {days} days.
+              No expiries in the selected date range.
             </p>
           ) : (
             <Table>

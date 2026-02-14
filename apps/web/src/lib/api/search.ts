@@ -4,6 +4,15 @@ export interface SearchResultItem {
   id: string;
   name: string;
   subtitle?: string;
+  extra?: string;
+}
+
+export interface SearchCounts {
+  assets: number;
+  certificates: number;
+  applications: number;
+  people: number;
+  locations: number;
 }
 
 export interface SearchResponse {
@@ -12,6 +21,7 @@ export interface SearchResponse {
   applications: SearchResultItem[];
   people: SearchResultItem[];
   locations: SearchResultItem[];
+  counts: SearchCounts;
 }
 
 export const searchApi = {

@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-02-14 17:01 — Phase A: Smart Dashboard + Search + People 360 + Reports Polish
+
+### Dashboard
+- New **Inventory Snapshot** widget: spare counts per asset type, expiring this month, checked out, in maintenance — each card clickable to filtered list
+
+### Global Search (Cmd+K)
+- Rich result previews: asset type/status, department/job title, expiry countdown, asset counts shown inline
+- Category counts in group headers (e.g. "Assets (12)")
+- Recent searches stored in localStorage, shown when input is empty
+
+### People
+- **360 view**: summary strip with entity counts, tabbed layout (Assets, Certificates, Applications, History)
+- New backend endpoints: person summary, person certificates, person applications
+- **Offboarding workflow**: "Offboard / Reclaim Assets" dialog — per-item transfer to another person, mark as available, or keep — all in one batch with audit trail
+- Optional person archival during offboarding
+
+### Reports
+- **Date range controls** on Expiries, Asset Lifecycle, and Licence Summary reports (presets + custom date picker)
+- New **Depreciation Report** (6th tab): summary cards (total cost, accumulated depreciation, book value), grouped-by-type table, asset type/location filters, CSV export
+- **Print button** with print-friendly CSS on all 6 reports
+- Generation timestamps and filter summary lines on all reports
+- CSV exports respect active date ranges and filters
+
 ## 2026-02-14 15:12 - Security audit: comprehensive hardening (Phases 1-3)
 
 ### Phase 1 — Security Critical

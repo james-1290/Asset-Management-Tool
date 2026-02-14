@@ -134,3 +134,15 @@
     line-height: 1.5;
   }
 }
+
+@media print {
+  /* Hide non-report UI */
+  [data-sidebar], header, nav, .no-print { display: none !important; }
+  /* Full width for report content */
+  main { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  /* Clean table styling */
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ddd; padding: 4px 8px; font-size: 12px; }
+  /* Page breaks */
+  .print-break-before { page-break-before: always; }
+}

@@ -13,6 +13,7 @@ import type {
   CertificateSummary,
   LicenceExpiryItem,
   ApplicationSummary,
+  InventorySnapshotItem,
 } from "../../types/dashboard";
 import type { AuditLogEntry } from "../../types/audit-log";
 
@@ -86,5 +87,9 @@ export const dashboardApi = {
 
   getApplicationSummary(): Promise<ApplicationSummary> {
     return apiClient.get<ApplicationSummary>("/dashboard/application-summary");
+  },
+
+  getInventorySnapshot(): Promise<InventorySnapshotItem[]> {
+    return apiClient.get<InventorySnapshotItem[]>("/dashboard/inventory-snapshot");
   },
 };

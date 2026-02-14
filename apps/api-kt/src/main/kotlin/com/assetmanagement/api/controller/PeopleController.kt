@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.ResponseEntity
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import java.io.OutputStreamWriter
 import java.net.URI
@@ -26,6 +27,8 @@ class PeopleController(
     private val personRepository: PersonRepository,
     private val locationRepository: LocationRepository,
     private val assetRepository: AssetRepository,
+    private val certificateRepository: CertificateRepository,
+    private val applicationRepository: ApplicationRepository,
     private val personHistoryRepository: PersonHistoryRepository,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
@@ -209,6 +212,169 @@ class PeopleController(
             .content.map { DuplicateCheckResult(it.id, it.fullName, "Email: ${it.email ?: "N/A"}") }
 
         return ResponseEntity.ok(results)
+    }
+
+    @GetMapping("/{id}/summary")
+    fun getSummary(@PathVariable id: UUID): ResponseEntity<PersonSummaryDto> {
+        if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()
+
+        val assetSpec = Specification<com.assetmanagement.api.model.Asset> { root, _, cb ->
+            cb.and(cb.equal(root.get<UUID>("assignedPersonId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
+        }
+        val certSpec = Specification<com.assetmanagement.api.model.Certificate> { root, _, cb ->
+            cb.and(cb.equal(root.get<UUID>("personId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
+        }
+        val appSpec = Specification<com.assetmanagement.api.model.Application> { root, _, cb ->
+            cb.and(cb.equal(root.get<UUID>("personId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
+        }
+
+        return ResponseEntity.ok(PersonSummaryDto(
+            assetCount = assetRepository.count(assetSpec).toInt(),
+            certificateCount = certificateRepository.count(certSpec).toInt(),
+            applicationCount = applicationRepository.count(appSpec).toInt()
+        ))
+    }
+
+    @GetMapping("/{id}/certificates")
+    fun getAssignedCertificates(@PathVariable id: UUID): ResponseEntity<Any> {
+        if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()
+        val spec = Specification<com.assetmanagement.api.model.Certificate> { root, _, cb ->
+            cb.and(cb.equal(root.get<UUID>("personId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
+        }
+        val certs = certificateRepository.findAll(spec, Sort.by("name")).map { c ->
+            AssignedCertificateDto(c.id, c.name, c.certificateType?.name ?: "", c.status.name, c.expiryDate)
+        }
+        return ResponseEntity.ok(certs)
+    }
+
+    @GetMapping("/{id}/applications")
+    fun getAssignedApplications(@PathVariable id: UUID): ResponseEntity<Any> {
+        if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()
+        val spec = Specification<com.assetmanagement.api.model.Application> { root, _, cb ->
+            cb.and(cb.equal(root.get<UUID>("personId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
+        }
+        val apps = applicationRepository.findAll(spec, Sort.by("name")).map { a ->
+            AssignedApplicationDto(a.id, a.name, a.applicationType?.name ?: "", a.status.name, a.licenceType?.name, a.expiryDate)
+        }
+        return ResponseEntity.ok(apps)
+    }
+
+    @PostMapping("/{id}/offboard")
+    @Transactional
+    fun offboard(@PathVariable id: UUID, @RequestBody request: OffboardRequest): ResponseEntity<Any> {
+        val person = personRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+        val results = mutableListOf<String>()
+
+        for (action in request.actions) {
+            when (action.entityType) {
+                "Asset" -> {
+                    val asset = assetRepository.findById(action.entityId).orElse(null) ?: continue
+                    when (action.action) {
+                        "free" -> {
+                            asset.assignedPersonId = null
+                            asset.status = com.assetmanagement.api.model.enums.AssetStatus.Available
+                            asset.updatedAt = Instant.now()
+                            assetRepository.save(asset)
+                            auditService.log(AuditEntry("CheckedIn", "Asset", asset.id.toString(), asset.name,
+                                "Checked in asset \"${asset.name}\" during offboarding of \"${person.fullName}\"",
+                                currentUserService.userId, currentUserService.userName))
+                            auditService.log(AuditEntry("AssetCheckedIn", "Person", person.id.toString(), person.fullName,
+                                "Asset \"${asset.name}\" checked in during offboarding",
+                                currentUserService.userId, currentUserService.userName))
+                            results.add("Freed: ${asset.name}")
+                        }
+                        "transfer" -> {
+                            val targetId = action.transferToPersonId ?: continue
+                            val targetPerson = personRepository.findById(targetId).orElse(null) ?: continue
+                            // Check in from source
+                            asset.assignedPersonId = targetId
+                            asset.status = com.assetmanagement.api.model.enums.AssetStatus.CheckedOut
+                            asset.updatedAt = Instant.now()
+                            assetRepository.save(asset)
+                            auditService.log(AuditEntry("CheckedIn", "Asset", asset.id.toString(), asset.name,
+                                "Checked in asset \"${asset.name}\" from \"${person.fullName}\" during offboarding",
+                                currentUserService.userId, currentUserService.userName))
+                            auditService.log(AuditEntry("AssetCheckedIn", "Person", person.id.toString(), person.fullName,
+                                "Asset \"${asset.name}\" transferred to \"${targetPerson.fullName}\" during offboarding",
+                                currentUserService.userId, currentUserService.userName))
+                            // Check out to target
+                            auditService.log(AuditEntry("CheckedOut", "Asset", asset.id.toString(), asset.name,
+                                "Checked out asset \"${asset.name}\" to \"${targetPerson.fullName}\" during offboarding",
+                                currentUserService.userId, currentUserService.userName))
+                            auditService.log(AuditEntry("AssetCheckedOut", "Person", targetPerson.id.toString(), targetPerson.fullName,
+                                "Asset \"${asset.name}\" transferred from \"${person.fullName}\" during offboarding",
+                                currentUserService.userId, currentUserService.userName))
+                            results.add("Transferred: ${asset.name} → ${targetPerson.fullName}")
+                        }
+                        "keep" -> results.add("Kept: ${asset.name}")
+                    }
+                }
+                "Certificate" -> {
+                    val cert = certificateRepository.findById(action.entityId).orElse(null) ?: continue
+                    when (action.action) {
+                        "free" -> {
+                            cert.personId = null
+                            cert.updatedAt = Instant.now()
+                            certificateRepository.save(cert)
+                            auditService.log(AuditEntry("Updated", "Certificate", cert.id.toString(), cert.name,
+                                "Unassigned certificate \"${cert.name}\" from \"${person.fullName}\" during offboarding",
+                                currentUserService.userId, currentUserService.userName))
+                            results.add("Freed: ${cert.name}")
+                        }
+                        "transfer" -> {
+                            val targetId = action.transferToPersonId ?: continue
+                            val targetPerson = personRepository.findById(targetId).orElse(null) ?: continue
+                            cert.personId = targetId
+                            cert.updatedAt = Instant.now()
+                            certificateRepository.save(cert)
+                            auditService.log(AuditEntry("Updated", "Certificate", cert.id.toString(), cert.name,
+                                "Transferred certificate \"${cert.name}\" from \"${person.fullName}\" to \"${targetPerson.fullName}\" during offboarding",
+                                currentUserService.userId, currentUserService.userName))
+                            results.add("Transferred: ${cert.name} → ${targetPerson.fullName}")
+                        }
+                        "keep" -> results.add("Kept: ${cert.name}")
+                    }
+                }
+                "Application" -> {
+                    val app = applicationRepository.findById(action.entityId).orElse(null) ?: continue
+                    when (action.action) {
+                        "free" -> {
+                            app.personId = null
+                            app.updatedAt = Instant.now()
+                            applicationRepository.save(app)
+                            auditService.log(AuditEntry("Updated", "Application", app.id.toString(), app.name,
+                                "Unassigned application \"${app.name}\" from \"${person.fullName}\" during offboarding",
+                                currentUserService.userId, currentUserService.userName))
+                            results.add("Freed: ${app.name}")
+                        }
+                        "transfer" -> {
+                            val targetId = action.transferToPersonId ?: continue
+                            val targetPerson = personRepository.findById(targetId).orElse(null) ?: continue
+                            app.personId = targetId
+                            app.updatedAt = Instant.now()
+                            applicationRepository.save(app)
+                            auditService.log(AuditEntry("Updated", "Application", app.id.toString(), app.name,
+                                "Transferred application \"${app.name}\" from \"${person.fullName}\" to \"${targetPerson.fullName}\" during offboarding",
+                                currentUserService.userId, currentUserService.userName))
+                            results.add("Transferred: ${app.name} → ${targetPerson.fullName}")
+                        }
+                        "keep" -> results.add("Kept: ${app.name}")
+                    }
+                }
+            }
+        }
+
+        if (request.deactivatePerson) {
+            person.isArchived = true
+            person.updatedAt = Instant.now()
+            personRepository.save(person)
+            auditService.log(AuditEntry("Archived", "Person", person.id.toString(), person.fullName,
+                "Archived person \"${person.fullName}\" during offboarding",
+                currentUserService.userId, currentUserService.userName))
+            results.add("Person archived")
+        }
+
+        return ResponseEntity.ok(OffboardResultDto(results))
     }
 
     private fun buildSpec(search: String?): Specification<Person> = Specification { root, _, cb ->

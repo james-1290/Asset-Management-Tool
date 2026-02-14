@@ -1,4 +1,5 @@
-import { Download, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Download, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { useLicenceSummaryReport } from "@/hooks/use-reports";
 import { reportsApi } from "@/lib/api/reports";
@@ -18,13 +19,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DateRangePicker, type DateRange } from "./date-range-picker";
+
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 export function LicenceSummaryReport() {
-  const { data, isLoading } = useLicenceSummaryReport();
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: todayISO(),
+    to: addDays(todayISO(), 30),
+  });
+  const { data, isLoading, dataUpdatedAt } = useLicenceSummaryReport(dateRange.from, dateRange.to);
 
   async function handleExport() {
     try {
-      await reportsApi.downloadLicenceSummaryCsv();
+      await reportsApi.downloadLicenceSummaryCsv(dateRange.from, dateRange.to);
       toast.success("CSV exported");
     } catch {
       toast.error("Export failed");
@@ -51,12 +67,35 @@ export function LicenceSummaryReport() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div />
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="space-y-1">
+          <DateRangePicker
+            value={dateRange}
+            onChange={setDateRange}
+            defaultPreset="next30"
+          />
+          {dataUpdatedAt > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Generated: {new Date(dataUpdatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="no-print">
+            <Printer className="mr-2 h-4 w-4" />
+            Print
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} className="no-print">
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
+
+      {(dateRange.from || dateRange.to) && (
+        <p className="text-xs text-muted-foreground">
+          Showing: {dateRange.from ?? "start"} to {dateRange.to ?? "end"}
+        </p>
+      )}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -92,15 +131,15 @@ export function LicenceSummaryReport() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Expiring Soon (next 30 days)</CardTitle>
+          <CardTitle className="text-base">Expiring Soon</CardTitle>
           <CardDescription>
-            Applications with licences expiring within 30 days
+            Applications with licences expiring in the selected range
           </CardDescription>
         </CardHeader>
         <CardContent>
           {data.expiringSoon.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              No licences expiring in the next 30 days.
+              No licences expiring in the selected date range.
             </p>
           ) : (
             <Table>

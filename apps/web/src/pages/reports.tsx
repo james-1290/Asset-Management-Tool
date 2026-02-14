@@ -6,6 +6,7 @@ import { ExpiriesReport } from "@/components/reports/expiries-report";
 import { LicenceSummaryReport } from "@/components/reports/licence-summary-report";
 import { AssignmentsReport } from "@/components/reports/assignments-report";
 import { AssetLifecycleReport } from "@/components/reports/asset-lifecycle-report";
+import { DepreciationReport } from "@/components/reports/depreciation-report";
 
 const TABS = [
   "asset-summary",
@@ -13,6 +14,7 @@ const TABS = [
   "licence-summary",
   "assignments",
   "asset-lifecycle",
+  "depreciation",
 ] as const;
 type TabValue = (typeof TABS)[number];
 
@@ -43,6 +45,7 @@ export default function ReportsPage() {
           <TabsTrigger value="licence-summary">Licence Summary</TabsTrigger>
           <TabsTrigger value="assignments">Assignments</TabsTrigger>
           <TabsTrigger value="asset-lifecycle">Asset Lifecycle</TabsTrigger>
+          <TabsTrigger value="depreciation">Depreciation</TabsTrigger>
         </TabsList>
 
         <TabsContent value="asset-summary" className="mt-6">
@@ -63,6 +66,10 @@ export default function ReportsPage() {
 
         <TabsContent value="asset-lifecycle" className="mt-6">
           <AssetLifecycleReport />
+        </TabsContent>
+
+        <TabsContent value="depreciation" className="mt-6">
+          <DepreciationReport />
         </TabsContent>
       </Tabs>
     </div>

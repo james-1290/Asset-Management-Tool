@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Monitor, Award, AppWindow, History, UserMinus } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
+import { Badge } from "../components/ui/badge";
 import {
   Card,
   CardContent,
@@ -24,14 +25,24 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
 import { AssetStatusBadge } from "../components/assets/asset-status-badge";
 import { PersonHistoryTimeline } from "../components/people/person-history-timeline";
 import { PersonFormDialog } from "../components/people/person-form-dialog";
+import { OffboardDialog } from "../components/people/offboard-dialog";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import {
   usePerson,
   usePersonHistory,
   usePersonAssets,
+  usePersonSummary,
+  usePersonCertificates,
+  usePersonApplications,
   useUpdatePerson,
   useArchivePerson,
 } from "../hooks/use-people";
@@ -43,7 +54,7 @@ function InfoItem({ label, value }: { label: string; value: string | null | unde
   return (
     <div>
       <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium mt-0.5">{value || "—"}</dd>
+      <dd className="text-sm font-medium mt-0.5">{value || "\u2014"}</dd>
     </div>
   );
 }
@@ -57,22 +68,30 @@ function formatDate(iso: string | null | undefined): string | null {
   });
 }
 
-const HISTORY_PREVIEW_LIMIT = 5;
+function StatusBadge({ status }: { status: string }) {
+  const variant = status === "Active" ? "default"
+    : status === "Expired" ? "destructive"
+    : "secondary";
+  return <Badge variant={variant}>{status}</Badge>;
+}
 
 export default function PersonDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: person, isLoading, isError } = usePerson(id!);
-  const { data: history, isLoading: historyLoading } = usePersonHistory(id!, HISTORY_PREVIEW_LIMIT);
   const { data: allHistory, isLoading: allHistoryLoading } = usePersonHistory(id!);
   const { data: assignedAssets, isLoading: assetsLoading } = usePersonAssets(id!);
+  const { data: summary } = usePersonSummary(id!);
+  const { data: certificates, isLoading: certsLoading } = usePersonCertificates(id!);
+  const { data: applications, isLoading: appsLoading } = usePersonApplications(id!);
   const { data: locations } = useLocations();
   const updateMutation = useUpdatePerson();
   const archiveMutation = useArchivePerson();
 
   const [formOpen, setFormOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [offboardOpen, setOffboardOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("assets");
 
   function handleFormSubmit(values: PersonFormValues) {
     if (!person) return;
@@ -136,8 +155,6 @@ export default function PersonDetailPage() {
     );
   }
 
-  const hasMoreHistory = history && history.length >= HISTORY_PREVIEW_LIMIT;
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -156,6 +173,12 @@ export default function PersonDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {!person.isArchived && (summary?.assetCount ?? 0) + (summary?.certificateCount ?? 0) + (summary?.applicationCount ?? 0) > 0 && (
+            <Button variant="outline" onClick={() => setOffboardOpen(true)}>
+              <UserMinus className="mr-2 h-4 w-4" />
+              Offboard
+            </Button>
+          )}
           {!person.isArchived && (
             <Button variant="outline" onClick={() => setArchiveOpen(true)}>
               <Trash2 className="mr-2 h-4 w-4" />
@@ -169,32 +192,82 @@ export default function PersonDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Details card */}
-        <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-                <InfoItem label="Full Name" value={person.fullName} />
-                <InfoItem label="Email" value={person.email} />
-                <InfoItem label="Department" value={person.department} />
-                <InfoItem label="Job Title" value={person.jobTitle} />
-                <InfoItem label="Location" value={person.locationName} />
-                <InfoItem label="Created" value={formatDate(person.createdAt)} />
-                <InfoItem label="Last Updated" value={formatDate(person.updatedAt)} />
-              </dl>
-            </CardContent>
-          </Card>
+      {/* Summary Strip */}
+      <div className="flex items-center gap-6 rounded-lg border bg-card px-6 py-3">
+        <button
+          type="button"
+          className={`flex items-center gap-2 text-sm transition-colors hover:text-primary ${activeTab === "assets" ? "text-primary font-semibold" : "text-muted-foreground"}`}
+          onClick={() => setActiveTab("assets")}
+        >
+          <Monitor className="h-4 w-4" />
+          <span className="tabular-nums font-semibold">{summary?.assetCount ?? "\u2014"}</span>
+          <span>Assets</span>
+        </button>
+        <span className="text-border">|</span>
+        <button
+          type="button"
+          className={`flex items-center gap-2 text-sm transition-colors hover:text-primary ${activeTab === "certificates" ? "text-primary font-semibold" : "text-muted-foreground"}`}
+          onClick={() => setActiveTab("certificates")}
+        >
+          <Award className="h-4 w-4" />
+          <span className="tabular-nums font-semibold">{summary?.certificateCount ?? "\u2014"}</span>
+          <span>Certificates</span>
+        </button>
+        <span className="text-border">|</span>
+        <button
+          type="button"
+          className={`flex items-center gap-2 text-sm transition-colors hover:text-primary ${activeTab === "applications" ? "text-primary font-semibold" : "text-muted-foreground"}`}
+          onClick={() => setActiveTab("applications")}
+        >
+          <AppWindow className="h-4 w-4" />
+          <span className="tabular-nums font-semibold">{summary?.applicationCount ?? "\u2014"}</span>
+          <span>Applications</span>
+        </button>
+      </div>
 
-          {/* Assigned Assets card */}
+      {/* Info Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
+            <InfoItem label="Full Name" value={person.fullName} />
+            <InfoItem label="Email" value={person.email} />
+            <InfoItem label="Department" value={person.department} />
+            <InfoItem label="Job Title" value={person.jobTitle} />
+            <InfoItem label="Location" value={person.locationName} />
+            <InfoItem label="Created" value={formatDate(person.createdAt)} />
+            <InfoItem label="Last Updated" value={formatDate(person.updatedAt)} />
+          </dl>
+        </CardContent>
+      </Card>
+
+      {/* Tabbed Content */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="assets">
+            <Monitor className="mr-1.5 h-3.5 w-3.5" />
+            Assets
+          </TabsTrigger>
+          <TabsTrigger value="certificates">
+            <Award className="mr-1.5 h-3.5 w-3.5" />
+            Certificates
+          </TabsTrigger>
+          <TabsTrigger value="applications">
+            <AppWindow className="mr-1.5 h-3.5 w-3.5" />
+            Applications
+          </TabsTrigger>
+          <TabsTrigger value="history">
+            <History className="mr-1.5 h-3.5 w-3.5" />
+            History
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Assets Tab */}
+        <TabsContent value="assets">
           <Card>
-            <CardHeader>
-              <CardTitle>Assigned Assets</CardTitle>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {assetsLoading ? (
                 <div className="space-y-2">
                   <Skeleton className="h-8 w-full" />
@@ -229,7 +302,7 @@ export default function PersonDetailPage() {
                         <TableCell>
                           <AssetStatusBadge status={asset.status as AssetStatus} />
                         </TableCell>
-                        <TableCell>{asset.locationName || "—"}</TableCell>
+                        <TableCell>{asset.locationName || "\u2014"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -237,31 +310,118 @@ export default function PersonDetailPage() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </TabsContent>
 
-        {/* History card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PersonHistoryTimeline
-              history={history}
-              isLoading={historyLoading}
-            />
-            {hasMoreHistory && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full mt-2"
-                onClick={() => setHistoryOpen(true)}
-              >
-                View All History
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+        {/* Certificates Tab */}
+        <TabsContent value="certificates">
+          <Card>
+            <CardContent className="pt-6">
+              {certsLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ) : !certificates || certificates.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No certificates currently assigned.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Expiry Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {certificates.map((cert) => (
+                      <TableRow key={cert.id}>
+                        <TableCell>
+                          <Link
+                            to={`/certificates/${cert.id}`}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {cert.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell>{cert.certificateTypeName}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={cert.status} />
+                        </TableCell>
+                        <TableCell>{formatDate(cert.expiryDate) || "\u2014"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Applications Tab */}
+        <TabsContent value="applications">
+          <Card>
+            <CardContent className="pt-6">
+              {appsLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ) : !applications || applications.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No applications currently assigned.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Licence</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Expiry Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {applications.map((app) => (
+                      <TableRow key={app.id}>
+                        <TableCell>
+                          <Link
+                            to={`/applications/${app.id}`}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {app.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell>{app.applicationTypeName}</TableCell>
+                        <TableCell>{app.licenceType || "\u2014"}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={app.status} />
+                        </TableCell>
+                        <TableCell>{formatDate(app.expiryDate) || "\u2014"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* History Tab */}
+        <TabsContent value="history">
+          <Card>
+            <CardContent className="pt-6">
+              <PersonHistoryTimeline
+                history={allHistory}
+                isLoading={allHistoryLoading}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <PersonFormDialog
         open={formOpen}
@@ -282,18 +442,15 @@ export default function PersonDetailPage() {
         onConfirm={handleArchive}
       />
 
-      {/* Full History Dialog */}
-      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>History — {person.fullName}</DialogTitle>
-          </DialogHeader>
-          <PersonHistoryTimeline
-            history={allHistory}
-            isLoading={allHistoryLoading}
-          />
-        </DialogContent>
-      </Dialog>
+      <OffboardDialog
+        open={offboardOpen}
+        onOpenChange={setOffboardOpen}
+        personId={person.id}
+        personName={person.fullName}
+        assets={assignedAssets ?? []}
+        certificates={certificates ?? []}
+        applications={applications ?? []}
+      />
     </div>
   );
 }

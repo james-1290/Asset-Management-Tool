@@ -4,8 +4,13 @@ import type {
   PersonSearchResult,
   PersonHistory,
   AssignedAsset,
+  PersonSummary,
+  AssignedCertificate,
+  AssignedApplication,
   CreatePersonRequest,
   UpdatePersonRequest,
+  OffboardRequest,
+  OffboardResult,
 } from "../../types/person";
 import type { PagedResponse } from "../../types/paged-response";
 import type { DuplicateCheckResult, CheckPersonDuplicatesRequest } from "../../types/duplicate-check";
@@ -70,5 +75,21 @@ export const peopleApi = {
 
   checkDuplicates(data: CheckPersonDuplicatesRequest): Promise<DuplicateCheckResult[]> {
     return apiClient.post<DuplicateCheckResult[]>("/people/check-duplicates", data);
+  },
+
+  getSummary(id: string): Promise<PersonSummary> {
+    return apiClient.get<PersonSummary>(`/people/${id}/summary`);
+  },
+
+  getCertificates(id: string): Promise<AssignedCertificate[]> {
+    return apiClient.get<AssignedCertificate[]>(`/people/${id}/certificates`);
+  },
+
+  getApplications(id: string): Promise<AssignedApplication[]> {
+    return apiClient.get<AssignedApplication[]>(`/people/${id}/applications`);
+  },
+
+  offboard(id: string, request: OffboardRequest): Promise<OffboardResult> {
+    return apiClient.post<OffboardResult>(`/people/${id}/offboard`, request);
   },
 };

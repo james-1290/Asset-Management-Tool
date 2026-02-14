@@ -18,6 +18,7 @@ import { AssetsByLocationChart } from "@/components/dashboard/assets-by-location
 import { RecentActivityList } from "@/components/dashboard/recent-activity-list";
 import { AssetsByAgeChart } from "@/components/dashboard/assets-by-age-chart";
 import { ValueByLocationChart } from "@/components/dashboard/value-by-location-chart";
+import { InventorySnapshot } from "@/components/dashboard/inventory-snapshot";
 import { WidgetSettingsPopover } from "@/components/dashboard/widget-settings-popover";
 import {
   useDashboardSummary,
@@ -33,6 +34,7 @@ import {
   useValueByLocation,
   useCertificateExpiries,
   useLicenceExpiries,
+  useInventorySnapshot,
 } from "@/hooks/use-dashboard";
 import { useDashboardPreferences } from "@/hooks/use-dashboard-preferences";
 
@@ -67,6 +69,7 @@ export default function DashboardPage() {
   const valueByLocation = useValueByLocation(isVisible("valueByLocation"));
   const certificateExpiries = useCertificateExpiries(30, true);
   const licenceExpiries = useLicenceExpiries(30, true);
+  const inventorySnapshot = useInventorySnapshot(isVisible("inventorySnapshot"));
 
   return (
     <div className="space-y-6">
@@ -183,6 +186,14 @@ export default function DashboardPage() {
           />
         )}
       </div>
+
+      {/* Inventory snapshot — spare counts, expiring, checked out, maintenance */}
+      {isVisible("inventorySnapshot") && (
+        <InventorySnapshot
+          data={inventorySnapshot.data}
+          isLoading={inventorySnapshot.isLoading}
+        />
+      )}
 
       {/* Primary content — status overview + activity feed */}
       {(isVisible("statusBreakdown") || isVisible("recentActivity")) && (

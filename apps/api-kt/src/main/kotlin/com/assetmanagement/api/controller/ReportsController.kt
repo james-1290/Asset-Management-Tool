@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.*
 import java.io.ByteArrayOutputStream
 import java.io.OutputStreamWriter
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -25,6 +27,13 @@ class ReportsController(
     private val em: EntityManager
 ) {
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
+
+    /** Parse optional from/to date strings into Instants (start of day UTC). */
+    private fun parseDateRange(from: String?, to: String?): Pair<Instant?, Instant?> {
+        val fromInstant = from?.let { LocalDate.parse(it).atStartOfDay(ZoneOffset.UTC).toInstant() }
+        val toInstant = to?.let { LocalDate.parse(it).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() } // inclusive end
+        return Pair(fromInstant, toInstant)
+    }
 
     // ---- Helper for CSV responses ----
     private fun csvResponse(filename: String, block: (CSVWriter) -> Unit): ResponseEntity<ByteArray> {
@@ -161,11 +170,22 @@ class ReportsController(
     // ========================================================================
     @GetMapping("/expiries")
     fun expiries(
-        @RequestParam(defaultValue = "30") days: Int,
+        @RequestParam(required = false) days: Int?,
+        @RequestParam(required = false) from: String?,
+        @RequestParam(required = false) to: String?,
         @RequestParam(required = false) format: String?
     ): ResponseEntity<*> {
         val now = Instant.now()
-        val cutoff = now.plus(days.toLong(), ChronoUnit.DAYS)
+
+        // If from/to provided, use them; otherwise fall back to days (default 30)
+        val (rangeFrom, rangeTo) = if (from != null || to != null) {
+            parseDateRange(from, to)
+        } else {
+            Pair(null, null)
+        }
+        val effectiveFrom = rangeFrom ?: now
+        val effectiveTo = rangeTo ?: now.plus((days ?: 30).toLong(), ChronoUnit.DAYS)
+
         val items = mutableListOf<ExpiryItemDto>()
 
         // Warranty expiries
@@ -174,8 +194,8 @@ class ReportsController(
             """SELECT a FROM com.assetmanagement.api.model.Asset a
                LEFT JOIN FETCH a.assetType
                WHERE a.isArchived = false AND a.warrantyExpiryDate IS NOT NULL
-               AND a.warrantyExpiryDate > :now AND a.warrantyExpiryDate <= :cutoff"""
-        ).setParameter("now", now).setParameter("cutoff", cutoff)
+               AND a.warrantyExpiryDate >= :rangeFrom AND a.warrantyExpiryDate < :rangeTo"""
+        ).setParameter("rangeFrom", effectiveFrom).setParameter("rangeTo", effectiveTo)
          .resultList as List<com.assetmanagement.api.model.Asset>
 
         assets.forEach { a ->
@@ -196,8 +216,8 @@ class ReportsController(
             """SELECT c FROM com.assetmanagement.api.model.Certificate c
                LEFT JOIN FETCH c.certificateType
                WHERE c.isArchived = false AND c.expiryDate IS NOT NULL
-               AND c.expiryDate > :now AND c.expiryDate <= :cutoff"""
-        ).setParameter("now", now).setParameter("cutoff", cutoff)
+               AND c.expiryDate >= :rangeFrom AND c.expiryDate < :rangeTo"""
+        ).setParameter("rangeFrom", effectiveFrom).setParameter("rangeTo", effectiveTo)
          .resultList as List<com.assetmanagement.api.model.Certificate>
 
         certs.forEach { c ->
@@ -218,8 +238,8 @@ class ReportsController(
             """SELECT app FROM com.assetmanagement.api.model.Application app
                LEFT JOIN FETCH app.applicationType
                WHERE app.isArchived = false AND app.expiryDate IS NOT NULL
-               AND app.expiryDate > :now AND app.expiryDate <= :cutoff"""
-        ).setParameter("now", now).setParameter("cutoff", cutoff)
+               AND app.expiryDate >= :rangeFrom AND app.expiryDate < :rangeTo"""
+        ).setParameter("rangeFrom", effectiveFrom).setParameter("rangeTo", effectiveTo)
          .resultList as List<com.assetmanagement.api.model.Application>
 
         apps.forEach { app ->
@@ -257,6 +277,8 @@ class ReportsController(
     // ========================================================================
     @GetMapping("/licence-summary")
     fun licenceSummary(
+        @RequestParam(required = false) from: String?,
+        @RequestParam(required = false) to: String?,
         @RequestParam(required = false) format: String?
     ): ResponseEntity<*> {
         @Suppress("UNCHECKED_CAST")
@@ -280,16 +302,24 @@ class ReportsController(
         ).singleResult ?: BigDecimal.ZERO
 
         val now = Instant.now()
-        val cutoff = now.plus(30, ChronoUnit.DAYS)
+
+        // If from/to provided, use them for "expiring soon"; otherwise default 30 days
+        val (rangeFrom, rangeTo) = if (from != null || to != null) {
+            parseDateRange(from, to)
+        } else {
+            Pair(null, null)
+        }
+        val effectiveFrom = rangeFrom ?: now
+        val effectiveTo = rangeTo ?: now.plus(30, ChronoUnit.DAYS)
 
         @Suppress("UNCHECKED_CAST")
         val expiringSoonApps = em.createQuery(
             """SELECT app FROM com.assetmanagement.api.model.Application app
                LEFT JOIN FETCH app.applicationType
                WHERE app.isArchived = false AND app.expiryDate IS NOT NULL
-               AND app.expiryDate > :now AND app.expiryDate <= :cutoff
+               AND app.expiryDate >= :rangeFrom AND app.expiryDate < :rangeTo
                ORDER BY app.expiryDate ASC"""
-        ).setParameter("now", now).setParameter("cutoff", cutoff)
+        ).setParameter("rangeFrom", effectiveFrom).setParameter("rangeTo", effectiveTo)
          .resultList as List<com.assetmanagement.api.model.Application>
 
         val expiringSoon = expiringSoonApps.map { app ->
@@ -407,22 +437,40 @@ class ReportsController(
     // ========================================================================
     @GetMapping("/asset-lifecycle")
     fun assetLifecycle(
+        @RequestParam(required = false) from: String?,
+        @RequestParam(required = false) to: String?,
         @RequestParam(required = false) format: String?
     ): ResponseEntity<*> {
         val now = Instant.now()
+        val (rangeFrom, rangeTo) = parseDateRange(from, to)
         val byAge = queryAgeBuckets()
 
         // Past warranty - assets where warranty has already expired
+        // If from/to provided, filter warranty expiry within that window; otherwise show all past warranty
         @Suppress("UNCHECKED_CAST")
-        val pastWarrantyAssets = em.createQuery(
-            """SELECT a FROM com.assetmanagement.api.model.Asset a
-               LEFT JOIN FETCH a.assetType
-               WHERE a.isArchived = false
-               AND a.warrantyExpiryDate IS NOT NULL
-               AND a.warrantyExpiryDate < :now
-               ORDER BY a.warrantyExpiryDate ASC"""
-        ).setParameter("now", now)
-         .resultList as List<com.assetmanagement.api.model.Asset>
+        val pastWarrantyAssets = if (rangeFrom != null || rangeTo != null) {
+            val qFrom = rangeFrom ?: Instant.EPOCH
+            val qTo = rangeTo ?: now
+            em.createQuery(
+                """SELECT a FROM com.assetmanagement.api.model.Asset a
+                   LEFT JOIN FETCH a.assetType
+                   WHERE a.isArchived = false
+                   AND a.warrantyExpiryDate IS NOT NULL
+                   AND a.warrantyExpiryDate >= :rangeFrom AND a.warrantyExpiryDate < :rangeTo
+                   ORDER BY a.warrantyExpiryDate ASC"""
+            ).setParameter("rangeFrom", qFrom).setParameter("rangeTo", qTo)
+             .resultList as List<com.assetmanagement.api.model.Asset>
+        } else {
+            em.createQuery(
+                """SELECT a FROM com.assetmanagement.api.model.Asset a
+                   LEFT JOIN FETCH a.assetType
+                   WHERE a.isArchived = false
+                   AND a.warrantyExpiryDate IS NOT NULL
+                   AND a.warrantyExpiryDate < :now
+                   ORDER BY a.warrantyExpiryDate ASC"""
+            ).setParameter("now", now)
+             .resultList as List<com.assetmanagement.api.model.Asset>
+        }
 
         val pastWarranty = pastWarrantyAssets.map { a ->
             WarrantyExpiryItemDto(
@@ -434,15 +482,29 @@ class ReportsController(
             )
         }
 
-        // Oldest assets
+        // Oldest assets — if from/to provided, filter by purchase date window
         @Suppress("UNCHECKED_CAST")
-        val oldestAssetsList = em.createQuery(
-            """SELECT a FROM com.assetmanagement.api.model.Asset a
-               LEFT JOIN FETCH a.assetType
-               WHERE a.isArchived = false AND a.purchaseDate IS NOT NULL
-               ORDER BY a.purchaseDate ASC"""
-        ).setMaxResults(10)
-         .resultList as List<com.assetmanagement.api.model.Asset>
+        val oldestAssetsList = if (rangeFrom != null || rangeTo != null) {
+            val qFrom = rangeFrom ?: Instant.EPOCH
+            val qTo = rangeTo ?: now
+            em.createQuery(
+                """SELECT a FROM com.assetmanagement.api.model.Asset a
+                   LEFT JOIN FETCH a.assetType
+                   WHERE a.isArchived = false AND a.purchaseDate IS NOT NULL
+                   AND a.purchaseDate >= :rangeFrom AND a.purchaseDate < :rangeTo
+                   ORDER BY a.purchaseDate ASC"""
+            ).setParameter("rangeFrom", qFrom).setParameter("rangeTo", qTo)
+             .setMaxResults(20)
+             .resultList as List<com.assetmanagement.api.model.Asset>
+        } else {
+            em.createQuery(
+                """SELECT a FROM com.assetmanagement.api.model.Asset a
+                   LEFT JOIN FETCH a.assetType
+                   WHERE a.isArchived = false AND a.purchaseDate IS NOT NULL
+                   ORDER BY a.purchaseDate ASC"""
+            ).setMaxResults(10)
+             .resultList as List<com.assetmanagement.api.model.Asset>
+        }
 
         val oldestAssets = oldestAssetsList.map { a ->
             OldestAssetDto(
@@ -488,5 +550,124 @@ class ReportsController(
                 oldestAssets = oldestAssets
             )
         )
+    }
+
+    // ========================================================================
+    // 6. GET /depreciation
+    // ========================================================================
+    @GetMapping("/depreciation")
+    fun depreciation(
+        @RequestParam(required = false) assetTypeId: UUID?,
+        @RequestParam(required = false) locationId: UUID?,
+        @RequestParam(required = false) format: String?
+    ): ResponseEntity<*> {
+        val now = Instant.now()
+
+        // Build dynamic JPQL query with optional filters
+        val jpql = StringBuilder(
+            """SELECT a FROM com.assetmanagement.api.model.Asset a
+               LEFT JOIN FETCH a.assetType
+               WHERE a.isArchived = false
+               AND a.purchaseCost IS NOT NULL
+               AND a.purchaseDate IS NOT NULL"""
+        )
+        if (assetTypeId != null) jpql.append(" AND a.assetTypeId = :assetTypeId")
+        if (locationId != null) jpql.append(" AND a.locationId = :locationId")
+        jpql.append(" ORDER BY a.assetType.name ASC, a.name ASC")
+
+        val query = em.createQuery(jpql.toString())
+        if (assetTypeId != null) query.setParameter("assetTypeId", assetTypeId)
+        if (locationId != null) query.setParameter("locationId", locationId)
+
+        @Suppress("UNCHECKED_CAST")
+        val assets = query.resultList as List<com.assetmanagement.api.model.Asset>
+
+        // Calculate depreciation per asset
+        val assetDtos = assets.map { a ->
+            val cost = a.purchaseCost!!
+            val purchaseDate = a.purchaseDate!!
+            val depMonths = a.depreciationMonths ?: a.assetType?.defaultDepreciationMonths
+            val usefulLifeYears = if (depMonths != null && depMonths > 0) depMonths / 12 else null
+
+            val accumulatedDepreciation: BigDecimal
+            val currentBookValue: BigDecimal
+            val remainingUsefulLifeMonths: Int?
+
+            if (depMonths != null && depMonths > 0) {
+                val monthly = cost.divide(BigDecimal(depMonths), 4, RoundingMode.HALF_UP)
+                val elapsedDays = ChronoUnit.DAYS.between(purchaseDate, now)
+                val elapsedMonths = BigDecimal(elapsedDays)
+                    .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong()
+                    .coerceIn(0, depMonths.toLong())
+                accumulatedDepreciation = (monthly * BigDecimal(elapsedMonths))
+                    .setScale(2, RoundingMode.HALF_UP)
+                    .coerceAtMost(cost)
+                currentBookValue = (cost - accumulatedDepreciation).coerceAtLeast(BigDecimal.ZERO)
+                val totalElapsedMonths = BigDecimal(ChronoUnit.DAYS.between(purchaseDate, now))
+                    .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong()
+                remainingUsefulLifeMonths = (depMonths - totalElapsedMonths).coerceAtLeast(0).toInt()
+            } else {
+                // No depreciation configured — book value = purchase cost
+                accumulatedDepreciation = BigDecimal.ZERO
+                currentBookValue = cost
+                remainingUsefulLifeMonths = null
+            }
+
+            DepreciationAssetDto(
+                id = a.id,
+                name = a.name,
+                assetTypeName = a.assetType?.name ?: "",
+                purchaseDate = a.purchaseDate,
+                originalCost = cost,
+                depreciationMethod = if (depMonths != null && depMonths > 0) "Straight-Line" else "None",
+                usefulLifeYears = usefulLifeYears,
+                accumulatedDepreciation = accumulatedDepreciation,
+                currentBookValue = currentBookValue,
+                remainingUsefulLifeMonths = remainingUsefulLifeMonths
+            )
+        }
+
+        // Group by asset type
+        val groups = assetDtos.groupBy { it.assetTypeName }.map { (typeName, typeAssets) ->
+            DepreciationGroupDto(
+                assetTypeName = typeName,
+                subtotalOriginalCost = typeAssets.sumOf { it.originalCost },
+                subtotalAccumulatedDepreciation = typeAssets.sumOf { it.accumulatedDepreciation },
+                subtotalBookValue = typeAssets.sumOf { it.currentBookValue },
+                assets = typeAssets
+            )
+        }
+
+        val report = DepreciationReportDto(
+            totalOriginalCost = groups.sumOf { it.subtotalOriginalCost },
+            totalAccumulatedDepreciation = groups.sumOf { it.subtotalAccumulatedDepreciation },
+            totalBookValue = groups.sumOf { it.subtotalBookValue },
+            groups = groups
+        )
+
+        if (format.equals("csv", ignoreCase = true)) {
+            return csvResponse("depreciation-report.csv") { writer ->
+                writer.writeNext(arrayOf(
+                    "Asset Name", "Asset Type", "Purchase Date", "Original Cost",
+                    "Method", "Useful Life (Years)", "Accumulated Depreciation",
+                    "Book Value", "Remaining Life (Months)"
+                ))
+                assetDtos.forEach { a ->
+                    writer.writeNext(CsvUtils.sanitizeRow(arrayOf(
+                        a.name,
+                        a.assetTypeName,
+                        a.purchaseDate?.let { dateFormat.format(it) } ?: "",
+                        a.originalCost.toPlainString(),
+                        a.depreciationMethod,
+                        a.usefulLifeYears?.toString() ?: "",
+                        a.accumulatedDepreciation.toPlainString(),
+                        a.currentBookValue.toPlainString(),
+                        a.remainingUsefulLifeMonths?.toString() ?: ""
+                    )))
+                }
+            }
+        }
+
+        return ResponseEntity.ok(report)
     }
 }

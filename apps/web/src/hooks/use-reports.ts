@@ -3,10 +3,15 @@ import { reportsApi } from "../lib/api/reports";
 
 const reportKeys = {
   assetSummary: ["reports", "asset-summary"] as const,
-  expiries: (days: number) => ["reports", "expiries", days] as const,
-  licenceSummary: ["reports", "licence-summary"] as const,
+  expiries: (from?: string, to?: string, days?: number) =>
+    ["reports", "expiries", from, to, days] as const,
+  licenceSummary: (from?: string, to?: string) =>
+    ["reports", "licence-summary", from, to] as const,
   assignments: ["reports", "assignments"] as const,
-  assetLifecycle: ["reports", "asset-lifecycle"] as const,
+  assetLifecycle: (from?: string, to?: string) =>
+    ["reports", "asset-lifecycle", from, to] as const,
+  depreciation: (assetTypeId?: string, locationId?: string) =>
+    ["reports", "depreciation", assetTypeId, locationId] as const,
 };
 
 export function useAssetSummaryReport(enabled: boolean = true) {
@@ -18,19 +23,28 @@ export function useAssetSummaryReport(enabled: boolean = true) {
   });
 }
 
-export function useExpiriesReport(days: number = 30, enabled: boolean = true) {
+export function useExpiriesReport(
+  from?: string,
+  to?: string,
+  days?: number,
+  enabled: boolean = true
+) {
   return useQuery({
-    queryKey: reportKeys.expiries(days),
-    queryFn: () => reportsApi.getExpiries(days),
+    queryKey: reportKeys.expiries(from, to, days),
+    queryFn: () => reportsApi.getExpiries(from, to, days),
     staleTime: 60_000,
     enabled,
   });
 }
 
-export function useLicenceSummaryReport(enabled: boolean = true) {
+export function useLicenceSummaryReport(
+  from?: string,
+  to?: string,
+  enabled: boolean = true
+) {
   return useQuery({
-    queryKey: reportKeys.licenceSummary,
-    queryFn: reportsApi.getLicenceSummary,
+    queryKey: reportKeys.licenceSummary(from, to),
+    queryFn: () => reportsApi.getLicenceSummary(from, to),
     staleTime: 60_000,
     enabled,
   });
@@ -45,10 +59,27 @@ export function useAssignmentsReport(enabled: boolean = true) {
   });
 }
 
-export function useAssetLifecycleReport(enabled: boolean = true) {
+export function useAssetLifecycleReport(
+  from?: string,
+  to?: string,
+  enabled: boolean = true
+) {
   return useQuery({
-    queryKey: reportKeys.assetLifecycle,
-    queryFn: reportsApi.getAssetLifecycle,
+    queryKey: reportKeys.assetLifecycle(from, to),
+    queryFn: () => reportsApi.getAssetLifecycle(from, to),
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
+export function useDepreciationReport(
+  assetTypeId?: string,
+  locationId?: string,
+  enabled: boolean = true
+) {
+  return useQuery({
+    queryKey: reportKeys.depreciation(assetTypeId, locationId),
+    queryFn: () => reportsApi.getDepreciation(assetTypeId, locationId),
     staleTime: 60_000,
     enabled,
   });

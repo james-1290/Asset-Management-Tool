@@ -60,3 +60,42 @@ data class AssignedAssetDto(
     val assetTypeName: String,
     val locationName: String?
 )
+
+data class PersonSummaryDto(
+    val assetCount: Int,
+    val certificateCount: Int,
+    val applicationCount: Int
+)
+
+data class AssignedCertificateDto(
+    val id: UUID,
+    val name: String,
+    val certificateTypeName: String,
+    val status: String,
+    val expiryDate: Instant?
+)
+
+data class AssignedApplicationDto(
+    val id: UUID,
+    val name: String,
+    val applicationTypeName: String,
+    val status: String,
+    val licenceType: String?,
+    val expiryDate: Instant?
+)
+
+data class OffboardRequest(
+    val actions: List<OffboardAction>,
+    val deactivatePerson: Boolean = false
+)
+
+data class OffboardAction(
+    val entityType: String,   // "Asset", "Certificate", "Application"
+    val entityId: UUID,
+    val action: String,       // "free", "transfer", "keep"
+    val transferToPersonId: UUID? = null
+)
+
+data class OffboardResultDto(
+    val actions: List<String>
+)

@@ -15,7 +15,8 @@ export type WidgetId =
   | "valueByLocation"
   | "certificateExpiries"
   | "licenceExpiries"
-  | "totalBookValue";
+  | "totalBookValue"
+  | "inventorySnapshot";
 
 export interface DashboardPreferences {
   visibleWidgets: WidgetId[];
@@ -40,6 +41,7 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   certificateExpiries: "Certificate Expiries",
   licenceExpiries: "Licence Expiries",
   totalBookValue: "Total Book Value",
+  inventorySnapshot: "Inventory Snapshot",
 };
 
 export const ALL_WIDGET_IDS: WidgetId[] = Object.keys(
@@ -74,6 +76,7 @@ export const WIDGET_MIN_SIZES: Record<WidgetId, { minW: number; minH: number; ma
   recentActivity: { minW: 3, minH: 3 },
   assetsByAge: { minW: 4, minH: 4 },
   valueByLocation: { minW: 4, minH: 4 },
+  inventorySnapshot: { minW: 6, minH: 4 },
 };
 
 const DEFAULT_LG_LAYOUT: LayoutItem[] = [
@@ -89,6 +92,8 @@ const DEFAULT_LG_LAYOUT: LayoutItem[] = [
   { i: "certificateExpiries", x: 9, y: 2, w: 3, h: 2 },
   // Row 2: licence expiries standalone
   { i: "licenceExpiries", x: 0, y: 4, w: 3, h: 2 },
+  // Inventory snapshot
+  { i: "inventorySnapshot", x: 3, y: 4, w: 9, h: 4 },
   // Primary charts: status + activity side by side (activity gets more height for scrolling)
   { i: "statusBreakdown", x: 0, y: 6, w: 5, h: 5 },
   { i: "recentActivity", x: 5, y: 6, w: 7, h: 5 },
@@ -110,8 +115,9 @@ const DEFAULT_MD_LAYOUT: LayoutItem[] = [
   { i: "certificateExpiries", x: 0, y: 6, w: 3, h: 2 },
   { i: "licenceExpiries", x: 3, y: 6, w: 3, h: 2 },
   { i: "totalBookValue", x: 0, y: 8, w: 3, h: 2 },
+  { i: "inventorySnapshot", x: 0, y: 10, w: 6, h: 4 },
   // Charts: full width
-  { i: "statusBreakdown", x: 0, y: 10, w: 6, h: 5 },
+  { i: "statusBreakdown", x: 0, y: 14, w: 6, h: 5 },
   { i: "assetsByType", x: 0, y: 13, w: 6, h: 5 },
   { i: "assetsByLocation", x: 0, y: 18, w: 6, h: 5 },
   { i: "assetsByAge", x: 0, y: 23, w: 6, h: 5 },
