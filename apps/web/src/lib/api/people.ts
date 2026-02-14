@@ -9,6 +9,8 @@ import type {
   AssignedApplication,
   CreatePersonRequest,
   UpdatePersonRequest,
+  OffboardRequest,
+  OffboardResult,
 } from "../../types/person";
 import type { PagedResponse } from "../../types/paged-response";
 import type { DuplicateCheckResult, CheckPersonDuplicatesRequest } from "../../types/duplicate-check";
@@ -85,5 +87,9 @@ export const peopleApi = {
 
   getApplications(id: string): Promise<AssignedApplication[]> {
     return apiClient.get<AssignedApplication[]>(`/people/${id}/applications`);
+  },
+
+  offboard(id: string, request: OffboardRequest): Promise<OffboardResult> {
+    return apiClient.post<OffboardResult>(`/people/${id}/offboard`, request);
   },
 };

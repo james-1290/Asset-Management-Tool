@@ -83,3 +83,19 @@ data class AssignedApplicationDto(
     val licenceType: String?,
     val expiryDate: Instant?
 )
+
+data class OffboardRequest(
+    val actions: List<OffboardAction>,
+    val deactivatePerson: Boolean = false
+)
+
+data class OffboardAction(
+    val entityType: String,   // "Asset", "Certificate", "Application"
+    val entityId: UUID,
+    val action: String,       // "free", "transfer", "keep"
+    val transferToPersonId: UUID? = null
+)
+
+data class OffboardResultDto(
+    val actions: List<String>
+)

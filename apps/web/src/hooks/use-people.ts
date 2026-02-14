@@ -9,6 +9,7 @@ import type { PersonQueryParams } from "../lib/api/people";
 import type {
   CreatePersonRequest,
   UpdatePersonRequest,
+  OffboardRequest,
 } from "../types/person";
 import type { CheckPersonDuplicatesRequest } from "../types/duplicate-check";
 
@@ -134,6 +135,18 @@ export function useBulkArchivePeople() {
 
   return useMutation({
     mutationFn: (ids: string[]) => peopleApi.bulkArchive(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: personKeys.all });
+    },
+  });
+}
+
+export function useOffboardPerson() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, request }: { id: string; request: OffboardRequest }) =>
+      peopleApi.offboard(id, request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: personKeys.all });
     },

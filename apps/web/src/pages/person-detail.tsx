@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil, Trash2, Monitor, Award, AppWindow, History } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Monitor, Award, AppWindow, History, UserMinus } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { Badge } from "../components/ui/badge";
@@ -34,6 +34,7 @@ import {
 import { AssetStatusBadge } from "../components/assets/asset-status-badge";
 import { PersonHistoryTimeline } from "../components/people/person-history-timeline";
 import { PersonFormDialog } from "../components/people/person-form-dialog";
+import { OffboardDialog } from "../components/people/offboard-dialog";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import {
   usePerson,
@@ -89,6 +90,7 @@ export default function PersonDetailPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [offboardOpen, setOffboardOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("assets");
 
   function handleFormSubmit(values: PersonFormValues) {
@@ -171,6 +173,12 @@ export default function PersonDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {!person.isArchived && (summary?.assetCount ?? 0) + (summary?.certificateCount ?? 0) + (summary?.applicationCount ?? 0) > 0 && (
+            <Button variant="outline" onClick={() => setOffboardOpen(true)}>
+              <UserMinus className="mr-2 h-4 w-4" />
+              Offboard
+            </Button>
+          )}
           {!person.isArchived && (
             <Button variant="outline" onClick={() => setArchiveOpen(true)}>
               <Trash2 className="mr-2 h-4 w-4" />
@@ -432,6 +440,16 @@ export default function PersonDetailPage() {
         confirmLabel="Archive"
         loading={archiveMutation.isPending}
         onConfirm={handleArchive}
+      />
+
+      <OffboardDialog
+        open={offboardOpen}
+        onOpenChange={setOffboardOpen}
+        personId={person.id}
+        personName={person.fullName}
+        assets={assignedAssets ?? []}
+        certificates={certificates ?? []}
+        applications={applications ?? []}
       />
     </div>
   );

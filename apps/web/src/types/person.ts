@@ -78,3 +78,19 @@ export interface AssignedApplication {
   licenceType: string | null;
   expiryDate: string | null;
 }
+
+export interface OffboardAction {
+  entityType: "Asset" | "Certificate" | "Application";
+  entityId: string;
+  action: "free" | "transfer" | "keep";
+  transferToPersonId?: string | null;
+}
+
+export interface OffboardRequest {
+  actions: OffboardAction[];
+  deactivatePerson: boolean;
+}
+
+export interface OffboardResult {
+  actions: string[];
+}
