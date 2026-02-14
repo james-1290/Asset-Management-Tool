@@ -147,7 +147,13 @@ export default function LoginPage() {
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  window.location.href = ssoConfig.ssoUrl!
+                  const url = ssoConfig.ssoUrl!
+                  // Only allow relative URLs or same-origin URLs to prevent open redirect
+                  if (url.startsWith("/") || url.startsWith(window.location.origin)) {
+                    window.location.href = url
+                  } else {
+                    setError("Invalid SSO configuration. Please contact your administrator.")
+                  }
                 }}
               >
                 {ssoConfig.ssoLabel ?? "Sign in with SSO"}

@@ -17,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter
 
 @Configuration
 @EnableWebSecurity
@@ -53,6 +54,8 @@ class SecurityConfig(
                 hsts.includeSubDomains(true)
                 hsts.maxAgeInSeconds(31536000)
             }
+            headers.referrerPolicy { it.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN) }
+            headers.permissionsPolicy { it.policy("camera=(), microphone=(), geolocation=(), payment=()") }
         }
 
         return http.build()
@@ -83,6 +86,8 @@ class SecurityConfig(
                 hsts.includeSubDomains(true)
                 hsts.maxAgeInSeconds(31536000)
             }
+            headers.referrerPolicy { it.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN) }
+            headers.permissionsPolicy { it.policy("camera=(), microphone=(), geolocation=(), payment=()") }
         }
 
         scimAuthFilter?.let { filter ->

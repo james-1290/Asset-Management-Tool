@@ -1,7 +1,7 @@
 package com.assetmanagement.api.util
 
 object CsvUtils {
-    private val DANGEROUS_PREFIXES = charArrayOf('=', '+', '-', '@', '\t', '\r')
+    private val DANGEROUS_PREFIXES = charArrayOf('=', '+', '-', '@', '\t', '\r', '|', '`')
 
     fun sanitize(value: String?): String {
         if (value.isNullOrEmpty()) return ""

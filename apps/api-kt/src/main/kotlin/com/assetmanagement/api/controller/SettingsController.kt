@@ -10,6 +10,7 @@ import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
@@ -61,8 +62,8 @@ class SettingsController(
     }
 
     @PutMapping("/system")
+    @PreAuthorize("hasRole('Admin')")
     fun updateSystem(@RequestBody request: SystemSettingsDto): ResponseEntity<Any> {
-        if (!isAdmin()) return ResponseEntity.status(403).build()
 
         val userName = currentUserService.userName
         setSetting("org.name", request.orgName, userName)
@@ -77,8 +78,8 @@ class SettingsController(
     }
 
     @GetMapping("/alerts")
+    @PreAuthorize("hasRole('Admin')")
     fun getAlerts(): ResponseEntity<Any> {
-        if (!isAdmin()) return ResponseEntity.status(403).build()
 
         val dto = AlertSettingsDto(
             warrantyEnabled = getSetting("alerts.warranty.enabled", "true") == "true",
@@ -105,8 +106,8 @@ class SettingsController(
     }
 
     @PutMapping("/alerts")
+    @PreAuthorize("hasRole('Admin')")
     fun updateAlerts(@RequestBody request: AlertSettingsDto): ResponseEntity<Any> {
-        if (!isAdmin()) return ResponseEntity.status(403).build()
 
         val userName = currentUserService.userName
         setSetting("alerts.warranty.enabled", request.warrantyEnabled.toString().lowercase(), userName)
