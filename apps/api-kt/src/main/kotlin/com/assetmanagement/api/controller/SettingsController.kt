@@ -23,6 +23,13 @@ class SettingsController(
     private val alertSchedulerService: AlertSchedulerService
 ) {
     private val log = LoggerFactory.getLogger(SettingsController::class.java)
+    private val secretMask = "********"
+
+    private fun maskSecret(value: String): String =
+        if (value.isNotEmpty()) secretMask else ""
+
+    private fun maskWebhookUrl(value: String): String =
+        if (value.length > 20) value.substring(0, 20) + "..." else value
 
     private fun isAdmin(): Boolean =
         SecurityContextHolder.getContext().authentication?.authorities?.any { it.authority == "ROLE_Admin" } == true
@@ -82,13 +89,13 @@ class SettingsController(
             smtpHost = getSetting("alerts.smtp.host"),
             smtpPort = getSetting("alerts.smtp.port", "587").toIntOrNull() ?: 587,
             smtpUsername = getSetting("alerts.smtp.username"),
-            smtpPassword = getSetting("alerts.smtp.password"),
+            smtpPassword = maskSecret(getSetting("alerts.smtp.password")),
             smtpFromAddress = getSetting("alerts.smtp.fromAddress"),
             graphTenantId = getSetting("alerts.graph.tenantId"),
             graphClientId = getSetting("alerts.graph.clientId"),
-            graphClientSecret = getSetting("alerts.graph.clientSecret"),
+            graphClientSecret = maskSecret(getSetting("alerts.graph.clientSecret")),
             graphFromAddress = getSetting("alerts.graph.fromAddress"),
-            slackWebhookUrl = getSetting("alerts.slack.webhookUrl"),
+            slackWebhookUrl = maskWebhookUrl(getSetting("alerts.slack.webhookUrl")),
             recipients = getSetting("alerts.recipients"),
             scheduleType = getSetting("alerts.schedule.type", "disabled"),
             scheduleTime = getSetting("alerts.schedule.time", "09:00"),
@@ -110,13 +117,13 @@ class SettingsController(
         setSetting("alerts.smtp.host", request.smtpHost, userName)
         setSetting("alerts.smtp.port", request.smtpPort.toString(), userName)
         setSetting("alerts.smtp.username", request.smtpUsername, userName)
-        setSetting("alerts.smtp.password", request.smtpPassword, userName)
+        if (request.smtpPassword != secretMask) setSetting("alerts.smtp.password", request.smtpPassword, userName)
         setSetting("alerts.smtp.fromAddress", request.smtpFromAddress, userName)
         setSetting("alerts.graph.tenantId", request.graphTenantId, userName)
         setSetting("alerts.graph.clientId", request.graphClientId, userName)
-        setSetting("alerts.graph.clientSecret", request.graphClientSecret, userName)
+        if (request.graphClientSecret != secretMask) setSetting("alerts.graph.clientSecret", request.graphClientSecret, userName)
         setSetting("alerts.graph.fromAddress", request.graphFromAddress, userName)
-        setSetting("alerts.slack.webhookUrl", request.slackWebhookUrl, userName)
+        if (!request.slackWebhookUrl.endsWith("...")) setSetting("alerts.slack.webhookUrl", request.slackWebhookUrl, userName)
         setSetting("alerts.recipients", request.recipients, userName)
         setSetting("alerts.schedule.type", request.scheduleType, userName)
         setSetting("alerts.schedule.time", request.scheduleTime, userName)

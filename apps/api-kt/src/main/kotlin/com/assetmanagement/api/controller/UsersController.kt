@@ -34,6 +34,7 @@ class UsersController(
             u.userRoles.mapNotNull { it.role?.name }, u.createdAt, u.authProvider)
 
     @GetMapping
+    @PreAuthorize("hasRole('Admin')")
     fun getAll(@RequestParam(defaultValue = "false") includeInactive: Boolean): ResponseEntity<List<UserDetailDto>> {
         val users = userRepository.findAll()
             .filter { if (!includeInactive || !isAdmin()) it.isActive else true }
