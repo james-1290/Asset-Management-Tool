@@ -103,6 +103,7 @@
 
 - [x] Security hardening audit: input validation, audit logging, security headers, startup warnings, DB indexes, frontend guards
 - [x] Phase A polish: inventory snapshot widget, enhanced search, people 360 view + offboarding, date range reports, depreciation report, print CSS
+- [x] Phase C polish: advanced filtering (date range, numeric range, location, person, department, licence type filters), quick filter chips, active filter summary, saved view filter persistence
 
 ## Later
 - [x] Retire + sold workflow
