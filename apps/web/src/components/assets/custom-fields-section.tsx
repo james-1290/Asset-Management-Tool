@@ -21,7 +21,6 @@ interface CustomFieldsSectionProps {
   definitions: CustomFieldDefinition[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function CustomFieldsSection({ definitions }: CustomFieldsSectionProps) {
   const form = useFormContext<{ customFieldValues?: Record<string, string | undefined> }>();
 

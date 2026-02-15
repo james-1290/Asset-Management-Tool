@@ -69,6 +69,7 @@ export function OffboardDialog({
   const [searchQueries, setSearchQueries] = useState<Record<string, string>>({});
 
   // Build items list when dialog opens
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional: reset form state when dialog opens */
   useEffect(() => {
     if (!open) return;
     const newItems: OffboardItem[] = [
@@ -105,6 +106,7 @@ export function OffboardDialog({
     setSearchResults({});
     setSearchQueries({});
   }, [open, assets, certificates, applications]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const updateItem = useCallback((index: number, updates: Partial<OffboardItem>) => {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...updates } : item)));

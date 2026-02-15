@@ -18,14 +18,11 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [token, setToken] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(() => !!localStorage.getItem("token"))
 
   useEffect(() => {
     const savedToken = localStorage.getItem("token")
-    if (!savedToken) {
-      setIsLoading(false)
-      return
-    }
+    if (!savedToken) return
 
     // Validate token by calling /auth/me
     fetch("/api/v1/auth/me", {
@@ -121,6 +118,7 @@ function syncTheme(preference?: string | null) {
   }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error("useAuth must be used within AuthProvider")

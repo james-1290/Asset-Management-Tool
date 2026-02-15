@@ -232,37 +232,7 @@ export default function ApplicationsPage() {
     [sortByParam, sortDirParam],
   );
 
-  // Apply default saved view on first load
-  useEffect(() => {
-    if (defaultViewApplied.current || savedViews.length === 0) return;
-    defaultViewApplied.current = true;
-    const defaultView = savedViews.find((v) => v.isDefault);
-    if (defaultView) applyView(defaultView);
-  }, [savedViews]);
-
-  function handleResetToDefault() {
-    setColumnVisibility({});
-    setActiveViewId(null);
-    setSearchParams((prev) => {
-      prev.delete("search");
-      prev.delete("status");
-      prev.delete("includeInactive");
-      prev.delete("typeId");
-      prev.delete("viewMode");
-      prev.delete("expiryFrom");
-      prev.delete("expiryTo");
-      prev.delete("licenceType");
-      prev.delete("costMin");
-      prev.delete("costMax");
-      prev.set("sortBy", "name");
-      prev.set("sortDir", "asc");
-      prev.set("page", "1");
-      return prev;
-    });
-    setSearchInput("");
-  }
-
-  function applyView(view: SavedView) {
+  const applyView = useCallback((view: SavedView) => {
     try {
       const config: ViewConfiguration = JSON.parse(view.configuration);
       setColumnVisibility(config.columnVisibility ?? {});
@@ -292,7 +262,38 @@ export default function ApplicationsPage() {
         return prev;
       });
     } catch { /* invalid config */ }
+  }, [setSearchParams]);
+
+  // Apply default saved view on first load
+  useEffect(() => {
+    if (defaultViewApplied.current || savedViews.length === 0) return;
+    defaultViewApplied.current = true;
+    const defaultView = savedViews.find((v) => v.isDefault);
+    if (defaultView) applyView(defaultView);
+  }, [savedViews, applyView]);
+
+  function handleResetToDefault() {
+    setColumnVisibility({});
+    setActiveViewId(null);
+    setSearchParams((prev) => {
+      prev.delete("search");
+      prev.delete("status");
+      prev.delete("includeInactive");
+      prev.delete("typeId");
+      prev.delete("viewMode");
+      prev.delete("expiryFrom");
+      prev.delete("expiryTo");
+      prev.delete("licenceType");
+      prev.delete("costMin");
+      prev.delete("costMax");
+      prev.set("sortBy", "name");
+      prev.set("sortDir", "asc");
+      prev.set("page", "1");
+      return prev;
+    });
+    setSearchInput("");
   }
+
 
   const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
     columnVisibility,

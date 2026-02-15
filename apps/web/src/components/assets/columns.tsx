@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
