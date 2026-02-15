@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-02-15 20:41 — ESLint Bug Fix Sweep
+
+- Removed unused imports: `Badge` (notifications-bell), `endOfYear` (date-range-picker), Dialog components (person-detail), unused eslint-disable (custom-fields-section)
+- Fixed setState-in-effect: `recentSearches` now derived via `useMemo` (command-search), `isLoading` uses lazy initializer (auth-context), offboard-dialog suppressed with justification
+- Fixed "cannot access before declared" + missing `useEffect` deps: converted `applyView` to `useCallback` and moved before useEffect in all 9 list/type pages (assets, certificates, applications, people, locations, audit-log, asset-types, certificate-types, application-types)
+- Suppressed `react-refresh/only-export-components` in shadcn UI files (badge, button, form, sidebar, tabs) and asset columns
+- Suppressed `react-hooks/purity` for shadcn sidebar skeleton `Math.random`
+- Suppressed `react-refresh/only-export-components` for `useAuth` in auth-context
+- Result: 0 ESLint errors, only 6 `incompatible-library` warnings remaining (React Hook Form / TanStack Table)
+
 ## 2026-02-15 20:21 — Attachment Preview Pane
 
 - Inline preview for images (PNG, JPG, GIF) and PDFs via Eye icon button

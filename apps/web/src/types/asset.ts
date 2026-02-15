@@ -45,7 +45,7 @@ export interface CreateAssetRequest {
   assetTypeId: string;
   locationId: string;
   assignedPersonId?: string | null;
-  purchaseDate: string;
+  purchaseDate?: string | null;
   purchaseCost?: number | null;
   warrantyExpiryDate?: string | null;
   depreciationMonths?: number | null;
@@ -89,7 +89,7 @@ export interface UpdateAssetRequest {
   assetTypeId: string;
   locationId: string;
   assignedPersonId?: string | null;
-  purchaseDate: string;
+  purchaseDate?: string | null;
   purchaseCost?: number | null;
   warrantyExpiryDate?: string | null;
   depreciationMonths?: number | null;

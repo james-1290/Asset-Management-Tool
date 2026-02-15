@@ -28,11 +28,6 @@ function addDays(dateStr: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function endOfYear(): string {
-  const year = new Date().getFullYear();
-  return `${year}-12-31`;
-}
-
 function buildPresets(): Preset[] {
   return [
     {

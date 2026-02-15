@@ -40,17 +40,12 @@ export function CommandSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const navigate = useNavigate();
 
   const { data } = useSearch(debouncedQuery);
 
-  // Load recent searches when dialog opens
-  useEffect(() => {
-    if (open) {
-      setRecentSearches(getRecentSearches());
-    }
-  }, [open]);
+  // Derive recent searches when dialog opens (avoids setState in effect)
+  const recentSearches = useMemo(() => (open ? getRecentSearches() : []), [open]);
 
   // Debounce the query
   useEffect(() => {

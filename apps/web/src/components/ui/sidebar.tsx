@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { PanelLeftIcon } from "lucide-react"
@@ -604,10 +605,11 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean
 }) {
-  // Random width between 50 to 90%.
+  /* eslint-disable react-hooks/purity -- shadcn skeleton styling */
   const width = React.useMemo(() => {
     return `${Math.floor(Math.random() * 40) + 50}%`
   }, [])
+  /* eslint-enable react-hooks/purity */
 
   return (
     <div
