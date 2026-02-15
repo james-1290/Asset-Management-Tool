@@ -2,7 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.AttachmentDto
 import com.assetmanagement.api.model.Attachment
-import com.assetmanagement.api.repository.AttachmentRepository
+import com.assetmanagement.api.repository.*
 import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
@@ -13,12 +13,17 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/attachments")
 class AttachmentsController(
     private val attachmentRepository: AttachmentRepository,
+    private val assetRepository: AssetRepository,
+    private val certificateRepository: CertificateRepository,
+    private val applicationRepository: ApplicationRepository,
     private val storageService: StorageService,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
@@ -39,6 +44,11 @@ class AttachmentsController(
             "text/plain",
             "text/csv"
         )
+
+        private val ALLOWED_EXTENSIONS = setOf(
+            "pdf", "jpg", "jpeg", "png", "gif",
+            "docx", "xlsx", "doc", "xls", "txt", "csv"
+        )
     }
 
     @PostMapping("/{entityType}/{entityId}", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -46,58 +56,79 @@ class AttachmentsController(
         @PathVariable entityType: String,
         @PathVariable entityId: UUID,
         @RequestParam("file") file: MultipartFile
-    ): ResponseEntity<AttachmentDto> {
+    ): ResponseEntity<*> {
         if (entityType !in ALLOWED_ENTITY_TYPES) {
-            return ResponseEntity.badRequest().build()
+            return ResponseEntity.badRequest().body(mapOf("error" to "Invalid entity type"))
         }
         if (file.isEmpty) {
-            return ResponseEntity.badRequest().build()
+            return ResponseEntity.badRequest().body(mapOf("error" to "File is empty"))
+        }
+
+        // Validate entity exists
+        val entityExists = when (entityType) {
+            "Asset" -> assetRepository.existsById(entityId)
+            "Certificate" -> certificateRepository.existsById(entityId)
+            "Application" -> applicationRepository.existsById(entityId)
+            else -> false
+        }
+        if (!entityExists) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "$entityType not found"))
         }
 
         val mimeType = file.contentType ?: "application/octet-stream"
         if (mimeType !in ALLOWED_MIME_TYPES) {
-            return ResponseEntity.badRequest().build()
+            return ResponseEntity.badRequest().body(mapOf("error" to "File type not allowed"))
         }
 
         val originalFileName = sanitizeFileName(file.originalFilename ?: "unnamed")
+        val extension = originalFileName.substringAfterLast('.', "").lowercase()
+        if (extension !in ALLOWED_EXTENSIONS) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "File extension not allowed"))
+        }
+
         val storedFileName = "${UUID.randomUUID()}-${originalFileName}"
         val storageKey = "${entityType}/${entityId}/${storedFileName}"
 
         storageService.store(storageKey, file.inputStream, file.size)
 
-        val attachment = Attachment(
-            entityType = entityType,
-            entityId = entityId,
-            fileName = storedFileName,
-            originalFileName = originalFileName,
-            fileSize = file.size,
-            mimeType = mimeType,
-            storageKey = storageKey,
-            uploadedById = currentUserService.userId,
-            uploadedByName = currentUserService.userName
-        )
-        attachmentRepository.save(attachment)
+        try {
+            val attachment = Attachment(
+                entityType = entityType,
+                entityId = entityId,
+                fileName = storedFileName,
+                originalFileName = originalFileName,
+                fileSize = file.size,
+                mimeType = mimeType,
+                storageKey = storageKey,
+                uploadedById = currentUserService.userId,
+                uploadedByName = currentUserService.userName
+            )
+            attachmentRepository.save(attachment)
 
-        auditService.log(AuditEntry(
-            action = "AttachmentUploaded",
-            entityType = entityType,
-            entityId = entityId.toString(),
-            entityName = originalFileName,
-            details = "Uploaded attachment: $originalFileName (${formatFileSize(file.size)})",
-            actorId = currentUserService.userId,
-            actorName = currentUserService.userName
-        ))
+            auditService.log(AuditEntry(
+                action = "AttachmentUploaded",
+                entityType = entityType,
+                entityId = entityId.toString(),
+                entityName = originalFileName,
+                details = "Uploaded attachment: $originalFileName (${formatFileSize(file.size)})",
+                actorId = currentUserService.userId,
+                actorName = currentUserService.userName
+            ))
 
-        return ResponseEntity.ok(toDto(attachment))
+            return ResponseEntity.ok(toDto(attachment))
+        } catch (e: Exception) {
+            storageService.delete(storageKey)
+            throw e
+        }
     }
 
     @GetMapping("/{entityType}/{entityId}")
     fun list(
         @PathVariable entityType: String,
         @PathVariable entityId: UUID
-    ): ResponseEntity<List<AttachmentDto>> {
+    ): ResponseEntity<*> {
         if (entityType !in ALLOWED_ENTITY_TYPES) {
-            return ResponseEntity.badRequest().build()
+            return ResponseEntity.badRequest().body(mapOf("error" to "Invalid entity type"))
         }
 
         val attachments = attachmentRepository
@@ -118,8 +149,11 @@ class AttachmentsController(
         val inputStream = storageService.load(attachment.storageKey)
         val resource = InputStreamResource(inputStream)
 
+        val encodedFilename = URLEncoder.encode(attachment.originalFileName, StandardCharsets.UTF_8)
+            .replace("+", "%20")
+
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${attachment.originalFileName}\"")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
             .contentType(MediaType.parseMediaType(attachment.mimeType))
             .contentLength(attachment.fileSize)
             .body(resource)
@@ -136,6 +170,13 @@ class AttachmentsController(
 
         attachment.isArchived = true
         attachmentRepository.save(attachment)
+
+        // Clean up the stored file
+        try {
+            storageService.delete(attachment.storageKey)
+        } catch (_: Exception) {
+            // Log but don't fail — DB record is the source of truth
+        }
 
         auditService.log(AuditEntry(
             action = "AttachmentDeleted",

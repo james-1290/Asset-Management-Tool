@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Upload, Download, Trash2, FileText, Image, FileSpreadsheet, File } from "lucide-react";
+import { getApiErrorMessage } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -61,8 +62,8 @@ export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionP
       onSuccess: () => {
         toast.success(`Uploaded ${file.name}`);
       },
-      onError: () => {
-        toast.error(`Failed to upload ${file.name}`);
+      onError: (error: unknown) => {
+        toast.error(getApiErrorMessage(error, `Failed to upload ${file.name}`));
       },
     });
     // Reset input so the same file can be re-uploaded
