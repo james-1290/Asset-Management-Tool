@@ -24,6 +24,7 @@ import {
 } from "../hooks/use-applications";
 import { useApplicationTypes } from "../hooks/use-application-types";
 import { useLocations } from "../hooks/use-locations";
+import { AttachmentsSection } from "../components/shared/attachments-section";
 import type { ApplicationFormValues } from "../lib/schemas/application";
 
 function InfoItem({ label, value }: { label: string; value: string | null | undefined }) {
@@ -304,6 +305,8 @@ export default function ApplicationDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AttachmentsSection entityType="Application" entityId={application.id} />
 
       <ApplicationFormDialog
         open={formOpen}

@@ -21,6 +21,7 @@ import {
 } from "../hooks/use-certificates";
 import { useCertificateTypes } from "../hooks/use-certificate-types";
 import { useLocations } from "../hooks/use-locations";
+import { AttachmentsSection } from "../components/shared/attachments-section";
 import type { CertificateFormValues } from "../lib/schemas/certificate";
 
 function InfoItem({ label, value }: { label: string; value: string | null | undefined }) {
@@ -235,6 +236,8 @@ export default function CertificateDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AttachmentsSection entityType="Certificate" entityId={certificate.id} />
 
       <CertificateFormDialog
         open={formOpen}

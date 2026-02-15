@@ -30,6 +30,7 @@ import {
 } from "../hooks/use-assets";
 import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
+import { AttachmentsSection } from "../components/shared/attachments-section";
 import type { AssetFormValues } from "../lib/schemas/asset";
 
 function InfoItem({ label, value }: { label: string; value: string | null | undefined }) {
@@ -381,6 +382,8 @@ export default function AssetDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AttachmentsSection entityType="Asset" entityId={asset.id} />
 
       <AssetFormDialog
         open={formOpen}
