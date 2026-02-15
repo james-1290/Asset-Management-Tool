@@ -40,6 +40,9 @@ import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
+import { ActiveFilterChips } from "../components/filters/active-filter-chips";
+import type { ActiveFilter } from "../components/filters/active-filter-chips";
+import type { QuickFilter } from "../components/filters/quick-filter-bar";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -62,6 +65,12 @@ export default function ApplicationsPage() {
   const includeInactive = searchParams.get("includeInactive") === "true";
   const typeIdParam = searchParams.get("typeId") ?? "";
   const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
+  const expiryFromParam = searchParams.get("expiryFrom") ?? "";
+  const expiryToParam = searchParams.get("expiryTo") ?? "";
+  const licenceTypeParam = searchParams.get("licenceType") ?? "";
+  const costMinParam = searchParams.get("costMin") ?? "";
+  const costMaxParam = searchParams.get("costMax") ?? "";
+  const quickFilterParam = searchParams.get("quickFilter") ?? "";
 
   const [searchInput, setSearchInput] = useState(searchParam);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -138,6 +147,43 @@ export default function ApplicationsPage() {
     [setSearchParams],
   );
 
+  const handleFilterChange = useCallback(
+    (key: string, value: string) => {
+      setSearchParams((prev) => {
+        if (value) prev.set(key, value);
+        else prev.delete(key);
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const handleQuickFilterApply = useCallback(
+    (filter: QuickFilter) => {
+      setSearchParams((prev) => {
+        const quickKeys = ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax", "status"];
+        quickKeys.forEach(k => prev.delete(k));
+        for (const [key, value] of Object.entries(filter.params)) {
+          prev.set(key, value);
+        }
+        prev.set("quickFilter", filter.id);
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const handleQuickFilterClear = useCallback(() => {
+    setSearchParams((prev) => {
+      const quickKeys = ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax", "quickFilter"];
+      quickKeys.forEach(k => prev.delete(k));
+      prev.set("page", "1");
+      return prev;
+    });
+  }, [setSearchParams]);
+
   const includeStatuses = useMemo(() => {
     return includeInactive ? "Inactive" : undefined;
   }, [includeInactive]);
@@ -152,8 +198,13 @@ export default function ApplicationsPage() {
       sortBy: sortByParam,
       sortDir: sortDirParam,
       typeId: typeIdParam || undefined,
+      expiryFrom: expiryFromParam || undefined,
+      expiryTo: expiryToParam || undefined,
+      licenceType: licenceTypeParam || undefined,
+      costMin: costMinParam || undefined,
+      costMax: costMaxParam || undefined,
     }),
-    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam],
+    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam, expiryFromParam, expiryToParam, licenceTypeParam, costMinParam, costMaxParam],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedApplications(queryParams);
@@ -225,6 +276,12 @@ export default function ApplicationsPage() {
       prev.delete("includeInactive");
       prev.delete("typeId");
       prev.delete("viewMode");
+      prev.delete("expiryFrom");
+      prev.delete("expiryTo");
+      prev.delete("licenceType");
+      prev.delete("costMin");
+      prev.delete("costMax");
+      prev.delete("quickFilter");
       prev.set("sortBy", "name");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -250,6 +307,15 @@ export default function ApplicationsPage() {
         if (config.viewMode && config.viewMode !== "list") prev.set("viewMode", config.viewMode);
         else prev.delete("viewMode");
         if (config.pageSize) prev.set("pageSize", String(config.pageSize));
+
+        // Restore advanced filters
+        const filterKeys = ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax", "quickFilter"];
+        for (const key of filterKeys) {
+          const val = config.filters?.[key];
+          if (val) prev.set(key, val);
+          else prev.delete(key);
+        }
+
         prev.set("page", "1");
         return prev;
       });
@@ -265,7 +331,15 @@ export default function ApplicationsPage() {
     typeId: typeIdParam || undefined,
     viewMode: viewMode !== "list" ? viewMode : undefined,
     pageSize,
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize]);
+    filters: {
+      ...(expiryFromParam ? { expiryFrom: expiryFromParam } : {}),
+      ...(expiryToParam ? { expiryTo: expiryToParam } : {}),
+      ...(licenceTypeParam ? { licenceType: licenceTypeParam } : {}),
+      ...(costMinParam ? { costMin: costMinParam } : {}),
+      ...(costMaxParam ? { costMax: costMaxParam } : {}),
+      ...(quickFilterParam ? { quickFilter: quickFilterParam } : {}),
+    },
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, expiryFromParam, expiryToParam, licenceTypeParam, costMinParam, costMaxParam, quickFilterParam]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -311,6 +385,29 @@ export default function ApplicationsPage() {
     [setSearchParams],
   );
 
+  const activeFilters = useMemo(() => {
+    const filters: ActiveFilter[] = [];
+    if (expiryFromParam || expiryToParam) {
+      filters.push({ key: "expiry", label: `Expiry: ${expiryFromParam || "..."} \u2013 ${expiryToParam || "..."}`, onRemove: () => { handleFilterChange("expiryFrom", ""); handleFilterChange("expiryTo", ""); } });
+    }
+    if (licenceTypeParam) {
+      filters.push({ key: "licenceType", label: `Licence: ${licenceTypeParam}`, onRemove: () => handleFilterChange("licenceType", "") });
+    }
+    if (costMinParam || costMaxParam) {
+      const label = costMinParam && costMaxParam ? `Cost: \u00a3${costMinParam} \u2013 \u00a3${costMaxParam}` : costMinParam ? `Cost: > \u00a3${costMinParam}` : `Cost: < \u00a3${costMaxParam}`;
+      filters.push({ key: "cost", label, onRemove: () => { handleFilterChange("costMin", ""); handleFilterChange("costMax", ""); } });
+    }
+    return filters;
+  }, [expiryFromParam, expiryToParam, licenceTypeParam, costMinParam, costMaxParam, handleFilterChange]);
+
+  const handleClearAllFilters = useCallback(() => {
+    setSearchParams((prev) => {
+      ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax", "quickFilter"].forEach(k => prev.delete(k));
+      prev.set("page", "1");
+      return prev;
+    });
+  }, [setSearchParams]);
+
   const [exporting, setExporting] = useState(false);
   async function handleExport() {
     setExporting(true);
@@ -322,6 +419,11 @@ export default function ApplicationsPage() {
         sortBy: sortByParam,
         sortDir: sortDirParam,
         typeId: typeIdParam || undefined,
+        expiryFrom: expiryFromParam || undefined,
+        expiryTo: expiryToParam || undefined,
+        licenceType: licenceTypeParam || undefined,
+        costMin: costMinParam || undefined,
+        costMax: costMaxParam || undefined,
         ids: selectedIds.length > 0 ? selectedIds.join(",") : undefined,
       });
     } catch {
@@ -534,8 +636,8 @@ export default function ApplicationsPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
               <ApplicationsToolbar
                 table={table}
                 search={searchInput}
@@ -547,17 +649,34 @@ export default function ApplicationsPage() {
                 typeId={typeIdParam}
                 onTypeIdChange={handleTypeIdChange}
                 applicationTypes={applicationTypes ?? []}
+                expiryFrom={expiryFromParam}
+                expiryTo={expiryToParam}
+                onExpiryFromChange={(v) => handleFilterChange("expiryFrom", v)}
+                onExpiryToChange={(v) => handleFilterChange("expiryTo", v)}
+                licenceType={licenceTypeParam}
+                onLicenceTypeChange={(v) => handleFilterChange("licenceType", v)}
+                costMin={costMinParam}
+                costMax={costMaxParam}
+                onCostMinChange={(v) => handleFilterChange("costMin", v)}
+                onCostMaxChange={(v) => handleFilterChange("costMax", v)}
+                quickFilter={quickFilterParam}
+                onQuickFilterApply={handleQuickFilterApply}
+                onQuickFilterClear={handleQuickFilterClear}
               />
-              <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
-              <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
-              <SavedViewSelector
-                entityType="applications"
-                activeViewId={activeViewId}
-                onApplyView={applyView}
-                onResetToDefault={handleResetToDefault}
-                getCurrentConfiguration={getCurrentConfiguration}
-              />
+              <div className="flex items-center gap-1.5">
+                <SavedViewSelector
+                  entityType="applications"
+                  activeViewId={activeViewId}
+                  onApplyView={applyView}
+                  onResetToDefault={handleResetToDefault}
+                  getCurrentConfiguration={getCurrentConfiguration}
+                />
+                <div className="w-px h-5 bg-border" />
+                <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+                <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
+              </div>
             </div>
+            <ActiveFilterChips filters={activeFilters} onClearAll={handleClearAllFilters} />
             <BulkActionBar
               selectedCount={selectedCount}
               onClearSelection={() => setRowSelection({})}

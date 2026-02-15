@@ -17,6 +17,7 @@ import { PeopleToolbar } from "../components/people/people-toolbar";
 import { getPersonColumns } from "../components/people/columns";
 import {
   usePagedPeople,
+  usePeople,
   useCreatePerson,
   useUpdatePerson,
   useArchivePerson,
@@ -33,6 +34,8 @@ import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
+import { ActiveFilterChips } from "../components/filters/active-filter-chips";
+import type { ActiveFilter } from "../components/filters/active-filter-chips";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   fullName: "fullname",
@@ -51,6 +54,8 @@ export default function PeoplePage() {
   const searchParam = searchParams.get("search") ?? "";
   const sortByParam = searchParams.get("sortBy") ?? "fullname";
   const sortDirParam = searchParams.get("sortDir") ?? "asc";
+  const locationIdParam = searchParams.get("locationId") ?? "";
+  const departmentParam = searchParams.get("department") ?? "";
 
   const [searchInput, setSearchInput] = useState(searchParam);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -77,6 +82,18 @@ export default function PeoplePage() {
     setSearchInput(searchParam);
   }, [searchParam]);
 
+  const handleFilterChange = useCallback(
+    (key: string, value: string) => {
+      setSearchParams((prev) => {
+        if (value) prev.set(key, value);
+        else prev.delete(key);
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
   const queryParams = useMemo(
     () => ({
       page,
@@ -84,17 +101,26 @@ export default function PeoplePage() {
       search: searchParam || undefined,
       sortBy: sortByParam,
       sortDir: sortDirParam,
+      locationId: locationIdParam || undefined,
+      department: departmentParam || undefined,
     }),
-    [page, pageSize, searchParam, sortByParam, sortDirParam],
+    [page, pageSize, searchParam, sortByParam, sortDirParam, locationIdParam, departmentParam],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedPeople(queryParams);
+  const { data: allPeople } = usePeople();
   const { data: locations } = useLocations();
   const createMutation = useCreatePerson();
   const checkDuplicatesMutation = useCheckPersonDuplicates();
   const updateMutation = useUpdatePerson();
   const archiveMutation = useArchivePerson();
   const bulkArchiveMutation = useBulkArchivePeople();
+
+  // Extract unique departments from all people
+  const departments = useMemo(
+    () => [...new Set((allPeople ?? []).map(p => p.department).filter(Boolean) as string[])].sort(),
+    [allPeople],
+  );
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
@@ -162,6 +188,8 @@ export default function PeoplePage() {
     setActiveViewId(null);
     setSearchParams((prev) => {
       prev.delete("search");
+      prev.delete("locationId");
+      prev.delete("department");
       prev.set("sortBy", "fullname");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -181,6 +209,15 @@ export default function PeoplePage() {
         if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
         else { prev.delete("search"); setSearchInput(""); }
         if (config.pageSize) prev.set("pageSize", String(config.pageSize));
+
+        // Restore advanced filters
+        const filterKeys = ["locationId", "department"];
+        for (const key of filterKeys) {
+          const val = config.filters?.[key];
+          if (val) prev.set(key, val);
+          else prev.delete(key);
+        }
+
         prev.set("page", "1");
         return prev;
       });
@@ -193,7 +230,11 @@ export default function PeoplePage() {
     sortDir: sortDirParam,
     search: searchParam || undefined,
     pageSize,
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize]);
+    filters: {
+      ...(locationIdParam ? { locationId: locationIdParam } : {}),
+      ...(departmentParam ? { department: departmentParam } : {}),
+    },
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize, locationIdParam, departmentParam]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -239,6 +280,26 @@ export default function PeoplePage() {
     [setSearchParams],
   );
 
+  const activeFilters = useMemo(() => {
+    const filters: ActiveFilter[] = [];
+    if (locationIdParam) {
+      const loc = (locations ?? []).find(l => l.id === locationIdParam);
+      filters.push({ key: "locationId", label: `Location: ${loc?.name ?? locationIdParam}`, onRemove: () => handleFilterChange("locationId", "") });
+    }
+    if (departmentParam) {
+      filters.push({ key: "department", label: `Department: ${departmentParam}`, onRemove: () => handleFilterChange("department", "") });
+    }
+    return filters;
+  }, [locationIdParam, departmentParam, locations, handleFilterChange]);
+
+  const handleClearAllFilters = useCallback(() => {
+    setSearchParams((prev) => {
+      ["locationId", "department"].forEach(k => prev.delete(k));
+      prev.set("page", "1");
+      return prev;
+    });
+  }, [setSearchParams]);
+
   const [exporting, setExporting] = useState(false);
   async function handleExport() {
     setExporting(true);
@@ -247,6 +308,8 @@ export default function PeoplePage() {
         search: searchParam || undefined,
         sortBy: sortByParam,
         sortDir: sortDirParam,
+        locationId: locationIdParam || undefined,
+        department: departmentParam || undefined,
         ids: selectedIds.length > 0 ? selectedIds.join(",") : undefined,
       });
     } catch {
@@ -402,6 +465,12 @@ export default function PeoplePage() {
                 table={table}
                 search={searchInput}
                 onSearchChange={setSearchInput}
+                locationId={locationIdParam}
+                onLocationIdChange={(v) => handleFilterChange("locationId", v)}
+                locations={locations ?? []}
+                department={departmentParam}
+                onDepartmentChange={(v) => handleFilterChange("department", v)}
+                departments={departments}
               />
               <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedIds.length} />
               <SavedViewSelector
@@ -412,6 +481,7 @@ export default function PeoplePage() {
                 getCurrentConfiguration={getCurrentConfiguration}
               />
             </div>
+            <ActiveFilterChips filters={activeFilters} onClearAll={handleClearAllFilters} />
             <BulkActionBar selectedCount={selectedIds.length} onClearSelection={() => setRowSelection({})}>
               <Button variant="destructive" size="sm" onClick={() => setBulkArchiveOpen(true)}>
                 <Trash2 className="mr-1 h-3 w-3" />Archive

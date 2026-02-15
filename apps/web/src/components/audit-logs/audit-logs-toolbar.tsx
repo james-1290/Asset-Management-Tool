@@ -2,6 +2,7 @@ import type { Table } from "@tanstack/react-table";
 import { Input } from "../ui/input";
 import { ColumnToggle } from "../column-toggle";
 import { FilterChip } from "../filter-chip";
+import { DateRangeFilter } from "../filters/date-range-filter";
 import type { AuditLogEntry } from "../../types/audit-log";
 
 const entityTypeOptions = [
@@ -27,6 +28,10 @@ interface AuditLogsToolbarProps {
   onEntityTypeChange: (value: string) => void;
   action: string;
   onActionChange: (value: string) => void;
+  dateFrom: string;
+  dateTo: string;
+  onDateFromChange: (value: string) => void;
+  onDateToChange: (value: string) => void;
 }
 
 export function AuditLogsToolbar({
@@ -37,29 +42,42 @@ export function AuditLogsToolbar({
   onEntityTypeChange,
   action,
   onActionChange,
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
 }: AuditLogsToolbarProps) {
   return (
     <div className="flex flex-1 items-center gap-2">
       <Input
-        placeholder="Search audit logs…"
+        placeholder="Search audit logs..."
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
         className="max-w-[240px]"
       />
-      <FilterChip
-        label="Entity Type"
-        value={entityType}
-        options={entityTypeOptions}
-        onChange={(v) => onEntityTypeChange(v || "all")}
-        allLabel="All Types"
-      />
-      <FilterChip
-        label="Action"
-        value={action}
-        options={actionOptions}
-        onChange={(v) => onActionChange(v || "all")}
-        allLabel="All Actions"
-      />
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <FilterChip
+          label="Entity Type"
+          value={entityType}
+          options={entityTypeOptions}
+          onChange={(v) => onEntityTypeChange(v || "all")}
+          allLabel="All Types"
+        />
+        <FilterChip
+          label="Action"
+          value={action}
+          options={actionOptions}
+          onChange={(v) => onActionChange(v || "all")}
+          allLabel="All Actions"
+        />
+        <DateRangeFilter
+          label="Date"
+          fromValue={dateFrom}
+          toValue={dateTo}
+          onFromChange={onDateFromChange}
+          onToChange={onDateToChange}
+        />
+      </div>
       <div className="ml-auto">
         <ColumnToggle table={table} />
       </div>

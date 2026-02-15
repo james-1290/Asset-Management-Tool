@@ -14,6 +14,8 @@ import { ExportButton } from "../components/export-button";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
+import { ActiveFilterChips } from "../components/filters/active-filter-chips";
+import type { ActiveFilter } from "../components/filters/active-filter-chips";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   timestamp: "timestamp",
@@ -33,6 +35,8 @@ export default function AuditLogPage() {
   const actionParam = searchParams.get("action") ?? "";
   const sortByParam = searchParams.get("sortBy") ?? "timestamp";
   const sortDirParam = searchParams.get("sortDir") ?? "desc";
+  const dateFromParam = searchParams.get("dateFrom") ?? "";
+  const dateToParam = searchParams.get("dateTo") ?? "";
 
   const [searchInput, setSearchInput] = useState(searchParam);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -65,6 +69,18 @@ export default function AuditLogPage() {
     setSearchInput(searchParam);
   }, [searchParam]);
 
+  const handleFilterChange = useCallback(
+    (key: string, value: string) => {
+      setSearchParams((prev) => {
+        if (value) prev.set(key, value);
+        else prev.delete(key);
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
   const queryParams = useMemo(
     () => ({
       page,
@@ -74,8 +90,10 @@ export default function AuditLogPage() {
       action: actionParam || undefined,
       sortBy: sortByParam,
       sortDir: sortDirParam,
+      dateFrom: dateFromParam || undefined,
+      dateTo: dateToParam || undefined,
     }),
-    [page, pageSize, searchParam, entityTypeParam, actionParam, sortByParam, sortDirParam],
+    [page, pageSize, searchParam, entityTypeParam, actionParam, sortByParam, sortDirParam, dateFromParam, dateToParam],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedAuditLogs(queryParams);
@@ -100,6 +118,8 @@ export default function AuditLogPage() {
       prev.delete("search");
       prev.delete("entityType");
       prev.delete("action");
+      prev.delete("dateFrom");
+      prev.delete("dateTo");
       prev.set("sortBy", "timestamp");
       prev.set("sortDir", "desc");
       prev.set("page", "1");
@@ -119,6 +139,15 @@ export default function AuditLogPage() {
         if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
         else { prev.delete("search"); setSearchInput(""); }
         if (config.pageSize) prev.set("pageSize", String(config.pageSize));
+
+        // Restore advanced filters
+        const filterKeys = ["dateFrom", "dateTo"];
+        for (const key of filterKeys) {
+          const val = config.filters?.[key];
+          if (val) prev.set(key, val);
+          else prev.delete(key);
+        }
+
         prev.set("page", "1");
         return prev;
       });
@@ -131,7 +160,11 @@ export default function AuditLogPage() {
     sortDir: sortDirParam,
     search: searchParam || undefined,
     pageSize,
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize]);
+    filters: {
+      ...(dateFromParam ? { dateFrom: dateFromParam } : {}),
+      ...(dateToParam ? { dateTo: dateToParam } : {}),
+    },
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize, dateFromParam, dateToParam]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -207,6 +240,22 @@ export default function AuditLogPage() {
     [setSearchParams],
   );
 
+  const activeFilters = useMemo(() => {
+    const filters: ActiveFilter[] = [];
+    if (dateFromParam || dateToParam) {
+      filters.push({ key: "date", label: `Date: ${dateFromParam || "..."} \u2013 ${dateToParam || "..."}`, onRemove: () => { handleFilterChange("dateFrom", ""); handleFilterChange("dateTo", ""); } });
+    }
+    return filters;
+  }, [dateFromParam, dateToParam, handleFilterChange]);
+
+  const handleClearAllFilters = useCallback(() => {
+    setSearchParams((prev) => {
+      ["dateFrom", "dateTo"].forEach(k => prev.delete(k));
+      prev.set("page", "1");
+      return prev;
+    });
+  }, [setSearchParams]);
+
   const [exporting, setExporting] = useState(false);
   async function handleExport() {
     setExporting(true);
@@ -217,6 +266,8 @@ export default function AuditLogPage() {
         search: searchParam || undefined,
         sortBy: sortByParam,
         sortDir: sortDirParam,
+        dateFrom: dateFromParam || undefined,
+        dateTo: dateToParam || undefined,
       });
     } catch {
       toast.error("Failed to export audit log");
@@ -279,24 +330,31 @@ export default function AuditLogPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
-          <div className="flex items-center gap-2">
-            <AuditLogsToolbar
-              table={table}
-              search={searchInput}
-              onSearchChange={setSearchInput}
-              entityType={entityTypeParam}
-              onEntityTypeChange={handleEntityTypeChange}
-              action={actionParam}
-              onActionChange={handleActionChange}
-            />
-            <ExportButton onExport={handleExport} loading={exporting} />
-            <SavedViewSelector
-              entityType="audit-log"
-              activeViewId={activeViewId}
-              onApplyView={applyView}
-              onResetToDefault={handleResetToDefault}
-              getCurrentConfiguration={getCurrentConfiguration}
-            />
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <AuditLogsToolbar
+                table={table}
+                search={searchInput}
+                onSearchChange={setSearchInput}
+                entityType={entityTypeParam}
+                onEntityTypeChange={handleEntityTypeChange}
+                action={actionParam}
+                onActionChange={handleActionChange}
+                dateFrom={dateFromParam}
+                dateTo={dateToParam}
+                onDateFromChange={(v) => handleFilterChange("dateFrom", v)}
+                onDateToChange={(v) => handleFilterChange("dateTo", v)}
+              />
+              <ExportButton onExport={handleExport} loading={exporting} />
+              <SavedViewSelector
+                entityType="audit-log"
+                activeViewId={activeViewId}
+                onApplyView={applyView}
+                onResetToDefault={handleResetToDefault}
+                getCurrentConfiguration={getCurrentConfiguration}
+              />
+            </div>
+            <ActiveFilterChips filters={activeFilters} onClearAll={handleClearAllFilters} />
           </div>
         )}
         paginationControls={

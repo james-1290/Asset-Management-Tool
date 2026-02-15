@@ -21,6 +21,9 @@ export interface PersonQueryParams {
   search?: string;
   sortBy?: string;
   sortDir?: string;
+  // Advanced filters
+  locationId?: string;
+  department?: string;
 }
 
 export const peopleApi = {
