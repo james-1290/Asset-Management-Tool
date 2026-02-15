@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { Upload, Download, Trash2, FileText, Image, FileSpreadsheet, File } from "lucide-react";
+import { Upload, Download, Trash2, FileText, Image, FileSpreadsheet, File, Eye, Loader2 } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   useAttachments,
@@ -33,6 +39,10 @@ function getFileIcon(mimeType: string) {
   return File;
 }
 
+function isPreviewable(mimeType: string): boolean {
+  return mimeType.startsWith("image/") || mimeType === "application/pdf";
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -50,6 +60,9 @@ function formatDate(iso: string): string {
 export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteTarget, setDeleteTarget] = useState<Attachment | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<Attachment | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const { data: attachments, isLoading } = useAttachments(entityType, entityId);
   const uploadMutation = useUploadAttachment(entityType, entityId);
@@ -77,6 +90,30 @@ export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionP
       toast.error("Failed to download file");
     }
   }
+
+  async function handlePreview(attachment: Attachment) {
+    setPreviewTarget(attachment);
+    setPreviewLoading(true);
+    try {
+      const url = await attachmentsApi.getPreviewUrl(attachment);
+      setPreviewUrl(url);
+    } catch {
+      toast.error("Failed to load preview");
+      setPreviewTarget(null);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  const handlePreviewClose = useCallback((open: boolean) => {
+    if (!open) {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setPreviewTarget(null);
+      setPreviewUrl(null);
+    }
+  }, [previewUrl]);
 
   function handleDelete() {
     if (!deleteTarget) return;
@@ -124,6 +161,7 @@ export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionP
             <div className="space-y-2">
               {attachments.map((attachment) => {
                 const Icon = getFileIcon(attachment.mimeType);
+                const canPreview = isPreviewable(attachment.mimeType);
                 return (
                   <div
                     key={attachment.id}
@@ -141,6 +179,17 @@ export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionP
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0 ml-2">
+                      {canPreview && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handlePreview(attachment)}
+                          title="Preview"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -167,6 +216,36 @@ export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionP
           )}
         </CardContent>
       </Card>
+
+      {/* Preview Dialog */}
+      <Dialog open={!!previewTarget} onOpenChange={handlePreviewClose}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="truncate pr-8">
+              {previewTarget?.originalFileName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center min-h-[200px]">
+            {previewLoading ? (
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            ) : previewUrl && previewTarget ? (
+              previewTarget.mimeType.startsWith("image/") ? (
+                <img
+                  src={previewUrl}
+                  alt={previewTarget.originalFileName}
+                  className="max-w-full max-h-[70vh] object-contain rounded"
+                />
+              ) : (
+                <iframe
+                  src={previewUrl}
+                  title={previewTarget.originalFileName}
+                  className="w-full h-[70vh] rounded border-0"
+                />
+              )
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={!!deleteTarget}

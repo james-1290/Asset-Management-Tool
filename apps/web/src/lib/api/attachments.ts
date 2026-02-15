@@ -43,6 +43,25 @@ export const attachmentsApi = {
     URL.revokeObjectURL(objectUrl);
   },
 
+  async getPreviewUrl(attachment: Attachment): Promise<string> {
+    const url = `${BASE_URL}/attachments/${attachment.id}/download`;
+    const response = await fetch(url, { headers: { ...getAuthHeaders() } });
+
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    if (!response.ok) {
+      throw new ApiError(response.status, response.statusText);
+    }
+
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+  },
+
   delete(id: string): Promise<void> {
     return apiClient.delete(`/attachments/${id}`);
   },

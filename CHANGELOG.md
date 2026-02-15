@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-15 20:21 — Attachment Preview Pane
+
+- Inline preview for images (PNG, JPG, GIF) and PDFs via Eye icon button
+- Uses blob + object URL pattern to handle auth headers for `<img>`/`<iframe>` src
+- Non-previewable files (DOCX, XLSX, etc.) show download only — no eye icon
+- Object URLs cleaned up on dialog close to prevent memory leaks
+
 ## 2026-02-15 14:24 — File Attachment Support
 
 ### Backend
