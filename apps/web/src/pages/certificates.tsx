@@ -38,6 +38,8 @@ import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
+import { ActiveFilterChips } from "../components/filters/active-filter-chips";
+import type { ActiveFilter } from "../components/filters/active-filter-chips";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -58,6 +60,8 @@ export default function CertificatesPage() {
   const sortDirParam = searchParams.get("sortDir") ?? "asc";
   const typeIdParam = searchParams.get("typeId") ?? "";
   const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
+  const expiryFromParam = searchParams.get("expiryFrom") ?? "";
+  const expiryToParam = searchParams.get("expiryTo") ?? "";
 
   const [searchInput, setSearchInput] = useState(searchParam);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -122,6 +126,18 @@ export default function CertificatesPage() {
     [setSearchParams],
   );
 
+  const handleFilterChange = useCallback(
+    (key: string, value: string) => {
+      setSearchParams((prev) => {
+        if (value) prev.set(key, value);
+        else prev.delete(key);
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
   const queryParams = useMemo(
     () => ({
       page,
@@ -131,8 +147,10 @@ export default function CertificatesPage() {
       sortBy: sortByParam,
       sortDir: sortDirParam,
       typeId: typeIdParam || undefined,
+      expiryFrom: expiryFromParam || undefined,
+      expiryTo: expiryToParam || undefined,
     }),
-    [page, pageSize, searchParam, statusParam, sortByParam, sortDirParam, typeIdParam],
+    [page, pageSize, searchParam, statusParam, sortByParam, sortDirParam, typeIdParam, expiryFromParam, expiryToParam],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedCertificates(queryParams);
@@ -198,6 +216,8 @@ export default function CertificatesPage() {
       prev.delete("status");
       prev.delete("typeId");
       prev.delete("viewMode");
+      prev.delete("expiryFrom");
+      prev.delete("expiryTo");
       prev.set("sortBy", "name");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -223,6 +243,15 @@ export default function CertificatesPage() {
         if (config.viewMode && config.viewMode !== "list") prev.set("viewMode", config.viewMode);
         else prev.delete("viewMode");
         if (config.pageSize) prev.set("pageSize", String(config.pageSize));
+
+        // Restore advanced filters
+        const filterKeys = ["expiryFrom", "expiryTo"];
+        for (const key of filterKeys) {
+          const val = config.filters?.[key];
+          if (val) prev.set(key, val);
+          else prev.delete(key);
+        }
+
         prev.set("page", "1");
         return prev;
       });
@@ -238,7 +267,11 @@ export default function CertificatesPage() {
     typeId: typeIdParam || undefined,
     viewMode: viewMode !== "list" ? viewMode : undefined,
     pageSize,
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize]);
+    filters: {
+      ...(expiryFromParam ? { expiryFrom: expiryFromParam } : {}),
+      ...(expiryToParam ? { expiryTo: expiryToParam } : {}),
+    },
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, expiryFromParam, expiryToParam]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -284,6 +317,22 @@ export default function CertificatesPage() {
     [setSearchParams],
   );
 
+  const activeFilters = useMemo(() => {
+    const filters: ActiveFilter[] = [];
+    if (expiryFromParam || expiryToParam) {
+      filters.push({ key: "expiry", label: `Expiry: ${expiryFromParam || "..."} \u2013 ${expiryToParam || "..."}`, onRemove: () => { handleFilterChange("expiryFrom", ""); handleFilterChange("expiryTo", ""); } });
+    }
+    return filters;
+  }, [expiryFromParam, expiryToParam, handleFilterChange]);
+
+  const handleClearAllFilters = useCallback(() => {
+    setSearchParams((prev) => {
+      ["expiryFrom", "expiryTo", "quickFilter"].forEach(k => prev.delete(k));
+      prev.set("page", "1");
+      return prev;
+    });
+  }, [setSearchParams]);
+
   const [exporting, setExporting] = useState(false);
   async function handleExport() {
     setExporting(true);
@@ -294,6 +343,8 @@ export default function CertificatesPage() {
         sortBy: sortByParam,
         sortDir: sortDirParam,
         typeId: typeIdParam || undefined,
+        expiryFrom: expiryFromParam || undefined,
+        expiryTo: expiryToParam || undefined,
         ids: selectedIds.length > 0 ? selectedIds.join(",") : undefined,
       });
     } catch {
@@ -487,8 +538,8 @@ export default function CertificatesPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
               <CertificatesToolbar
                 table={table}
                 search={searchInput}
@@ -498,17 +549,25 @@ export default function CertificatesPage() {
                 typeId={typeIdParam}
                 onTypeIdChange={handleTypeIdChange}
                 certificateTypes={certificateTypes ?? []}
+                expiryFrom={expiryFromParam}
+                expiryTo={expiryToParam}
+                onExpiryFromChange={(v) => handleFilterChange("expiryFrom", v)}
+                onExpiryToChange={(v) => handleFilterChange("expiryTo", v)}
               />
-              <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
-              <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
-              <SavedViewSelector
-                entityType="certificates"
-                activeViewId={activeViewId}
-                onApplyView={applyView}
-                onResetToDefault={handleResetToDefault}
-                getCurrentConfiguration={getCurrentConfiguration}
-              />
+              <div className="flex items-center gap-1.5">
+                <SavedViewSelector
+                  entityType="certificates"
+                  activeViewId={activeViewId}
+                  onApplyView={applyView}
+                  onResetToDefault={handleResetToDefault}
+                  getCurrentConfiguration={getCurrentConfiguration}
+                />
+                <div className="w-px h-5 bg-border" />
+                <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+                <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
+              </div>
             </div>
+            <ActiveFilterChips filters={activeFilters} onClearAll={handleClearAllFilters} />
             <BulkActionBar
               selectedCount={selectedCount}
               onClearSelection={() => setRowSelection({})}

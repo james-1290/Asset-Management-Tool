@@ -41,6 +41,9 @@ import type { CustomFieldDefinition } from "../types/custom-field";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
+import { usePeople } from "../hooks/use-people";
+import { ActiveFilterChips } from "../components/filters/active-filter-chips";
+import type { ActiveFilter } from "../components/filters/active-filter-chips";
 
 // Map TanStack column IDs to backend sortBy values
 const SORT_FIELD_MAP: Record<string, string> = {
@@ -69,6 +72,15 @@ export default function AssetsPage() {
   const includeSold = searchParams.get("includeSold") === "true";
   const typeIdParam = searchParams.get("typeId") ?? "";
   const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
+  const locationIdParam = searchParams.get("locationId") ?? "";
+  const assignedPersonIdParam = searchParams.get("assignedPersonId") ?? "";
+  const purchaseDateFromParam = searchParams.get("purchaseDateFrom") ?? "";
+  const purchaseDateToParam = searchParams.get("purchaseDateTo") ?? "";
+  const warrantyExpiryFromParam = searchParams.get("warrantyExpiryFrom") ?? "";
+  const warrantyExpiryToParam = searchParams.get("warrantyExpiryTo") ?? "";
+  const costMinParam = searchParams.get("costMin") ?? "";
+  const costMaxParam = searchParams.get("costMax") ?? "";
+  const unassignedParam = searchParams.get("unassigned") ?? "";
 
   // Debounced search: local input state synced to URL after 300ms
   const [searchInput, setSearchInput] = useState(searchParam);
@@ -116,13 +128,23 @@ export default function AssetsPage() {
       sortBy: sortByParam,
       sortDir: sortDirParam,
       typeId: typeIdParam || undefined,
+      locationId: locationIdParam || undefined,
+      assignedPersonId: assignedPersonIdParam || undefined,
+      purchaseDateFrom: purchaseDateFromParam || undefined,
+      purchaseDateTo: purchaseDateToParam || undefined,
+      warrantyExpiryFrom: warrantyExpiryFromParam || undefined,
+      warrantyExpiryTo: warrantyExpiryToParam || undefined,
+      costMin: costMinParam || undefined,
+      costMax: costMaxParam || undefined,
+      unassigned: unassignedParam || undefined,
     }),
-    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam],
+    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedAssets(queryParams);
   const { data: assetTypes } = useAssetTypes();
   const { data: locations } = useLocations();
+  const { data: people } = usePeople();
   const createMutation = useCreateAsset();
   const checkDuplicatesMutation = useCheckAssetDuplicates();
   const updateMutation = useUpdateAsset();
@@ -221,6 +243,15 @@ export default function AssetsPage() {
       prev.delete("includeSold");
       prev.delete("typeId");
       prev.delete("viewMode");
+      prev.delete("locationId");
+      prev.delete("assignedPersonId");
+      prev.delete("purchaseDateFrom");
+      prev.delete("purchaseDateTo");
+      prev.delete("warrantyExpiryFrom");
+      prev.delete("warrantyExpiryTo");
+      prev.delete("costMin");
+      prev.delete("costMax");
+      prev.delete("unassigned");
       prev.set("sortBy", "name");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -246,6 +277,15 @@ export default function AssetsPage() {
         if (config.viewMode && config.viewMode !== "list") prev.set("viewMode", config.viewMode);
         else prev.delete("viewMode");
         if (config.pageSize) prev.set("pageSize", String(config.pageSize));
+
+        // Restore advanced filters
+        const filterKeys = ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned"];
+        for (const key of filterKeys) {
+          const val = config.filters?.[key];
+          if (val) prev.set(key, val);
+          else prev.delete(key);
+        }
+
         prev.set("page", "1");
         return prev;
       });
@@ -261,7 +301,18 @@ export default function AssetsPage() {
     typeId: typeIdParam || undefined,
     viewMode: viewMode !== "list" ? viewMode : undefined,
     pageSize,
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize]);
+    filters: {
+      ...(locationIdParam ? { locationId: locationIdParam } : {}),
+      ...(assignedPersonIdParam ? { assignedPersonId: assignedPersonIdParam } : {}),
+      ...(purchaseDateFromParam ? { purchaseDateFrom: purchaseDateFromParam } : {}),
+      ...(purchaseDateToParam ? { purchaseDateTo: purchaseDateToParam } : {}),
+      ...(warrantyExpiryFromParam ? { warrantyExpiryFrom: warrantyExpiryFromParam } : {}),
+      ...(warrantyExpiryToParam ? { warrantyExpiryTo: warrantyExpiryToParam } : {}),
+      ...(costMinParam ? { costMin: costMinParam } : {}),
+      ...(costMaxParam ? { costMax: costMaxParam } : {}),
+      ...(unassignedParam ? { unassigned: unassignedParam } : {}),
+    },
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam]);
 
   // Sorting: derive TanStack SortingState from URL
   const sorting: SortingState = useMemo(
@@ -364,6 +415,18 @@ export default function AssetsPage() {
     [setSearchParams],
   );
 
+  const handleFilterChange = useCallback(
+    (key: string, value: string) => {
+      setSearchParams((prev) => {
+        if (value) prev.set(key, value);
+        else prev.delete(key);
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
   const handleViewModeChange = useCallback(
     (mode: "list" | "grouped") => {
       setSearchParams((prev) => {
@@ -374,6 +437,40 @@ export default function AssetsPage() {
     },
     [setSearchParams],
   );
+
+  const activeFilters = useMemo(() => {
+    const filters: ActiveFilter[] = [];
+    if (locationIdParam) {
+      const loc = (locations ?? []).find(l => l.id === locationIdParam);
+      filters.push({ key: "locationId", label: `Location: ${loc?.name ?? locationIdParam}`, onRemove: () => handleFilterChange("locationId", "") });
+    }
+    if (assignedPersonIdParam) {
+      const person = (people ?? []).find(p => p.id === assignedPersonIdParam);
+      filters.push({ key: "assignedPersonId", label: `Assigned: ${person?.fullName ?? assignedPersonIdParam}`, onRemove: () => handleFilterChange("assignedPersonId", "") });
+    }
+    if (purchaseDateFromParam || purchaseDateToParam) {
+      filters.push({ key: "purchaseDate", label: `Purchase: ${purchaseDateFromParam || "..."} \u2013 ${purchaseDateToParam || "..."}`, onRemove: () => { handleFilterChange("purchaseDateFrom", ""); handleFilterChange("purchaseDateTo", ""); } });
+    }
+    if (warrantyExpiryFromParam || warrantyExpiryToParam) {
+      filters.push({ key: "warrantyExpiry", label: `Warranty: ${warrantyExpiryFromParam || "..."} \u2013 ${warrantyExpiryToParam || "..."}`, onRemove: () => { handleFilterChange("warrantyExpiryFrom", ""); handleFilterChange("warrantyExpiryTo", ""); } });
+    }
+    if (costMinParam || costMaxParam) {
+      const label = costMinParam && costMaxParam ? `Cost: \u00a3${costMinParam} \u2013 \u00a3${costMaxParam}` : costMinParam ? `Cost: > \u00a3${costMinParam}` : `Cost: < \u00a3${costMaxParam}`;
+      filters.push({ key: "cost", label, onRemove: () => { handleFilterChange("costMin", ""); handleFilterChange("costMax", ""); } });
+    }
+    if (unassignedParam) {
+      filters.push({ key: "unassigned", label: "Unassigned only", onRemove: () => handleFilterChange("unassigned", "") });
+    }
+    return filters;
+  }, [locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam, locations, people, handleFilterChange]);
+
+  const handleClearAllFilters = useCallback(() => {
+    setSearchParams((prev) => {
+      ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned"].forEach(k => prev.delete(k));
+      prev.set("page", "1");
+      return prev;
+    });
+  }, [setSearchParams]);
 
   const [exporting, setExporting] = useState(false);
   async function handleExport() {
@@ -386,6 +483,15 @@ export default function AssetsPage() {
         sortBy: sortByParam,
         sortDir: sortDirParam,
         typeId: typeIdParam || undefined,
+        locationId: locationIdParam || undefined,
+        assignedPersonId: assignedPersonIdParam || undefined,
+        purchaseDateFrom: purchaseDateFromParam || undefined,
+        purchaseDateTo: purchaseDateToParam || undefined,
+        warrantyExpiryFrom: warrantyExpiryFromParam || undefined,
+        warrantyExpiryTo: warrantyExpiryToParam || undefined,
+        costMin: costMinParam || undefined,
+        costMax: costMaxParam || undefined,
+        unassigned: unassignedParam || undefined,
         ids: selectedIds.length > 0 ? selectedIds.join(",") : undefined,
       });
     } catch {
@@ -621,7 +727,24 @@ export default function AssetsPage() {
                 typeId={typeIdParam}
                 onTypeIdChange={handleTypeIdChange}
                 assetTypes={assetTypes ?? []}
+                locationId={locationIdParam}
+                onLocationIdChange={(v) => handleFilterChange("locationId", v)}
                 locations={locations ?? []}
+                assignedPersonId={assignedPersonIdParam}
+                onAssignedPersonIdChange={(v) => handleFilterChange("assignedPersonId", v)}
+                people={people ?? []}
+                purchaseDateFrom={purchaseDateFromParam}
+                purchaseDateTo={purchaseDateToParam}
+                onPurchaseDateFromChange={(v) => handleFilterChange("purchaseDateFrom", v)}
+                onPurchaseDateToChange={(v) => handleFilterChange("purchaseDateTo", v)}
+                warrantyExpiryFrom={warrantyExpiryFromParam}
+                warrantyExpiryTo={warrantyExpiryToParam}
+                onWarrantyExpiryFromChange={(v) => handleFilterChange("warrantyExpiryFrom", v)}
+                onWarrantyExpiryToChange={(v) => handleFilterChange("warrantyExpiryTo", v)}
+                costMin={costMinParam}
+                costMax={costMaxParam}
+                onCostMinChange={(v) => handleFilterChange("costMin", v)}
+                onCostMaxChange={(v) => handleFilterChange("costMax", v)}
               />
               <div className="flex items-center gap-1.5">
                 <SavedViewSelector
@@ -636,6 +759,7 @@ export default function AssetsPage() {
                 <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
               </div>
             </div>
+            <ActiveFilterChips filters={activeFilters} onClearAll={handleClearAllFilters} />
             {/* Row 2: Bulk actions (only when selected) */}
             <BulkActionBar
               selectedCount={selectedCount}

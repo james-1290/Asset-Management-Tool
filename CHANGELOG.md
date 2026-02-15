@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-02-15 10:26 — Phase C: Advanced Filtering + Quick Filter Chips + Saved Filters
+
+### Backend
+- Added date range, numeric range, location, person, department, unassigned, and licence type filter params to all 5 list endpoints (Assets, Certificates, Applications, People, Audit Log)
+- CSV export endpoints also support all new filter params
+
+### Frontend — Reusable Filter Components
+- **DateRangeFilter**: pill-shaped chip with from/to date popover
+- **NumericRangeFilter**: pill-shaped chip with min/max number popover
+- **ActiveFilterChips**: removable summary chips with "Clear all" button
+- **QuickFilterBar**: one-click preset filter buttons
+
+### Frontend — Quick Filters
+- **Assets**: Unassigned, Expiring Soon, High Value, In Maintenance
+- **Certificates**: Expiring Soon, Expired, Pending Renewal
+- **Applications**: Expiring Soon, Expired, Subscription
+
+### Frontend — Per-Page Filters
+- **Assets**: location, assigned person, purchase date range, warranty expiry range, cost range, unassigned toggle
+- **Certificates**: expiry date range
+- **Applications**: expiry date range, licence type, cost range
+- **People**: location, department
+- **Audit Log**: date range
+
+### Saved Views
+- Extended ViewConfiguration with generic `filters` map — saved views now persist all advanced filters
+- Loading a saved view restores all filter state; saving captures current filters
+
 ## 2026-02-14 17:01 — Phase A: Smart Dashboard + Search + People 360 + Reports Polish
 
 ### Dashboard

@@ -16,6 +16,9 @@ export interface CertificateQueryParams {
   sortBy?: string;
   sortDir?: string;
   typeId?: string;
+  // Advanced filters
+  expiryFrom?: string;
+  expiryTo?: string;
 }
 
 export const certificatesApi = {

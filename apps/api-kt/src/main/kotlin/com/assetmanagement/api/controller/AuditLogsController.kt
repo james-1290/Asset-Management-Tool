@@ -31,10 +31,11 @@ class AuditLogsController(
         @RequestParam(defaultValue = "1") page: Int, @RequestParam(defaultValue = "25") pageSize: Int,
         @RequestParam(required = false) entityType: String?, @RequestParam(required = false) action: String?,
         @RequestParam(required = false) search: String?, @RequestParam(defaultValue = "timestamp") sortBy: String,
-        @RequestParam(defaultValue = "desc") sortDir: String
+        @RequestParam(defaultValue = "desc") sortDir: String,
+        @RequestParam(required = false) dateFrom: String?, @RequestParam(required = false) dateTo: String?
     ): ResponseEntity<PagedResponse<AuditLogDto>> {
         val p = maxOf(1, page); val ps = pageSize.coerceIn(1, 100)
-        val spec = buildSpec(entityType, action, search)
+        val spec = buildSpec(entityType, action, search, dateFrom, dateTo)
         val sort = sortOf(sortBy, sortDir)
         val result = auditLogRepository.findAll(spec, PageRequest.of(p - 1, ps, sort))
         val items = result.content.map { it.toDto() }
@@ -45,11 +46,13 @@ class AuditLogsController(
     fun export(
         @RequestParam(required = false) entityType: String?, @RequestParam(required = false) action: String?,
         @RequestParam(required = false) search: String?, @RequestParam(defaultValue = "timestamp") sortBy: String,
-        @RequestParam(defaultValue = "desc") sortDir: String, response: HttpServletResponse
+        @RequestParam(defaultValue = "desc") sortDir: String,
+        @RequestParam(required = false) dateFrom: String?, @RequestParam(required = false) dateTo: String?,
+        response: HttpServletResponse
     ) {
         response.contentType = "text/csv"
         response.setHeader("Content-Disposition", "attachment; filename=audit-log-export.csv")
-        val logs = auditLogRepository.findAll(buildSpec(entityType, action, search), sortOf(sortBy, sortDir))
+        val logs = auditLogRepository.findAll(buildSpec(entityType, action, search, dateFrom, dateTo), sortOf(sortBy, sortDir))
         val writer = CSVWriter(OutputStreamWriter(response.outputStream))
         writer.writeNext(arrayOf("Timestamp", "ActorName", "Action", "EntityType", "EntityName", "Details", "Source"))
         logs.forEach { l ->
@@ -59,7 +62,7 @@ class AuditLogsController(
         writer.flush()
     }
 
-    private fun buildSpec(entityType: String?, action: String?, search: String?): Specification<AuditLog> = Specification { root, _, cb ->
+    private fun buildSpec(entityType: String?, action: String?, search: String?, dateFrom: String? = null, dateTo: String? = null): Specification<AuditLog> = Specification { root, _, cb ->
         val preds = mutableListOf<Predicate>()
         if (!entityType.isNullOrBlank()) preds.add(cb.equal(root.get<String>("entityType"), entityType))
         if (!action.isNullOrBlank()) preds.add(cb.equal(root.get<String>("action"), action))
@@ -70,6 +73,14 @@ class AuditLogsController(
                 cb.like(cb.lower(root.get("actorName")), pattern),
                 cb.like(cb.lower(root.get("entityName")), pattern)
             ))
+        }
+        if (!dateFrom.isNullOrBlank()) {
+            val from = java.time.Instant.parse("${dateFrom}T00:00:00Z")
+            preds.add(cb.greaterThanOrEqualTo(root.get("timestamp"), from))
+        }
+        if (!dateTo.isNullOrBlank()) {
+            val to = java.time.Instant.parse("${dateTo}T23:59:59Z")
+            preds.add(cb.lessThanOrEqualTo(root.get("timestamp"), to))
         }
         if (preds.isEmpty()) null else cb.and(*preds.toTypedArray())
     }

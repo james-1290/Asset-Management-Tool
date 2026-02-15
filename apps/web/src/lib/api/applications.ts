@@ -19,6 +19,12 @@ export interface ApplicationQueryParams {
   sortBy?: string;
   sortDir?: string;
   typeId?: string;
+  // Advanced filters
+  expiryFrom?: string;
+  expiryTo?: string;
+  licenceType?: string;
+  costMin?: string;
+  costMax?: string;
 }
 
 export const applicationsApi = {

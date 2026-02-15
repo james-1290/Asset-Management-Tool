@@ -56,7 +56,16 @@ class AssetsController(
         @RequestParam(required = false) includeStatuses: String?,
         @RequestParam(defaultValue = "name") sortBy: String,
         @RequestParam(defaultValue = "asc") sortDir: String,
-        @RequestParam(required = false) typeId: UUID?
+        @RequestParam(required = false) typeId: UUID?,
+        @RequestParam(required = false) locationId: UUID?,
+        @RequestParam(required = false) assignedPersonId: UUID?,
+        @RequestParam(required = false) purchaseDateFrom: String?,
+        @RequestParam(required = false) purchaseDateTo: String?,
+        @RequestParam(required = false) warrantyExpiryFrom: String?,
+        @RequestParam(required = false) warrantyExpiryTo: String?,
+        @RequestParam(required = false) costMin: BigDecimal?,
+        @RequestParam(required = false) costMax: BigDecimal?,
+        @RequestParam(required = false) unassigned: Boolean?
     ): ResponseEntity<Any> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
@@ -69,7 +78,9 @@ class AssetsController(
             }
         }
 
-        val spec = buildFilteredSpec(search, status, includeStatuses, typeId)
+        val spec = buildFilteredSpec(search, status, includeStatuses, typeId,
+            locationId, assignedPersonId, purchaseDateFrom, purchaseDateTo,
+            warrantyExpiryFrom, warrantyExpiryTo, costMin, costMax, unassigned)
         val pageReq = PageRequest.of(p - 1, ps, sortOf(sortBy, sortDir))
         val result = assetRepository.findAll(spec, pageReq)
         val assets = result.content
@@ -94,6 +105,15 @@ class AssetsController(
         @RequestParam(defaultValue = "name") sortBy: String,
         @RequestParam(defaultValue = "asc") sortDir: String,
         @RequestParam(required = false) typeId: UUID?,
+        @RequestParam(required = false) locationId: UUID?,
+        @RequestParam(required = false) assignedPersonId: UUID?,
+        @RequestParam(required = false) purchaseDateFrom: String?,
+        @RequestParam(required = false) purchaseDateTo: String?,
+        @RequestParam(required = false) warrantyExpiryFrom: String?,
+        @RequestParam(required = false) warrantyExpiryTo: String?,
+        @RequestParam(required = false) costMin: BigDecimal?,
+        @RequestParam(required = false) costMax: BigDecimal?,
+        @RequestParam(required = false) unassigned: Boolean?,
         @RequestParam(required = false) ids: String?,
         response: HttpServletResponse
     ) {
@@ -116,7 +136,9 @@ class AssetsController(
                 assetRepository.findAll(spec, sortOf(sortBy, sortDir))
             }
         } else {
-            val spec = buildFilteredSpec(search, status, includeStatuses, typeId)
+            val spec = buildFilteredSpec(search, status, includeStatuses, typeId,
+                locationId, assignedPersonId, purchaseDateFrom, purchaseDateTo,
+                warrantyExpiryFrom, warrantyExpiryTo, costMin, costMax, unassigned)
             assetRepository.findAll(spec, sortOf(sortBy, sortDir))
         }
 
@@ -1065,7 +1087,16 @@ class AssetsController(
         search: String?,
         status: String?,
         includeStatuses: String?,
-        typeId: UUID?
+        typeId: UUID?,
+        locationId: UUID? = null,
+        assignedPersonId: UUID? = null,
+        purchaseDateFrom: String? = null,
+        purchaseDateTo: String? = null,
+        warrantyExpiryFrom: String? = null,
+        warrantyExpiryTo: String? = null,
+        costMin: BigDecimal? = null,
+        costMax: BigDecimal? = null,
+        unassigned: Boolean? = null
     ): Specification<Asset> = Specification { root, _, cb ->
         val predicates = mutableListOf<Predicate>()
 
@@ -1104,6 +1135,49 @@ class AssetsController(
             if (hiddenStatuses.isNotEmpty()) {
                 predicates.add(cb.not(root.get<AssetStatus>("status").`in`(hiddenStatuses)))
             }
+        }
+
+        // Location filter
+        if (locationId != null) {
+            predicates.add(cb.equal(root.get<UUID>("locationId"), locationId))
+        }
+
+        // Assigned person filter
+        if (assignedPersonId != null) {
+            predicates.add(cb.equal(root.get<UUID>("assignedPersonId"), assignedPersonId))
+        }
+
+        // Unassigned shortcut (assignedPersonId IS NULL)
+        if (unassigned == true) {
+            predicates.add(cb.isNull(root.get<UUID>("assignedPersonId")))
+        }
+
+        // Purchase date range
+        if (!purchaseDateFrom.isNullOrBlank()) {
+            val from = Instant.parse("${purchaseDateFrom}T00:00:00Z")
+            predicates.add(cb.greaterThanOrEqualTo(root.get("purchaseDate"), from))
+        }
+        if (!purchaseDateTo.isNullOrBlank()) {
+            val to = Instant.parse("${purchaseDateTo}T23:59:59Z")
+            predicates.add(cb.lessThanOrEqualTo(root.get("purchaseDate"), to))
+        }
+
+        // Warranty expiry date range
+        if (!warrantyExpiryFrom.isNullOrBlank()) {
+            val from = Instant.parse("${warrantyExpiryFrom}T00:00:00Z")
+            predicates.add(cb.greaterThanOrEqualTo(root.get("warrantyExpiryDate"), from))
+        }
+        if (!warrantyExpiryTo.isNullOrBlank()) {
+            val to = Instant.parse("${warrantyExpiryTo}T23:59:59Z")
+            predicates.add(cb.lessThanOrEqualTo(root.get("warrantyExpiryDate"), to))
+        }
+
+        // Cost range
+        if (costMin != null) {
+            predicates.add(cb.greaterThanOrEqualTo(root.get("purchaseCost"), costMin))
+        }
+        if (costMax != null) {
+            predicates.add(cb.lessThanOrEqualTo(root.get("purchaseCost"), costMax))
         }
 
         cb.and(*predicates.toTypedArray())

@@ -10,6 +10,9 @@ export interface AuditLogQueryParams {
   search?: string;
   sortBy?: string;
   sortDir?: string;
+  // Advanced filters
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export const auditLogsApi = {
