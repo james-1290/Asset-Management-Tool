@@ -53,6 +53,12 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function daysAgoDate(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function DashboardPage() {
   const { isVisible, toggleWidget } = useDashboardPreferences();
 
@@ -63,7 +69,7 @@ export default function DashboardPage() {
   const assetsByLocation = useAssetsByLocation(isVisible("assetsByLocation"));
   const checkedOut = useCheckedOutAssets(isVisible("checkedOut"));
   const recentActivity = useRecentActivity(10, isVisible("recentActivity"));
-  const recentlyAdded = useRecentlyAdded(5, isVisible("recentlyAdded"));
+  const recentlyAdded = useRecentlyAdded(7, isVisible("recentlyAdded"));
   const assetsByAge = useAssetsByAge(isVisible("assetsByAge"));
   const unassignedAssets = useUnassignedAssets(isVisible("unassignedAssets"));
   const valueByLocation = useValueByLocation(isVisible("valueByLocation"));
@@ -139,7 +145,7 @@ export default function DashboardPage() {
             value={unassignedAssets.data?.length?.toString() ?? "0"}
             icon={PackageX}
             isLoading={unassignedAssets.isLoading}
-            href="/assets?status=Available"
+            href="/assets?status=Available&unassigned=true"
           />
         )}
       </div>
@@ -152,7 +158,7 @@ export default function DashboardPage() {
             value={recentlyAdded.data?.length?.toString() ?? "0"}
             icon={PackagePlus}
             isLoading={recentlyAdded.isLoading}
-            href="/assets?sortBy=createdAt&sortDir=desc"
+            href={`/assets?sortBy=createdAt&sortDir=desc&createdAfter=${daysAgoDate(7)}`}
           />
         )}
         {isVisible("warrantyExpiries") && (

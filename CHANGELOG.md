@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-15 21:13 — Dashboard Widget Link Fixes + Sidebar Border Alignment
+
+- Fixed sidebar header border not aligning with main header border (h-14 → h-12)
+- Fixed "Unassigned" widget linking to all Available assets instead of only unassigned ones (added `&unassigned=true`)
+- Fixed "Recently Added" widget showing arbitrary count (was top-N limit, now counts assets created in last 7 days)
+- Added `createdAfter` filter support to assets API and list page
+- Dashboard recently-added endpoint now excludes Retired/Sold assets to match list page defaults
+- "Added since" filter chip shown on assets page when navigating from dashboard
+
 ## 2026-02-15 20:41 — ESLint Bug Fix Sweep
 
 - Removed unused imports: `Badge` (notifications-bell), `endOfYear` (date-range-picker), Dialog components (person-detail), unused eslint-disable (custom-fields-section)

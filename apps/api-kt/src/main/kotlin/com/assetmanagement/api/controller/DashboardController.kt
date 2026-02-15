@@ -181,20 +181,23 @@ class DashboardController(
         return ResponseEntity.ok(items)
     }
 
-    // 7. GET /recently-added?limit=5
+    // 7. GET /recently-added?days=7
     @GetMapping("/recently-added")
     fun getRecentlyAdded(
-        @RequestParam(defaultValue = "5") limit: Int
+        @RequestParam(defaultValue = "7") days: Int
     ): ResponseEntity<List<RecentlyAddedAssetDto>> {
-        val safeLimit = limit.coerceIn(1, 50)
+        val safeDays = days.coerceIn(1, 90)
+        val cutoff = java.time.Instant.now().minus(java.time.Duration.ofDays(safeDays.toLong()))
 
         @Suppress("UNCHECKED_CAST")
         val results = em.createQuery(
             """SELECT a FROM com.assetmanagement.api.model.Asset a
                LEFT JOIN FETCH a.assetType
-               WHERE a.isArchived = false
+               WHERE a.isArchived = false AND a.createdAt >= :cutoff
+                 AND a.status NOT IN (:excludedStatuses)
                ORDER BY a.createdAt DESC"""
-        ).setMaxResults(safeLimit)
+        ).setParameter("cutoff", cutoff)
+         .setParameter("excludedStatuses", listOf(AssetStatus.Retired, AssetStatus.Sold))
          .resultList as List<com.assetmanagement.api.model.Asset>
 
         val items = results.map { a ->

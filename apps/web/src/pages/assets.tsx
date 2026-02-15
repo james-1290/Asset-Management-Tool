@@ -81,6 +81,7 @@ export default function AssetsPage() {
   const costMinParam = searchParams.get("costMin") ?? "";
   const costMaxParam = searchParams.get("costMax") ?? "";
   const unassignedParam = searchParams.get("unassigned") ?? "";
+  const createdAfterParam = searchParams.get("createdAfter") ?? "";
 
   // Debounced search: local input state synced to URL after 300ms
   const [searchInput, setSearchInput] = useState(searchParam);
@@ -137,8 +138,9 @@ export default function AssetsPage() {
       costMin: costMinParam || undefined,
       costMax: costMaxParam || undefined,
       unassigned: unassignedParam || undefined,
+      createdAfter: createdAfterParam || undefined,
     }),
-    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam],
+    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam, createdAfterParam],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedAssets(queryParams);
@@ -244,7 +246,7 @@ export default function AssetsPage() {
         if (config.pageSize) prev.set("pageSize", String(config.pageSize));
 
         // Restore advanced filters
-        const filterKeys = ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned"];
+        const filterKeys = ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned", "createdAfter"];
         for (const key of filterKeys) {
           const val = config.filters?.[key];
           if (val) prev.set(key, val);
@@ -284,6 +286,7 @@ export default function AssetsPage() {
       prev.delete("costMin");
       prev.delete("costMax");
       prev.delete("unassigned");
+      prev.delete("createdAfter");
       prev.set("sortBy", "name");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -312,8 +315,9 @@ export default function AssetsPage() {
       ...(costMinParam ? { costMin: costMinParam } : {}),
       ...(costMaxParam ? { costMax: costMaxParam } : {}),
       ...(unassignedParam ? { unassigned: unassignedParam } : {}),
+      ...(createdAfterParam ? { createdAfter: createdAfterParam } : {}),
     },
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam]);
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam, createdAfterParam]);
 
   // Sorting: derive TanStack SortingState from URL
   const sorting: SortingState = useMemo(
@@ -462,12 +466,15 @@ export default function AssetsPage() {
     if (unassignedParam) {
       filters.push({ key: "unassigned", label: "Unassigned only", onRemove: () => handleFilterChange("unassigned", "") });
     }
+    if (createdAfterParam) {
+      filters.push({ key: "createdAfter", label: `Added since ${createdAfterParam}`, onRemove: () => handleFilterChange("createdAfter", "") });
+    }
     return filters;
-  }, [locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam, locations, people, handleFilterChange]);
+  }, [locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam, createdAfterParam, locations, people, handleFilterChange]);
 
   const handleClearAllFilters = useCallback(() => {
     setSearchParams((prev) => {
-      ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned"].forEach(k => prev.delete(k));
+      ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned", "createdAfter"].forEach(k => prev.delete(k));
       prev.set("page", "1");
       return prev;
     });
@@ -493,6 +500,7 @@ export default function AssetsPage() {
         costMin: costMinParam || undefined,
         costMax: costMaxParam || undefined,
         unassigned: unassignedParam || undefined,
+        createdAfter: createdAfterParam || undefined,
         ids: selectedIds.length > 0 ? selectedIds.join(",") : undefined,
       });
     } catch {

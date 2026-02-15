@@ -65,7 +65,8 @@ class AssetsController(
         @RequestParam(required = false) warrantyExpiryTo: String?,
         @RequestParam(required = false) costMin: BigDecimal?,
         @RequestParam(required = false) costMax: BigDecimal?,
-        @RequestParam(required = false) unassigned: Boolean?
+        @RequestParam(required = false) unassigned: Boolean?,
+        @RequestParam(required = false) createdAfter: String?
     ): ResponseEntity<Any> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
@@ -80,7 +81,7 @@ class AssetsController(
 
         val spec = buildFilteredSpec(search, status, includeStatuses, typeId,
             locationId, assignedPersonId, purchaseDateFrom, purchaseDateTo,
-            warrantyExpiryFrom, warrantyExpiryTo, costMin, costMax, unassigned)
+            warrantyExpiryFrom, warrantyExpiryTo, costMin, costMax, unassigned, createdAfter)
         val pageReq = PageRequest.of(p - 1, ps, sortOf(sortBy, sortDir))
         val result = assetRepository.findAll(spec, pageReq)
         val assets = result.content
@@ -114,6 +115,7 @@ class AssetsController(
         @RequestParam(required = false) costMin: BigDecimal?,
         @RequestParam(required = false) costMax: BigDecimal?,
         @RequestParam(required = false) unassigned: Boolean?,
+        @RequestParam(required = false) createdAfter: String?,
         @RequestParam(required = false) ids: String?,
         response: HttpServletResponse
     ) {
@@ -138,7 +140,7 @@ class AssetsController(
         } else {
             val spec = buildFilteredSpec(search, status, includeStatuses, typeId,
                 locationId, assignedPersonId, purchaseDateFrom, purchaseDateTo,
-                warrantyExpiryFrom, warrantyExpiryTo, costMin, costMax, unassigned)
+                warrantyExpiryFrom, warrantyExpiryTo, costMin, costMax, unassigned, createdAfter)
             assetRepository.findAll(spec, sortOf(sortBy, sortDir))
         }
 
@@ -1096,7 +1098,8 @@ class AssetsController(
         warrantyExpiryTo: String? = null,
         costMin: BigDecimal? = null,
         costMax: BigDecimal? = null,
-        unassigned: Boolean? = null
+        unassigned: Boolean? = null,
+        createdAfter: String? = null
     ): Specification<Asset> = Specification { root, _, cb ->
         val predicates = mutableListOf<Predicate>()
 
@@ -1178,6 +1181,12 @@ class AssetsController(
         }
         if (costMax != null) {
             predicates.add(cb.lessThanOrEqualTo(root.get("purchaseCost"), costMax))
+        }
+
+        // Created after filter (for "recently added")
+        if (!createdAfter.isNullOrBlank()) {
+            val after = Instant.parse("${createdAfter}T00:00:00Z")
+            predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), after))
         }
 
         cb.and(*predicates.toTypedArray())
