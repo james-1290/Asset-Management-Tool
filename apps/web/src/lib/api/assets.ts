@@ -22,6 +22,16 @@ export interface AssetQueryParams {
   sortBy?: string;
   sortDir?: string;
   typeId?: string;
+  // Advanced filters
+  locationId?: string;
+  assignedPersonId?: string;
+  purchaseDateFrom?: string;
+  purchaseDateTo?: string;
+  warrantyExpiryFrom?: string;
+  warrantyExpiryTo?: string;
+  costMin?: string;
+  costMax?: string;
+  unassigned?: string;
 }
 
 export const assetsApi = {

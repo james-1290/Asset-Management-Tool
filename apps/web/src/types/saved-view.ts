@@ -17,4 +17,5 @@ export interface ViewConfiguration {
   pageSize?: number;
   typeId?: string;
   viewMode?: "list" | "grouped";
+  filters?: Record<string, string>;
 }
