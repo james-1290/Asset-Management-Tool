@@ -43,7 +43,7 @@ class CertificatesController(
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
-    private fun buildSpec(search: String?, status: String?, typeId: UUID?): Specification<Certificate> =
+    private fun buildSpec(search: String?, status: String?, typeId: UUID?, expiryFrom: String? = null, expiryTo: String? = null): Specification<Certificate> =
         Specification { root, _, cb ->
             val predicates = mutableListOf<Predicate>()
             predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
@@ -74,6 +74,15 @@ class CertificatesController(
 
             if (typeId != null) {
                 predicates.add(cb.equal(root.get<UUID>("certificateTypeId"), typeId))
+            }
+
+            if (!expiryFrom.isNullOrBlank()) {
+                val from = Instant.parse("${expiryFrom}T00:00:00Z")
+                predicates.add(cb.greaterThanOrEqualTo(root.get("expiryDate"), from))
+            }
+            if (!expiryTo.isNullOrBlank()) {
+                val to = Instant.parse("${expiryTo}T23:59:59Z")
+                predicates.add(cb.lessThanOrEqualTo(root.get("expiryDate"), to))
             }
 
             cb.and(*predicates.toTypedArray())
@@ -241,12 +250,14 @@ class CertificatesController(
         @RequestParam(required = false) search: String?,
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) typeId: UUID?,
+        @RequestParam(required = false) expiryFrom: String?,
+        @RequestParam(required = false) expiryTo: String?,
         @RequestParam(defaultValue = "name") sortBy: String,
         @RequestParam(defaultValue = "asc") sortDir: String
     ): ResponseEntity<PagedResponse<CertificateDto>> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
-        val spec = buildSpec(search, status, typeId)
+        val spec = buildSpec(search, status, typeId, expiryFrom, expiryTo)
         val pageReq = PageRequest.of(p - 1, ps, sortOf(sortBy, sortDir))
         val result = certificateRepository.findAll(spec, pageReq)
 
@@ -262,6 +273,8 @@ class CertificatesController(
         @RequestParam(required = false) search: String?,
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) typeId: UUID?,
+        @RequestParam(required = false) expiryFrom: String?,
+        @RequestParam(required = false) expiryTo: String?,
         @RequestParam(defaultValue = "name") sortBy: String,
         @RequestParam(defaultValue = "asc") sortDir: String,
         @RequestParam(required = false) ids: String?,
@@ -274,7 +287,7 @@ class CertificatesController(
             val idList = ids.split(",").mapNotNull { runCatching { UUID.fromString(it.trim()) }.getOrNull() }
             certificateRepository.findAllById(idList).filter { !it.isArchived }
         } else {
-            certificateRepository.findAll(buildSpec(search, status, typeId), sortOf(sortBy, sortDir))
+            certificateRepository.findAll(buildSpec(search, status, typeId, expiryFrom, expiryTo), sortOf(sortBy, sortDir))
         }
 
         val writer = CSVWriter(OutputStreamWriter(response.outputStream))

@@ -53,7 +53,12 @@ class ApplicationsController(
         @RequestParam(required = false) includeStatuses: String?,
         @RequestParam(defaultValue = "name") sortBy: String,
         @RequestParam(defaultValue = "asc") sortDir: String,
-        @RequestParam(required = false) typeId: UUID?
+        @RequestParam(required = false) typeId: UUID?,
+        @RequestParam(required = false) expiryFrom: String?,
+        @RequestParam(required = false) expiryTo: String?,
+        @RequestParam(required = false) licenceType: String?,
+        @RequestParam(required = false) costMin: BigDecimal?,
+        @RequestParam(required = false) costMax: BigDecimal?
     ): ResponseEntity<Any> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
@@ -64,7 +69,7 @@ class ApplicationsController(
                 ?: return ResponseEntity.badRequest().body(mapOf("error" to "Invalid status: $status"))
         }
 
-        val spec = buildSpec(search, status, includeStatuses, typeId)
+        val spec = buildSpec(search, status, includeStatuses, typeId, expiryFrom, expiryTo, licenceType, costMin, costMax)
         val sort = sortOf(sortBy, sortDir)
         val result = applicationRepository.findAll(spec, PageRequest.of(p - 1, ps, sort))
 
@@ -90,6 +95,11 @@ class ApplicationsController(
         @RequestParam(defaultValue = "name") sortBy: String,
         @RequestParam(defaultValue = "asc") sortDir: String,
         @RequestParam(required = false) typeId: UUID?,
+        @RequestParam(required = false) expiryFrom: String?,
+        @RequestParam(required = false) expiryTo: String?,
+        @RequestParam(required = false) licenceType: String?,
+        @RequestParam(required = false) costMin: BigDecimal?,
+        @RequestParam(required = false) costMax: BigDecimal?,
         @RequestParam(required = false) ids: String?,
         response: HttpServletResponse
     ) {
@@ -100,7 +110,7 @@ class ApplicationsController(
             val idList = ids.split(",").mapNotNull { runCatching { UUID.fromString(it.trim()) }.getOrNull() }
             applicationRepository.findAllById(idList).filter { !it.isArchived }
         } else {
-            val spec = buildSpec(search, status, includeStatuses, typeId)
+            val spec = buildSpec(search, status, includeStatuses, typeId, expiryFrom, expiryTo, licenceType, costMin, costMax)
             applicationRepository.findAll(spec, sortOf(sortBy, sortDir))
         }
 
@@ -667,7 +677,12 @@ class ApplicationsController(
         search: String?,
         status: String?,
         includeStatuses: String?,
-        typeId: UUID?
+        typeId: UUID?,
+        expiryFrom: String? = null,
+        expiryTo: String? = null,
+        licenceType: String? = null,
+        costMin: BigDecimal? = null,
+        costMax: BigDecimal? = null
     ): Specification<Application> = Specification { root, _, cb ->
         val predicates = mutableListOf<Predicate>()
         predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
@@ -707,6 +722,32 @@ class ApplicationsController(
             if (hiddenStatuses.isNotEmpty()) {
                 predicates.add(cb.not(root.get<ApplicationStatus>("status").`in`(hiddenStatuses)))
             }
+        }
+
+        // Expiry date range
+        if (!expiryFrom.isNullOrBlank()) {
+            val from = Instant.parse("${expiryFrom}T00:00:00Z")
+            predicates.add(cb.greaterThanOrEqualTo(root.get("expiryDate"), from))
+        }
+        if (!expiryTo.isNullOrBlank()) {
+            val to = Instant.parse("${expiryTo}T23:59:59Z")
+            predicates.add(cb.lessThanOrEqualTo(root.get("expiryDate"), to))
+        }
+
+        // Licence type filter
+        if (!licenceType.isNullOrBlank()) {
+            val parsed = runCatching { LicenceType.valueOf(licenceType) }.getOrNull()
+            if (parsed != null) {
+                predicates.add(cb.equal(root.get<LicenceType>("licenceType"), parsed))
+            }
+        }
+
+        // Cost range
+        if (costMin != null) {
+            predicates.add(cb.greaterThanOrEqualTo(root.get("purchaseCost"), costMin))
+        }
+        if (costMax != null) {
+            predicates.add(cb.lessThanOrEqualTo(root.get("purchaseCost"), costMax))
         }
 
         cb.and(*predicates.toTypedArray())

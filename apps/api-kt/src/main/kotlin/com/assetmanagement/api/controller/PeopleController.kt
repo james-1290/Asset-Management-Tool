@@ -47,12 +47,14 @@ class PeopleController(
         @RequestParam(defaultValue = "1") page: Int,
         @RequestParam(defaultValue = "25") pageSize: Int,
         @RequestParam(required = false) search: String?,
+        @RequestParam(required = false) locationId: UUID?,
+        @RequestParam(required = false) department: String?,
         @RequestParam(defaultValue = "fullname") sortBy: String,
         @RequestParam(defaultValue = "asc") sortDir: String
     ): ResponseEntity<PagedResponse<PersonDto>> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
-        val spec = buildSpec(search)
+        val spec = buildSpec(search, locationId, department)
         val sort = sortOf(sortBy, sortDir)
         val result = personRepository.findAll(spec, PageRequest.of(p - 1, ps, sort))
         val items = result.content.map { it.toDto() }
@@ -62,6 +64,8 @@ class PeopleController(
     @GetMapping("/export")
     fun export(
         @RequestParam(required = false) search: String?,
+        @RequestParam(required = false) locationId: UUID?,
+        @RequestParam(required = false) department: String?,
         @RequestParam(defaultValue = "fullname") sortBy: String,
         @RequestParam(defaultValue = "asc") sortDir: String,
         @RequestParam(required = false) ids: String?,
@@ -73,7 +77,7 @@ class PeopleController(
             val idList = ids.split(",").mapNotNull { runCatching { UUID.fromString(it.trim()) }.getOrNull() }
             personRepository.findAllById(idList).filter { !it.isArchived }
         } else {
-            personRepository.findAll(buildSpec(search), sortOf(sortBy, sortDir))
+            personRepository.findAll(buildSpec(search, locationId, department), sortOf(sortBy, sortDir))
         }
         val writer = CSVWriter(OutputStreamWriter(response.outputStream))
         writer.writeNext(arrayOf("FullName", "Email", "Department", "JobTitle", "Location", "CreatedAt", "UpdatedAt"))
@@ -377,7 +381,7 @@ class PeopleController(
         return ResponseEntity.ok(OffboardResultDto(results))
     }
 
-    private fun buildSpec(search: String?): Specification<Person> = Specification { root, _, cb ->
+    private fun buildSpec(search: String?, locationId: UUID? = null, department: String? = null): Specification<Person> = Specification { root, _, cb ->
         val predicates = mutableListOf<Predicate>()
         predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
         if (!search.isNullOrBlank()) {
@@ -386,6 +390,12 @@ class PeopleController(
                 cb.like(cb.lower(root.get("fullName")), pattern),
                 cb.like(cb.lower(root.get("email")), pattern)
             ))
+        }
+        if (locationId != null) {
+            predicates.add(cb.equal(root.get<UUID>("locationId"), locationId))
+        }
+        if (!department.isNullOrBlank()) {
+            predicates.add(cb.equal(root.get<String>("department"), department))
         }
         cb.and(*predicates.toTypedArray())
     }
