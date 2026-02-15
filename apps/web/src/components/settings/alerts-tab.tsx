@@ -72,6 +72,9 @@ const alertsSchema = z.object({
   graphClientSecret: z.string(),
   graphFromAddress: z.string(),
   slackWebhookUrl: z.string(),
+  slackWarrantyWebhookUrl: z.string(),
+  slackCertificateWebhookUrl: z.string(),
+  slackLicenceWebhookUrl: z.string(),
   recipients: z.string(),
   scheduleType: z.string(),
   scheduleTime: z.string(),
@@ -128,6 +131,9 @@ export function AlertsTab() {
       graphClientSecret: "",
       graphFromAddress: "",
       slackWebhookUrl: "",
+      slackWarrantyWebhookUrl: "",
+      slackCertificateWebhookUrl: "",
+      slackLicenceWebhookUrl: "",
       recipients: "",
       scheduleType: "disabled",
       scheduleTime: "09:00",
@@ -148,6 +154,9 @@ export function AlertsTab() {
         smtpPassword: settings.smtpPassword === "********" ? "" : settings.smtpPassword,
         graphClientSecret: settings.graphClientSecret === "********" ? "" : settings.graphClientSecret,
         slackWebhookUrl: settings.slackWebhookUrl?.endsWith("...") ? "" : settings.slackWebhookUrl,
+        slackWarrantyWebhookUrl: settings.slackWarrantyWebhookUrl?.endsWith("...") ? "" : (settings.slackWarrantyWebhookUrl ?? ""),
+        slackCertificateWebhookUrl: settings.slackCertificateWebhookUrl?.endsWith("...") ? "" : (settings.slackCertificateWebhookUrl ?? ""),
+        slackLicenceWebhookUrl: settings.slackLicenceWebhookUrl?.endsWith("...") ? "" : (settings.slackLicenceWebhookUrl ?? ""),
       });
     }
   }, [settings, form]);
@@ -585,15 +594,56 @@ export function AlertsTab() {
             <CardTitle>Slack</CardTitle>
             <CardDescription>
               Slack alerts are sent alongside email when a webhook URL is configured.
+              Per-type webhooks override the default. Leave blank to use the default channel.
             </CardDescription>
           </CardHeader>
-          <CardContent className="max-w-md">
+          <CardContent className="space-y-4 max-w-md">
             <FormField
               control={form.control}
               name="slackWebhookUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Webhook URL</FormLabel>
+                  <FormLabel>Default (fallback)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://hooks.slack.com/services/..." {...field} />
+                  </FormControl>
+                  <FormDescription>Used when no per-type webhook is set</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="slackWarrantyWebhookUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Warranties channel</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://hooks.slack.com/services/..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="slackCertificateWebhookUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Certificates channel</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://hooks.slack.com/services/..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="slackLicenceWebhookUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Licences channel</FormLabel>
                   <FormControl>
                     <Input placeholder="https://hooks.slack.com/services/..." {...field} />
                   </FormControl>

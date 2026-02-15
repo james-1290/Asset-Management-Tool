@@ -21,6 +21,9 @@ export interface AlertSettings {
   graphClientSecret: string;
   graphFromAddress: string;
   slackWebhookUrl: string;
+  slackWarrantyWebhookUrl: string;
+  slackCertificateWebhookUrl: string;
+  slackLicenceWebhookUrl: string;
   recipients: string;
   scheduleType: string;
   scheduleTime: string;
