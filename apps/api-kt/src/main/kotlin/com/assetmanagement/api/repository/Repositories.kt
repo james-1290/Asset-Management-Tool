@@ -149,3 +149,15 @@ interface AssetTemplateRepository : JpaRepository<AssetTemplate, UUID> {
     fun findByAssetTypeIdAndIsArchivedFalse(assetTypeId: UUID): List<AssetTemplate>
     fun findByIsArchivedFalse(): List<AssetTemplate>
 }
+
+@Repository
+interface UserNotificationRepository : JpaRepository<UserNotification, UUID>, JpaSpecificationExecutor<UserNotification> {
+    fun countByUserIdAndIsReadFalseAndIsDismissedFalse(userId: UUID): Long
+    fun existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(entityType: String, entityId: UUID, userId: UUID, thresholdDays: Int): Boolean
+}
+
+@Repository
+interface UserAlertRuleRepository : JpaRepository<UserAlertRule, UUID> {
+    fun findByUserIdOrderByCreatedAtDesc(userId: UUID): List<UserAlertRule>
+    fun findByIsActiveTrue(): List<UserAlertRule>
+}
