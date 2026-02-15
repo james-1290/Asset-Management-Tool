@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-02-15 12:07 — Phase B: Notification Centre + User Alerts
+
+### Backend — New Tables & Endpoints
+- `user_notifications` table: per-user notification state with read/dismiss/snooze
+- `user_alert_rules` table: personal alert rules per user
+- `UserNotificationsController`: paginated list, unread count, mark read, dismiss, snooze (1d/3d/1w/until_expiry), mark all read
+- `UserAlertRulesController`: CRUD for personal alert rules
+- `AlertProcessingService` extended: creates `user_notifications` for all active users (global) and per-user (personal rules) with dedup
+- `NotificationCleanupService`: daily scheduled job purges notifications older than 90 days
+- Per-type Slack webhooks: warranty, certificate, licence channels with global fallback
+
+### Frontend — Notification Centre
+- Enhanced notifications bell: unread count badge, popover with read/snooze/dismiss actions per notification
+- Full notification centre page (`/notifications`): Current (unread) and History (all) tabs with pagination
+- Entity type badges (warranty/certificate/licence) with urgency coloring
+- Click-through navigation to entity detail pages
+
+### Frontend — Personal Alert Rules
+- "My Alerts" settings tab (visible to all users): create/edit/delete personal alert rules
+- Configure entity types, thresholds, email notification toggle, active/inactive status
+
+### Frontend — Admin Settings
+- Per-type Slack webhook fields: Warranties channel, Certificates channel, Licences channel + default fallback
+- Sidebar "Notifications" nav item
+
+### DB Migration
+- V008: `user_notifications` + `user_alert_rules` tables with indexes and foreign keys
+
+---
+
 ## 2026-02-15 10:26 — Phase C: Advanced Filtering + Quick Filter Chips + Saved Filters
 
 ### Backend

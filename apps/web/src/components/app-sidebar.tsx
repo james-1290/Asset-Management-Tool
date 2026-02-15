@@ -10,6 +10,7 @@ import {
   AppWindow,
   MapPin,
   Users,
+  Bell,
   ScrollText,
   Settings,
   ChevronLeft,
@@ -71,6 +72,7 @@ type NavEntry = NavGroup | NavStandalone
 
 const navStructure: NavEntry[] = [
   { kind: "standalone", title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { kind: "standalone", title: "Notifications", url: "/notifications", icon: Bell },
   {
     kind: "group",
     title: "Inventory",
