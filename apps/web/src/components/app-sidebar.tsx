@@ -72,7 +72,6 @@ type NavEntry = NavGroup | NavStandalone
 
 const navStructure: NavEntry[] = [
   { kind: "standalone", title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { kind: "standalone", title: "Notifications", url: "/notifications", icon: Bell },
   {
     kind: "group",
     title: "Inventory",
@@ -116,6 +115,7 @@ const navStructure: NavEntry[] = [
     icon: Wrench,
     children: [
       { title: "Reports", url: "/reports", icon: BarChart3 },
+      { title: "Notifications", url: "/notifications", icon: Bell },
       { title: "Import Data", url: "/tools/import", icon: Upload },
     ],
   },
