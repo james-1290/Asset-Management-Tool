@@ -1,74 +1,193 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell } from "lucide-react";
+import { Bell, Eye, Clock, X, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useNotificationSummary } from "@/hooks/use-notifications";
-import type { NotificationItem } from "@/lib/api/notifications";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  useUnreadCount,
+  useUserNotifications,
+  useMarkRead,
+  useDismissNotification,
+  useSnoozeNotification,
+  useMarkAllRead,
+} from "@/hooks/use-user-notifications";
+import type { UserNotification } from "@/types/user-notification";
 
-function daysUntil(dateStr: string): number {
-  const now = new Date();
-  const target = new Date(dateStr);
-  const diff = target.getTime() - now.getTime();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+function timeAgo(dateStr: string): string {
+  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
-function ExpiryLabel({ dateStr }: { dateStr: string }) {
-  const days = daysUntil(dateStr);
-  if (days < 0) return <span className="text-destructive font-medium">Expired</span>;
-  if (days === 0) return <span className="text-destructive font-medium">Expires today</span>;
-  if (days === 1) return <span className="text-orange-500 font-medium">Expires tomorrow</span>;
-  if (days <= 7) return <span className="text-orange-500">Expires in {days} days</span>;
-  if (days <= 30) return <span className="text-yellow-600">Expires in {days} days</span>;
-  return <span className="text-muted-foreground">Expires in {days} days</span>;
+function urgencyColor(expiryDate: string): string {
+  const days = Math.ceil((new Date(expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  if (days <= 0) return "text-destructive";
+  if (days <= 7) return "text-destructive";
+  if (days <= 14) return "text-orange-500";
+  if (days <= 30) return "text-yellow-600";
+  return "text-muted-foreground";
 }
 
-function NotificationGroup({
-  title,
-  items,
-  type,
+function entityTypeBadge(type: string): { label: string; className: string } {
+  switch (type) {
+    case "warranty":
+      return { label: "Warranty", className: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" };
+    case "certificate":
+      return { label: "Certificate", className: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" };
+    case "licence":
+      return { label: "Licence", className: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300" };
+    default:
+      return { label: type, className: "bg-gray-100 text-gray-700" };
+  }
+}
+
+function entityPath(notification: UserNotification): string {
+  switch (notification.entityType) {
+    case "warranty":
+      return `/assets/${notification.entityId}`;
+    case "certificate":
+      return `/certificates/${notification.entityId}`;
+    case "licence":
+      return `/applications/${notification.entityId}`;
+    default:
+      return "/";
+  }
+}
+
+function NotificationRow({
+  notification,
   onNavigate,
 }: {
-  title: string;
-  items: NotificationItem[];
-  type: "assets" | "certificates" | "applications";
+  notification: UserNotification;
   onNavigate: (path: string) => void;
 }) {
-  if (items.length === 0) return null;
+  const markRead = useMarkRead();
+  const dismiss = useDismissNotification();
+  const snooze = useSnoozeNotification();
+  const badge = entityTypeBadge(notification.entityType);
 
   return (
-    <div className="space-y-1">
-      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
-        {title}
-      </h4>
-      {items.map((item) => (
-        <button
-          key={item.id}
-          className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors text-left"
-          onClick={() => onNavigate(`/${type}/${item.id}`)}
+    <div className="flex items-start gap-2 rounded-md px-2 py-2 hover:bg-accent transition-colors group">
+      <div className="flex-1 min-w-0 space-y-1">
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none ${badge.className}`}
+          >
+            {badge.label}
+          </span>
+          <button
+            className="text-sm font-medium truncate hover:underline text-left"
+            onClick={() => onNavigate(entityPath(notification))}
+          >
+            {notification.entityName}
+          </button>
+        </div>
+        <p className={`text-xs ${urgencyColor(notification.expiryDate)}`}>
+          {notification.title}
+        </p>
+        <p className="text-[10px] text-muted-foreground">
+          {timeAgo(notification.createdAt)}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          title="Mark as read"
+          onClick={() => markRead.mutate(notification.id)}
         >
-          <span className="truncate mr-2">{item.name}</span>
-          <ExpiryLabel dateStr={item.expiryDate} />
-        </button>
-      ))}
+          <Eye className="h-3.5 w-3.5" />
+        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              title="Snooze"
+            >
+              <Clock className="h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-36">
+            <DropdownMenuItem
+              onClick={() => snooze.mutate({ id: notification.id, duration: "1d" })}
+            >
+              1 day
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => snooze.mutate({ id: notification.id, duration: "3d" })}
+            >
+              3 days
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => snooze.mutate({ id: notification.id, duration: "1w" })}
+            >
+              1 week
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => snooze.mutate({ id: notification.id, duration: "until_expiry" })}
+            >
+              Until expiry
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          title="Dismiss"
+          onClick={() => dismiss.mutate(notification.id)}
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
     </div>
   );
 }
 
 export function NotificationsBell() {
-  const { data } = useNotificationSummary();
+  const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const count = data?.totalCount ?? 0;
+  const { data: unreadData } = useUnreadCount();
+  const count = unreadData?.count ?? 0;
+
+  const { data: notificationsData } = useUserNotifications({
+    page: 1,
+    pageSize: 10,
+    status: "unread",
+  });
+
+  const markAllRead = useMarkAllRead();
+  const notifications = notificationsData?.items ?? [];
 
   function handleNavigate(path: string) {
+    setOpen(false);
     navigate(path);
   }
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative h-8 w-8">
           <Bell className="h-4 w-4" />
@@ -79,38 +198,50 @@ export function NotificationsBell() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-3">
-        <h3 className="font-semibold text-sm mb-3">Upcoming Expiries</h3>
-        {count === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No upcoming expiries
-          </p>
-        ) : (
-          <div className="space-y-3 max-h-80 overflow-y-auto">
-            {data && (
-              <>
-                <NotificationGroup
-                  title="Warranties"
-                  items={data.warranties.items}
-                  type="assets"
+      <PopoverContent align="end" className="w-96 p-0">
+        <div className="flex items-center justify-between border-b px-3 py-2">
+          <h3 className="font-semibold text-sm">Notifications</h3>
+          {count > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs gap-1"
+              onClick={() => markAllRead.mutate()}
+            >
+              <CheckCheck className="h-3.5 w-3.5" />
+              Mark all read
+            </Button>
+          )}
+        </div>
+
+        <div className="max-h-80 overflow-y-auto">
+          {notifications.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No new notifications
+            </p>
+          ) : (
+            <div className="py-1">
+              {notifications.map((notification) => (
+                <NotificationRow
+                  key={notification.id}
+                  notification={notification}
                   onNavigate={handleNavigate}
                 />
-                <NotificationGroup
-                  title="Certificates"
-                  items={data.certificates.items}
-                  type="certificates"
-                  onNavigate={handleNavigate}
-                />
-                <NotificationGroup
-                  title="Licences"
-                  items={data.licences.items}
-                  type="applications"
-                  onNavigate={handleNavigate}
-                />
-              </>
-            )}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t px-3 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-xs"
+            onClick={() => handleNavigate("/notifications")}
+          >
+            View all
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );
