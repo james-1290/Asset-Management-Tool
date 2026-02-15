@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-02-15 14:24 — File Attachment Support
+
+### Backend
+- **V009 migration**: `attachments` table with polymorphic `entity_type` + `entity_id`
+- **StorageService interface** + `LocalStorageService` (local filesystem, configurable via `app.upload-dir`)
+- **AttachmentsController**: upload (multipart), list, download (streaming), soft-delete
+- MIME type allowlist: PDF, images, Office docs, plain text/CSV
+- Max file size increased to 10MB
+- Audit logging on upload and delete events
+- Path traversal protection in storage layer
+
+### Frontend
+- **AttachmentsSection** reusable component: upload button, file list with MIME icons, download, delete with confirmation
+- Added to asset, certificate, and application detail pages
+- React Query hooks for attachment CRUD with cache invalidation
+
 ## 2026-02-15 12:07 — Phase B: Notification Centre + User Alerts
 
 ### Backend — New Tables & Endpoints
