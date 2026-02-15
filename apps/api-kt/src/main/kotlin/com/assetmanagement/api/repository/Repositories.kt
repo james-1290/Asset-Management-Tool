@@ -170,3 +170,8 @@ interface UserAlertRuleRepository : JpaRepository<UserAlertRule, UUID> {
     fun findByUserIdOrderByCreatedAtDesc(userId: UUID): List<UserAlertRule>
     fun findByIsActiveTrue(): List<UserAlertRule>
 }
+
+@Repository
+interface AttachmentRepository : JpaRepository<Attachment, UUID> {
+    fun findByEntityTypeAndEntityIdAndIsArchivedFalseOrderByCreatedAtDesc(entityType: String, entityId: UUID): List<Attachment>
+}

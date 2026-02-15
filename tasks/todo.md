@@ -4,6 +4,9 @@
 
 ## Done
 
+- [x] File attachment support (upload/download/delete on assets, certificates, applications)
+  - V009 migration, StorageService, AttachmentsController, reusable frontend component
+
 - [x] Depreciation tracking (straight-line, per-asset-type defaults, computed on-the-fly, dashboard stat card)
 - [x] SAML 2.0 SSO with Microsoft Entra ID (SP-initiated, JIT provisioning, toggleable)
 - [x] SCIM 2.0 provisioning server (user lifecycle management from Entra)
