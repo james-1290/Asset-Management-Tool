@@ -34,3 +34,9 @@ logs/
 
 # Playwright MCP
 .playwright-mcp/
+
+# Git worktrees
+.worktrees/
+
+# Uploads (attachment storage)
+uploads/
