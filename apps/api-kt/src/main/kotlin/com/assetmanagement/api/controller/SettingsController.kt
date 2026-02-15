@@ -97,6 +97,9 @@ class SettingsController(
             graphClientSecret = maskSecret(getSetting("alerts.graph.clientSecret")),
             graphFromAddress = getSetting("alerts.graph.fromAddress"),
             slackWebhookUrl = maskWebhookUrl(getSetting("alerts.slack.webhookUrl")),
+            slackWarrantyWebhookUrl = maskWebhookUrl(getSetting("alerts.slack.warrantyWebhookUrl")),
+            slackCertificateWebhookUrl = maskWebhookUrl(getSetting("alerts.slack.certificateWebhookUrl")),
+            slackLicenceWebhookUrl = maskWebhookUrl(getSetting("alerts.slack.licenceWebhookUrl")),
             recipients = getSetting("alerts.recipients"),
             scheduleType = getSetting("alerts.schedule.type", "disabled"),
             scheduleTime = getSetting("alerts.schedule.time", "09:00"),
@@ -125,6 +128,9 @@ class SettingsController(
         if (request.graphClientSecret != secretMask) setSetting("alerts.graph.clientSecret", request.graphClientSecret, userName)
         setSetting("alerts.graph.fromAddress", request.graphFromAddress, userName)
         if (!request.slackWebhookUrl.endsWith("...")) setSetting("alerts.slack.webhookUrl", request.slackWebhookUrl, userName)
+        if (!request.slackWarrantyWebhookUrl.endsWith("...")) setSetting("alerts.slack.warrantyWebhookUrl", request.slackWarrantyWebhookUrl, userName)
+        if (!request.slackCertificateWebhookUrl.endsWith("...")) setSetting("alerts.slack.certificateWebhookUrl", request.slackCertificateWebhookUrl, userName)
+        if (!request.slackLicenceWebhookUrl.endsWith("...")) setSetting("alerts.slack.licenceWebhookUrl", request.slackLicenceWebhookUrl, userName)
         setSetting("alerts.recipients", request.recipients, userName)
         setSetting("alerts.schedule.type", request.scheduleType, userName)
         setSetting("alerts.schedule.time", request.scheduleTime, userName)

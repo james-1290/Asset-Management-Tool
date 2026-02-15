@@ -10,6 +10,7 @@ import {
   AppWindow,
   MapPin,
   Users,
+  Bell,
   ScrollText,
   Settings,
   ChevronLeft,
@@ -114,6 +115,7 @@ const navStructure: NavEntry[] = [
     icon: Wrench,
     children: [
       { title: "Reports", url: "/reports", icon: BarChart3 },
+      { title: "Notifications", url: "/notifications", icon: Bell },
       { title: "Import Data", url: "/tools/import", icon: Upload },
     ],
   },

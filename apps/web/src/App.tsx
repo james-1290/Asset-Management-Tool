@@ -19,6 +19,7 @@ import PeoplePage from "@/pages/people"
 import PersonDetailPage from "@/pages/person-detail"
 import AuditLogPage from "@/pages/audit-log"
 import SettingsPage from "@/pages/settings"
+import NotificationsPage from "@/pages/notifications"
 import ReportsPage from "@/pages/reports"
 import ImportPage from "@/pages/import"
 
@@ -48,6 +49,7 @@ function App() {
             <Route path="/tools/import" element={<ImportPage />} />
             <Route path="/audit-log" element={<AuditLogPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
         </Route>
       </Routes>

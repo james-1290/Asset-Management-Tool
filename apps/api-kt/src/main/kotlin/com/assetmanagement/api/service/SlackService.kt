@@ -51,39 +51,97 @@ class SlackService(
         orgName: String,
         warrantyItems: List<ExpiringItem>,
         certificateItems: List<ExpiringItem>,
-        licenceItems: List<ExpiringItem>
+        licenceItems: List<ExpiringItem>,
+        warrantyWebhookUrl: String = "",
+        certificateWebhookUrl: String = "",
+        licenceWebhookUrl: String = ""
     ) {
-        val webhookUrl = getWebhookUrl()
-        if (webhookUrl.isBlank()) {
-            throw IllegalStateException("Slack webhook URL is not configured")
+        val globalWebhookUrl = getWebhookUrl()
+
+        // Send per-type items to dedicated webhooks if configured
+        val remainingWarranty = if (warrantyWebhookUrl.isNotBlank() && warrantyItems.isNotEmpty()) {
+            sendToWebhook(warrantyWebhookUrl, orgName, "Warranty Expiries", warrantyItems)
+            emptyList()
+        } else warrantyItems
+
+        val remainingCertificate = if (certificateWebhookUrl.isNotBlank() && certificateItems.isNotEmpty()) {
+            sendToWebhook(certificateWebhookUrl, orgName, "Certificate Expiries", certificateItems)
+            emptyList()
+        } else certificateItems
+
+        val remainingLicence = if (licenceWebhookUrl.isNotBlank() && licenceItems.isNotEmpty()) {
+            sendToWebhook(licenceWebhookUrl, orgName, "Licence Expiries", licenceItems)
+            emptyList()
+        } else licenceItems
+
+        // Send remaining items to global webhook
+        val totalRemaining = remainingWarranty.size + remainingCertificate.size + remainingLicence.size
+        if (totalRemaining > 0) {
+            if (globalWebhookUrl.isBlank()) {
+                throw IllegalStateException("Slack webhook URL is not configured")
+            }
+
+            val blocks = mutableListOf<String>()
+
+            // Header
+            blocks.add("""
+                {
+                    "type": "header",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "$orgName — Expiry Alerts ($totalRemaining items)",
+                        "emoji": true
+                    }
+                }
+            """.trimIndent())
+
+            if (remainingWarranty.isNotEmpty()) {
+                blocks.add(buildSection("Warranty Expiries", remainingWarranty))
+            }
+            if (remainingCertificate.isNotEmpty()) {
+                blocks.add(buildSection("Certificate Expiries", remainingCertificate))
+            }
+            if (remainingLicence.isNotEmpty()) {
+                blocks.add(buildSection("Licence Expiries", remainingLicence))
+            }
+
+            // Footer
+            blocks.add("""
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "mrkdwn",
+                            "text": "Sent by $orgName alert system. Configure in Settings > Alerts."
+                        }
+                    ]
+                }
+            """.trimIndent())
+
+            val payload = """{"blocks": [${blocks.joinToString(",")}]}"""
+            postToSlack(globalWebhookUrl, payload)
         }
 
         val totalCount = warrantyItems.size + certificateItems.size + licenceItems.size
+        log.info("Slack digest message sent successfully ({} items)", totalCount)
+    }
+
+    private fun sendToWebhook(webhookUrl: String, orgName: String, title: String, items: List<ExpiringItem>) {
         val blocks = mutableListOf<String>()
 
-        // Header
         blocks.add("""
             {
                 "type": "header",
                 "text": {
                     "type": "plain_text",
-                    "text": "$orgName — Expiry Alerts ($totalCount items)",
+                    "text": "$orgName — $title (${items.size} items)",
                     "emoji": true
                 }
             }
         """.trimIndent())
 
-        if (warrantyItems.isNotEmpty()) {
-            blocks.add(buildSection("Warranty Expiries", warrantyItems))
-        }
-        if (certificateItems.isNotEmpty()) {
-            blocks.add(buildSection("Certificate Expiries", certificateItems))
-        }
-        if (licenceItems.isNotEmpty()) {
-            blocks.add(buildSection("Licence Expiries", licenceItems))
-        }
+        blocks.add(buildSection(title, items))
 
-        // Footer
         blocks.add("""
             {
                 "type": "context",
@@ -97,9 +155,8 @@ class SlackService(
         """.trimIndent())
 
         val payload = """{"blocks": [${blocks.joinToString(",")}]}"""
-
         postToSlack(webhookUrl, payload)
-        log.info("Slack digest message sent successfully ({} items)", totalCount)
+        log.info("Slack per-type message sent to dedicated webhook for {} ({} items)", title, items.size)
     }
 
     private fun buildSection(title: String, items: List<ExpiringItem>): String {

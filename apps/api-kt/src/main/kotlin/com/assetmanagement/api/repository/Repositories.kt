@@ -5,8 +5,11 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.util.*
 
@@ -17,6 +20,7 @@ interface UserRepository : JpaRepository<User, UUID> {
     fun existsByUsername(username: String): Boolean
     fun existsByEmail(email: String): Boolean
     fun findByExternalId(externalId: String): User?
+    fun findByIsActiveTrue(): List<User>
 }
 
 @Repository
@@ -148,4 +152,21 @@ interface AlertHistoryRepository : JpaRepository<AlertHistory, UUID> {
 interface AssetTemplateRepository : JpaRepository<AssetTemplate, UUID> {
     fun findByAssetTypeIdAndIsArchivedFalse(assetTypeId: UUID): List<AssetTemplate>
     fun findByIsArchivedFalse(): List<AssetTemplate>
+}
+
+@Repository
+interface UserNotificationRepository : JpaRepository<UserNotification, UUID>, JpaSpecificationExecutor<UserNotification> {
+    fun countByUserIdAndIsReadFalseAndIsDismissedFalse(userId: UUID): Long
+    fun existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(entityType: String, entityId: UUID, userId: UUID, thresholdDays: Int): Boolean
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM UserNotification n WHERE n.createdAt < :cutoff")
+    fun deleteByCreatedAtBefore(@Param("cutoff") cutoff: Instant): Int
+}
+
+@Repository
+interface UserAlertRuleRepository : JpaRepository<UserAlertRule, UUID> {
+    fun findByUserIdOrderByCreatedAtDesc(userId: UUID): List<UserAlertRule>
+    fun findByIsActiveTrue(): List<UserAlertRule>
 }

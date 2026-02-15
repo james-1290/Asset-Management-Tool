@@ -5,6 +5,7 @@ import com.assetmanagement.api.model.AlertHistory
 import com.assetmanagement.api.model.Application
 import com.assetmanagement.api.model.Asset
 import com.assetmanagement.api.model.Certificate
+import com.assetmanagement.api.model.UserNotification
 import com.assetmanagement.api.repository.*
 import org.slf4j.LoggerFactory
 import org.springframework.data.jpa.domain.Specification
@@ -32,7 +33,10 @@ class AlertProcessingService(
     private val alertHistoryRepository: AlertHistoryRepository,
     private val systemSettingRepository: SystemSettingRepository,
     private val emailService: EmailService,
-    private val slackService: SlackService
+    private val slackService: SlackService,
+    private val userNotificationRepository: UserNotificationRepository,
+    private val userAlertRuleRepository: UserAlertRuleRepository,
+    private val userRepository: UserRepository
 ) {
     private val log = LoggerFactory.getLogger(AlertProcessingService::class.java)
     private val dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy").withZone(ZoneId.systemDefault())
@@ -139,7 +143,10 @@ class AlertProcessingService(
 
             if (slackService.isConfigured()) {
                 try {
-                    slackService.sendDigestMessage(orgName, warrantyItems, certificateItems, licenceItems)
+                    val warrantyWebhookUrl = getSetting("alerts.slack.warrantyWebhookUrl")
+                    val certificateWebhookUrl = getSetting("alerts.slack.certificateWebhookUrl")
+                    val licenceWebhookUrl = getSetting("alerts.slack.licenceWebhookUrl")
+                    slackService.sendDigestMessage(orgName, warrantyItems, certificateItems, licenceItems, warrantyWebhookUrl, certificateWebhookUrl, licenceWebhookUrl)
                 } catch (e: Exception) {
                     log.error("Failed to send Slack digest (email may have succeeded)", e)
                 }
@@ -159,6 +166,9 @@ class AlertProcessingService(
                 ))
             }
 
+            // Create user notifications for all active users (global alerts)
+            createGlobalNotifications(allItems)
+
             log.info("Alert run {} complete: {} alerts sent to {} recipients",
                 runId, allItems.size, recipients.size)
         } catch (e: Exception) {
@@ -175,6 +185,161 @@ class AlertProcessingService(
             recipients = recipients,
             timestamp = now
         )
+    }
+
+    private fun createGlobalNotifications(allItems: List<ExpiringItem>) {
+        val activeUsers = userRepository.findByIsActiveTrue()
+        if (activeUsers.isEmpty()) {
+            log.info("No active users found, skipping global notification creation")
+            return
+        }
+
+        var created = 0
+        for (user in activeUsers) {
+            for (item in allItems) {
+                val exists = userNotificationRepository.existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(
+                    item.entityType, item.entityId, user.id, item.thresholdDays
+                )
+                if (!exists) {
+                    val expiryLabel = if (item.daysUntilExpiry <= 0) "expired" else "expiring in ${item.daysUntilExpiry} days"
+                    userNotificationRepository.save(UserNotification(
+                        userId = user.id,
+                        entityType = item.entityType,
+                        entityId = item.entityId,
+                        entityName = item.entityName,
+                        notificationType = "global",
+                        title = "${item.entityName} — ${item.entityType} $expiryLabel",
+                        message = "",
+                        thresholdDays = item.thresholdDays,
+                        expiryDate = item.expiryDate
+                    ))
+                    created++
+                }
+            }
+        }
+        log.info("Created {} global user notifications for {} users", created, activeUsers.size)
+    }
+
+    fun processPersonalAlerts() {
+        val now = Instant.now()
+        val activeRules = userAlertRuleRepository.findByIsActiveTrue()
+        if (activeRules.isEmpty()) {
+            log.info("No active personal alert rules found")
+            return
+        }
+
+        var totalCreated = 0
+        for (rule in activeRules) {
+            val entityTypes = rule.entityTypes.split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
+            val thresholds = rule.thresholds.split(",").mapNotNull { it.trim().toIntOrNull() }.sorted()
+
+            if (entityTypes.isEmpty() || thresholds.isEmpty()) continue
+
+            val personalItems = mutableListOf<ExpiringItem>()
+
+            for (threshold in thresholds) {
+                val cutoff = now.plus(threshold.toLong(), ChronoUnit.DAYS)
+
+                if ("warranty" in entityTypes) {
+                    val spec = Specification<Asset> { root, _, cb ->
+                        cb.and(
+                            cb.equal(root.get<Boolean>("isArchived"), false),
+                            cb.isNotNull(root.get<Instant>("warrantyExpiryDate")),
+                            cb.greaterThanOrEqualTo(root.get("warrantyExpiryDate"), now),
+                            cb.lessThanOrEqualTo(root.get("warrantyExpiryDate"), cutoff)
+                        )
+                    }
+                    assetRepository.findAll(spec).forEach { asset ->
+                        val exists = userNotificationRepository.existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(
+                            "warranty", asset.id, rule.userId, threshold
+                        )
+                        if (!exists) {
+                            val daysUntil = ChronoUnit.DAYS.between(now, asset.warrantyExpiryDate!!)
+                            personalItems.add(ExpiringItem("warranty", asset.id, asset.name, asset.warrantyExpiryDate!!, threshold, daysUntil))
+                        }
+                    }
+                }
+
+                if ("certificate" in entityTypes) {
+                    val spec = Specification<Certificate> { root, _, cb ->
+                        cb.and(
+                            cb.equal(root.get<Boolean>("isArchived"), false),
+                            cb.isNotNull(root.get<Instant>("expiryDate")),
+                            cb.greaterThanOrEqualTo(root.get("expiryDate"), now),
+                            cb.lessThanOrEqualTo(root.get("expiryDate"), cutoff)
+                        )
+                    }
+                    certificateRepository.findAll(spec).forEach { cert ->
+                        val exists = userNotificationRepository.existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(
+                            "certificate", cert.id, rule.userId, threshold
+                        )
+                        if (!exists) {
+                            val daysUntil = ChronoUnit.DAYS.between(now, cert.expiryDate!!)
+                            personalItems.add(ExpiringItem("certificate", cert.id, cert.name, cert.expiryDate!!, threshold, daysUntil))
+                        }
+                    }
+                }
+
+                if ("licence" in entityTypes) {
+                    val spec = Specification<Application> { root, _, cb ->
+                        cb.and(
+                            cb.equal(root.get<Boolean>("isArchived"), false),
+                            cb.isNotNull(root.get<Instant>("expiryDate")),
+                            cb.greaterThanOrEqualTo(root.get("expiryDate"), now),
+                            cb.lessThanOrEqualTo(root.get("expiryDate"), cutoff)
+                        )
+                    }
+                    applicationRepository.findAll(spec).forEach { app ->
+                        val exists = userNotificationRepository.existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(
+                            "licence", app.id, rule.userId, threshold
+                        )
+                        if (!exists) {
+                            val daysUntil = ChronoUnit.DAYS.between(now, app.expiryDate!!)
+                            personalItems.add(ExpiringItem("licence", app.id, app.name, app.expiryDate!!, threshold, daysUntil))
+                        }
+                    }
+                }
+            }
+
+            if (personalItems.isEmpty()) continue
+
+            // Save personal notifications
+            for (item in personalItems) {
+                val expiryLabel = if (item.daysUntilExpiry <= 0) "expired" else "expiring in ${item.daysUntilExpiry} days"
+                userNotificationRepository.save(UserNotification(
+                    userId = rule.userId,
+                    entityType = item.entityType,
+                    entityId = item.entityId,
+                    entityName = item.entityName,
+                    notificationType = "personal",
+                    title = "${item.entityName} — ${item.entityType} $expiryLabel",
+                    message = "",
+                    thresholdDays = item.thresholdDays,
+                    expiryDate = item.expiryDate
+                ))
+                totalCreated++
+            }
+
+            // Send personal email if configured
+            if (rule.notifyEmail && emailService.isConfigured()) {
+                try {
+                    val user = userRepository.findById(rule.userId).orElse(null)
+                    if (user != null && user.email.isNotBlank()) {
+                        val orgName = getSetting("org.name", "Asset Management")
+                        val subject = "$orgName - Personal Alert: ${personalItems.size} item(s) expiring soon"
+                        val warrantyItems = personalItems.filter { it.entityType == "warranty" }
+                        val certificateItems = personalItems.filter { it.entityType == "certificate" }
+                        val licenceItems = personalItems.filter { it.entityType == "licence" }
+                        val htmlBody = buildDigestHtml(orgName, warrantyItems, certificateItems, licenceItems)
+                        emailService.sendDigestEmail(listOf(user.email), subject, htmlBody)
+                        log.info("Sent personal alert email to {} for rule {}", user.email, rule.id)
+                    }
+                } catch (e: Exception) {
+                    log.error("Failed to send personal alert email for rule {}", rule.id, e)
+                }
+            }
+        }
+        log.info("Personal alerts processing complete: {} notifications created from {} rules", totalCreated, activeRules.size)
     }
 
     private fun buildDigestHtml(
