@@ -42,7 +42,6 @@ import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 import { ActiveFilterChips } from "../components/filters/active-filter-chips";
 import type { ActiveFilter } from "../components/filters/active-filter-chips";
-import type { QuickFilter } from "../components/filters/quick-filter-bar";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -70,7 +69,6 @@ export default function ApplicationsPage() {
   const licenceTypeParam = searchParams.get("licenceType") ?? "";
   const costMinParam = searchParams.get("costMin") ?? "";
   const costMaxParam = searchParams.get("costMax") ?? "";
-  const quickFilterParam = searchParams.get("quickFilter") ?? "";
 
   const [searchInput, setSearchInput] = useState(searchParam);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -158,31 +156,6 @@ export default function ApplicationsPage() {
     },
     [setSearchParams],
   );
-
-  const handleQuickFilterApply = useCallback(
-    (filter: QuickFilter) => {
-      setSearchParams((prev) => {
-        const quickKeys = ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax", "status"];
-        quickKeys.forEach(k => prev.delete(k));
-        for (const [key, value] of Object.entries(filter.params)) {
-          prev.set(key, value);
-        }
-        prev.set("quickFilter", filter.id);
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handleQuickFilterClear = useCallback(() => {
-    setSearchParams((prev) => {
-      const quickKeys = ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax", "quickFilter"];
-      quickKeys.forEach(k => prev.delete(k));
-      prev.set("page", "1");
-      return prev;
-    });
-  }, [setSearchParams]);
 
   const includeStatuses = useMemo(() => {
     return includeInactive ? "Inactive" : undefined;
@@ -281,7 +254,6 @@ export default function ApplicationsPage() {
       prev.delete("licenceType");
       prev.delete("costMin");
       prev.delete("costMax");
-      prev.delete("quickFilter");
       prev.set("sortBy", "name");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -309,7 +281,7 @@ export default function ApplicationsPage() {
         if (config.pageSize) prev.set("pageSize", String(config.pageSize));
 
         // Restore advanced filters
-        const filterKeys = ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax", "quickFilter"];
+        const filterKeys = ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax"];
         for (const key of filterKeys) {
           const val = config.filters?.[key];
           if (val) prev.set(key, val);
@@ -337,9 +309,8 @@ export default function ApplicationsPage() {
       ...(licenceTypeParam ? { licenceType: licenceTypeParam } : {}),
       ...(costMinParam ? { costMin: costMinParam } : {}),
       ...(costMaxParam ? { costMax: costMaxParam } : {}),
-      ...(quickFilterParam ? { quickFilter: quickFilterParam } : {}),
     },
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, expiryFromParam, expiryToParam, licenceTypeParam, costMinParam, costMaxParam, quickFilterParam]);
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, expiryFromParam, expiryToParam, licenceTypeParam, costMinParam, costMaxParam]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -402,7 +373,7 @@ export default function ApplicationsPage() {
 
   const handleClearAllFilters = useCallback(() => {
     setSearchParams((prev) => {
-      ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax", "quickFilter"].forEach(k => prev.delete(k));
+      ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax"].forEach(k => prev.delete(k));
       prev.set("page", "1");
       return prev;
     });
@@ -659,9 +630,6 @@ export default function ApplicationsPage() {
                 costMax={costMaxParam}
                 onCostMinChange={(v) => handleFilterChange("costMin", v)}
                 onCostMaxChange={(v) => handleFilterChange("costMax", v)}
-                quickFilter={quickFilterParam}
-                onQuickFilterApply={handleQuickFilterApply}
-                onQuickFilterClear={handleQuickFilterClear}
               />
               <div className="flex items-center gap-1.5">
                 <SavedViewSelector

@@ -4,27 +4,10 @@ import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import { ColumnToggle } from "../column-toggle";
 import { FilterChip } from "../filter-chip";
-import { QuickFilterBar } from "../filters/quick-filter-bar";
-import type { QuickFilter } from "../filters/quick-filter-bar";
 import { ListFilter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Application } from "../../types/application";
 import type { ApplicationType } from "../../types/application-type";
-
-function todayISO(): string {
-  return new Date().toISOString().split("T")[0];
-}
-function plus30DaysISO(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 30);
-  return d.toISOString().split("T")[0];
-}
-
-const APP_QUICK_FILTERS: QuickFilter[] = [
-  { id: "expiring-soon", label: "Expiring Soon", params: { expiryFrom: todayISO(), expiryTo: plus30DaysISO() } },
-  { id: "expired", label: "Expired", params: { status: "Expired" } },
-  { id: "subscription", label: "Subscription", params: { licenceType: "Subscription" } },
-];
 
 const STATUS_OPTIONS = [
   { value: "Active", label: "Active" },
@@ -65,9 +48,6 @@ interface ApplicationsToolbarProps {
   costMax: string;
   onCostMinChange: (value: string) => void;
   onCostMaxChange: (value: string) => void;
-  quickFilter: string;
-  onQuickFilterApply: (filter: QuickFilter) => void;
-  onQuickFilterClear: () => void;
 }
 
 export function ApplicationsToolbar({
@@ -91,9 +71,6 @@ export function ApplicationsToolbar({
   costMax,
   onCostMinChange,
   onCostMaxChange,
-  quickFilter,
-  onQuickFilterApply,
-  onQuickFilterClear,
 }: ApplicationsToolbarProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -111,96 +88,88 @@ export function ApplicationsToolbar({
   const hasAdvancedFilters = !!(expiryFrom || expiryTo || costMin || costMax);
 
   return (
-    <div className="space-y-2">
-      <QuickFilterBar
-        filters={APP_QUICK_FILTERS}
-        activeFilterId={quickFilter || null}
-        onApply={onQuickFilterApply}
-        onClear={onQuickFilterClear}
+    <div className="flex items-center gap-2">
+      <Input
+        placeholder="Search applications…"
+        value={search}
+        onChange={(e) => onSearchChange(e.target.value)}
+        className="max-w-[240px]"
       />
-      <div className="flex flex-1 items-center gap-2">
-        <Input
-          placeholder="Search applications\u2026"
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="max-w-[240px]"
+      <div className="flex items-center gap-1.5">
+        <FilterChip
+          label="Type"
+          value={typeId}
+          options={applicationTypes.map((t) => ({ value: t.id, label: t.name }))}
+          onChange={onTypeIdChange}
+          allLabel="All types"
         />
-        <div className="flex items-center gap-1.5">
-          <FilterChip
-            label="Type"
-            value={typeId}
-            options={applicationTypes.map((t) => ({ value: t.id, label: t.name }))}
-            onChange={onTypeIdChange}
-            allLabel="All types"
-          />
-          <FilterChip
-            label="Status"
-            value={statusFilter}
-            options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-            onChange={onStatusFilterChange}
-            allLabel="All statuses"
-          />
-          <FilterChip
-            label="Licence"
-            value={licenceType}
-            options={LICENCE_TYPE_OPTIONS}
-            onChange={onLicenceTypeChange}
-            allLabel="All licences"
-          />
-          <div ref={moreRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setMoreOpen(!moreOpen)}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm transition-colors hover:bg-accent",
-                hasAdvancedFilters || moreOpen
-                  ? "border-primary/30 bg-primary/5 text-foreground"
-                  : "border-border text-muted-foreground"
-              )}
-            >
-              <ListFilter className="h-3 w-3 shrink-0" />
-              <span>More filters</span>
-              {hasAdvancedFilters && (
-                <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                  {[expiryFrom || expiryTo, costMin || costMax].filter(Boolean).length}
-                </span>
-              )}
-            </button>
-            {moreOpen && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-[320px] rounded-lg border bg-popover p-3 shadow-md space-y-3">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Expiry Date</label>
-                  <div className="flex items-center gap-2">
-                    <input type="date" value={expiryFrom} onChange={(e) => onExpiryFromChange(e.target.value)} className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
-                    <span className="text-xs text-muted-foreground">to</span>
-                    <input type="date" value={expiryTo} onChange={(e) => onExpiryToChange(e.target.value)} className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Cost (£)</label>
-                  <div className="flex items-center gap-2">
-                    <input type="number" value={costMin} onChange={(e) => onCostMinChange(e.target.value)} placeholder="Min" min="0" step="0.01" className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
-                    <span className="text-xs text-muted-foreground">to</span>
-                    <input type="number" value={costMax} onChange={(e) => onCostMaxChange(e.target.value)} placeholder="Max" min="0" step="0.01" className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
-                  </div>
+        <FilterChip
+          label="Status"
+          value={statusFilter}
+          options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+          onChange={onStatusFilterChange}
+          allLabel="All statuses"
+        />
+        <FilterChip
+          label="Licence"
+          value={licenceType}
+          options={LICENCE_TYPE_OPTIONS}
+          onChange={onLicenceTypeChange}
+          allLabel="All licences"
+        />
+        <div ref={moreRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setMoreOpen(!moreOpen)}
+            className={cn(
+              "inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-sm transition-colors hover:bg-accent",
+              hasAdvancedFilters || moreOpen
+                ? "border-primary/30 bg-primary/5 text-foreground"
+                : "border-border text-muted-foreground"
+            )}
+          >
+            <ListFilter className="h-3 w-3 shrink-0" />
+            More
+            {hasAdvancedFilters && (
+              <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                {[expiryFrom || expiryTo, costMin || costMax].filter(Boolean).length}
+              </span>
+            )}
+          </button>
+          {moreOpen && (
+            <div className="absolute left-0 top-full z-50 mt-1 w-[320px] rounded-lg border bg-popover p-3 shadow-md space-y-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Expiry Date</label>
+                <div className="flex items-center gap-2">
+                  <input type="date" value={expiryFrom} onChange={(e) => onExpiryFromChange(e.target.value)} className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
+                  <span className="text-xs text-muted-foreground">to</span>
+                  <input type="date" value={expiryTo} onChange={(e) => onExpiryToChange(e.target.value)} className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
                 </div>
               </div>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 ml-1 pl-1.5 border-l border-border">
-            <label className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer">
-              <Checkbox
-                checked={includeInactive}
-                onCheckedChange={(v) => onIncludeInactiveChange(v === true)}
-                className="h-3.5 w-3.5"
-              />
-              Inactive
-            </label>
-          </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Cost (£)</label>
+                <div className="flex items-center gap-2">
+                  <input type="number" value={costMin} onChange={(e) => onCostMinChange(e.target.value)} placeholder="Min" min="0" step="0.01" className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
+                  <span className="text-xs text-muted-foreground">to</span>
+                  <input type="number" value={costMax} onChange={(e) => onCostMaxChange(e.target.value)} placeholder="Max" min="0" step="0.01" className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-        <div className="ml-auto">
-          <ColumnToggle table={table} />
+        <div className="flex items-center gap-1.5 ml-1 pl-1.5 border-l border-border">
+          <label className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer">
+            <Checkbox
+              checked={includeInactive}
+              onCheckedChange={(v) => onIncludeInactiveChange(v === true)}
+              className="h-3.5 w-3.5"
+            />
+            Inactive
+          </label>
         </div>
+      </div>
+      <div className="ml-auto">
+        <ColumnToggle table={table} />
       </div>
     </div>
   );

@@ -40,7 +40,6 @@ import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 import { ActiveFilterChips } from "../components/filters/active-filter-chips";
 import type { ActiveFilter } from "../components/filters/active-filter-chips";
-import type { QuickFilter } from "../components/filters/quick-filter-bar";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -63,7 +62,6 @@ export default function CertificatesPage() {
   const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
   const expiryFromParam = searchParams.get("expiryFrom") ?? "";
   const expiryToParam = searchParams.get("expiryTo") ?? "";
-  const quickFilterParam = searchParams.get("quickFilter") ?? "";
 
   const [searchInput, setSearchInput] = useState(searchParam);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -139,31 +137,6 @@ export default function CertificatesPage() {
     },
     [setSearchParams],
   );
-
-  const handleQuickFilterApply = useCallback(
-    (filter: QuickFilter) => {
-      setSearchParams((prev) => {
-        const quickKeys = ["expiryFrom", "expiryTo", "status"];
-        quickKeys.forEach(k => prev.delete(k));
-        for (const [key, value] of Object.entries(filter.params)) {
-          prev.set(key, value);
-        }
-        prev.set("quickFilter", filter.id);
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handleQuickFilterClear = useCallback(() => {
-    setSearchParams((prev) => {
-      const quickKeys = ["expiryFrom", "expiryTo", "quickFilter"];
-      quickKeys.forEach(k => prev.delete(k));
-      prev.set("page", "1");
-      return prev;
-    });
-  }, [setSearchParams]);
 
   const queryParams = useMemo(
     () => ({
@@ -245,7 +218,6 @@ export default function CertificatesPage() {
       prev.delete("viewMode");
       prev.delete("expiryFrom");
       prev.delete("expiryTo");
-      prev.delete("quickFilter");
       prev.set("sortBy", "name");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -273,7 +245,7 @@ export default function CertificatesPage() {
         if (config.pageSize) prev.set("pageSize", String(config.pageSize));
 
         // Restore advanced filters
-        const filterKeys = ["expiryFrom", "expiryTo", "quickFilter"];
+        const filterKeys = ["expiryFrom", "expiryTo"];
         for (const key of filterKeys) {
           const val = config.filters?.[key];
           if (val) prev.set(key, val);
@@ -298,9 +270,8 @@ export default function CertificatesPage() {
     filters: {
       ...(expiryFromParam ? { expiryFrom: expiryFromParam } : {}),
       ...(expiryToParam ? { expiryTo: expiryToParam } : {}),
-      ...(quickFilterParam ? { quickFilter: quickFilterParam } : {}),
     },
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, expiryFromParam, expiryToParam, quickFilterParam]);
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, expiryFromParam, expiryToParam]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -582,9 +553,6 @@ export default function CertificatesPage() {
                 expiryTo={expiryToParam}
                 onExpiryFromChange={(v) => handleFilterChange("expiryFrom", v)}
                 onExpiryToChange={(v) => handleFilterChange("expiryTo", v)}
-                quickFilter={quickFilterParam}
-                onQuickFilterApply={handleQuickFilterApply}
-                onQuickFilterClear={handleQuickFilterClear}
               />
               <div className="flex items-center gap-1.5">
                 <SavedViewSelector

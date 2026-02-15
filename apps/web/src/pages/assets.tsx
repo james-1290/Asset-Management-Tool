@@ -44,7 +44,6 @@ import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-d
 import { usePeople } from "../hooks/use-people";
 import { ActiveFilterChips } from "../components/filters/active-filter-chips";
 import type { ActiveFilter } from "../components/filters/active-filter-chips";
-import type { QuickFilter } from "../components/filters/quick-filter-bar";
 
 // Map TanStack column IDs to backend sortBy values
 const SORT_FIELD_MAP: Record<string, string> = {
@@ -82,7 +81,6 @@ export default function AssetsPage() {
   const costMinParam = searchParams.get("costMin") ?? "";
   const costMaxParam = searchParams.get("costMax") ?? "";
   const unassignedParam = searchParams.get("unassigned") ?? "";
-  const quickFilterParam = searchParams.get("quickFilter") ?? "";
 
   // Debounced search: local input state synced to URL after 300ms
   const [searchInput, setSearchInput] = useState(searchParam);
@@ -254,7 +252,6 @@ export default function AssetsPage() {
       prev.delete("costMin");
       prev.delete("costMax");
       prev.delete("unassigned");
-      prev.delete("quickFilter");
       prev.set("sortBy", "name");
       prev.set("sortDir", "asc");
       prev.set("page", "1");
@@ -282,7 +279,7 @@ export default function AssetsPage() {
         if (config.pageSize) prev.set("pageSize", String(config.pageSize));
 
         // Restore advanced filters
-        const filterKeys = ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned", "quickFilter"];
+        const filterKeys = ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned"];
         for (const key of filterKeys) {
           const val = config.filters?.[key];
           if (val) prev.set(key, val);
@@ -314,9 +311,8 @@ export default function AssetsPage() {
       ...(costMinParam ? { costMin: costMinParam } : {}),
       ...(costMaxParam ? { costMax: costMaxParam } : {}),
       ...(unassignedParam ? { unassigned: unassignedParam } : {}),
-      ...(quickFilterParam ? { quickFilter: quickFilterParam } : {}),
     },
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam, quickFilterParam]);
+  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam]);
 
   // Sorting: derive TanStack SortingState from URL
   const sorting: SortingState = useMemo(
@@ -431,33 +427,6 @@ export default function AssetsPage() {
     [setSearchParams],
   );
 
-  const handleQuickFilterApply = useCallback(
-    (filter: QuickFilter) => {
-      setSearchParams((prev) => {
-        // Clear any existing quick filter params first
-        const quickKeys = ["unassigned", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "status"];
-        quickKeys.forEach(k => prev.delete(k));
-        // Apply new quick filter params
-        for (const [key, value] of Object.entries(filter.params)) {
-          prev.set(key, value);
-        }
-        prev.set("quickFilter", filter.id);
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handleQuickFilterClear = useCallback(() => {
-    setSearchParams((prev) => {
-      const quickKeys = ["unassigned", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "quickFilter"];
-      quickKeys.forEach(k => prev.delete(k));
-      prev.set("page", "1");
-      return prev;
-    });
-  }, [setSearchParams]);
-
   const handleViewModeChange = useCallback(
     (mode: "list" | "grouped") => {
       setSearchParams((prev) => {
@@ -497,7 +466,7 @@ export default function AssetsPage() {
 
   const handleClearAllFilters = useCallback(() => {
     setSearchParams((prev) => {
-      ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned", "quickFilter"].forEach(k => prev.delete(k));
+      ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned"].forEach(k => prev.delete(k));
       prev.set("page", "1");
       return prev;
     });
@@ -776,9 +745,6 @@ export default function AssetsPage() {
                 costMax={costMaxParam}
                 onCostMinChange={(v) => handleFilterChange("costMin", v)}
                 onCostMaxChange={(v) => handleFilterChange("costMax", v)}
-                quickFilter={quickFilterParam}
-                onQuickFilterApply={handleQuickFilterApply}
-                onQuickFilterClear={handleQuickFilterClear}
               />
               <div className="flex items-center gap-1.5">
                 <SavedViewSelector
