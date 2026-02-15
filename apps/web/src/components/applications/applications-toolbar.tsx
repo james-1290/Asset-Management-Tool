@@ -88,7 +88,7 @@ export function ApplicationsToolbar({
   const hasAdvancedFilters = !!(expiryFrom || expiryTo || costMin || costMax);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-1 items-center gap-2">
       <Input
         placeholder="Search applications…"
         value={search}

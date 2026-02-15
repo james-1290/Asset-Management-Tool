@@ -99,7 +99,7 @@ export function AssetsToolbar({
   const hasAdvancedFilters = !!(locationId || assignedPersonId || purchaseDateFrom || purchaseDateTo || warrantyExpiryFrom || warrantyExpiryTo || costMin || costMax);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-1 items-center gap-2">
       <Input
         placeholder="Search assets…"
         value={search}
