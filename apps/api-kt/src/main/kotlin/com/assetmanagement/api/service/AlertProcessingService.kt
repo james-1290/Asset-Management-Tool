@@ -143,7 +143,10 @@ class AlertProcessingService(
 
             if (slackService.isConfigured()) {
                 try {
-                    slackService.sendDigestMessage(orgName, warrantyItems, certificateItems, licenceItems)
+                    val warrantyWebhookUrl = getSetting("alerts.slack.warrantyWebhookUrl")
+                    val certificateWebhookUrl = getSetting("alerts.slack.certificateWebhookUrl")
+                    val licenceWebhookUrl = getSetting("alerts.slack.licenceWebhookUrl")
+                    slackService.sendDigestMessage(orgName, warrantyItems, certificateItems, licenceItems, warrantyWebhookUrl, certificateWebhookUrl, licenceWebhookUrl)
                 } catch (e: Exception) {
                     log.error("Failed to send Slack digest (email may have succeeded)", e)
                 }
