@@ -32,6 +32,7 @@ export interface AssetQueryParams {
   costMin?: string;
   costMax?: string;
   unassigned?: string;
+  createdAfter?: string;
 }
 
 export const assetsApi = {

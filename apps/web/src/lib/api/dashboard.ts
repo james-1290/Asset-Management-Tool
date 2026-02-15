@@ -51,9 +51,9 @@ export const dashboardApi = {
     return result.items;
   },
 
-  getRecentlyAdded(limit: number = 5): Promise<RecentlyAddedAsset[]> {
+  getRecentlyAdded(days: number = 7): Promise<RecentlyAddedAsset[]> {
     return apiClient.get<RecentlyAddedAsset[]>(
-      `/dashboard/recently-added?limit=${limit}`
+      `/dashboard/recently-added?days=${days}`
     );
   },
 

@@ -95,12 +95,12 @@ export function useRecentActivity(
 }
 
 export function useRecentlyAdded(
-  limit: number = 5,
+  days: number = 7,
   enabled: boolean = true
 ) {
   return useQuery({
-    queryKey: dashboardKeys.recentlyAdded(limit),
-    queryFn: () => dashboardApi.getRecentlyAdded(limit),
+    queryKey: dashboardKeys.recentlyAdded(days),
+    queryFn: () => dashboardApi.getRecentlyAdded(days),
     staleTime: 60_000,
     enabled,
   });

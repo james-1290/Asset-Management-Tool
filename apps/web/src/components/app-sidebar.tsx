@@ -182,7 +182,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b h-14 px-3 !flex-row items-center">
+      <SidebarHeader className="border-b h-12 px-3 !flex-row items-center">
         {/* Expanded: title + collapse chevron */}
         <div className="flex flex-1 items-center gap-2 overflow-hidden group-data-[collapsible=icon]:hidden">
           <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary text-primary-foreground text-xs font-semibold shrink-0">
