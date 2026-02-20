@@ -212,18 +212,18 @@ class AssetsController(
         // Validate required fields
         if (request.name.isBlank())
             return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
-        if (request.serialNumber.isBlank())
-            return ResponseEntity.badRequest().body(mapOf("error" to "Serial number is required."))
 
         // Validate AssetType exists
         val assetType = assetTypeRepository.findById(request.assetTypeId).orElse(null)
         if (assetType == null || assetType.isArchived)
             return ResponseEntity.badRequest().body(mapOf("error" to "Asset type not found."))
 
-        // Validate Location exists (required)
-        val location = locationRepository.findById(request.locationId).orElse(null)
-        if (location == null || location.isArchived)
-            return ResponseEntity.badRequest().body(mapOf("error" to "Location not found."))
+        // Validate Location exists (if provided)
+        if (request.locationId != null) {
+            val location = locationRepository.findById(request.locationId).orElse(null)
+            if (location == null || location.isArchived)
+                return ResponseEntity.badRequest().body(mapOf("error" to "Location not found."))
+        }
 
         // Validate AssignedPerson exists (if provided)
         if (request.assignedPersonId != null) {
@@ -308,18 +308,18 @@ class AssetsController(
         // Validate required fields
         if (request.name.isBlank())
             return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
-        if (request.serialNumber.isBlank())
-            return ResponseEntity.badRequest().body(mapOf("error" to "Serial number is required."))
 
         // Validate AssetType exists
         val assetType = assetTypeRepository.findById(request.assetTypeId).orElse(null)
         if (assetType == null || assetType.isArchived)
             return ResponseEntity.badRequest().body(mapOf("error" to "Asset type not found."))
 
-        // Validate Location exists (required)
-        val location = locationRepository.findById(request.locationId).orElse(null)
-        if (location == null || location.isArchived)
-            return ResponseEntity.badRequest().body(mapOf("error" to "Location not found."))
+        // Validate Location exists (if provided)
+        if (request.locationId != null) {
+            val location = locationRepository.findById(request.locationId).orElse(null)
+            if (location == null || location.isArchived)
+                return ResponseEntity.badRequest().body(mapOf("error" to "Location not found."))
+        }
 
         // Validate AssignedPerson exists (if provided)
         if (request.assignedPersonId != null) {
@@ -353,7 +353,7 @@ class AssetsController(
 
         if (request.locationId != asset.locationId) {
             val oldName = asset.location?.name
-            val newName = locationRepository.findById(request.locationId).orElse(null)?.name
+            val newName = if (request.locationId != null) locationRepository.findById(request.locationId).orElse(null)?.name else null
             changes.add(AuditChange("Location", oldName, newName))
         }
 

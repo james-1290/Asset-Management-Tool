@@ -35,12 +35,12 @@ data class AssetDto(
 
 data class CreateAssetRequest(
     val name: String,
-    val serialNumber: String,
+    val serialNumber: String? = null,
     val status: String? = null,
     val assetTypeId: UUID,
-    val locationId: UUID,
+    val locationId: UUID? = null,
     val assignedPersonId: UUID? = null,
-    val purchaseDate: Instant,
+    val purchaseDate: Instant? = null,
     val purchaseCost: BigDecimal? = null,
     val warrantyExpiryDate: Instant? = null,
     val depreciationMonths: Int? = null,
@@ -50,12 +50,12 @@ data class CreateAssetRequest(
 
 data class UpdateAssetRequest(
     val name: String,
-    val serialNumber: String,
+    val serialNumber: String? = null,
     val status: String? = null,
     val assetTypeId: UUID,
-    val locationId: UUID,
+    val locationId: UUID? = null,
     val assignedPersonId: UUID? = null,
-    val purchaseDate: Instant,
+    val purchaseDate: Instant? = null,
     val purchaseCost: BigDecimal? = null,
     val warrantyExpiryDate: Instant? = null,
     val depreciationMonths: Int? = null,
