@@ -11,13 +11,11 @@ import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
-import { SavedViewSelector } from "../components/saved-view-selector";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import { AssetFormDialog } from "../components/assets/asset-form-dialog";
 import { BulkEditDialog } from "../components/assets/bulk-edit-dialog";
 import { AssetsToolbar } from "../components/assets/assets-toolbar";
 import { getAssetColumns } from "../components/assets/columns";
-import { ViewModeToggle } from "../components/view-mode-toggle";
 import { GroupedGridView } from "../components/grouped-grid-view";
 import { AssetCard } from "../components/assets/asset-card";
 import {
@@ -30,7 +28,6 @@ import {
   useBulkEditAssets,
   useCheckAssetDuplicates,
 } from "../hooks/use-assets";
-import { getSelectionColumn } from "../components/data-table-selection-column";
 import { BulkActionBar } from "../components/bulk-action-bar";
 import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
@@ -42,8 +39,6 @@ import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 import { usePeople } from "../hooks/use-people";
-import { ActiveFilterChips } from "../components/filters/active-filter-chips";
-import type { ActiveFilter } from "../components/filters/active-filter-chips";
 
 // Map TanStack column IDs to backend sortBy values
 const SORT_FIELD_MAP: Record<string, string> = {
@@ -169,7 +164,6 @@ export default function AssetsPage() {
   // Saved views
   const { data: savedViews = [] } = useSavedViews("assets");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const defaultViewApplied = useRef(false);
 
   // Gather all unique custom field definitions from loaded asset types
@@ -190,7 +184,6 @@ export default function AssetsPage() {
 
   const columns = useMemo(
     () => [
-      getSelectionColumn<Asset>(),
       ...getAssetColumns({
         onEdit: (asset) => {
           setEditingAsset(asset);
@@ -231,7 +224,6 @@ export default function AssetsPage() {
     try {
       const config: ViewConfiguration = JSON.parse(view.configuration);
       setColumnVisibility({ ...defaultColumnVisibility, ...config.columnVisibility });
-      setActiveViewId(view.id);
       setSearchParams((prev) => {
         if (config.sortBy) prev.set("sortBy", config.sortBy);
         if (config.sortDir) prev.set("sortDir", config.sortDir);
@@ -267,57 +259,6 @@ export default function AssetsPage() {
     if (defaultView) applyView(defaultView);
   }, [savedViews, applyView]);
 
-  function handleResetToDefault() {
-    setColumnVisibility(defaultColumnVisibility);
-    setActiveViewId(null);
-    setSearchParams((prev) => {
-      prev.delete("search");
-      prev.delete("status");
-      prev.delete("includeRetired");
-      prev.delete("includeSold");
-      prev.delete("typeId");
-      prev.delete("viewMode");
-      prev.delete("locationId");
-      prev.delete("assignedPersonId");
-      prev.delete("purchaseDateFrom");
-      prev.delete("purchaseDateTo");
-      prev.delete("warrantyExpiryFrom");
-      prev.delete("warrantyExpiryTo");
-      prev.delete("costMin");
-      prev.delete("costMax");
-      prev.delete("unassigned");
-      prev.delete("createdAfter");
-      prev.set("sortBy", "name");
-      prev.set("sortDir", "asc");
-      prev.set("page", "1");
-      return prev;
-    });
-    setSearchInput("");
-  }
-
-
-  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
-    columnVisibility,
-    sortBy: sortByParam,
-    sortDir: sortDirParam,
-    search: searchParam || undefined,
-    status: statusParam || undefined,
-    typeId: typeIdParam || undefined,
-    viewMode: viewMode !== "list" ? viewMode : undefined,
-    pageSize,
-    filters: {
-      ...(locationIdParam ? { locationId: locationIdParam } : {}),
-      ...(assignedPersonIdParam ? { assignedPersonId: assignedPersonIdParam } : {}),
-      ...(purchaseDateFromParam ? { purchaseDateFrom: purchaseDateFromParam } : {}),
-      ...(purchaseDateToParam ? { purchaseDateTo: purchaseDateToParam } : {}),
-      ...(warrantyExpiryFromParam ? { warrantyExpiryFrom: warrantyExpiryFromParam } : {}),
-      ...(warrantyExpiryToParam ? { warrantyExpiryTo: warrantyExpiryToParam } : {}),
-      ...(costMinParam ? { costMin: costMinParam } : {}),
-      ...(costMaxParam ? { costMax: costMaxParam } : {}),
-      ...(unassignedParam ? { unassigned: unassignedParam } : {}),
-      ...(createdAfterParam ? { createdAfter: createdAfterParam } : {}),
-    },
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam, createdAfterParam]);
 
   // Sorting: derive TanStack SortingState from URL
   const sorting: SortingState = useMemo(
@@ -431,54 +372,6 @@ export default function AssetsPage() {
     },
     [setSearchParams],
   );
-
-  const handleViewModeChange = useCallback(
-    (mode: "list" | "grouped") => {
-      setSearchParams((prev) => {
-        if (mode === "list") prev.delete("viewMode");
-        else prev.set("viewMode", mode);
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const activeFilters = useMemo(() => {
-    const filters: ActiveFilter[] = [];
-    if (locationIdParam) {
-      const loc = (locations ?? []).find(l => l.id === locationIdParam);
-      filters.push({ key: "locationId", label: `Location: ${loc?.name ?? locationIdParam}`, onRemove: () => handleFilterChange("locationId", "") });
-    }
-    if (assignedPersonIdParam) {
-      const person = (people ?? []).find(p => p.id === assignedPersonIdParam);
-      filters.push({ key: "assignedPersonId", label: `Assigned: ${person?.fullName ?? assignedPersonIdParam}`, onRemove: () => handleFilterChange("assignedPersonId", "") });
-    }
-    if (purchaseDateFromParam || purchaseDateToParam) {
-      filters.push({ key: "purchaseDate", label: `Purchase: ${purchaseDateFromParam || "..."} \u2013 ${purchaseDateToParam || "..."}`, onRemove: () => { handleFilterChange("purchaseDateFrom", ""); handleFilterChange("purchaseDateTo", ""); } });
-    }
-    if (warrantyExpiryFromParam || warrantyExpiryToParam) {
-      filters.push({ key: "warrantyExpiry", label: `Warranty: ${warrantyExpiryFromParam || "..."} \u2013 ${warrantyExpiryToParam || "..."}`, onRemove: () => { handleFilterChange("warrantyExpiryFrom", ""); handleFilterChange("warrantyExpiryTo", ""); } });
-    }
-    if (costMinParam || costMaxParam) {
-      const label = costMinParam && costMaxParam ? `Cost: \u00a3${costMinParam} \u2013 \u00a3${costMaxParam}` : costMinParam ? `Cost: > \u00a3${costMinParam}` : `Cost: < \u00a3${costMaxParam}`;
-      filters.push({ key: "cost", label, onRemove: () => { handleFilterChange("costMin", ""); handleFilterChange("costMax", ""); } });
-    }
-    if (unassignedParam) {
-      filters.push({ key: "unassigned", label: "Unassigned only", onRemove: () => handleFilterChange("unassigned", "") });
-    }
-    if (createdAfterParam) {
-      filters.push({ key: "createdAfter", label: `Added since ${createdAfterParam}`, onRemove: () => handleFilterChange("createdAfter", "") });
-    }
-    return filters;
-  }, [locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam, createdAfterParam, locations, people, handleFilterChange]);
-
-  const handleClearAllFilters = useCallback(() => {
-    setSearchParams((prev) => {
-      ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned", "createdAfter"].forEach(k => prev.delete(k));
-      prev.set("page", "1");
-      return prev;
-    });
-  }, [setSearchParams]);
 
   const [exporting, setExporting] = useState(false);
   async function handleExport() {
@@ -656,7 +549,10 @@ export default function AssetsPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Assets" />
+        <PageHeader
+          title="Assets"
+          breadcrumbs={[{ label: "Inventory", href: "/assets" }, { label: "Assets" }]}
+        />
         <div className="space-y-2">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -669,7 +565,10 @@ export default function AssetsPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Assets" />
+        <PageHeader
+          title="Assets"
+          breadcrumbs={[{ label: "Inventory", href: "/assets" }, { label: "Assets" }]}
+        />
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
           Failed to load assets. Is the API running?
         </div>
@@ -684,13 +583,14 @@ export default function AssetsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Assets"
+        breadcrumbs={[
+          { label: "Inventory", href: "/assets" },
+          { label: "Assets" },
+        ]}
+        description={`Managing ${totalCount.toLocaleString()} total assets`}
         actions={
           <div className="flex items-center gap-3">
-            {!isLoading && (
-              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
-                {totalCount}
-              </span>
-            )}
+            <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
             <Button
               onClick={() => {
                 setEditingAsset(null);
@@ -719,57 +619,40 @@ export default function AssetsPage() {
         rowCount={totalCount}
         sorting={sorting}
         onSortingChange={handleSortingChange}
-        toolbar={(table) => (
+        toolbar={() => (
           <div className="space-y-2">
-            {/* Row 1: Data controls (left) | View controls (right) */}
-            <div className="flex items-center justify-between gap-4">
-              <AssetsToolbar
-                table={table}
-                search={searchInput}
-                onSearchChange={setSearchInput}
-                status={statusParam}
-                onStatusChange={handleStatusChange}
-                includeRetired={includeRetired}
-                onIncludeRetiredChange={handleIncludeRetiredChange}
-                includeSold={includeSold}
-                onIncludeSoldChange={handleIncludeSoldChange}
-                typeId={typeIdParam}
-                onTypeIdChange={handleTypeIdChange}
-                assetTypes={assetTypes ?? []}
-                locationId={locationIdParam}
-                onLocationIdChange={(v) => handleFilterChange("locationId", v)}
-                locations={locations ?? []}
-                assignedPersonId={assignedPersonIdParam}
-                onAssignedPersonIdChange={(v) => handleFilterChange("assignedPersonId", v)}
-                people={people ?? []}
-                purchaseDateFrom={purchaseDateFromParam}
-                purchaseDateTo={purchaseDateToParam}
-                onPurchaseDateFromChange={(v) => handleFilterChange("purchaseDateFrom", v)}
-                onPurchaseDateToChange={(v) => handleFilterChange("purchaseDateTo", v)}
-                warrantyExpiryFrom={warrantyExpiryFromParam}
-                warrantyExpiryTo={warrantyExpiryToParam}
-                onWarrantyExpiryFromChange={(v) => handleFilterChange("warrantyExpiryFrom", v)}
-                onWarrantyExpiryToChange={(v) => handleFilterChange("warrantyExpiryTo", v)}
-                costMin={costMinParam}
-                costMax={costMaxParam}
-                onCostMinChange={(v) => handleFilterChange("costMin", v)}
-                onCostMaxChange={(v) => handleFilterChange("costMax", v)}
-              />
-              <div className="flex items-center gap-1.5">
-                <SavedViewSelector
-                  entityType="assets"
-                  activeViewId={activeViewId}
-                  onApplyView={applyView}
-                  onResetToDefault={handleResetToDefault}
-                  getCurrentConfiguration={getCurrentConfiguration}
-                />
-                <div className="w-px h-5 bg-border" />
-                <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
-                <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
-              </div>
-            </div>
-            <ActiveFilterChips filters={activeFilters} onClearAll={handleClearAllFilters} />
-            {/* Row 2: Bulk actions (only when selected) */}
+            <AssetsToolbar
+              search={searchInput}
+              onSearchChange={setSearchInput}
+              status={statusParam}
+              onStatusChange={handleStatusChange}
+              includeRetired={includeRetired}
+              onIncludeRetiredChange={handleIncludeRetiredChange}
+              includeSold={includeSold}
+              onIncludeSoldChange={handleIncludeSoldChange}
+              typeId={typeIdParam}
+              onTypeIdChange={handleTypeIdChange}
+              assetTypes={assetTypes ?? []}
+              locationId={locationIdParam}
+              onLocationIdChange={(v) => handleFilterChange("locationId", v)}
+              locations={locations ?? []}
+              assignedPersonId={assignedPersonIdParam}
+              onAssignedPersonIdChange={(v) => handleFilterChange("assignedPersonId", v)}
+              people={people ?? []}
+              purchaseDateFrom={purchaseDateFromParam}
+              purchaseDateTo={purchaseDateToParam}
+              onPurchaseDateFromChange={(v) => handleFilterChange("purchaseDateFrom", v)}
+              onPurchaseDateToChange={(v) => handleFilterChange("purchaseDateTo", v)}
+              warrantyExpiryFrom={warrantyExpiryFromParam}
+              warrantyExpiryTo={warrantyExpiryToParam}
+              onWarrantyExpiryFromChange={(v) => handleFilterChange("warrantyExpiryFrom", v)}
+              onWarrantyExpiryToChange={(v) => handleFilterChange("warrantyExpiryTo", v)}
+              costMin={costMinParam}
+              costMax={costMaxParam}
+              onCostMinChange={(v) => handleFilterChange("costMin", v)}
+              onCostMaxChange={(v) => handleFilterChange("costMax", v)}
+            />
+            {/* Bulk actions (only when selected) */}
             <BulkActionBar
               selectedCount={selectedCount}
               onClearSelection={() => setRowSelection({})}

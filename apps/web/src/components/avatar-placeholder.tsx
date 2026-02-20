@@ -29,7 +29,7 @@ function getInitials(name: string): string {
 
 interface AvatarPlaceholderProps {
   name?: string | null;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
   className?: string;
 }
 
@@ -50,7 +50,7 @@ export function AvatarPlaceholder({
   }
 
   const colorIndex = hashCode(name) % COLORS.length;
-  const sizeClass = size === "sm" ? "h-6 w-6 text-[10px]" : "h-8 w-8 text-xs";
+  const sizeClass = size === "sm" ? "h-6 w-6 text-[10px]" : size === "lg" ? "h-10 w-10 text-sm" : "h-8 w-8 text-xs";
 
   return (
     <div

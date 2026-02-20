@@ -571,6 +571,7 @@ export default function ApplicationsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Applications / Licences"
+        breadcrumbs={[{ label: "Software", href: "/applications" }, { label: "Applications / Licences" }]}
         description="Track software applications, licence keys, and renewal dates."
         actions={
           <div className="flex items-center gap-3">

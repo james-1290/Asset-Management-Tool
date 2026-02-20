@@ -10,7 +10,7 @@ interface ExportButtonProps {
 export function ExportButton({ onExport, loading, selectedCount }: ExportButtonProps) {
   const label = selectedCount ? `Export Selected (${selectedCount})` : "Export";
   return (
-    <Button variant="outline" size="sm" onClick={onExport} disabled={loading}>
+    <Button variant="outline" onClick={onExport} disabled={loading}>
       {loading ? (
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
       ) : (

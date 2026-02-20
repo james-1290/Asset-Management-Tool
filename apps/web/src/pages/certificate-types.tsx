@@ -312,6 +312,7 @@ export default function CertificateTypesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Certificate Types"
+        breadcrumbs={[{ label: "Certificates", href: "/certificate-types" }, { label: "Certificate Types" }]}
         description="Manage categories for your certificates."
         actions={
           <div className="flex items-center gap-3">

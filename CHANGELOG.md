@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-02-20 23:28 — UI Redesign: Mockup Alignment
+
+- Moved dashboard widget settings from floating gear icon to dedicated Settings > Dashboard tab with live preview dialog
+- Updated light theme colour palette from warm greys to Tailwind slate (cooler, blue-tinged)
+- Moved table pagination inside the white card container (was on grey background)
+- Table headers now bold uppercase dark text across all pages (assets, certificates, applications, types)
+- Sortable column headers (Asset Name, Financials, Name, Type, etc.) now match static header styling
+- Filter chips (Type, Status): white background, consistent dark foreground text
+- More Filters button: plain text with icon, no background
+- More Filters dropdown: replaced FilterChip with native selects for Location/Assigned To, widened panel
+- Removed ActiveFilterChips row beneath toolbar buttons
+- Deleted unused `widget-settings-popover.tsx`
+- Fixed pre-existing build errors: unused `end` variable, missing `expiringItems` in `WIDGET_MIN_SIZES`
+
+## 2026-02-20 21:09 — UI Redesign: Match Mockup Design Language
+
+- **Color scheme**: Primary changed from `#3B82F6` (blue) to `#2918dc` (deep indigo); dark mode primary to `#6366F1`
+- **Background**: Updated to `#f6f6f8` for a warmer feel; accent colors now primary-tinted
+- **Sidebar**: Added section labels ("MAIN", "MANAGEMENT"), active state with left border accent + primary tint, bumped icons to `h-5 w-5`, added subtitle under logo, height to `h-16`
+- **Header**: Height `h-12` → `h-16`, padding `px-4` → `px-8`, added user name/role next to avatar, divider between controls and profile
+- **Page headers**: Title `text-lg` → `text-3xl font-bold`, added breadcrumb navigation above title on all list pages
+- **Stat cards**: Redesigned with colored icon backgrounds (top-left), trend indicator support, `p-6` padding, `rounded-xl`, shadow-sm baseline, "attention" variant now uses `border-l-4 border-l-red-500`
+- **Tables**: Header `px-2` → `px-6 py-4` with uppercase tracking-wider; cells `p-2` → `px-6 py-4`; hover `bg-slate-50/50`; container `rounded-xl`; header row bg-tinted
+- **Status badges**: `px-1.5 py-0.5 text-[10px]` → `px-2.5 py-1 text-xs font-medium`; updated to `bg-*-50 text-*-700` color scheme
+- **Pagination**: Added "Showing X to Y of Z results" text, Previous/Next text buttons with outlines
+- **Dashboard**: Each stat card gets unique colored icon background; status breakdown chart has center total label + percentage legend; activity feed shows avatars with action dots
+- **Content area**: Main padding `p-6` → `p-8`
+- All existing functionality preserved (CRUD, filters, sorting, pagination, bulk actions, dark mode, sidebar collapse)
+
 ## 2026-02-20 20:11 — Asset Creation Fix + Pagination UI Tweak
 
 - Fixed 500 error when creating/updating assets: Jackson couldn't deserialize plain date strings ("2026-02-20") into `Instant` fields — added `FlexibleInstantDeserializer` to accept both plain dates and full ISO-8601 instants

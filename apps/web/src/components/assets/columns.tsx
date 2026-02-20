@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, MoreVertical } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -25,7 +25,7 @@ function formatCustomFieldValue(
   value: string | null | undefined,
   fieldType: string
 ): string {
-  if (!value) return "—";
+  if (!value) return "\u2014";
   switch (fieldType) {
     case "Boolean":
       return value === "true" ? "Yes" : "No";
@@ -49,34 +49,9 @@ function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency: "GBP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
-}
-
-function DepreciationBadge({ asset }: { asset: Asset }) {
-  if (asset.purchaseCost == null || asset.purchaseCost === 0) return <span className="text-muted-foreground">—</span>;
-
-  const bookValue = asset.bookValue ?? asset.purchaseCost;
-  const pct = Math.round((bookValue / asset.purchaseCost) * 100);
-
-  let colorClass: string;
-  if (pct > 50) {
-    colorClass = "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300";
-  } else if (pct > 20) {
-    colorClass = "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300";
-  } else {
-    colorClass = "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300";
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      <span className="tabular-nums">{formatCurrency(bookValue)}</span>
-      <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none ${colorClass}`}>
-        {pct}%
-      </span>
-    </div>
-  );
 }
 
 export function getAssetColumns({
@@ -90,11 +65,11 @@ export function getAssetColumns({
       header: ({ column }) => (
         <Button
           variant="ghost"
-          className="-ml-4"
+          className="-ml-4 uppercase tracking-wider text-xs font-bold"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          Asset Name
+          <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
         </Button>
       ),
       cell: ({ row }) => (
@@ -103,13 +78,13 @@ export function getAssetColumns({
           <div className="min-w-0">
             <Link
               to={`/assets/${row.original.id}`}
-              className="font-medium text-foreground hover:text-primary transition-colors"
+              className="font-semibold text-foreground hover:text-primary transition-colors"
             >
               {row.original.name}
             </Link>
             {row.original.serialNumber && (
               <div className="text-xs text-muted-foreground truncate">
-                {row.original.serialNumber}
+                ID: #{row.original.serialNumber}
               </div>
             )}
           </div>
@@ -125,10 +100,15 @@ export function getAssetColumns({
       header: "Assigned To",
       cell: ({ row }) => {
         const name = row.original.assignedPersonName;
+        if (!name) {
+          return (
+            <span className="text-sm text-muted-foreground italic">Unassigned</span>
+          );
+        }
         return (
-          <div className="flex items-center gap-2">
-            <AvatarPlaceholder name={name} />
-            {name && <span className="text-sm">{name}</span>}
+          <div className="flex items-center gap-2.5">
+            <AvatarPlaceholder name={name} size="md" />
+            <span className="text-sm font-medium">{name}</span>
           </div>
         );
       },
@@ -143,38 +123,31 @@ export function getAssetColumns({
       header: ({ column }) => (
         <Button
           variant="ghost"
-          className="-ml-4"
+          className="-ml-4 uppercase tracking-wider text-xs font-bold"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Buy Price
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          Financials
+          <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
         </Button>
       ),
       cell: ({ row }) => {
         const cost = row.original.purchaseCost;
-        if (cost == null) return <span className="text-muted-foreground">—</span>;
-        const year = row.original.purchaseDate
-          ? new Date(row.original.purchaseDate).getFullYear()
-          : null;
+        if (cost == null) return <span className="text-muted-foreground">\u2014</span>;
+        const bookValue = row.original.bookValue ?? cost;
         return (
-          <span className="tabular-nums">
-            {formatCurrency(cost)}
-            {year && (
-              <span className="ml-1.5 text-xs text-muted-foreground">· {year}</span>
-            )}
-          </span>
+          <div>
+            <span className="font-semibold tabular-nums">{formatCurrency(cost)}</span>
+            <div className="text-xs text-muted-foreground tabular-nums">
+              BV: {formatCurrency(bookValue)}
+            </div>
+          </div>
         );
       },
     },
     {
-      id: "depreciation",
-      header: "Book Value",
-      cell: ({ row }) => <DepreciationBadge asset={row.original} />,
-    },
-    {
       accessorKey: "locationName",
       header: "Location",
-      cell: ({ row }) => row.getValue("locationName") || <span className="text-muted-foreground">—</span>,
+      cell: ({ row }) => row.getValue("locationName") || <span className="text-muted-foreground">\u2014</span>,
     },
   ];
 
@@ -199,6 +172,7 @@ export function getAssetColumns({
 
   const actionsColumn: ColumnDef<Asset, unknown> = {
     id: "actions",
+    header: "Action",
     enableHiding: false,
     cell: ({ row }) => {
       const asset = row.original;
@@ -207,7 +181,7 @@ export function getAssetColumns({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
               <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
+              <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

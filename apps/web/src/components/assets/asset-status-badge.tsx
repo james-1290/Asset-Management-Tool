@@ -1,34 +1,33 @@
-import { Badge } from "../ui/badge";
 import type { AssetStatus } from "../../types/asset";
 
 const statusConfig: Record<AssetStatus, { label: string; className: string }> = {
   Available: {
     label: "Available",
-    className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    className: "bg-green-50 text-green-700 dark:bg-green-900/10 dark:text-green-400",
   },
   Assigned: {
-    label: "Assigned",
-    className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    label: "Deployed",
+    className: "bg-green-50 text-green-700 dark:bg-green-900/10 dark:text-green-400",
   },
   CheckedOut: {
     label: "Checked Out",
-    className: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+    className: "bg-blue-50 text-blue-700 dark:bg-blue-900/10 dark:text-blue-400",
   },
   InMaintenance: {
-    label: "In Maintenance",
-    className: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    label: "In Repair",
+    className: "bg-amber-50 text-amber-700 dark:bg-amber-900/10 dark:text-amber-400",
   },
   Retired: {
     label: "Retired",
-    className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+    className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
   },
   Sold: {
     label: "Sold",
-    className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+    className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
   },
   Archived: {
     label: "Archived",
-    className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+    className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
   },
 };
 
@@ -39,8 +38,8 @@ interface AssetStatusBadgeProps {
 export function AssetStatusBadge({ status }: AssetStatusBadgeProps) {
   const config = statusConfig[status] ?? statusConfig.Available;
   return (
-    <Badge variant="outline" className={config.className}>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${config.className}`}>
       {config.label}
-    </Badge>
+    </span>
   );
 }

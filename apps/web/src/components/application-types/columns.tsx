@@ -24,7 +24,7 @@ export function getApplicationTypeColumns({
       header: ({ column }) => (
         <Button
           variant="ghost"
-          className="-ml-4"
+          className="-ml-4 uppercase tracking-wider text-xs font-bold"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Name

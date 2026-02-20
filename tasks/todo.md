@@ -4,8 +4,11 @@
 
 ## Done
 
+- [x] ESLint bug fix sweep: resolved all 20 errors (unused imports, setState-in-effect, applyView declaration order, missing deps, react-refresh) + fixed purchaseDate type mismatch in asset request interfaces
+
 - [x] File attachment support (upload/download/delete on assets, certificates, applications)
   - V009 migration, StorageService, AttachmentsController, reusable frontend component
+  - Inline preview pane for images and PDFs (blob + object URL for auth)
 
 - [x] Depreciation tracking (straight-line, per-asset-type defaults, computed on-the-fly, dashboard stat card)
 - [x] SAML 2.0 SSO with Microsoft Entra ID (SP-initiated, JIT provisioning, toggleable)
@@ -117,8 +120,7 @@
 - [x] Slack webhook alerts
 - [x] Reporting (5 pre-built reports: Asset Summary, Expiries, Licence Summary, Assignments, Asset Lifecycle + CSV export + Tools sidebar group)
 - [x] SSO / OIDC integration (SAML 2.0 with Entra ID, SCIM 2.0 provisioning)
-- [ ] Attachment support
-- [ ] Azure deployment config
+- [ ] Azure deployment config (deferred until ready to host)
 - [x] CSV/Excel export: "Export" button on all list pages, downloads current filtered/sorted view as CSV (with selection support)
 - [x] Duplicate detection: warn on create if similar record exists (fuzzy match on name/serial/email), offer to navigate to existing
 - [x] Data import (CSV upload): bulk import for all 5 entity types with validation preview, error reporting, template download

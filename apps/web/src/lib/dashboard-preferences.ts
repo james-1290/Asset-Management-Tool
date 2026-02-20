@@ -16,7 +16,8 @@ export type WidgetId =
   | "certificateExpiries"
   | "licenceExpiries"
   | "totalBookValue"
-  | "inventorySnapshot";
+  | "inventorySnapshot"
+  | "expiringItems";
 
 export interface DashboardPreferences {
   visibleWidgets: WidgetId[];
@@ -42,6 +43,7 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   licenceExpiries: "Licence Expiries",
   totalBookValue: "Total Book Value",
   inventorySnapshot: "Inventory Snapshot",
+  expiringItems: "Expiring Items",
 };
 
 export const ALL_WIDGET_IDS: WidgetId[] = Object.keys(
@@ -58,6 +60,18 @@ export const STAT_CARD_WIDGET_IDS: WidgetId[] = [
   "certificateExpiries",
   "licenceExpiries",
   "totalBookValue",
+];
+
+/** Widgets that can be toggled on/off via the settings popover */
+export const TOGGLEABLE_WIDGET_IDS: WidgetId[] = [
+  "statusBreakdown",
+  "recentActivity",
+  "expiringItems",
+  "inventorySnapshot",
+  "assetsByType",
+  "assetsByLocation",
+  "assetsByAge",
+  "valueByLocation",
 ];
 
 export const WIDGET_MIN_SIZES: Record<WidgetId, { minW: number; minH: number; maxW?: number; maxH?: number }> = {
@@ -77,6 +91,7 @@ export const WIDGET_MIN_SIZES: Record<WidgetId, { minW: number; minH: number; ma
   assetsByAge: { minW: 4, minH: 4 },
   valueByLocation: { minW: 4, minH: 4 },
   inventorySnapshot: { minW: 6, minH: 4 },
+  expiringItems: { minW: 6, minH: 4 },
 };
 
 const DEFAULT_LG_LAYOUT: LayoutItem[] = [
@@ -163,8 +178,15 @@ function defaultLayoutForWidget(id: WidgetId): { lg: LayoutItem; md: LayoutItem;
   };
 }
 
+/** Widgets shown by default — matches the mockup layout */
+const DEFAULT_VISIBLE: WidgetId[] = [
+  "statusBreakdown",
+  "recentActivity",
+  "expiringItems",
+];
+
 const DEFAULT_PREFERENCES: DashboardPreferences = {
-  visibleWidgets: [...ALL_WIDGET_IDS],
+  visibleWidgets: DEFAULT_VISIBLE,
   layouts: DEFAULT_LAYOUTS,
 };
 
@@ -175,33 +197,11 @@ export const preferencesStore = {
       if (!raw) return DEFAULT_PREFERENCES;
       const parsed = JSON.parse(raw) as DashboardPreferences;
       if (!Array.isArray(parsed.visibleWidgets)) return DEFAULT_PREFERENCES;
-      // Filter out any widget IDs that no longer exist
-      const valid = parsed.visibleWidgets.filter((id) =>
-        ALL_WIDGET_IDS.includes(id)
+      // Filter to only toggleable widget IDs that still exist
+      const visibleWidgets = parsed.visibleWidgets.filter((id) =>
+        TOGGLEABLE_WIDGET_IDS.includes(id)
       );
-      // Append any new widget IDs that weren't in the saved prefs
-      const newIds = ALL_WIDGET_IDS.filter(
-        (id) => !parsed.visibleWidgets.includes(id)
-      );
-      const visibleWidgets = [...valid, ...newIds];
-
-      // Merge layouts — add missing widgets to each breakpoint
-      let layouts: ResponsiveLayouts = parsed.layouts ?? DEFAULT_LAYOUTS;
-      for (const bp of ["lg", "md", "sm"] as const) {
-        const bpLayout = layouts[bp] ?? [];
-        const existingIds = new Set(bpLayout.map((l) => l.i));
-        const missing = newIds.filter((id) => !existingIds.has(id));
-        if (missing.length > 0) {
-          layouts = {
-            ...layouts,
-            [bp]: [
-              ...bpLayout,
-              ...missing.map((id) => defaultLayoutForWidget(id)[bp]),
-            ],
-          };
-        }
-      }
-
+      const layouts: ResponsiveLayouts = parsed.layouts ?? DEFAULT_LAYOUTS;
       return { visibleWidgets, layouts };
     } catch {
       return DEFAULT_PREFERENCES;

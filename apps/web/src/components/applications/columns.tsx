@@ -38,7 +38,7 @@ export function getApplicationColumns({
       header: ({ column }) => (
         <Button
           variant="ghost"
-          className="-ml-4"
+          className="-ml-4 uppercase tracking-wider text-xs font-bold"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Name
@@ -71,7 +71,7 @@ export function getApplicationColumns({
       header: ({ column }) => (
         <Button
           variant="ghost"
-          className="-ml-4"
+          className="-ml-4 uppercase tracking-wider text-xs font-bold"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Type
@@ -84,7 +84,7 @@ export function getApplicationColumns({
       header: ({ column }) => (
         <Button
           variant="ghost"
-          className="-ml-4"
+          className="-ml-4 uppercase tracking-wider text-xs font-bold"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Publisher
@@ -111,7 +111,7 @@ export function getApplicationColumns({
       header: ({ column }) => (
         <Button
           variant="ghost"
-          className="-ml-4"
+          className="-ml-4 uppercase tracking-wider text-xs font-bold"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Expiry Date
@@ -125,7 +125,7 @@ export function getApplicationColumns({
       header: ({ column }) => (
         <Button
           variant="ghost"
-          className="-ml-4"
+          className="-ml-4 uppercase tracking-wider text-xs font-bold"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Status

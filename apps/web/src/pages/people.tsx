@@ -423,6 +423,7 @@ export default function PeoplePage() {
     <div className="space-y-6">
       <PageHeader
         title="People"
+        breadcrumbs={[{ label: "Organisation", href: "/people" }, { label: "People" }]}
         description="Manage people for asset assignment."
         actions={
           <div className="flex items-center gap-3">

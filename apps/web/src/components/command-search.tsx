@@ -11,7 +11,6 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useSearch } from "@/hooks/use-search";
 
 const RECENT_SEARCHES_KEY = "recent-searches";
@@ -122,17 +121,12 @@ export function CommandSearch() {
 
   return (
     <>
-      <Button
-        variant="outline"
-        className="relative h-8 w-full max-w-md justify-start text-sm text-muted-foreground"
-        onClick={() => setOpen(true)}
-      >
-        <Search className="mr-2 h-4 w-4" />
-        <span>Search...</span>
-        <kbd className="pointer-events-none absolute right-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-          <span className="text-xs">&#8984;</span>K
-        </kbd>
-      </Button>
+      <div className="relative w-full group" onClick={() => setOpen(true)}>
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+        <div className="w-full bg-muted/50 border-none rounded-lg pl-10 pr-4 py-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted transition-all">
+          Search assets, serial numbers, or users...
+        </div>
+      </div>
 
       <CommandDialog
         open={open}

@@ -64,7 +64,6 @@ export function DataTable<TData, TValue>({
   paginationControls,
   hideTable,
   children,
-  variant = "default",
 }: DataTableProps<TData, TValue>) {
   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialColumnFilters ?? []);
@@ -103,7 +102,7 @@ export function DataTable<TData, TValue>({
       {hideTable ? (
         children
       ) : (
-        <div className={variant === "borderless" ? "" : "rounded-md border"}>
+        <div className="rounded-xl border bg-card">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -147,9 +146,14 @@ export function DataTable<TData, TValue>({
               )}
             </TableBody>
           </Table>
+          {paginationControls && (
+            <div className="border-t border-slate-100 dark:border-slate-800 px-6 py-4">
+              {paginationControls}
+            </div>
+          )}
         </div>
       )}
-      {paginationControls}
+      {hideTable && paginationControls}
     </div>
   );
 }
