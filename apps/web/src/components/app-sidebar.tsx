@@ -1,32 +1,25 @@
-import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { NavLink, useLocation } from "react-router-dom"
 import {
   LayoutDashboard,
   Monitor,
-  Tag,
   ShieldCheck,
-  FileKey,
   AppWindow,
-  MapPin,
-  Users,
+  Building2,
   Bell,
   ScrollText,
   Settings,
-  ChevronLeft,
-  ChevronRight,
-  Package,
-  Building2,
-  Laptop,
-  Wrench,
   BarChart3,
   Upload,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -42,153 +35,101 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 
 interface NavChild {
   title: string
   url: string
-  icon: React.ComponentType<{ className?: string }>
 }
 
-interface NavGroup {
-  kind: "group"
-  title: string
-  icon: React.ComponentType<{ className?: string }>
-  children: NavChild[]
-}
-
-interface NavStandalone {
-  kind: "standalone"
+interface NavItem {
   title: string
   url: string
   icon: React.ComponentType<{ className?: string }>
+  section: string
+  children?: NavChild[]
+  adminOnly?: boolean
 }
 
-type NavEntry = NavGroup | NavStandalone
-
-const navStructure: NavEntry[] = [
-  { kind: "standalone", title: "Dashboard", url: "/", icon: LayoutDashboard },
+const navItems: NavItem[] = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, section: "MENU" },
   {
-    kind: "group",
-    title: "Inventory",
-    icon: Package,
+    title: "Assets", url: "/assets", icon: Monitor, section: "MENU",
     children: [
-      { title: "Assets", url: "/assets", icon: Monitor },
-      { title: "Asset Types", url: "/asset-types", icon: Tag },
-      { title: "Asset Templates", url: "/asset-templates", icon: Tag },
+      { title: "Asset Types", url: "/asset-types" },
+      { title: "Asset Templates", url: "/asset-templates" },
     ],
   },
   {
-    kind: "group",
-    title: "Certificates",
-    icon: ShieldCheck,
+    title: "Certificates", url: "/certificates", icon: ShieldCheck, section: "MENU",
     children: [
-      { title: "Certificates", url: "/certificates", icon: ShieldCheck },
-      { title: "Certificate Types", url: "/certificate-types", icon: FileKey },
+      { title: "Certificate Types", url: "/certificate-types" },
     ],
   },
   {
-    kind: "group",
-    title: "Software",
-    icon: Laptop,
+    title: "Software", url: "/applications", icon: AppWindow, section: "MENU",
     children: [
-      { title: "Applications / Licences", url: "/applications", icon: AppWindow },
-      { title: "Application Types", url: "/application-types", icon: Tag },
+      { title: "Application Types", url: "/application-types" },
     ],
   },
   {
-    kind: "group",
-    title: "Organisation",
-    icon: Building2,
+    title: "Organisation", url: "/locations", icon: Building2, section: "MENU",
     children: [
-      { title: "Locations", url: "/locations", icon: MapPin },
-      { title: "People", url: "/people", icon: Users },
+      { title: "Locations", url: "/locations" },
+      { title: "People", url: "/people" },
     ],
   },
-  {
-    kind: "group",
-    title: "Tools",
-    icon: Wrench,
-    children: [
-      { title: "Reports", url: "/reports", icon: BarChart3 },
-      { title: "Notifications", url: "/notifications", icon: Bell },
-      { title: "Import Data", url: "/tools/import", icon: Upload },
-    ],
-  },
-  { kind: "standalone", title: "Audit Log", url: "/audit-log", icon: ScrollText },
-  { kind: "standalone", title: "Settings", url: "/settings", icon: Settings },
+  { title: "Reports", url: "/reports", icon: BarChart3, section: "MANAGEMENT" },
+  { title: "Notifications", url: "/notifications", icon: Bell, section: "MANAGEMENT" },
+  { title: "Import Data", url: "/tools/import", icon: Upload, section: "MANAGEMENT", adminOnly: true },
+  { title: "Audit Log", url: "/audit-log", icon: ScrollText, section: "MANAGEMENT" },
+  { title: "Settings", url: "/settings", icon: Settings, section: "MANAGEMENT" },
 ]
-
-const STORAGE_KEY = "sidebar-groups"
-
-function loadGroupState(): Record<string, boolean> {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) return JSON.parse(stored)
-  } catch {
-    // ignore
-  }
-  return {}
-}
-
-function saveGroupState(state: Record<string, boolean>) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // ignore
-  }
-}
 
 export function AppSidebar() {
   const { toggleSidebar } = useSidebar()
   const { isAdmin } = useAuth()
   const location = useLocation()
-  const [groupState, setGroupState] = useState<Record<string, boolean>>(loadGroupState)
 
-  useEffect(() => {
-    saveGroupState(groupState)
-  }, [groupState])
+  const isItemActive = (item: NavItem) => {
+    if (item.url === "/") return location.pathname === "/"
+    if (location.pathname.startsWith(item.url)) return true
+    // Check if any child URL matches
+    if (item.children) {
+      return item.children.some((child) => location.pathname.startsWith(child.url))
+    }
+    return false
+  }
 
-  const toggleGroup = useCallback((groupTitle: string) => {
-    setGroupState((prev) => ({
-      ...prev,
-      [groupTitle]: !(prev[groupTitle] ?? false),
-    }))
-  }, [])
-
-  const isGroupOpen = (groupTitle: string) => groupState[groupTitle] ?? false
-
-  const isChildActive = (children: NavChild[]) =>
-    children.some((child) => {
-      if (child.url === "/") return location.pathname === "/"
-      return location.pathname.startsWith(child.url)
-    })
+  const isChildActive = (url: string) => {
+    if (url === "/") return location.pathname === "/"
+    return location.pathname.startsWith(url)
+  }
 
   // Filter admin-only items
-  const filteredNav = navStructure.map((entry) => {
-    if (entry.kind === "group" && entry.title === "Tools") {
-      const children = entry.children.filter((child) => {
-        if (child.url === "/tools/import") return isAdmin
-        return true
-      })
-      return children.length > 0 ? { ...entry, children } : null
-    }
-    return entry
-  }).filter(Boolean) as NavEntry[]
+  const filteredItems = navItems.filter((item) => {
+    if (item.adminOnly && !isAdmin) return false
+    return true
+  })
+
+  // Group by section
+  const sections = new Map<string, NavItem[]>()
+  for (const item of filteredItems) {
+    if (!sections.has(item.section)) sections.set(item.section, [])
+    sections.get(item.section)!.push(item)
+  }
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b h-12 px-3 !flex-row items-center">
-        {/* Expanded: title + collapse chevron */}
-        <div className="flex flex-1 items-center gap-2 overflow-hidden group-data-[collapsible=icon]:hidden">
-          <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary text-primary-foreground text-xs font-semibold shrink-0">
+      <SidebarHeader className="border-b h-16 px-3 !flex-row items-center">
+        {/* Expanded: logo + title + collapse chevron */}
+        <div className="flex flex-1 items-center gap-3 overflow-hidden group-data-[collapsible=icon]:hidden">
+          <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary text-primary-foreground text-xs font-bold shrink-0">
             AM
           </div>
-          <span className="text-sm font-semibold truncate">Asset Manager</span>
+          <div className="min-w-0">
+            <span className="text-base font-bold block truncate leading-none">Asset Manager</span>
+            <span className="text-[10px] text-muted-foreground font-medium block uppercase tracking-widest mt-0.5">Asset Management</span>
+          </div>
           <div className="ml-auto">
             <Button
               variant="ghost"
@@ -221,75 +162,64 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {filteredNav.map((entry) => {
-                if (entry.kind === "standalone") {
+        {Array.from(sections.entries()).map(([sectionLabel, items], sectionIdx) => (
+          <SidebarGroup key={sectionLabel} className={sectionIdx > 0 ? "border-t border-sidebar-border" : ""}>
+            <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-3">
+              {sectionLabel}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {items.map((item) => {
+                  const active = isItemActive(item)
+                  const showChildren = active && item.children && item.children.length > 0
+
                   return (
-                    <SidebarMenuItem key={entry.title}>
-                      <SidebarMenuButton asChild tooltip={entry.title}>
-                        <NavLink
-                          to={entry.url}
-                          className={({ isActive }) =>
-                            isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""
-                          }
-                        >
-                          <entry.icon className="h-4 w-4" />
-                          <span>{entry.title}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                }
-
-                const groupOpen = isGroupOpen(entry.title)
-                const hasActiveChild = isChildActive(entry.children)
-
-                return (
-                  <Collapsible
-                    key={entry.title}
-                    open={groupOpen}
-                    onOpenChange={() => toggleGroup(entry.title)}
-                    className="group/collapsible"
-                  >
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                          tooltip={entry.title}
-                          className={hasActiveChild && !groupOpen ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}
-                        >
-                          <entry.icon className="h-4 w-4" />
-                          <span>{entry.title}</span>
-                          <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    <div key={item.title}>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild tooltip={item.title}>
+                          <NavLink
+                            to={item.url}
+                            className={() =>
+                              active
+                                ? "!bg-primary/10 !text-primary font-medium"
+                                : ""
+                            }
+                          >
+                            <item.icon className={active ? "h-[22px] w-[22px]" : "h-[22px] w-[22px] text-gray-400 dark:text-gray-500"} />
+                            <span className={active ? "text-sm" : "text-sm text-gray-700 dark:text-gray-300"}>{item.title}</span>
+                          </NavLink>
                         </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
+                      </SidebarMenuItem>
+                      {showChildren && (
                         <SidebarMenuSub>
-                          {entry.children.map((child) => (
-                            <SidebarMenuSubItem key={child.title}>
-                              <SidebarMenuSubButton asChild>
-                                <NavLink
-                                  to={child.url}
-                                  className={({ isActive }) =>
-                                    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""
-                                  }
-                                >
-                                  <child.icon className="h-4 w-4" />
-                                  <span>{child.title}</span>
-                                </NavLink>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
+                          {item.children!.map((child) => {
+                            const childActive = isChildActive(child.url)
+                            return (
+                              <SidebarMenuSubItem key={child.title}>
+                                <SidebarMenuSubButton asChild>
+                                  <NavLink
+                                    to={child.url}
+                                    className={() =>
+                                      childActive
+                                        ? "!text-primary font-medium"
+                                        : "!text-gray-700 dark:!text-gray-300"
+                                    }
+                                  >
+                                    <span>{child.title}</span>
+                                  </NavLink>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            )
+                          })}
                         </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                      )}
+                    </div>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
     </Sidebar>
   )

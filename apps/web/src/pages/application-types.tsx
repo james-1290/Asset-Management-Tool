@@ -312,6 +312,7 @@ export default function ApplicationTypesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Application Types"
+        breadcrumbs={[{ label: "Software", href: "/application-types" }, { label: "Application Types" }]}
         description="Manage categories for your applications and licences."
         actions={
           <div className="flex items-center gap-3">

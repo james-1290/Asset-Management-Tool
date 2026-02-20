@@ -1,34 +1,18 @@
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
-import { Button } from "./ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-
 interface DataTablePaginationProps {
   page: number;
   pageSize: number;
   totalCount: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
+  entityName?: string;
 }
-
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 export function DataTablePagination({
   page,
   pageSize,
   totalCount,
   onPageChange,
-  onPageSizeChange,
+  entityName = "results",
 }: DataTablePaginationProps) {
   const pageCount = Math.max(1, Math.ceil(totalCount / pageSize));
   const start = Math.min((page - 1) * pageSize + 1, totalCount);
@@ -36,75 +20,31 @@ export function DataTablePagination({
 
   return (
     <div className="flex items-center justify-between">
-      <p className="text-xs text-muted-foreground tabular-nums">
+      <p className="text-sm text-muted-foreground">
         {totalCount > 0 ? (
           <>
-            {start}&ndash;{end} of {totalCount}
+            Showing <span className="font-semibold text-foreground">{start} to {end}</span> of{" "}
+            <span className="font-semibold text-foreground">{totalCount.toLocaleString()}</span> {entityName}
           </>
         ) : (
           "No results"
         )}
       </p>
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">Rows</span>
-          <Select
-            value={String(pageSize)}
-            onValueChange={(value) => onPageSizeChange(Number(value))}
-          >
-            <SelectTrigger className="h-7 w-[70px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <SelectItem key={size} value={String(size)}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <span className="text-xs text-muted-foreground tabular-nums min-w-[80px] text-center">
-          Page {page} of {pageCount}
-        </span>
-        <div className="flex items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => onPageChange(1)}
-            disabled={page <= 1}
-          >
-            <ChevronsLeft className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => onPageChange(page - 1)}
-            disabled={page <= 1}
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => onPageChange(page + 1)}
-            disabled={page >= pageCount}
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => onPageChange(pageCount)}
-            disabled={page >= pageCount}
-          >
-            <ChevronsRight className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
+          className="px-3 py-1.5 border border-border rounded-lg text-sm font-medium text-muted-foreground disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent transition-colors"
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= pageCount}
+          className="px-3 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent transition-colors"
+        >
+          Next
+        </button>
       </div>
     </div>
   );

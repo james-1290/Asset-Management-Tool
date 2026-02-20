@@ -28,7 +28,7 @@ import {
   useLicenceExpiries,
   useInventorySnapshot,
 } from "@/hooks/use-dashboard";
-import { useDashboardPreferences } from "@/hooks/use-dashboard-preferences";
+import type { WidgetId } from "@/lib/dashboard-preferences";
 
 function formatCurrency(value: number): string {
   if (value >= 1_000_000) {
@@ -45,9 +45,11 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-export default function DashboardPage() {
-  const { isVisible } = useDashboardPreferences();
+interface DashboardPreviewProps {
+  isVisible: (id: WidgetId) => boolean;
+}
 
+export function DashboardPreview({ isVisible }: DashboardPreviewProps) {
   const summary = useDashboardSummary(true);
   const statusBreakdown = useStatusBreakdown(true);
   const warrantyExpiries = useWarrantyExpiries(30, true);
@@ -61,12 +63,11 @@ export default function DashboardPage() {
   const licenceExpiries = useLicenceExpiries(30, true);
   const inventorySnapshot = useInventorySnapshot(isVisible("inventorySnapshot"));
 
-  // Derive "In Maintenance" count from status breakdown
-  const maintenanceCount = statusBreakdown.data
-    ?.filter((s) => s.status === "InRepair" || s.status === "InMaintenance")
-    .reduce((sum, s) => sum + s.count, 0) ?? 0;
+  const maintenanceCount =
+    statusBreakdown.data
+      ?.filter((s) => s.status === "InRepair" || s.status === "InMaintenance")
+      .reduce((sum, s) => sum + s.count, 0) ?? 0;
 
-  // Derive "Expiring Soon" count from all expiry hooks
   const expiringSoonCount =
     (warrantyExpiries.data?.length ?? 0) +
     (certificateExpiries.data?.length ?? 0) +
@@ -78,15 +79,14 @@ export default function DashboardPage() {
     licenceExpiries.isLoading;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard
           title="Total Assets"
           value={summary.data?.totalAssets?.toString() ?? "0"}
           icon={Package}
           iconBg="bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400"
           isLoading={summary.isLoading}
-          href="/assets"
         />
         <StatCard
           title="Total Value"
@@ -94,7 +94,6 @@ export default function DashboardPage() {
           icon={PoundSterling}
           iconBg="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400"
           isLoading={summary.isLoading}
-          href="/assets"
         />
         <StatCard
           title="Checked Out"
@@ -102,7 +101,6 @@ export default function DashboardPage() {
           icon={ArrowRightLeft}
           iconBg="bg-green-50 text-green-600 dark:bg-green-900/40 dark:text-green-400"
           isLoading={checkedOut.isLoading}
-          href="/assets?status=CheckedOut"
         />
         <StatCard
           title="In Maintenance"
@@ -110,7 +108,6 @@ export default function DashboardPage() {
           icon={Wrench}
           iconBg="bg-amber-50 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400"
           isLoading={statusBreakdown.isLoading}
-          href="/assets?status=InRepair"
         />
         <StatCard
           title="Expiring Soon"
@@ -119,11 +116,9 @@ export default function DashboardPage() {
           iconBg="bg-red-50 text-red-600 dark:bg-red-900/40 dark:text-red-400"
           isLoading={expiriesLoading}
           variant="attention"
-          href="/assets?sortBy=warrantyExpiryDate&sortDir=asc"
         />
       </div>
 
-      {/* Inventory snapshot */}
       {isVisible("inventorySnapshot") && (
         <InventorySnapshot
           data={inventorySnapshot.data}
@@ -131,9 +126,8 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Primary content — status overview + activity feed */}
       {(isVisible("statusBreakdown") || isVisible("recentActivity")) && (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
           {isVisible("statusBreakdown") && (
             <div className="lg:col-span-3">
               <StatusBreakdownChart
@@ -153,14 +147,12 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Expiring items table */}
       {isVisible("expiringItems") && <ExpiringItemsTable />}
 
-      {/* Charts — detailed breakdowns */}
       {(isVisible("assetsByType") || isVisible("assetsByLocation")) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {isVisible("assetsByType") && (
-            <div className="min-h-[320px]">
+            <div className="min-h-[280px]">
               <AssetsByTypeChart
                 data={assetsByType.data}
                 isLoading={assetsByType.isLoading}
@@ -168,7 +160,7 @@ export default function DashboardPage() {
             </div>
           )}
           {isVisible("assetsByLocation") && (
-            <div className="min-h-[320px]">
+            <div className="min-h-[280px]">
               <AssetsByLocationChart
                 data={assetsByLocation.data}
                 isLoading={assetsByLocation.isLoading}
@@ -179,9 +171,9 @@ export default function DashboardPage() {
       )}
 
       {(isVisible("assetsByAge") || isVisible("valueByLocation")) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {isVisible("assetsByAge") && (
-            <div className="min-h-[320px]">
+            <div className="min-h-[280px]">
               <AssetsByAgeChart
                 data={assetsByAge.data}
                 isLoading={assetsByAge.isLoading}
@@ -189,7 +181,7 @@ export default function DashboardPage() {
             </div>
           )}
           {isVisible("valueByLocation") && (
-            <div className="min-h-[320px]">
+            <div className="min-h-[280px]">
               <ValueByLocationChart
                 data={valueByLocation.data}
                 isLoading={valueByLocation.isLoading}

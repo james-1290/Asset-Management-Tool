@@ -35,6 +35,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Reports"
+        breadcrumbs={[{ label: "Tools", href: "/reports" }, { label: "Reports" }]}
         description="Pre-built reports with exportable summaries."
       />
 

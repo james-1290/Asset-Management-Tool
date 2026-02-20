@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FilterChipOption {
@@ -38,7 +38,7 @@ export function FilterChip({
   }, [open]);
 
   const selectedOption = options.find((o) => o.value === value);
-  const isActive = !!value;
+  const displayValue = selectedOption?.label ?? allLabel;
 
   return (
     <div ref={ref} className="relative">
@@ -46,26 +46,16 @@ export function FilterChip({
         type="button"
         onClick={() => setOpen(!open)}
         className={cn(
-          "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm transition-colors",
+          "inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
           "hover:bg-accent",
-          isActive
+          value
             ? "border-primary/30 bg-primary/5 text-foreground"
-            : "border-border text-muted-foreground"
+            : "border-border bg-card text-foreground"
         )}
       >
-        <span>{isActive ? selectedOption?.label ?? value : label}</span>
-        {isActive ? (
-          <X
-            className="ml-0.5 h-3 w-3 shrink-0 opacity-60 hover:opacity-100"
-            onClick={(e) => {
-              e.stopPropagation();
-              onChange("");
-              setOpen(false);
-            }}
-          />
-        ) : (
-          <ChevronDown className="ml-0.5 h-3 w-3 shrink-0 opacity-60" />
-        )}
+        <span>{label}:</span>
+        <span>{displayValue}</span>
+        <ChevronDown className="ml-0.5 h-3.5 w-3.5 shrink-0" />
       </button>
 
       {open && (

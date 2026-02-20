@@ -502,6 +502,7 @@ export default function CertificatesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Certificates"
+        breadcrumbs={[{ label: "Certificates", href: "/certificates" }, { label: "Certificates" }]}
         description="Track SSL/TLS certificates, secrets, and renewal dates."
         actions={
           <div className="flex items-center gap-3">

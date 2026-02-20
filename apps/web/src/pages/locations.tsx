@@ -326,6 +326,7 @@ export default function LocationsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Locations"
+        breadcrumbs={[{ label: "Organisation", href: "/locations" }, { label: "Locations" }]}
         description="Manage offices, warehouses, and other locations."
         actions={
           <div className="flex items-center gap-3">

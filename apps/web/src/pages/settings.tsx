@@ -7,8 +7,9 @@ import { UsersTab } from "@/components/settings/users-tab";
 import { AlertsTab } from "@/components/settings/alerts-tab";
 import { SystemTab } from "@/components/settings/system-tab";
 import { MyAlertsTab } from "@/components/settings/my-alerts-tab";
+import { DashboardTab } from "@/components/settings/dashboard-tab";
 
-const TABS = ["profile", "my-alerts", "users", "alerts", "system"] as const;
+const TABS = ["profile", "dashboard", "my-alerts", "users", "alerts", "system"] as const;
 type TabValue = (typeof TABS)[number];
 
 export default function SettingsPage() {
@@ -27,12 +28,14 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Settings"
+        breadcrumbs={[{ label: "Management" }, { label: "Settings" }]}
         description="Manage your profile, users, alerts, and system settings."
       />
 
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="my-alerts">My Alerts</TabsTrigger>
           {isAdmin && <TabsTrigger value="users">Users</TabsTrigger>}
           {isAdmin && <TabsTrigger value="alerts">Alerts</TabsTrigger>}
@@ -41,6 +44,10 @@ export default function SettingsPage() {
 
         <TabsContent value="profile" className="mt-6">
           <ProfileTab />
+        </TabsContent>
+
+        <TabsContent value="dashboard" className="mt-6">
+          <DashboardTab />
         </TabsContent>
 
         <TabsContent value="my-alerts" className="mt-6">
