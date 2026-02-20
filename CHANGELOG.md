@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-20 20:11 — Asset Creation Fix + Pagination UI Tweak
+
+- Fixed 500 error when creating/updating assets: Jackson couldn't deserialize plain date strings ("2026-02-20") into `Instant` fields — added `FlexibleInstantDeserializer` to accept both plain dates and full ISO-8601 instants
+- Made `serialNumber`, `locationId`, `purchaseDate`, `warrantyExpiryDate` nullable in Create/Update Asset DTOs — frontend doesn't always send these fields
+- Relaxed validation: serial number and location no longer required on create/update
+- Fixed pagination rows-per-page dropdown width too narrow (60px → 70px), "25" was getting clipped
+
 ## 2026-02-15 21:13 — Dashboard Widget Link Fixes + Sidebar Border Alignment
 
 - Fixed sidebar header border not aligning with main header border (h-14 → h-12)
