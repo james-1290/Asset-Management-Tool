@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-02-21 17:44 — Settings page redesign
+
+- Redesigned Settings page with underline-style tab navigation matching mockup
+- Redesigned Profile tab: side-by-side Display Name + Email fields, clickable theme picker cards (System/Light/Dark) with icons, styled card sections
+- Security & Password section: password fields with show/hide eye toggle, styled card layout
+- Added disabled Two-Factor Authentication card placeholder
+- Merged password-form.tsx into profile-tab.tsx (password-form.tsx now orphaned)
+
 ## 2026-02-21 17:35 — Fix import page Entity Type spacing
 
 - Added explicit mb-3 margin between "Entity Type" label and Select dropdown for visible separation
