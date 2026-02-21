@@ -279,8 +279,8 @@ export function AlertsTab() {
                   />
                 </div>
 
-                {/* Thresholds + Frequency + Time */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Thresholds + Frequency + Time — all inline */}
+                <div className="grid grid-cols-[1fr_auto_auto] gap-6 items-start">
                   <FormField
                     control={form.control}
                     name="thresholds"
@@ -297,7 +297,6 @@ export function AlertsTab() {
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="scheduleType"
@@ -346,7 +345,6 @@ export function AlertsTab() {
                         </FormItem>
                       )}
                     />
-                  </div>
                 </div>
               </div>
             </section>
