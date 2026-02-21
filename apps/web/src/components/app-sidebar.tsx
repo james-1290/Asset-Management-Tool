@@ -90,18 +90,28 @@ export function AppSidebar() {
   const { isAdmin } = useAuth()
   const location = useLocation()
 
-  const isItemActive = (item: NavItem) => {
+  // True when we're on the parent's own page (not a child page)
+  const isItemSelfActive = (item: NavItem) => {
     if (item.url === "/") return location.pathname === "/"
-    if (location.pathname.startsWith(item.url)) return true
-    // Check if any child URL matches
+    return location.pathname === item.url || location.pathname.startsWith(item.url + "/")
+  }
+
+  // True when parent or any child is active (used to expand sub-menu + highlight parent)
+  const isItemOrChildActive = (item: NavItem) => {
+    if (isItemSelfActive(item)) return true
     if (item.children) {
       return item.children.some((child) => location.pathname.startsWith(child.url))
     }
     return false
   }
 
+  // True only when a child URL matches (not the parent itself)
+  const isAnyChildActive = (item: NavItem) => {
+    if (!item.children) return false
+    return item.children.some((child) => location.pathname.startsWith(child.url))
+  }
+
   const isChildActive = (url: string) => {
-    if (url === "/") return location.pathname === "/"
     return location.pathname.startsWith(url)
   }
 
@@ -170,8 +180,14 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {items.map((item) => {
-                  const active = isItemActive(item)
-                  const showChildren = active && item.children && item.children.length > 0
+                  const selfActive = isItemSelfActive(item)
+                  const anyChildActive = isAnyChildActive(item)
+                  const expanded = isItemOrChildActive(item)
+                  // Highlight parent blue only when on its own page, not when on a child page
+                  const parentHighlighted = selfActive && !anyChildActive
+
+                  const activeStyle = { backgroundColor: "rgba(41, 24, 220, 0.1)", color: "var(--primary)" } as const
+                  const inactiveStyle = { backgroundColor: "transparent", color: "inherit" } as const
 
                   return (
                     <div key={item.title}>
@@ -179,18 +195,15 @@ export function AppSidebar() {
                         <SidebarMenuButton asChild tooltip={item.title}>
                           <NavLink
                             to={item.url}
-                            className={() =>
-                              active
-                                ? "!bg-primary/10 !text-primary font-medium"
-                                : ""
-                            }
+                            end={!item.children}
+                            style={parentHighlighted ? activeStyle : inactiveStyle}
                           >
-                            <item.icon className={active ? "h-[22px] w-[22px]" : "h-[22px] w-[22px] text-gray-400 dark:text-gray-500"} />
-                            <span className={active ? "text-sm" : "text-sm text-gray-700 dark:text-gray-300"}>{item.title}</span>
+                            <item.icon className={parentHighlighted ? "h-[22px] w-[22px]" : expanded ? "h-[22px] w-[22px]" : "h-[22px] w-[22px] text-gray-400 dark:text-gray-500"} />
+                            <span className="text-sm">{item.title}</span>
                           </NavLink>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
-                      {showChildren && (
+                      {expanded && item.children && item.children.length > 0 && (
                         <SidebarMenuSub>
                           {item.children!.map((child) => {
                             const childActive = isChildActive(child.url)
@@ -199,10 +212,9 @@ export function AppSidebar() {
                                 <SidebarMenuSubButton asChild>
                                   <NavLink
                                     to={child.url}
-                                    className={() =>
-                                      childActive
-                                        ? "!text-primary font-medium"
-                                        : "!text-gray-700 dark:!text-gray-300"
+                                    style={childActive
+                                      ? { backgroundColor: "rgba(41, 24, 220, 0.1)", color: "var(--primary)", borderRadius: "6px" }
+                                      : { color: "var(--muted-foreground)" }
                                     }
                                   >
                                     <span>{child.title}</span>
