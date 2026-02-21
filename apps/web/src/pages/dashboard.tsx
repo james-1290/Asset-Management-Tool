@@ -77,6 +77,22 @@ export default function DashboardPage() {
     certificateExpiries.isLoading ||
     licenceExpiries.isLoading;
 
+  // Build expiring soon link based on which type has the most items
+  const expiringSoonHref = (() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+    const wCount = warrantyExpiries.data?.length ?? 0;
+    const cCount = certificateExpiries.data?.length ?? 0;
+    const lCount = licenceExpiries.data?.length ?? 0;
+    if (cCount >= wCount && cCount >= lCount) {
+      return `/certificates?expiryFrom=${today}&expiryTo=${in30}&sortBy=expiryDate&sortDir=asc`;
+    }
+    if (lCount >= wCount) {
+      return `/applications?expiryFrom=${today}&expiryTo=${in30}&sortBy=expiryDate&sortDir=asc`;
+    }
+    return `/assets?warrantyExpiryFrom=${today}&warrantyExpiryTo=${in30}&sortBy=warrantyExpiryDate&sortDir=asc`;
+  })();
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -119,7 +135,7 @@ export default function DashboardPage() {
           iconBg="bg-red-50 text-red-600 dark:bg-red-900/40 dark:text-red-400"
           isLoading={expiriesLoading}
           variant="attention"
-          href={`/assets?warrantyExpiryFrom=${new Date().toISOString().slice(0, 10)}&warrantyExpiryTo=${new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10)}&sortBy=warrantyExpiryDate&sortDir=asc`}
+          href={expiringSoonHref}
         />
       </div>
 
