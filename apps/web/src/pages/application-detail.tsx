@@ -1,15 +1,9 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil, Power, PowerOff } from "lucide-react";
+import { Pencil, Info, History, ChevronRight, CheckCircle2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
 import { ApplicationStatusBadge } from "../components/applications/application-status-badge";
 import { ApplicationHistoryTimeline } from "../components/applications/application-history-timeline";
 import { ApplicationHistoryDialog } from "../components/applications/application-history-dialog";
@@ -26,15 +20,6 @@ import { useApplicationTypes } from "../hooks/use-application-types";
 import { useLocations } from "../hooks/use-locations";
 import { AttachmentsSection } from "../components/shared/attachments-section";
 import type { ApplicationFormValues } from "../lib/schemas/application";
-
-function InfoItem({ label, value }: { label: string; value: string | null | undefined }) {
-  return (
-    <div>
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium mt-0.5">{value || "—"}</dd>
-    </div>
-  );
-}
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
@@ -72,6 +57,30 @@ function formatCustomFieldValue(value: string | null, fieldType: string): string
       return value;
   }
 }
+
+function isExpiringSoon(iso: string | null): boolean {
+  if (!iso) return false;
+  const expiry = new Date(iso);
+  const now = new Date();
+  const daysUntil = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+  return daysUntil <= 90 && daysUntil >= 0;
+}
+
+function isExpired(iso: string | null): boolean {
+  if (!iso) return false;
+  return new Date(iso) < new Date();
+}
+
+const LICENCE_TYPE_LABELS: Record<string, string> = {
+  PerSeat: "Per Seat",
+  Site: "Site",
+  Volume: "Volume",
+  OpenSource: "Open Source",
+  Trial: "Trial",
+  Freeware: "Freeware",
+  Subscription: "Subscription",
+  Perpetual: "Perpetual",
+};
 
 const HISTORY_PREVIEW_LIMIT = 5;
 
@@ -179,7 +188,6 @@ export default function ApplicationDetailPage() {
     return (
       <div className="space-y-6">
         <Button variant="ghost" onClick={() => navigate("/applications")}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Applications
         </Button>
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
@@ -191,123 +199,226 @@ export default function ApplicationDetailPage() {
 
   const hasMoreHistory = history && history.length >= HISTORY_PREVIEW_LIMIT;
 
+  // Seat usage bar
+  const seatPercent =
+    application.maxSeats && application.usedSeats
+      ? Math.min(100, Math.round((application.usedSeats / application.maxSeats) * 100))
+      : null;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/applications")}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {application.name}
-              </h1>
-              <ApplicationStatusBadge status={application.status} />
+      <div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="size-12 rounded-xl bg-muted flex items-center justify-center">
+              <span className="text-lg font-bold text-muted-foreground">
+                {application.name.charAt(0).toUpperCase()}
+              </span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {application.applicationTypeName}
-            </p>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight">{application.name}</h1>
+                <ApplicationStatusBadge status={application.status} />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {application.applicationTypeName}
+                {application.publisher && ` · ${application.publisher}`}
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {application.status !== "Inactive" && !application.isArchived && (
-            <Button variant="destructive" onClick={() => setDeactivateOpen(true)}>
-              <PowerOff className="mr-2 h-4 w-4" />
-              Deactivate
-            </Button>
-          )}
-          {application.status === "Inactive" && !application.isArchived && (
-            <Button
-              variant="outline"
-              onClick={handleReactivate}
-              disabled={reactivateMutation.isPending}
-            >
-              <Power className="mr-2 h-4 w-4" />
-              {reactivateMutation.isPending ? "Reactivating..." : "Reactivate"}
-            </Button>
-          )}
-          <Button onClick={() => setFormOpen(true)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Details card */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-              <InfoItem label="Name" value={application.name} />
-              <InfoItem label="Type" value={application.applicationTypeName} />
-              <InfoItem label="Publisher" value={application.publisher} />
-              <InfoItem label="Version" value={application.version} />
-              <InfoItem label="Licence Type" value={application.licenceType} />
-              <InfoItem label="Licence Key" value={application.licenceKey} />
-              <InfoItem label="Max Seats" value={application.maxSeats?.toString()} />
-              <InfoItem label="Used Seats" value={application.usedSeats?.toString()} />
-              <InfoItem label="Purchase Date" value={formatDate(application.purchaseDate)} />
-              <InfoItem label="Expiry Date" value={formatDate(application.expiryDate)} />
-              <InfoItem label="Purchase Cost" value={formatCurrency(application.purchaseCost)} />
-              <InfoItem label="Auto Renewal" value={application.autoRenewal ? "Yes" : "No"} />
-              <InfoItem label="Location" value={application.locationName} />
-              <InfoItem label="Asset" value={application.assetName} />
-              <InfoItem label="Person" value={application.personName} />
-            </dl>
-            {application.customFieldValues && application.customFieldValues.length > 0 && (
-              <div className="mt-4 pt-4 border-t">
-                <p className="text-sm text-muted-foreground mb-3">Custom Fields</p>
-                <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-                  {application.customFieldValues.map((cfv) => (
-                    <InfoItem
-                      key={cfv.fieldDefinitionId}
-                      label={cfv.fieldName}
-                      value={formatCustomFieldValue(cfv.value, cfv.fieldType)}
-                    />
-                  ))}
-                </dl>
-              </div>
-            )}
-            {application.notes && (
-              <div className="mt-4 pt-4 border-t">
-                <dt className="text-sm text-muted-foreground">Notes</dt>
-                <dd className="text-sm mt-0.5 whitespace-pre-wrap">{application.notes}</dd>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* History card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ApplicationHistoryTimeline
-              history={history}
-              isLoading={historyLoading}
-            />
-            {hasMoreHistory && (
+          <div className="flex items-center gap-3">
+            {application.status !== "Inactive" && !application.isArchived && (
               <Button
-                variant="ghost"
-                size="sm"
-                className="w-full mt-2"
-                onClick={() => setHistoryOpen(true)}
+                variant="outline"
+                onClick={() => setDeactivateOpen(true)}
+                className="font-semibold"
               >
-                View All History
+                Deactivate
               </Button>
             )}
-          </CardContent>
-        </Card>
+            {application.status === "Inactive" && !application.isArchived && (
+              <Button
+                variant="outline"
+                onClick={handleReactivate}
+                disabled={reactivateMutation.isPending}
+                className="font-semibold"
+              >
+                {reactivateMutation.isPending ? "Reactivating..." : "Reactivate"}
+              </Button>
+            )}
+            <Button onClick={() => setFormOpen(true)} className="font-semibold shadow-lg">
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Details
+            </Button>
+          </div>
+        </div>
+        {/* Breadcrumbs */}
+        <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground font-medium">
+          <Link to="/applications" className="hover:text-primary">Applications</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-foreground">{application.name}</span>
+        </div>
       </div>
 
+      {/* Main content grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Application Details */}
+        <section className="lg:col-span-2">
+          <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b flex items-center">
+              <h3 className="font-bold flex items-center gap-2">
+                <Info className="h-4 w-4 text-primary" />
+                Application Details
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Name</p>
+                  <p className="text-sm font-medium">{application.name}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Publisher</p>
+                  <p className="text-sm font-medium">{application.publisher || "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">License Type</p>
+                  <p className="text-sm font-medium">
+                    {application.licenceType ? LICENCE_TYPE_LABELS[application.licenceType] ?? application.licenceType : "—"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Max Seats</p>
+                  <p className="text-sm font-medium">{application.maxSeats?.toString() ?? "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Used Seats</p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm font-medium">{application.usedSeats?.toString() ?? "—"}</p>
+                    {seatPercent !== null && (
+                      <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className="bg-primary h-full" style={{ width: `${seatPercent}%` }} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Purchase Date</p>
+                  <p className="text-sm font-medium">{formatDate(application.purchaseDate) ?? "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Expiry Date</p>
+                  <p className={`text-sm font-medium ${isExpired(application.expiryDate) ? "text-red-500 font-bold" : isExpiringSoon(application.expiryDate) ? "text-orange-500 font-bold" : ""}`}>
+                    {formatDate(application.expiryDate) ?? "—"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Purchase Cost</p>
+                  <p className="text-sm font-medium">{formatCurrency(application.purchaseCost) ?? "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Auto Renewal</p>
+                  <p className="text-sm font-medium flex items-center gap-1.5">
+                    {application.autoRenewal ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        Enabled
+                      </>
+                    ) : (
+                      "Disabled"
+                    )}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Location</p>
+                  <p className="text-sm font-medium">{application.locationName || "—"}</p>
+                </div>
+                {application.version && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Version</p>
+                    <p className="text-sm font-medium">{application.version}</p>
+                  </div>
+                )}
+                {application.licenceKey && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Licence Key</p>
+                    <p className="text-sm font-medium font-mono text-xs">{application.licenceKey}</p>
+                  </div>
+                )}
+                {application.assetName && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Linked Asset</p>
+                    <p className="text-sm font-medium text-primary">{application.assetName}</p>
+                  </div>
+                )}
+                {application.personName && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Managed By</p>
+                    <p className="text-sm font-medium">{application.personName}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Custom Fields */}
+              {application.customFieldValues && application.customFieldValues.length > 0 && (
+                <div className="mt-6 pt-6 border-t">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Custom Fields</p>
+                  <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+                    {application.customFieldValues.map((cfv) => (
+                      <div key={cfv.fieldDefinitionId} className="space-y-1">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{cfv.fieldName}</p>
+                        <p className="text-sm font-medium">{formatCustomFieldValue(cfv.value, cfv.fieldType) ?? "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {application.notes && (
+                <div className="mt-6 pt-6 border-t">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Notes</p>
+                  <p className="text-sm whitespace-pre-wrap">{application.notes}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* History */}
+        <section>
+          <div className="bg-card rounded-xl border overflow-hidden shadow-sm h-full">
+            <div className="px-6 py-4 border-b">
+              <h3 className="font-bold flex items-center gap-2">
+                <History className="h-4 w-4 text-primary" />
+                History
+              </h3>
+            </div>
+            <div className="p-6">
+              <ApplicationHistoryTimeline
+                history={history}
+                isLoading={historyLoading}
+              />
+              {hasMoreHistory && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full mt-2"
+                  onClick={() => setHistoryOpen(true)}
+                >
+                  View All History
+                </Button>
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* Attachments */}
       <AttachmentsSection entityType="Application" entityId={application.id} />
 
+      {/* Dialogs */}
       <ApplicationFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}

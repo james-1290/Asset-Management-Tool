@@ -48,6 +48,7 @@ interface LocationRepository : JpaRepository<Location, UUID>, JpaSpecificationEx
 interface PersonRepository : JpaRepository<Person, UUID>, JpaSpecificationExecutor<Person> {
     @Query("SELECT p FROM Person p WHERE p.isArchived = false AND LOWER(p.fullName) LIKE LOWER(CONCAT('%', :query, '%'))")
     fun search(query: String, pageable: Pageable): List<Person>
+    fun countByLocationIdAndIsArchivedFalse(locationId: UUID): Long
 }
 
 @Repository
@@ -57,6 +58,7 @@ interface AssetTypeRepository : JpaRepository<AssetType, UUID>, JpaSpecification
 interface AssetRepository : JpaRepository<Asset, UUID>, JpaSpecificationExecutor<Asset> {
     fun countByIsArchivedFalse(): Long
     fun countByAssetTypeIdAndIsArchivedFalse(assetTypeId: UUID): Long
+    fun countByLocationIdAndIsArchivedFalse(locationId: UUID): Long
 }
 
 @Repository
@@ -75,6 +77,7 @@ interface CertificateTypeRepository : JpaRepository<CertificateType, UUID>, JpaS
 interface CertificateRepository : JpaRepository<Certificate, UUID>, JpaSpecificationExecutor<Certificate> {
     fun countByIsArchivedFalse(): Long
     fun countByCertificateTypeIdAndIsArchivedFalse(certificateTypeId: UUID): Long
+    fun countByLocationIdAndIsArchivedFalse(locationId: UUID): Long
 }
 
 @Repository
@@ -93,6 +96,7 @@ interface ApplicationTypeRepository : JpaRepository<ApplicationType, UUID>, JpaS
 interface ApplicationRepository : JpaRepository<Application, UUID>, JpaSpecificationExecutor<Application> {
     fun countByIsArchivedFalse(): Long
     fun countByApplicationTypeIdAndIsArchivedFalse(applicationTypeId: UUID): Long
+    fun countByLocationIdAndIsArchivedFalse(locationId: UUID): Long
 }
 
 @Repository

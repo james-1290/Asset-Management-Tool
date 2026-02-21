@@ -24,14 +24,18 @@ class DashboardController(
     // 1. GET /summary - totalAssets + totalValue
     @GetMapping("/summary")
     fun getSummary(): ResponseEntity<DashboardSummaryDto> {
+        val excludedStatuses = listOf(AssetStatus.Retired, AssetStatus.Sold)
+
         val totalAssets = em.createQuery(
-            "SELECT COUNT(a) FROM Asset a WHERE a.isArchived = false", java.lang.Long::class.java
-        ).singleResult.toInt()
+            "SELECT COUNT(a) FROM Asset a WHERE a.isArchived = false AND a.status NOT IN (:excludedStatuses)", java.lang.Long::class.java
+        ).setParameter("excludedStatuses", excludedStatuses)
+         .singleResult.toInt()
 
         val totalValue = em.createQuery(
-            "SELECT COALESCE(SUM(a.purchaseCost), 0) FROM Asset a WHERE a.isArchived = false",
+            "SELECT COALESCE(SUM(a.purchaseCost), 0) FROM Asset a WHERE a.isArchived = false AND a.status NOT IN (:excludedStatuses)",
             BigDecimal::class.java
-        ).singleResult ?: BigDecimal.ZERO
+        ).setParameter("excludedStatuses", excludedStatuses)
+         .singleResult ?: BigDecimal.ZERO
 
         // Compute total book value (purchase cost minus straight-line depreciation)
         @Suppress("UNCHECKED_CAST")
@@ -39,9 +43,11 @@ class DashboardController(
             """SELECT a.purchaseCost, a.purchaseDate, a.depreciationMonths
                FROM com.assetmanagement.api.model.Asset a
                WHERE a.isArchived = false
+               AND a.status NOT IN (:excludedStatuses)
                AND a.purchaseCost IS NOT NULL
                AND a.purchaseDate IS NOT NULL"""
-        ).resultList as List<Array<Any>>
+        ).setParameter("excludedStatuses", excludedStatuses)
+         .resultList as List<Array<Any>>
 
         val now = Instant.now()
         var totalBookValue = BigDecimal.ZERO
@@ -69,8 +75,9 @@ class DashboardController(
     fun getStatusBreakdown(): ResponseEntity<List<StatusBreakdownItemDto>> {
         @Suppress("UNCHECKED_CAST")
         val results = em.createQuery(
-            "SELECT a.status, COUNT(a) FROM Asset a WHERE a.isArchived = false GROUP BY a.status"
-        ).resultList as List<Array<Any>>
+            "SELECT a.status, COUNT(a) FROM Asset a WHERE a.isArchived = false AND a.status NOT IN (:excludedStatuses) GROUP BY a.status"
+        ).setParameter("excludedStatuses", listOf(AssetStatus.Retired, AssetStatus.Sold))
+         .resultList as List<Array<Any>>
 
         val items = results.map { row ->
             StatusBreakdownItemDto(

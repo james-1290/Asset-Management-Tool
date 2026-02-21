@@ -132,3 +132,4 @@
 - [x] Asset templates: saved presets per asset type, template picker in asset creation form
 - [x] Sidebar nav grouping: collapsible groups (Inventory, Certificates, Software, Organisation) with localStorage persistence
 - [x] Global design consistency: borderless tables, inline FilterChip filters, compound name cells, count badges, standardized toolbar layouts, dashboard redesign
+- [x] Reassign & delete location: modal with item counts, move-to-location or unassign-all options, backend reassign-and-archive endpoint
