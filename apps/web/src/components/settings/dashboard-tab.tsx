@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Eye } from "lucide-react";
+import { Eye, LayoutDashboard, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -51,52 +49,55 @@ export function DashboardTab() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent className="pt-6">
-          <div className="mb-4">
-            <h3 className="text-sm font-medium">Dashboard Widgets</h3>
-            <p className="text-sm text-muted-foreground">
-              Choose which widgets appear on your dashboard.
-            </p>
-          </div>
+    <div className="space-y-8">
+      {/* Dashboard Widgets Card */}
+      <section className="bg-card rounded-xl border overflow-hidden shadow-sm">
+        <div className="p-6 border-b flex items-center gap-2">
+          <LayoutDashboard className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-bold">Dashboard Widgets</h2>
+        </div>
+        <div className="p-6 space-y-6">
+          <p className="text-sm text-muted-foreground">
+            Choose which widgets appear on your dashboard. Changes take effect after saving.
+          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {TOGGLEABLE_WIDGET_IDS.map((id) => (
-              <div
+              <label
                 key={id}
-                className="flex items-center justify-between rounded-md border px-3 py-2"
+                className="flex items-center justify-between p-4 bg-muted/50 rounded-lg cursor-pointer border border-transparent hover:border-primary/20 transition-all"
               >
-                <Label htmlFor={`dash-${id}`} className="text-sm cursor-pointer">
-                  {WIDGET_LABELS[id]}
-                </Label>
+                <span className="text-sm font-semibold">{WIDGET_LABELS[id]}</span>
                 <Switch
                   id={`dash-${id}`}
                   checked={isOn(id)}
                   onCheckedChange={() => handleToggle(id)}
                 />
-              </div>
+              </label>
             ))}
           </div>
 
-          <div className="mt-6 flex items-center gap-2">
-            <Button size="sm" onClick={handleSave}>
-              Save
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setPreviewOpen(true)}
-            >
-              <Eye className="mr-1.5 h-4 w-4" />
-              Preview
-            </Button>
-            <Button size="sm" variant="ghost" onClick={handleReset}>
+          <div className="pt-4 border-t flex items-center justify-between">
+            <Button variant="ghost" size="sm" onClick={handleReset}>
+              <RotateCcw className="mr-2 h-4 w-4" />
               Reset to Defaults
             </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPreviewOpen(true)}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                Preview
+              </Button>
+              <Button size="sm" onClick={handleSave}>
+                Save Widget Preferences
+              </Button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="sm:max-w-[calc(100vw-4rem)] max-h-[90vh] overflow-y-auto">
