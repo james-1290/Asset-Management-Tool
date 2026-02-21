@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-02-21 16:06 — Person detail page redesign
+
+- Redesigned person detail page: large avatar with initials, breadcrumbs, Active/Archived badge, 4-col details grid with uppercase labels, tabbed section for Assets/Certificates/Applications/History
+
 ## 2026-02-21 12:50 — Location detail page redesign
 
 - Redesigned location detail page to match other detail pages: icon header with breadcrumbs, uppercase label grid, styled card sections with count badges
