@@ -1,15 +1,8 @@
-import { Download, Loader2, Printer } from "lucide-react";
+import { Download, Loader2, Printer, Package, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useAssignmentsReport } from "@/hooks/use-reports";
 import { reportsApi } from "@/lib/api/reports";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -54,76 +47,83 @@ export function AssignmentsReport() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => window.print()} className="no-print">
             <Printer className="mr-2 h-4 w-4" />
-            Print
+            Print Report
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} className="no-print">
+          <Button size="sm" onClick={handleExport} className="no-print">
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Assigned Assets</CardDescription>
-            <CardTitle className="text-3xl">{data.totalAssigned}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>People with Assignments</CardDescription>
-            <CardTitle className="text-3xl">{data.totalPeople}</CardTitle>
-          </CardHeader>
-        </Card>
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-card rounded-xl border p-6 shadow-sm">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">
+              <Package className="h-5 w-5" />
+            </div>
+          </div>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Assigned</p>
+          <p className="text-2xl font-bold tracking-tight mt-1">{data.totalAssigned}</p>
+        </div>
+
+        <div className="bg-card rounded-xl border p-6 shadow-sm">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
+              <Users className="h-5 w-5" />
+            </div>
+          </div>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">People with Assignments</p>
+          <p className="text-2xl font-bold tracking-tight mt-1">{data.totalPeople}</p>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Assignments by Person</CardTitle>
-          <CardDescription>
-            People and their currently assigned assets
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {data.people.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
+      {/* Assignments table */}
+      <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b">
+          <h3 className="font-bold">Assignments by Person</h3>
+          <p className="text-sm text-muted-foreground">People and their currently assigned assets</p>
+        </div>
+        {data.people.length === 0 ? (
+          <div className="p-6">
+            <p className="text-sm text-muted-foreground text-center">
               No active assignments.
             </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Person</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead className="text-right">Assets</TableHead>
-                  <TableHead>Assigned Items</TableHead>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Person</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Email</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Assets</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Assigned Items</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.people.map((person) => (
+                <TableRow key={person.personId}>
+                  <TableCell className="font-medium">
+                    {person.fullName}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {person.email ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    {person.assignedAssetCount}
+                  </TableCell>
+                  <TableCell className="max-w-xs truncate">
+                    {person.assets
+                      .map((a) => a.name)
+                      .join(", ")}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.people.map((person) => (
-                  <TableRow key={person.personId}>
-                    <TableCell className="font-medium">
-                      {person.fullName}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {person.email ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {person.assignedAssetCount}
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {person.assets
-                        .map((a) => a.name)
-                        .join(", ")}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
     </div>
   );
 }
