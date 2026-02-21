@@ -3,15 +3,9 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { ApiError } from "../lib/api-client";
 import type { Location, LocationItemCounts } from "../types/location";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Info, MapPin, Package, Users, ChevronRight } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
 import {
   Table,
   TableBody,
@@ -33,15 +27,6 @@ import {
 } from "../hooks/use-locations";
 import type { LocationFormValues } from "../lib/schemas/location";
 import type { AssetStatus } from "../types/asset";
-
-function InfoItem({ label, value }: { label: string; value: string | null | undefined }) {
-  return (
-    <div>
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium mt-0.5">{value || "—"}</dd>
-    </div>
-  );
-}
 
 function formatDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
@@ -127,7 +112,6 @@ export default function LocationDetailPage() {
     return (
       <div className="space-y-6">
         <Button variant="ghost" onClick={() => navigate("/locations")}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Locations
         </Button>
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
@@ -142,59 +126,94 @@ export default function LocationDetailPage() {
     .join(", ");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/locations")}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {location.name}
-            </h1>
-            {subtitle && (
-              <p className="text-sm text-muted-foreground">{subtitle}</p>
+      <div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="size-12 rounded-xl bg-muted flex items-center justify-center">
+              <MapPin className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">{location.name}</h1>
+              {subtitle && (
+                <p className="text-sm text-muted-foreground">{subtitle}</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {!location.isArchived && (
+              <Button variant="outline" onClick={() => setArchiveOpen(true)} className="font-semibold">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Archive
+              </Button>
             )}
+            <Button onClick={() => setFormOpen(true)} className="font-semibold shadow-lg">
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Details
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {!location.isArchived && (
-            <Button variant="outline" onClick={() => setArchiveOpen(true)}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Archive
-            </Button>
-          )}
-          <Button onClick={() => setFormOpen(true)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
+        {/* Breadcrumbs */}
+        <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground font-medium">
+          <Link to="/locations" className="hover:text-primary">Locations</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-foreground">{location.name}</span>
         </div>
       </div>
 
-      {/* Details card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-            <InfoItem label="Name" value={location.name} />
-            <InfoItem label="Address" value={location.address} />
-            <InfoItem label="City" value={location.city} />
-            <InfoItem label="Country" value={location.country} />
-            <InfoItem label="Created" value={formatDate(location.createdAt)} />
-            <InfoItem label="Last Updated" value={formatDate(location.updatedAt)} />
-          </dl>
-        </CardContent>
-      </Card>
+      {/* Location Details */}
+      <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b flex items-center">
+          <h3 className="font-bold flex items-center gap-2">
+            <Info className="h-4 w-4 text-primary" />
+            Location Details
+          </h3>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-6">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Name</p>
+              <p className="text-sm font-medium">{location.name}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Address</p>
+              <p className="text-sm font-medium">{location.address || "—"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">City</p>
+              <p className="text-sm font-medium">{location.city || "—"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Country</p>
+              <p className="text-sm font-medium">{location.country || "—"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Created</p>
+              <p className="text-sm font-medium">{formatDate(location.createdAt) ?? "—"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Last Updated</p>
+              <p className="text-sm font-medium">{formatDate(location.updatedAt) ?? "—"}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Assets at this location */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Assets at this Location</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b flex items-center">
+          <h3 className="font-bold flex items-center gap-2">
+            <Package className="h-4 w-4 text-primary" />
+            Assets at this Location
+            {assets && assets.length > 0 && (
+              <span className="ml-1 px-2 py-0.5 rounded bg-muted text-[10px] font-bold text-muted-foreground">
+                {assets.length}
+              </span>
+            )}
+          </h3>
+        </div>
+        <div className="p-6">
           {assetsLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-8 w-full" />
@@ -237,15 +256,23 @@ export default function LocationDetailPage() {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* People at this location */}
-      <Card>
-        <CardHeader>
-          <CardTitle>People at this Location</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b flex items-center">
+          <h3 className="font-bold flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            People at this Location
+            {people && people.length > 0 && (
+              <span className="ml-1 px-2 py-0.5 rounded bg-muted text-[10px] font-bold text-muted-foreground">
+                {people.length}
+              </span>
+            )}
+          </h3>
+        </div>
+        <div className="p-6">
           {peopleLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-8 w-full" />
@@ -284,9 +311,10 @@ export default function LocationDetailPage() {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
+      {/* Dialogs */}
       <LocationFormDialog
         open={formOpen}
         onOpenChange={(open) => {
