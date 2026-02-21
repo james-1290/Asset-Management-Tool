@@ -1,8 +1,8 @@
 # Changelog
 
-## 2026-02-21 16:32 — Fix Expiring Soon dashboard link
+## 2026-02-21 16:35 — Fix Expiring Soon dashboard link
 
-- Dashboard "Expiring Soon" card now links to assets page filtered by warranty expiry within the next 30 days, sorted by expiry date ascending
+- Dashboard "Expiring Soon" card now dynamically links to the correct list page (certificates, applications, or assets) based on which entity type has the most expiring items, filtered to the next 30 days
 
 ## 2026-02-21 16:06 — Person detail page redesign
 
