@@ -1,24 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Archive, RefreshCw } from "lucide-react";
+import { Plus, Archive, RefreshCw, Search, Download } from "lucide-react";
 import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
 import { applicationsApi } from "../lib/api/applications";
 import { getApiErrorMessage } from "../lib/api-client";
-import { ExportButton } from "../components/export-button";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import { DeactivateApplicationDialog } from "../components/applications/deactivate-application-dialog";
 import { ApplicationFormDialog } from "../components/applications/application-form-dialog";
-import { ApplicationsToolbar } from "../components/applications/applications-toolbar";
 import { getApplicationColumns } from "../components/applications/columns";
-import { ViewModeToggle } from "../components/view-mode-toggle";
 import { GroupedGridView } from "../components/grouped-grid-view";
 import { ApplicationCard } from "../components/applications/application-card";
+import { FilterChip } from "../components/filter-chip";
 import {
   usePagedApplications,
   useCreateApplication,
@@ -29,19 +28,16 @@ import {
   useBulkStatusApplications,
   useCheckApplicationDuplicates,
 } from "../hooks/use-applications";
+import { useApplicationSummary } from "../hooks/use-dashboard";
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { BulkActionBar } from "../components/bulk-action-bar";
 import { useApplicationTypes } from "../hooks/use-application-types";
 import { useLocations } from "../hooks/use-locations";
 import type { Application } from "../types/application";
 import type { ApplicationFormValues } from "../lib/schemas/application";
-import { SavedViewSelector } from "../components/saved-view-selector";
-import { useSavedViews } from "../hooks/use-saved-views";
-import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
-import { ActiveFilterChips } from "../components/filters/active-filter-chips";
-import type { ActiveFilter } from "../components/filters/active-filter-chips";
+import { cn } from "../lib/utils";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -69,8 +65,10 @@ export default function ApplicationsPage() {
   const licenceTypeParam = searchParams.get("licenceType") ?? "";
   const costMinParam = searchParams.get("costMin") ?? "";
   const costMaxParam = searchParams.get("costMax") ?? "";
+  const publisherParam = searchParams.get("publisher") ?? "";
 
   const [searchInput, setSearchInput] = useState(searchParam);
+  const [tableDensity, setTableDensity] = useState<"comfortable" | "compact">("comfortable");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
@@ -95,68 +93,6 @@ export default function ApplicationsPage() {
     setSearchInput(searchParam);
   }, [searchParam]);
 
-  const handleStatusFilterChange = useCallback(
-    (value: string) => {
-      setSearchParams((prev) => {
-        if (value) {
-          prev.set("status", value);
-        } else {
-          prev.delete("status");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handleIncludeInactiveChange = useCallback(
-    (value: boolean) => {
-      setSearchParams((prev) => {
-        if (value) prev.set("includeInactive", "true");
-        else prev.delete("includeInactive");
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handleTypeIdChange = useCallback(
-    (value: string) => {
-      setSearchParams((prev) => {
-        if (value) prev.set("typeId", value);
-        else prev.delete("typeId");
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handleViewModeChange = useCallback(
-    (mode: "list" | "grouped") => {
-      setSearchParams((prev) => {
-        if (mode === "list") prev.delete("viewMode");
-        else prev.set("viewMode", mode);
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handleFilterChange = useCallback(
-    (key: string, value: string) => {
-      setSearchParams((prev) => {
-        if (value) prev.set(key, value);
-        else prev.delete(key);
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
   const includeStatuses = useMemo(() => {
     return includeInactive ? "Inactive" : undefined;
   }, [includeInactive]);
@@ -176,11 +112,13 @@ export default function ApplicationsPage() {
       licenceType: licenceTypeParam || undefined,
       costMin: costMinParam || undefined,
       costMax: costMaxParam || undefined,
+      publisher: publisherParam || undefined,
     }),
-    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam, expiryFromParam, expiryToParam, licenceTypeParam, costMinParam, costMaxParam],
+    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam, expiryFromParam, expiryToParam, licenceTypeParam, costMinParam, costMaxParam, publisherParam],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedApplications(queryParams);
+  const { data: appSummary } = useApplicationSummary();
   const { data: applicationTypes } = useApplicationTypes();
   const { data: locations } = useLocations();
   const createMutation = useCreateApplication();
@@ -190,6 +128,27 @@ export default function ApplicationsPage() {
   const deactivateMutation = useDeactivateApplication();
   const bulkArchiveMutation = useBulkArchiveApplications();
   const bulkStatusMutation = useBulkStatusApplications();
+
+  // Extract unique publishers for the filter chip
+  const publisherOptions = useMemo(() => {
+    const publishers = new Set<string>();
+    for (const item of pagedResult?.items ?? []) {
+      if (item.publisher) publishers.add(item.publisher);
+    }
+    return Array.from(publishers).sort().map((p) => ({ value: p, label: p }));
+  }, [pagedResult?.items]);
+
+  const handlePublisherChange = useCallback(
+    (value: string) => {
+      setSearchParams((prev) => {
+        if (value) prev.set("publisher", value);
+        else prev.delete("publisher");
+        prev.set("page", "1");
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState<Application | null>(null);
@@ -202,11 +161,7 @@ export default function ApplicationsPage() {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
-  // Saved views
-  const { data: savedViews = [] } = useSavedViews("applications");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [activeViewId, setActiveViewId] = useState<string | null>(null);
-  const defaultViewApplied = useRef(false);
 
   const columns = useMemo(
     () => [
@@ -232,86 +187,6 @@ export default function ApplicationsPage() {
     [sortByParam, sortDirParam],
   );
 
-  const applyView = useCallback((view: SavedView) => {
-    try {
-      const config: ViewConfiguration = JSON.parse(view.configuration);
-      setColumnVisibility(config.columnVisibility ?? {});
-      setActiveViewId(view.id);
-      setSearchParams((prev) => {
-        if (config.sortBy) prev.set("sortBy", config.sortBy);
-        if (config.sortDir) prev.set("sortDir", config.sortDir);
-        if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
-        else { prev.delete("search"); setSearchInput(""); }
-        if (config.status) prev.set("status", config.status);
-        else prev.delete("status");
-        if (config.typeId) prev.set("typeId", config.typeId);
-        else prev.delete("typeId");
-        if (config.viewMode && config.viewMode !== "list") prev.set("viewMode", config.viewMode);
-        else prev.delete("viewMode");
-        if (config.pageSize) prev.set("pageSize", String(config.pageSize));
-
-        // Restore advanced filters
-        const filterKeys = ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax"];
-        for (const key of filterKeys) {
-          const val = config.filters?.[key];
-          if (val) prev.set(key, val);
-          else prev.delete(key);
-        }
-
-        prev.set("page", "1");
-        return prev;
-      });
-    } catch { /* invalid config */ }
-  }, [setSearchParams]);
-
-  // Apply default saved view on first load
-  useEffect(() => {
-    if (defaultViewApplied.current || savedViews.length === 0) return;
-    defaultViewApplied.current = true;
-    const defaultView = savedViews.find((v) => v.isDefault);
-    if (defaultView) applyView(defaultView);
-  }, [savedViews, applyView]);
-
-  function handleResetToDefault() {
-    setColumnVisibility({});
-    setActiveViewId(null);
-    setSearchParams((prev) => {
-      prev.delete("search");
-      prev.delete("status");
-      prev.delete("includeInactive");
-      prev.delete("typeId");
-      prev.delete("viewMode");
-      prev.delete("expiryFrom");
-      prev.delete("expiryTo");
-      prev.delete("licenceType");
-      prev.delete("costMin");
-      prev.delete("costMax");
-      prev.set("sortBy", "name");
-      prev.set("sortDir", "asc");
-      prev.set("page", "1");
-      return prev;
-    });
-    setSearchInput("");
-  }
-
-
-  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
-    columnVisibility,
-    sortBy: sortByParam,
-    sortDir: sortDirParam,
-    search: searchParam || undefined,
-    status: statusParam || undefined,
-    typeId: typeIdParam || undefined,
-    viewMode: viewMode !== "list" ? viewMode : undefined,
-    pageSize,
-    filters: {
-      ...(expiryFromParam ? { expiryFrom: expiryFromParam } : {}),
-      ...(expiryToParam ? { expiryTo: expiryToParam } : {}),
-      ...(licenceTypeParam ? { licenceType: licenceTypeParam } : {}),
-      ...(costMinParam ? { costMin: costMinParam } : {}),
-      ...(costMaxParam ? { costMax: costMaxParam } : {}),
-    },
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, expiryFromParam, expiryToParam, licenceTypeParam, costMinParam, costMaxParam]);
 
   const handleSortingChange = useCallback(
     (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
@@ -356,29 +231,6 @@ export default function ApplicationsPage() {
     },
     [setSearchParams],
   );
-
-  const activeFilters = useMemo(() => {
-    const filters: ActiveFilter[] = [];
-    if (expiryFromParam || expiryToParam) {
-      filters.push({ key: "expiry", label: `Expiry: ${expiryFromParam || "..."} \u2013 ${expiryToParam || "..."}`, onRemove: () => { handleFilterChange("expiryFrom", ""); handleFilterChange("expiryTo", ""); } });
-    }
-    if (licenceTypeParam) {
-      filters.push({ key: "licenceType", label: `Licence: ${licenceTypeParam}`, onRemove: () => handleFilterChange("licenceType", "") });
-    }
-    if (costMinParam || costMaxParam) {
-      const label = costMinParam && costMaxParam ? `Cost: \u00a3${costMinParam} \u2013 \u00a3${costMaxParam}` : costMinParam ? `Cost: > \u00a3${costMinParam}` : `Cost: < \u00a3${costMaxParam}`;
-      filters.push({ key: "cost", label, onRemove: () => { handleFilterChange("costMin", ""); handleFilterChange("costMax", ""); } });
-    }
-    return filters;
-  }, [expiryFromParam, expiryToParam, licenceTypeParam, costMinParam, costMaxParam, handleFilterChange]);
-
-  const handleClearAllFilters = useCallback(() => {
-    setSearchParams((prev) => {
-      ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax"].forEach(k => prev.delete(k));
-      prev.set("page", "1");
-      return prev;
-    });
-  }, [setSearchParams]);
 
   const [exporting, setExporting] = useState(false);
   async function handleExport() {
@@ -570,28 +422,40 @@ export default function ApplicationsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Applications / Licences"
+        title="Applications"
         breadcrumbs={[{ label: "Software", href: "/applications" }, { label: "Applications / Licences" }]}
-        description="Track software applications, licence keys, and renewal dates."
         actions={
-          <div className="flex items-center gap-3">
-            {!isLoading && (
-              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
-                {totalCount}
-              </span>
-            )}
-            <Button
-              onClick={() => {
-                setEditingApplication(null);
-                setFormOpen(true);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Application
-            </Button>
-          </div>
+          <Button
+            onClick={() => {
+              setEditingApplication(null);
+              setFormOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Application
+          </Button>
         }
       />
+
+      {/* Stats Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-card border rounded-xl p-4">
+          <p className="text-xs font-medium text-muted-foreground">Total Applications</p>
+          <p className="text-xl font-bold mt-1">{appSummary?.totalApplications ?? totalCount}</p>
+        </div>
+        <div className="bg-card border rounded-xl p-4">
+          <p className="text-xs font-medium text-muted-foreground">Active Licences</p>
+          <p className="text-xl font-bold mt-1">{appSummary?.active ?? "—"}</p>
+        </div>
+        <div className="bg-card border rounded-xl p-4">
+          <p className="text-xs font-medium text-muted-foreground">Pending Renewal</p>
+          <p className="text-xl font-bold mt-1 text-primary">{appSummary?.pendingRenewal ?? "—"}</p>
+        </div>
+        <div className="bg-card border rounded-xl p-4">
+          <p className="text-xs font-medium text-muted-foreground">Expired</p>
+          <p className="text-xl font-bold mt-1 text-orange-500">{appSummary?.expired ?? "—"}</p>
+        </div>
+      </div>
 
       <DataTable
         columns={columns}
@@ -608,45 +472,66 @@ export default function ApplicationsPage() {
         rowCount={totalCount}
         sorting={sorting}
         onSortingChange={handleSortingChange}
-        toolbar={(table) => (
+        tableDensity={tableDensity}
+        toolbar={() => (
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-4">
-              <ApplicationsToolbar
-                table={table}
-                search={searchInput}
-                onSearchChange={setSearchInput}
-                statusFilter={statusParam}
-                onStatusFilterChange={handleStatusFilterChange}
-                includeInactive={includeInactive}
-                onIncludeInactiveChange={handleIncludeInactiveChange}
-                typeId={typeIdParam}
-                onTypeIdChange={handleTypeIdChange}
-                applicationTypes={applicationTypes ?? []}
-                expiryFrom={expiryFromParam}
-                expiryTo={expiryToParam}
-                onExpiryFromChange={(v) => handleFilterChange("expiryFrom", v)}
-                onExpiryToChange={(v) => handleFilterChange("expiryTo", v)}
-                licenceType={licenceTypeParam}
-                onLicenceTypeChange={(v) => handleFilterChange("licenceType", v)}
-                costMin={costMinParam}
-                costMax={costMaxParam}
-                onCostMinChange={(v) => handleFilterChange("costMin", v)}
-                onCostMaxChange={(v) => handleFilterChange("costMax", v)}
-              />
-              <div className="flex items-center gap-1.5">
-                <SavedViewSelector
-                  entityType="applications"
-                  activeViewId={activeViewId}
-                  onApplyView={applyView}
-                  onResetToDefault={handleResetToDefault}
-                  getCurrentConfiguration={getCurrentConfiguration}
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search applications..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    className="pl-9 w-64"
+                  />
+                </div>
+                <FilterChip
+                  label="Publisher"
+                  value={publisherParam}
+                  options={publisherOptions}
+                  onChange={handlePublisherChange}
                 />
-                <div className="w-px h-5 bg-border" />
-                <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
-                <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="flex items-center rounded-lg border bg-card">
+                  <button
+                    type="button"
+                    onClick={() => setTableDensity("comfortable")}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium rounded-l-lg transition-colors",
+                      tableDensity === "comfortable"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Comfortable
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTableDensity("compact")}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium rounded-r-lg transition-colors",
+                      tableDensity === "compact"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Compact
+                  </button>
+                </div>
+                <div className="w-px h-5 bg-border mx-1" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleExport}
+                  disabled={exporting}
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-            <ActiveFilterChips filters={activeFilters} onClearAll={handleClearAllFilters} />
             <BulkActionBar
               selectedCount={selectedCount}
               onClearSelection={() => setRowSelection({})}
