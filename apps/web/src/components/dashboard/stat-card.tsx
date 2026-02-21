@@ -14,6 +14,7 @@ interface StatCardProps {
   icon: LucideIcon;
   isLoading: boolean;
   href?: string;
+  onClick?: () => void;
   variant?: "default" | "attention";
   iconBg?: string;
   trend?: TrendInfo;
@@ -37,6 +38,7 @@ export function StatCard({
   icon: Icon,
   isLoading,
   href,
+  onClick,
   variant = "default",
   iconBg = "bg-primary/10 text-primary",
   trend,
@@ -83,6 +85,14 @@ export function StatCard({
       <Link to={href} className="block h-full no-underline">
         {content}
       </Link>
+    );
+  }
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className="block h-full w-full text-left">
+        {content}
+      </button>
     );
   }
 

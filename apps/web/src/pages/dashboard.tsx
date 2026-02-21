@@ -119,7 +119,9 @@ export default function DashboardPage() {
           iconBg="bg-red-50 text-red-600 dark:bg-red-900/40 dark:text-red-400"
           isLoading={expiriesLoading}
           variant="attention"
-          href="/assets?sortBy=warrantyExpiryDate&sortDir=asc"
+          onClick={() => {
+            document.getElementById("expiring-items")?.scrollIntoView({ behavior: "smooth" });
+          }}
         />
       </div>
 
@@ -154,7 +156,11 @@ export default function DashboardPage() {
       )}
 
       {/* Expiring items table */}
-      {isVisible("expiringItems") && <ExpiringItemsTable />}
+      {isVisible("expiringItems") && (
+        <div id="expiring-items">
+          <ExpiringItemsTable />
+        </div>
+      )}
 
       {/* Charts — detailed breakdowns */}
       {(isVisible("assetsByType") || isVisible("assetsByLocation")) && (
