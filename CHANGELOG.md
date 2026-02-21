@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-02-21 18:10 — Dashboard settings tab redesign
+
+- Redesigned Dashboard settings tab to match new card-based design style
+- Styled widget toggles in muted background rows with hover states
+- Added LayoutDashboard icon header, border-separated footer with Reset/Preview/Save actions
+
 ## 2026-02-21 17:54 — Alerts tab redesign
 
 - Redesigned Alerts settings tab with 3-column layout: config (2/3) + sidebar (1/3)
