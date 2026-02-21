@@ -369,8 +369,8 @@ export function AlertsTab() {
                 <div className="p-6 space-y-4">
                   {emailProvider === "smtp" && (
                     <>
-                      <div className="grid grid-cols-4 gap-4">
-                        <div className="col-span-3 space-y-1">
+                      <div className="grid grid-cols-[1fr_100px] gap-4">
+                        <div className="space-y-1">
                           <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">
                             SMTP Host
                           </label>
