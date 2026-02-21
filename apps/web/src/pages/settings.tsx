@@ -63,7 +63,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Tab content */}
-      <div className="max-w-4xl pt-8">
+      <div className={tab === "alerts" ? "pt-8" : "max-w-4xl pt-8"}>
         {tab === "profile" && <ProfileTab />}
         {tab === "dashboard" && <DashboardTab />}
         {tab === "my-alerts" && <MyAlertsTab />}
