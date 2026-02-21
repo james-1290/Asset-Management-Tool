@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, MoreHorizontal, KeyRound, Pencil } from "lucide-react";
+import { Plus, MoreHorizontal, KeyRound, Pencil, Users } from "lucide-react";
 import {
   useUsers,
   useCreateUser,
@@ -107,15 +107,26 @@ export function UsersTab() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add User
-        </Button>
-      </div>
-
-      <DataTable columns={columns} data={users} />
+    <div className="space-y-8">
+      {/* User Management Card */}
+      <section className="bg-card rounded-xl border overflow-hidden shadow-sm">
+        <div className="p-6 border-b flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-bold">User Management</h2>
+          </div>
+          <Button size="sm" onClick={() => setFormOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
+        </div>
+        <div className="p-6">
+          <p className="text-sm text-muted-foreground mb-6">
+            Manage user accounts, roles, and access permissions.
+          </p>
+          <DataTable columns={columns} data={users} />
+        </div>
+      </section>
 
       <UserFormDialog
         open={formOpen || !!editingUser}
