@@ -5,6 +5,7 @@ import type {
   LocationPerson,
   CreateLocationRequest,
   UpdateLocationRequest,
+  ReassignAndArchiveRequest,
 } from "../../types/location";
 import type { PagedResponse } from "../../types/paged-response";
 import type { DuplicateCheckResult, CheckLocationDuplicatesRequest } from "../../types/duplicate-check";
@@ -54,6 +55,10 @@ export const locationsApi = {
 
   exportCsv(params: Omit<LocationQueryParams, "page" | "pageSize">): Promise<void> {
     return apiClient.downloadCsv("/locations/export", params as Record<string, string | number | undefined>, "locations-export.csv");
+  },
+
+  reassignAndArchive(id: string, data: ReassignAndArchiveRequest): Promise<void> {
+    return apiClient.post(`/locations/${id}/reassign-and-archive`, data);
   },
 
   checkDuplicates(data: CheckLocationDuplicatesRequest): Promise<DuplicateCheckResult[]> {

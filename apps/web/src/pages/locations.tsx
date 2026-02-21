@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { locationsApi } from "../lib/api/locations";
-import { getApiErrorMessage } from "../lib/api-client";
+import { ApiError, getApiErrorMessage } from "../lib/api-client";
 import { ExportButton } from "../components/export-button";
 import type { SortingState, VisibilityState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
@@ -12,6 +12,7 @@ import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
 import { ConfirmDialog } from "../components/confirm-dialog";
+import { ReassignLocationDialog } from "../components/locations/reassign-location-dialog";
 import { LocationFormDialog } from "../components/locations/location-form-dialog";
 import { LocationsToolbar } from "../components/locations/locations-toolbar";
 import { getLocationColumns } from "../components/locations/columns";
@@ -22,7 +23,7 @@ import {
   useArchiveLocation,
   useCheckLocationDuplicates,
 } from "../hooks/use-locations";
-import type { Location } from "../types/location";
+import type { Location, LocationItemCounts } from "../types/location";
 import type { LocationFormValues } from "../lib/schemas/location";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { useSavedViews } from "../hooks/use-saved-views";
@@ -94,6 +95,10 @@ export default function LocationsPage() {
   const [archivingLocation, setArchivingLocation] = useState<Location | null>(
     null,
   );
+  const [reassignState, setReassignState] = useState<{
+    location: Location;
+    counts: LocationItemCounts;
+  } | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState<{
     duplicates: DuplicateCheckResult[];
     onConfirm: () => void;
@@ -289,8 +294,16 @@ export default function LocationsPage() {
         toast.success("Location deleted");
         setArchivingLocation(null);
       },
-      onError: () => {
-        toast.error("Failed to delete location");
+      onError: (error) => {
+        if (error instanceof ApiError && error.status === 409 && error.body && typeof error.body === "object" && "counts" in error.body) {
+          const body = error.body as { counts: LocationItemCounts };
+          setArchivingLocation(null);
+          setReassignState({ location: archivingLocation, counts: body.counts });
+        } else if (error instanceof ApiError && error.body && typeof error.body === "object" && "message" in error.body) {
+          toast.error((error.body as { message: string }).message);
+        } else {
+          toast.error("Failed to delete location");
+        }
       },
     });
   }
@@ -410,6 +423,16 @@ export default function LocationsPage() {
         onConfirm={handleArchive}
         loading={archiveMutation.isPending}
       />
+
+      {reassignState && (
+        <ReassignLocationDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setReassignState(null); }}
+          location={reassignState.location}
+          counts={reassignState.counts}
+          onSuccess={() => setReassignState(null)}
+        />
+      )}
 
       {duplicateWarning && (
         <DuplicateWarningDialog

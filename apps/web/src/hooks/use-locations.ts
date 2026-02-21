@@ -91,3 +91,15 @@ export function useArchiveLocation() {
     },
   });
 }
+
+export function useReassignAndArchiveLocation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, targetLocationId }: { id: string; targetLocationId: string | null }) =>
+      locationsApi.reassignAndArchive(id, { targetLocationId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: locationKeys.all });
+    },
+  });
+}

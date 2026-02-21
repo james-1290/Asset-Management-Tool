@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-02-21 11:18 — Reassign & Delete Location
+
+- Enhanced DELETE `/locations/{id}` 409 response to include `counts` object (assets, people, certificates, applications)
+- Added `GET /locations/{id}/certificates` endpoint
+- Added `GET /locations/{id}/applications` endpoint
+- Added `POST /locations/{id}/reassign-and-archive` endpoint — atomically moves all items to target location and archives source
+- New `ReassignLocationDialog` component — shows item counts by type, location picker, destructive confirm button
+- Locations list page: delete on location with items now shows reassign modal instead of error toast
+- Location detail page: same reassign flow when archiving location with items
+
 ## 2026-02-20 23:28 — UI Redesign: Mockup Alignment
 
 - Moved dashboard widget settings from floating gear icon to dedicated Settings > Dashboard tab with live preview dialog

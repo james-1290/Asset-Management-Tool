@@ -38,3 +38,14 @@ export interface LocationPerson {
   department: string | null;
   jobTitle: string | null;
 }
+
+export interface LocationItemCounts {
+  assets: number;
+  people: number;
+  certificates: number;
+  applications: number;
+}
+
+export interface ReassignAndArchiveRequest {
+  targetLocationId: string | null;
+}
