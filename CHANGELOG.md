@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-21 17:54 — Alerts tab redesign
+
+- Redesigned Alerts settings tab with 3-column layout: config (2/3) + sidebar (1/3)
+- Expiry & Schedule card: toggle switches in row, thresholds + frequency + time inputs
+- Email (SMTP) and Slack Integration cards side by side with uppercase field labels
+- Alert History table with coloured type badges (Warranty/Certificate/Licence)
+- Sidebar: Summary card, Manual Operations card (Send Alerts Now, Preview Daily Report)
+- Removed max-w-4xl constraint on alerts tab for wider layout
+
 ## 2026-02-21 17:44 — Settings page redesign
 
 - Redesigned Settings page with underline-style tab navigation matching mockup

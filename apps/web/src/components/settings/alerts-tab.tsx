@@ -4,6 +4,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import {
+  Bell,
+  Mail,
+  MessageSquare,
+  History,
+  Download,
+  Send,
+  Eye,
+  Shield,
+  Key,
+  Ticket,
+} from "lucide-react";
+import {
   useAlertSettings,
   useUpdateAlertSettings,
   useSendTestEmail,
@@ -14,7 +26,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -23,14 +34,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -54,7 +57,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 
 const alertsSchema = z.object({
   warrantyEnabled: z.boolean(),
@@ -87,20 +90,23 @@ const SCHEDULE_TYPES = [
   { value: "disabled", label: "Disabled" },
   { value: "daily", label: "Daily" },
   { value: "weekly", label: "Weekly" },
-  { value: "every_other_week", label: "Every Other Week" },
+  { value: "every_other_week", label: "Bi-Weekly" },
   { value: "first_day_of_month", label: "First Day of Month" },
-  { value: "first_business_day", label: "First Business Day of Month" },
+  { value: "first_business_day", label: "First Business Day" },
 ];
 
-const DAYS_OF_WEEK = [
-  { value: "MONDAY", label: "Monday" },
-  { value: "TUESDAY", label: "Tuesday" },
-  { value: "WEDNESDAY", label: "Wednesday" },
-  { value: "THURSDAY", label: "Thursday" },
-  { value: "FRIDAY", label: "Friday" },
-  { value: "SATURDAY", label: "Saturday" },
-  { value: "SUNDAY", label: "Sunday" },
+const TIME_OPTIONS = [
+  "07:00", "08:00", "09:00", "10:00", "11:00", "12:00",
+  "13:00", "14:00", "15:00", "16:00", "17:00", "18:00",
 ];
+
+function formatTimeLabel(time: string) {
+  const [h, m] = time.split(":");
+  const hour = parseInt(h);
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${String(displayHour).padStart(2, "0")}:${m} ${ampm}`;
+}
 
 export function AlertsTab() {
   const { data: settings, isLoading } = useAlertSettings();
@@ -141,16 +147,13 @@ export function AlertsTab() {
     },
   });
 
-  const scheduleType = form.watch("scheduleType");
   const emailProvider = form.watch("emailProvider");
   const slackWebhookUrl = form.watch("slackWebhookUrl");
-  const showDaySelect = scheduleType === "weekly" || scheduleType === "every_other_week";
 
   useEffect(() => {
     if (settings) {
       form.reset({
         ...settings,
-        // Clear masked secrets so placeholders show instead
         smtpPassword: settings.smtpPassword === "********" ? "" : settings.smtpPassword,
         graphClientSecret: settings.graphClientSecret === "********" ? "" : settings.graphClientSecret,
         slackWebhookUrl: settings.slackWebhookUrl?.endsWith("...") ? "" : settings.slackWebhookUrl,
@@ -163,12 +166,8 @@ export function AlertsTab() {
 
   function onSubmit(values: AlertsFormValues) {
     updateSettings.mutate(values, {
-      onSuccess: () => {
-        toast.success("Alert settings updated");
-      },
-      onError: (err) => {
-        toast.error(err.message || "Failed to update alert settings");
-      },
+      onSuccess: () => toast.success("Alert settings updated"),
+      onError: (err) => toast.error(err.message || "Failed to update alert settings"),
     });
   }
 
@@ -176,49 +175,32 @@ export function AlertsTab() {
     if (!testEmailAddress) return;
     sendTestEmail.mutate(testEmailAddress, {
       onSuccess: (result) => {
-        if (result.success) {
-          toast.success(result.message);
-        } else {
-          toast.error(result.message);
-        }
+        if (result.success) toast.success(result.message);
+        else toast.error(result.message);
         setTestEmailOpen(false);
         setTestEmailAddress("");
       },
-      onError: (err) => {
-        toast.error(err.message || "Failed to send test email");
-      },
+      onError: (err) => toast.error(err.message || "Failed to send test email"),
     });
   }
 
   function handleSendNow() {
     sendAlertsNow.mutate(undefined, {
       onSuccess: (result) => {
-        if (result.totalAlertsSent === 0) {
-          toast.info("No new expiry alerts to send");
-        } else {
-          toast.success(
-            `Sent ${result.totalAlertsSent} alert(s): ${result.warrantyAlerts} warranty, ${result.certificateAlerts} certificate, ${result.licenceAlerts} licence`
-          );
-        }
+        if (result.totalAlertsSent === 0) toast.info("No new expiry alerts to send");
+        else toast.success(`Sent ${result.totalAlertsSent} alert(s): ${result.warrantyAlerts} warranty, ${result.certificateAlerts} certificate, ${result.licenceAlerts} licence`);
       },
-      onError: (err) => {
-        toast.error(err.message || "Failed to send alerts");
-      },
+      onError: (err) => toast.error(err.message || "Failed to send alerts"),
     });
   }
 
   function handleTestSlack() {
     sendTestSlack.mutate(undefined, {
       onSuccess: (result) => {
-        if (result.success) {
-          toast.success(result.message);
-        } else {
-          toast.error(result.message);
-        }
+        if (result.success) toast.success(result.message);
+        else toast.error(result.message);
       },
-      onError: (err) => {
-        toast.error(err.message || "Failed to send test Slack message");
-      },
+      onError: (err) => toast.error(err.message || "Failed to send test Slack message"),
     });
   }
 
@@ -232,466 +214,486 @@ export function AlertsTab() {
     });
   }
 
+  function formatShortDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
   if (isLoading) {
     return <div className="text-muted-foreground">Loading...</div>;
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Expiry Alerts Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Expiry Alerts</CardTitle>
-            <CardDescription>
-              Configure which expiry alerts are enabled and when they trigger.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="warrantyEnabled"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                  <div>
-                    <FormLabel>Warranty Alerts</FormLabel>
-                    <FormDescription>Send alerts for expiring warranties</FormDescription>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Left Column: Config (2/3 width) */}
+          <div className="xl:col-span-2 space-y-8">
+            {/* Expiry & Schedule Card */}
+            <section className="bg-card rounded-xl border overflow-hidden shadow-sm">
+              <div className="p-6 border-b flex items-center gap-2">
+                <Bell className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-bold">Expiry & Schedule</h2>
+              </div>
+              <div className="p-6 space-y-8">
+                {/* Toggle switches */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="warrantyEnabled"
+                    render={({ field }) => (
+                      <label className="flex items-center justify-between p-4 bg-muted/50 rounded-lg cursor-pointer border border-transparent hover:border-primary/20 transition-all">
+                        <span className="text-sm font-semibold">Warranty Expiry</span>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </label>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="certificateEnabled"
+                    render={({ field }) => (
+                      <label className="flex items-center justify-between p-4 bg-muted/50 rounded-lg cursor-pointer border border-transparent hover:border-primary/20 transition-all">
+                        <span className="text-sm font-semibold">Certificate Expiry</span>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </label>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="licenceEnabled"
+                    render={({ field }) => (
+                      <label className="flex items-center justify-between p-4 bg-muted/50 rounded-lg cursor-pointer border border-transparent hover:border-primary/20 transition-all">
+                        <span className="text-sm font-semibold">Licence Expiry</span>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </label>
+                    )}
+                  />
+                </div>
+
+                {/* Thresholds + Frequency + Time */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <FormField
+                    control={form.control}
+                    name="thresholds"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-bold">Alert Thresholds (Days)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="90, 60, 30, 15, 7, 1" {...field} />
+                        </FormControl>
+                        <p className="text-[11px] text-muted-foreground">
+                          Comma-separated list of days before expiry to trigger alerts.
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="scheduleType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-bold">Frequency</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {SCHEDULE_TYPES.map((st) => (
+                                <SelectItem key={st.value} value={st.value}>
+                                  {st.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="scheduleTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-bold">Time</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select time" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {TIME_OPTIONS.map((t) => (
+                                <SelectItem key={t} value={t}>
+                                  {formatTimeLabel(t)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                  <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="certificateEnabled"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                  <div>
-                    <FormLabel>Certificate Alerts</FormLabel>
-                    <FormDescription>Send alerts for expiring certificates</FormDescription>
+                </div>
+              </div>
+            </section>
+
+            {/* Email + Slack side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Email (SMTP) Card */}
+              <section className="bg-card rounded-xl border overflow-hidden shadow-sm">
+                <div className="p-6 border-b flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-bold">Email (SMTP)</h2>
                   </div>
-                  <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="licenceEnabled"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                  <div>
-                    <FormLabel>Licence Alerts</FormLabel>
-                    <FormDescription>Send alerts for expiring licences</FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="thresholds"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Alert Thresholds (days)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. 90,30,14,7" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Comma-separated list of days before expiry to send alerts
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        <Separator />
-
-        {/* Schedule Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Schedule</CardTitle>
-            <CardDescription>
-              Configure when alert emails are automatically sent.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 max-w-md">
-            <FormField
-              control={form.control}
-              name="scheduleType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Frequency</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select schedule" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {SCHEDULE_TYPES.map((st) => (
-                        <SelectItem key={st.value} value={st.value}>
-                          {st.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {scheduleType !== "disabled" && (
-              <FormField
-                control={form.control}
-                name="scheduleTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Time</FormLabel>
-                    <FormControl>
-                      <Input type="time" {...field} />
-                    </FormControl>
-                    <FormDescription>Time of day to send alerts (24h)</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-            {showDaySelect && (
-              <FormField
-                control={form.control}
-                name="scheduleDay"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Day of Week</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select day" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {DAYS_OF_WEEK.map((d) => (
-                          <SelectItem key={d.value} value={d.value}>
-                            {d.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-          </CardContent>
-        </Card>
-
-        <Separator />
-
-        {/* Email Configuration Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Email Configuration</CardTitle>
-            <CardDescription>
-              Choose an email provider and configure its settings. Leave blank to disable email.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 max-w-md">
-            <FormField
-              control={form.control}
-              name="emailProvider"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Provider</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select provider" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="smtp">SMTP</SelectItem>
-                      <SelectItem value="graph">Microsoft Graph (Entra ID)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    {emailProvider === "graph"
-                      ? "Send emails via Microsoft Graph API using an Entra ID Enterprise App"
-                      : "Send emails via a traditional SMTP server"}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Separator />
-
-            {emailProvider === "smtp" && (
-              <>
-                <FormField
-                  control={form.control}
-                  name="smtpHost"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>SMTP Host</FormLabel>
-                      <FormControl>
-                        <Input placeholder="smtp.example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="smtpPort"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>SMTP Port</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                  <button
+                    type="button"
+                    onClick={() => setTestEmailOpen(true)}
+                    className="text-primary text-xs font-bold hover:underline"
+                  >
+                    Send Test Email
+                  </button>
+                </div>
+                <div className="p-6 space-y-4">
+                  {emailProvider === "smtp" && (
+                    <>
+                      <div className="grid grid-cols-4 gap-4">
+                        <div className="col-span-3 space-y-1">
+                          <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">
+                            SMTP Host
+                          </label>
+                          <FormField
+                            control={form.control}
+                            name="smtpHost"
+                            render={({ field }) => (
+                              <FormControl>
+                                <Input className="bg-muted/50" placeholder="smtp.office365.com" {...field} />
+                              </FormControl>
+                            )}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">
+                            Port
+                          </label>
+                          <FormField
+                            control={form.control}
+                            name="smtpPort"
+                            render={({ field }) => (
+                              <FormControl>
+                                <Input
+                                  className="bg-muted/50"
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                />
+                              </FormControl>
+                            )}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">
+                          Username
+                        </label>
+                        <FormField
+                          control={form.control}
+                          name="smtpUsername"
+                          render={({ field }) => (
+                            <FormControl>
+                              <Input className="bg-muted/50" placeholder="alerts@company.com" {...field} />
+                            </FormControl>
+                          )}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">
+                          Password
+                        </label>
+                        <FormField
+                          control={form.control}
+                          name="smtpPassword"
+                          render={({ field }) => (
+                            <FormControl>
+                              <Input className="bg-muted/50" type="password" placeholder="Leave blank to keep current" {...field} />
+                            </FormControl>
+                          )}
+                        />
+                      </div>
+                    </>
                   )}
-                />
-                <FormField
-                  control={form.control}
-                  name="smtpUsername"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>SMTP Username</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                  {emailProvider === "graph" && (
+                    <>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">Tenant ID</label>
+                        <FormField control={form.control} name="graphTenantId" render={({ field }) => (<FormControl><Input className="bg-muted/50" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...field} /></FormControl>)} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">Client ID</label>
+                        <FormField control={form.control} name="graphClientId" render={({ field }) => (<FormControl><Input className="bg-muted/50" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...field} /></FormControl>)} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">Client Secret</label>
+                        <FormField control={form.control} name="graphClientSecret" render={({ field }) => (<FormControl><Input className="bg-muted/50" type="password" placeholder="Leave blank to keep current" {...field} /></FormControl>)} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">From Address</label>
+                        <FormField control={form.control} name="graphFromAddress" render={({ field }) => (<FormControl><Input className="bg-muted/50" placeholder="alerts@company.com" {...field} /></FormControl>)} />
+                      </div>
+                    </>
                   )}
-                />
-                <FormField
-                  control={form.control}
-                  name="smtpPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>SMTP Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="Leave blank to keep current" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="smtpFromAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>From Address</FormLabel>
-                      <FormControl>
-                        <Input placeholder="alerts@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
+                  <div className="space-y-1 pt-2">
+                    <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">
+                      Alert Recipients (one per line)
+                    </label>
+                    <FormField
+                      control={form.control}
+                      name="recipients"
+                      render={({ field }) => (
+                        <FormControl>
+                          <Textarea
+                            className="bg-muted/50"
+                            rows={3}
+                            placeholder={"it-ops@company.com\nadmin@company.com"}
+                            {...field}
+                          />
+                        </FormControl>
+                      )}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Slack Integration Card */}
+              <section className="bg-card rounded-xl border overflow-hidden shadow-sm">
+                <div className="p-6 border-b flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-bold">Slack Integration</h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleTestSlack}
+                    disabled={sendTestSlack.isPending || !slackWebhookUrl}
+                    className="text-primary text-xs font-bold hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {sendTestSlack.isPending ? "Sending..." : "Send Test Slack"}
+                  </button>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">
+                      Webhook URL
+                    </label>
+                    <FormField
+                      control={form.control}
+                      name="slackWebhookUrl"
+                      render={({ field }) => (
+                        <FormControl>
+                          <Input className="bg-muted/50" placeholder="https://hooks.slack.com/services/..." {...field} />
+                        </FormControl>
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">
+                      Warranties Channel
+                    </label>
+                    <FormField
+                      control={form.control}
+                      name="slackWarrantyWebhookUrl"
+                      render={({ field }) => (
+                        <FormControl>
+                          <Input className="bg-muted/50" placeholder="#it-alerts-warranties" {...field} />
+                        </FormControl>
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">
+                      Certificates Channel
+                    </label>
+                    <FormField
+                      control={form.control}
+                      name="slackCertificateWebhookUrl"
+                      render={({ field }) => (
+                        <FormControl>
+                          <Input className="bg-muted/50" placeholder="#it-alerts-certs" {...field} />
+                        </FormControl>
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">
+                      Licences Channel
+                    </label>
+                    <FormField
+                      control={form.control}
+                      name="slackLicenceWebhookUrl"
+                      render={({ field }) => (
+                        <FormControl>
+                          <Input className="bg-muted/50" placeholder="#it-alerts-licensing" {...field} />
+                        </FormControl>
+                      )}
+                    />
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* Alert History Card */}
+            {history && history.items.length > 0 && (
+              <section className="bg-card rounded-xl border overflow-hidden shadow-sm">
+                <div className="p-6 border-b flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <History className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-bold">Alert History</h2>
+                  </div>
+                  <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm font-medium">
+                    <Download className="h-4 w-4" />
+                    Export Logs
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">Type</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">Name</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">Threshold</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">Expiry Date</TableHead>
+                        <TableHead className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider">Sent At</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {history.items.map((item) => {
+                        const typeStyles: Record<string, { bg: string; text: string; icon: typeof Shield }> = {
+                          WARRANTY: { bg: "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800", text: "text-amber-700 dark:text-amber-400", icon: Shield },
+                          CERTIFICATE: { bg: "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800", text: "text-blue-700 dark:text-blue-400", icon: Key },
+                          LICENCE: { bg: "bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800", text: "text-purple-700 dark:text-purple-400", icon: Ticket },
+                        };
+                        const style = typeStyles[item.entityType] ?? typeStyles.WARRANTY;
+                        const Icon = style.icon;
+                        return (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${style.bg} ${style.text}`}>
+                                <Icon className="h-3.5 w-3.5" />
+                                {item.entityType === "LICENCE" ? "Licence" : item.entityType === "CERTIFICATE" ? "Certificate" : "Warranty"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="font-medium text-sm">{item.entityName}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{item.thresholdDays} Days</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{formatShortDate(item.expiryDate)}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{formatDate(item.sentAt)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                {history.totalPages > 1 && (
+                  <div className="flex items-center justify-between px-6 py-4 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      Page {history.page + 1} of {history.totalPages} ({history.totalElements} total)
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={history.page === 0}
+                        onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={history.page >= history.totalPages - 1}
+                        onClick={() => setHistoryPage((p) => p + 1)}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </section>
             )}
+          </div>
 
-            {emailProvider === "graph" && (
-              <>
-                <FormField
-                  control={form.control}
-                  name="graphTenantId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tenant ID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...field} />
-                      </FormControl>
-                      <FormDescription>Entra ID (Azure AD) tenant ID</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="graphClientId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Client ID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...field} />
-                      </FormControl>
-                      <FormDescription>Enterprise App (application) client ID</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="graphClientSecret"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Client Secret</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="Leave blank to keep current" {...field} />
-                      </FormControl>
-                      <FormDescription>Enterprise App client secret</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="graphFromAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>From Address</FormLabel>
-                      <FormControl>
-                        <Input placeholder="alerts@company.com" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Shared mailbox or user mailbox the app has permission to send as
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
-            )}
+          {/* Right Column: Sidebar */}
+          <div className="space-y-8">
+            {/* Summary Card */}
+            <section className="bg-card rounded-xl border p-6 shadow-sm">
+              <h2 className="font-bold mb-4">Summary</h2>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm text-muted-foreground">Active Monitoring</span>
+                  <span className="text-sm font-bold text-emerald-600">Online</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm text-muted-foreground">Next Scheduled Scan</span>
+                  <span className="text-sm font-bold">Tomorrow 08:00</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm text-muted-foreground">Alerts Sent (30d)</span>
+                  <span className="text-sm font-bold">{history?.totalElements ?? 0}</span>
+                </div>
+              </div>
+            </section>
 
-            <FormField
-              control={form.control}
-              name="recipients"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Alert Recipients</FormLabel>
-                  <FormControl>
-                    <Input placeholder="user@example.com, admin@example.com" {...field} />
-                  </FormControl>
-                  <FormDescription>Comma-separated email addresses</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
+            {/* Manual Operations Card */}
+            <section className="bg-primary/5 rounded-xl border border-primary/20 p-6">
+              <h2 className="font-bold text-primary mb-4">Manual Operations</h2>
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={handleSendNow}
+                  disabled={sendAlertsNow.isPending}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  {sendAlertsNow.isPending ? "Sending..." : "Send Alerts Now"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  Preview Daily Report
+                </Button>
+              </div>
+            </section>
 
-        <Separator />
-
-        {/* Slack Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Slack</CardTitle>
-            <CardDescription>
-              Slack alerts are sent alongside email when a webhook URL is configured.
-              Per-type webhooks override the default. Leave blank to use the default channel.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 max-w-md">
-            <FormField
-              control={form.control}
-              name="slackWebhookUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Default (fallback)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://hooks.slack.com/services/..." {...field} />
-                  </FormControl>
-                  <FormDescription>Used when no per-type webhook is set</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="slackWarrantyWebhookUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Warranties channel</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://hooks.slack.com/services/..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="slackCertificateWebhookUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Certificates channel</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://hooks.slack.com/services/..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="slackLicenceWebhookUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Licences channel</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://hooks.slack.com/services/..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        <Button type="submit" disabled={updateSettings.isPending}>
-          {updateSettings.isPending ? "Saving..." : "Save Alert Settings"}
-        </Button>
+            {/* Save Button (sticky on sidebar) */}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={updateSettings.isPending}
+            >
+              {updateSettings.isPending ? "Saving..." : "Save Alert Settings"}
+            </Button>
+          </div>
+        </div>
       </form>
-
-      <Separator className="my-6" />
-
-      {/* Actions Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Actions</CardTitle>
-          <CardDescription>
-            Test your email/Slack configuration or manually trigger alert processing.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setTestEmailOpen(true)}
-          >
-            Send Test Email
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleTestSlack}
-            disabled={sendTestSlack.isPending || !slackWebhookUrl}
-          >
-            {sendTestSlack.isPending ? "Sending..." : "Send Test Slack"}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleSendNow}
-            disabled={sendAlertsNow.isPending}
-          >
-            {sendAlertsNow.isPending ? "Sending..." : "Send Alerts Now"}
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* Test Email Dialog */}
       <Dialog open={testEmailOpen} onOpenChange={setTestEmailOpen}>
@@ -720,72 +722,6 @@ export function AlertsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Alert History */}
-      {history && history.items.length > 0 && (
-        <>
-          <Separator className="my-6" />
-          <Card>
-            <CardHeader>
-              <CardTitle>Alert History</CardTitle>
-              <CardDescription>
-                Recent alert emails that have been sent.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Threshold</TableHead>
-                    <TableHead>Expiry Date</TableHead>
-                    <TableHead>Sent At</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {history.items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <Badge variant="outline">{item.entityType}</Badge>
-                      </TableCell>
-                      <TableCell>{item.entityName}</TableCell>
-                      <TableCell>{item.thresholdDays} days</TableCell>
-                      <TableCell>{formatDate(item.expiryDate)}</TableCell>
-                      <TableCell>{formatDate(item.sentAt)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {history.totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    Page {history.page + 1} of {history.totalPages} ({history.totalElements} total)
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={history.page === 0}
-                      onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={history.page >= history.totalPages - 1}
-                      onClick={() => setHistoryPage((p) => p + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      )}
     </Form>
   );
 }
