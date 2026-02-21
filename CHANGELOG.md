@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-02-21 17:33 — Fix import page Entity Type spacing
+
+- Increased spacing between "Entity Type" label and Select dropdown (space-y-2 → space-y-3)
+
 ## 2026-02-21 17:24 — Import page redesign
 
 - Redesigned Import Data page with multi-step wizard: step progress indicator, icon sections, drag-and-drop upload zone with file requirements bar, styled validation results table, and footer action bar
