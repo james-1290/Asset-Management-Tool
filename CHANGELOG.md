@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-02-21 17:24 — Import page redesign
+
+- Redesigned Import Data page with multi-step wizard: step progress indicator, icon sections, drag-and-drop upload zone with file requirements bar, styled validation results table, and footer action bar
+- All import functionality preserved: entity type selection, template download, CSV upload, validation preview, and import execution
+
 ## 2026-02-21 17:16 — Reports page redesign
 
 - Redesigned Reports page with "Reports Central" header, icon-based tab navigation cards, stat cards with icons, and styled table sections matching the rest of the app
