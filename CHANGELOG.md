@@ -1,8 +1,8 @@
 # Changelog
 
-## 2026-02-21 17:33 — Fix import page Entity Type spacing
+## 2026-02-21 17:35 — Fix import page Entity Type spacing
 
-- Increased spacing between "Entity Type" label and Select dropdown (space-y-2 → space-y-3)
+- Added explicit mb-3 margin between "Entity Type" label and Select dropdown for visible separation
 
 ## 2026-02-21 17:24 — Import page redesign
 
