@@ -206,7 +206,7 @@ export default function ImportPage() {
                   Choose the type of data you want to import. We'll provide a template with the correct headers for your selection.
                 </p>
                 <div className="flex items-end gap-4">
-                  <div className="space-y-2 w-64">
+                  <div className="space-y-3 w-64">
                     <label className="text-sm font-medium">Entity Type</label>
                     <Select
                       value={entityType}
