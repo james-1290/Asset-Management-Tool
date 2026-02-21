@@ -43,3 +43,21 @@ data class LocationPersonDto(
     val department: String?,
     val jobTitle: String?
 )
+
+data class LocationCertificateDto(
+    val id: UUID,
+    val name: String,
+    val certificateTypeName: String?,
+    val expiryDate: Instant?
+)
+
+data class LocationApplicationDto(
+    val id: UUID,
+    val name: String,
+    val applicationTypeName: String?,
+    val expiryDate: Instant?
+)
+
+data class ReassignAndArchiveRequest(
+    val targetLocationId: UUID? = null
+)

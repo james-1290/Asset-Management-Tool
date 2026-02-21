@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
+import { ApiError } from "../lib/api-client";
+import type { Location, LocationItemCounts } from "../types/location";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
@@ -20,6 +22,7 @@ import {
 } from "../components/ui/table";
 import { AssetStatusBadge } from "../components/assets/asset-status-badge";
 import { LocationFormDialog } from "../components/locations/location-form-dialog";
+import { ReassignLocationDialog } from "../components/locations/reassign-location-dialog";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import {
   useLocation,
@@ -60,6 +63,10 @@ export default function LocationDetailPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [reassignState, setReassignState] = useState<{
+    location: Location;
+    counts: LocationItemCounts;
+  } | null>(null);
 
   function handleFormSubmit(values: LocationFormValues) {
     if (!location) return;
@@ -93,8 +100,16 @@ export default function LocationDetailPage() {
         toast.success("Location archived");
         navigate("/locations");
       },
-      onError: () => {
-        toast.error("Failed to archive location");
+      onError: (error) => {
+        if (error instanceof ApiError && error.status === 409 && error.body && typeof error.body === "object" && "counts" in error.body) {
+          const body = error.body as { counts: LocationItemCounts };
+          setArchiveOpen(false);
+          setReassignState({ location, counts: body.counts });
+        } else if (error instanceof ApiError && error.body && typeof error.body === "object" && "message" in error.body) {
+          toast.error((error.body as { message: string }).message);
+        } else {
+          toast.error("Failed to archive location");
+        }
       },
     });
   }
@@ -291,6 +306,19 @@ export default function LocationDetailPage() {
         loading={archiveMutation.isPending}
         onConfirm={handleArchive}
       />
+
+      {reassignState && (
+        <ReassignLocationDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setReassignState(null); }}
+          location={reassignState.location}
+          counts={reassignState.counts}
+          onSuccess={() => {
+            setReassignState(null);
+            navigate("/locations");
+          }}
+        />
+      )}
     </div>
   );
 }
