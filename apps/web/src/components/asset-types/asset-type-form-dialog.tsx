@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -77,97 +78,104 @@ export function AssetTypeFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="sm:max-w-2xl p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogHeader className="px-8 py-6 border-b">
+          <DialogTitle className="text-2xl font-bold">
             {isEditing ? "Edit Asset Type" : "Add Asset Type"}
           </DialogTitle>
+          <DialogDescription>
+            Define a new asset category with custom fields.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. Laptop" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Optional description"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="defaultDepreciationMonths"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Default Depreciation (months)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="1"
-                      step="1"
-                      placeholder="e.g. 36"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="nameTemplate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name Template</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g. COAD-%SERIALNUMBER%"
-                      {...field}
-                    />
-                  </FormControl>
-                  <p className="text-xs text-muted-foreground">
-                    Auto-generates asset names. Variables: %SERIALNUMBER%, %ASSETTYPENAME%
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-8">
+              <div className="grid grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Laptop" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="defaultDepreciationMonths"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Default Depreciation (months)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="e.g. 36"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-semibold">Description</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Optional description"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="nameTemplate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-semibold">Name Template</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. COAD-%SERIALNUMBER%"
+                        {...field}
+                      />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Auto-generates asset names. Variables: %SERIALNUMBER%, %ASSETTYPENAME%
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="border-t pt-4">
+              <hr className="border-border" />
+
               <CustomFieldEditor />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="px-8 py-6 border-t bg-muted/50 flex justify-end gap-4">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => onOpenChange(false)}
                 disabled={loading}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Saving…" : isEditing ? "Save Changes" : "Create"}
+              <Button type="submit" disabled={loading} className="font-semibold shadow-lg">
+                {loading ? "Saving..." : isEditing ? "Save Changes" : "Add Asset Type"}
               </Button>
             </DialogFooter>
           </form>

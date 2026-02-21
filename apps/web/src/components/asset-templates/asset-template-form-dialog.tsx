@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -112,92 +113,169 @@ export function AssetTemplateFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="sm:max-w-4xl p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogHeader className="px-8 py-6 border-b">
+          <DialogTitle className="text-2xl font-bold">
             {isEditing ? "Edit Template" : "Add Template"}
           </DialogTitle>
+          <DialogDescription>
+            Create a reusable template for quick asset creation.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="assetTypeId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Asset Type *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={isEditing}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {assetTypes.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="flex flex-col flex-1 overflow-hidden"
+          >
+            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-8">
+              {/* Section 1 - General */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="assetTypeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Asset Type *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isEditing}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {assetTypes.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Template Name *</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g. Dell Latitude 5540 Standard"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Template Name *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g. Dell Latitude 5540 Standard"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-            <div className="grid grid-cols-2 gap-4">
+              <hr className="border-border" />
+
+              {/* Section 2 - Defaults */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="purchaseCost"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Default Cost</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                            $
+                          </span>
+                          <Input
+                            className="pl-7"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="depreciationMonths"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Depreciation (months)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="e.g. 36"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="locationId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Default Location</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select location" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="__none__">None</SelectItem>
+                          {locations.map((l) => (
+                            <SelectItem key={l.id} value={l.id}>
+                              {l.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Custom Fields */}
+              {customFieldDefs && customFieldDefs.length > 0 && (
+                <>
+                  <hr className="border-border" />
+                  <CustomFieldsSection definitions={customFieldDefs} />
+                </>
+              )}
+
+              <hr className="border-border" />
+
+              {/* Notes */}
               <FormField
                 control={form.control}
-                name="purchaseCost"
+                name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Default Cost</FormLabel>
+                    <FormLabel className="font-semibold">Default Notes</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="depreciationMonths"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Depreciation (months)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        step="1"
-                        placeholder="e.g. 36"
+                      <Textarea
+                        placeholder="Add any default notes for assets created from this template..."
+                        rows={4}
                         {...field}
                       />
                     </FormControl>
@@ -207,70 +285,21 @@ export function AssetTemplateFormDialog({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="locationId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Default Location</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select location" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="__none__">None</SelectItem>
-                      {locations.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>
-                          {l.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {customFieldDefs && customFieldDefs.length > 0 && (
-              <div className="border-t pt-4">
-                <CustomFieldsSection definitions={customFieldDefs} />
-              </div>
-            )}
-
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Default Notes</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Optional default notes"
-                      rows={3}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter>
+            <DialogFooter className="px-8 py-6 border-t bg-muted/50 flex justify-end gap-4">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 onClick={() => onOpenChange(false)}
                 disabled={loading}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Saving…" : isEditing ? "Save Changes" : "Create"}
+              <Button type="submit" disabled={loading} className="font-semibold shadow-lg">
+                {loading
+                  ? "Saving..."
+                  : isEditing
+                    ? "Save Changes"
+                    : "Add Template"}
               </Button>
             </DialogFooter>
           </form>
