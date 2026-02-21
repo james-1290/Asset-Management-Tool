@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-21 12:47 — Asset + Certificate detail page redesign
+
+- Redesigned asset and certificate detail pages to match application detail mockup
+- Consistent layout: icon header with breadcrumbs, 2-col details grid with uppercase labels, history timeline in right column
+- Expiry dates color-coded (red=expired, orange=expiring soon), auto renewal with check icon
+- All action buttons (Check Out, Retire, Sold, Clone, Edit Details) in header row
+
 ## 2026-02-21 12:44 — Dashboard fix + Application detail redesign
 
 - Fixed dashboard summary/status breakdown queries to exclude Retired and Sold assets (matches assets page default)

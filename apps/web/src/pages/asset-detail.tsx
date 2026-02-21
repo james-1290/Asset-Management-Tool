@@ -1,15 +1,9 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil, LogOut, LogIn, Archive, PoundSterling, Copy } from "lucide-react";
+import { Pencil, Info, History, ChevronRight, LogOut, LogIn, Archive, PoundSterling, Copy } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
 import { AssetStatusBadge } from "../components/assets/asset-status-badge";
 import { AssetHistoryTimeline } from "../components/assets/asset-history-timeline";
 import { AssetHistoryDialog } from "../components/assets/asset-history-dialog";
@@ -32,15 +26,6 @@ import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
 import { AttachmentsSection } from "../components/shared/attachments-section";
 import type { AssetFormValues } from "../lib/schemas/asset";
-
-function InfoItem({ label, value }: { label: string; value: string | null | undefined }) {
-  return (
-    <div>
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium mt-0.5">{value || "—"}</dd>
-    </div>
-  );
-}
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
@@ -76,6 +61,19 @@ function formatCurrency(value: number | null): string | null {
     style: "currency",
     currency: "GBP",
   }).format(value);
+}
+
+function isExpiringSoon(iso: string | null): boolean {
+  if (!iso) return false;
+  const expiry = new Date(iso);
+  const now = new Date();
+  const daysUntil = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+  return daysUntil <= 90 && daysUntil >= 0;
+}
+
+function isExpired(iso: string | null): boolean {
+  if (!iso) return false;
+  return new Date(iso) < new Date();
 }
 
 const HISTORY_PREVIEW_LIMIT = 5;
@@ -214,7 +212,6 @@ export default function AssetDetailPage() {
       notes: asset.notes ?? "",
       status: "Available",
       customFieldValues: cfValues,
-      // Intentionally blank: name, serialNumber, warrantyExpiryDate, assignedPersonId
       name: "",
       serialNumber: "",
       warrantyExpiryDate: "",
@@ -235,7 +232,6 @@ export default function AssetDetailPage() {
     return (
       <div className="space-y-6">
         <Button variant="ghost" onClick={() => navigate("/assets")}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Assets
         </Button>
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
@@ -246,145 +242,223 @@ export default function AssetDetailPage() {
   }
 
   const hasMoreHistory = history && history.length >= HISTORY_PREVIEW_LIMIT;
+  const isActiveAsset = asset.status !== "Retired" && asset.status !== "Sold" && asset.status !== "Archived";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/assets")}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {asset.name}
-              </h1>
-              <AssetStatusBadge status={asset.status} />
+      <div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="size-12 rounded-xl bg-muted flex items-center justify-center">
+              <span className="text-lg font-bold text-muted-foreground">
+                {asset.name.charAt(0).toUpperCase()}
+              </span>
             </div>
-            <p className="text-sm text-muted-foreground">{asset.serialNumber}</p>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight">{asset.name}</h1>
+                <AssetStatusBadge status={asset.status} />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {asset.assetTypeName}
+                {asset.serialNumber && ` · ${asset.serialNumber}`}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {isActiveAsset && (
+              <>
+                {(asset.status === "Available" || asset.status === "Assigned") && (
+                  <Button variant="outline" onClick={() => setCheckoutOpen(true)} className="font-semibold">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Check Out
+                  </Button>
+                )}
+                {asset.status === "CheckedOut" && (
+                  <Button variant="outline" onClick={() => setCheckinOpen(true)} className="font-semibold">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Check In
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => setRetireOpen(true)} className="font-semibold">
+                  <Archive className="mr-2 h-4 w-4" />
+                  Retire
+                </Button>
+                <Button variant="outline" onClick={() => setSellOpen(true)} className="font-semibold">
+                  <PoundSterling className="mr-1 h-4 w-4" />
+                  Sold
+                </Button>
+              </>
+            )}
+            <Button variant="outline" onClick={() => setCloneFormOpen(true)} className="font-semibold">
+              <Copy className="mr-2 h-4 w-4" />
+              Clone
+            </Button>
+            <Button onClick={() => setFormOpen(true)} className="font-semibold shadow-lg">
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Details
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {asset.status !== "Retired" && asset.status !== "Sold" && asset.status !== "Archived" && (
-            <>
-              {(asset.status === "Available" || asset.status === "Assigned") && (
-                <Button variant="outline" onClick={() => setCheckoutOpen(true)}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Check Out
-                </Button>
-              )}
-              {asset.status === "CheckedOut" && (
-                <Button variant="outline" onClick={() => setCheckinOpen(true)}>
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Check In
-                </Button>
-              )}
-              <Button variant="outline" onClick={() => setRetireOpen(true)}>
-                <Archive className="mr-2 h-4 w-4" />
-                Retire
-              </Button>
-              <Button variant="outline" onClick={() => setSellOpen(true)}>
-                <PoundSterling className="mr-1 h-4 w-4" />
-                Mark as Sold
-              </Button>
-            </>
-          )}
-          <Button variant="outline" onClick={() => setCloneFormOpen(true)}>
-            <Copy className="mr-2 h-4 w-4" />
-            Clone
-          </Button>
-          <Button onClick={() => setFormOpen(true)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
+        {/* Breadcrumbs */}
+        <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground font-medium">
+          <Link to="/assets" className="hover:text-primary">Assets</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-foreground">{asset.name}</span>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Details card */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-              <InfoItem label="Name" value={asset.name} />
-              <InfoItem label="Type" value={asset.assetTypeName} />
-              <InfoItem label="Serial Number" value={asset.serialNumber} />
-              <InfoItem label="Location" value={asset.locationName} />
-              <InfoItem label="Assigned To" value={asset.assignedPersonName} />
-              <InfoItem label="Purchase Date" value={formatDate(asset.purchaseDate)} />
-              <InfoItem label="Purchase Cost" value={formatCurrency(asset.purchaseCost)} />
-              <InfoItem label="Warranty Expiry" value={formatDate(asset.warrantyExpiryDate)} />
-              <InfoItem label="Status" value={asset.status} />
-              {asset.depreciationMonths != null && (
-                <>
-                  <InfoItem label="Depreciation Period" value={`${asset.depreciationMonths} months`} />
-                  <InfoItem label="Monthly Depreciation" value={formatCurrency(asset.monthlyDepreciation)} />
-                  <InfoItem label="Total Depreciation" value={formatCurrency(asset.totalDepreciation)} />
-                  <InfoItem label="Book Value" value={formatCurrency(asset.bookValue)} />
-                </>
-              )}
-              {asset.retiredDate && (
-                <InfoItem label="Retired Date" value={formatDate(asset.retiredDate)} />
-              )}
-              {asset.soldDate && (
-                <InfoItem label="Sold Date" value={formatDate(asset.soldDate)} />
-              )}
-              {asset.soldPrice != null && (
-                <InfoItem label="Sold Price" value={formatCurrency(asset.soldPrice)} />
-              )}
-            </dl>
-            {asset.customFieldValues && asset.customFieldValues.length > 0 && (
-              <div className="mt-4 pt-4 border-t">
-                <p className="text-sm text-muted-foreground mb-3">Custom Fields</p>
-                <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-                  {asset.customFieldValues.map((cfv) => (
-                    <InfoItem
-                      key={cfv.fieldDefinitionId}
-                      label={cfv.fieldName}
-                      value={formatCustomFieldValue(cfv.value, cfv.fieldType)}
-                    />
-                  ))}
-                </dl>
-              </div>
-            )}
-            {asset.notes && (
-              <div className="mt-4 pt-4 border-t">
-                <dt className="text-sm text-muted-foreground">Notes</dt>
-                <dd className="text-sm mt-0.5 whitespace-pre-wrap">{asset.notes}</dd>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Main content grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Asset Details */}
+        <section className="lg:col-span-2">
+          <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b flex items-center">
+              <h3 className="font-bold flex items-center gap-2">
+                <Info className="h-4 w-4 text-primary" />
+                Asset Details
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Name</p>
+                  <p className="text-sm font-medium">{asset.name}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Type</p>
+                  <p className="text-sm font-medium">{asset.assetTypeName || "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Serial Number</p>
+                  <p className="text-sm font-medium font-mono">{asset.serialNumber || "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Location</p>
+                  <p className="text-sm font-medium">{asset.locationName || "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Assigned To</p>
+                  <p className="text-sm font-medium">{asset.assignedPersonName || "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Purchase Date</p>
+                  <p className="text-sm font-medium">{formatDate(asset.purchaseDate) ?? "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Purchase Cost</p>
+                  <p className="text-sm font-medium">{formatCurrency(asset.purchaseCost) ?? "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Warranty Expiry</p>
+                  <p className={`text-sm font-medium ${isExpired(asset.warrantyExpiryDate) ? "text-red-500 font-bold" : isExpiringSoon(asset.warrantyExpiryDate) ? "text-orange-500 font-bold" : ""}`}>
+                    {formatDate(asset.warrantyExpiryDate) ?? "—"}
+                  </p>
+                </div>
 
-        {/* History card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AssetHistoryTimeline
-              history={history}
-              isLoading={historyLoading}
-            />
-            {hasMoreHistory && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full mt-2"
-                onClick={() => setHistoryOpen(true)}
-              >
-                View All History
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+                {/* Depreciation fields */}
+                {asset.depreciationMonths != null && (
+                  <>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Depreciation Period</p>
+                      <p className="text-sm font-medium">{asset.depreciationMonths} months</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Monthly Depreciation</p>
+                      <p className="text-sm font-medium">{formatCurrency(asset.monthlyDepreciation) ?? "—"}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Total Depreciation</p>
+                      <p className="text-sm font-medium">{formatCurrency(asset.totalDepreciation) ?? "—"}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Book Value</p>
+                      <p className="text-sm font-medium">{formatCurrency(asset.bookValue) ?? "—"}</p>
+                    </div>
+                  </>
+                )}
+
+                {/* Retired / Sold fields */}
+                {asset.retiredDate && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Retired Date</p>
+                    <p className="text-sm font-medium">{formatDate(asset.retiredDate)}</p>
+                  </div>
+                )}
+                {asset.soldDate && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Sold Date</p>
+                    <p className="text-sm font-medium">{formatDate(asset.soldDate)}</p>
+                  </div>
+                )}
+                {asset.soldPrice != null && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Sold Price</p>
+                    <p className="text-sm font-medium">{formatCurrency(asset.soldPrice)}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Custom Fields */}
+              {asset.customFieldValues && asset.customFieldValues.length > 0 && (
+                <div className="mt-6 pt-6 border-t">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Custom Fields</p>
+                  <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+                    {asset.customFieldValues.map((cfv) => (
+                      <div key={cfv.fieldDefinitionId} className="space-y-1">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{cfv.fieldName}</p>
+                        <p className="text-sm font-medium">{formatCustomFieldValue(cfv.value, cfv.fieldType) ?? "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {asset.notes && (
+                <div className="mt-6 pt-6 border-t">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Notes</p>
+                  <p className="text-sm whitespace-pre-wrap">{asset.notes}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* History */}
+        <section>
+          <div className="bg-card rounded-xl border overflow-hidden shadow-sm h-full">
+            <div className="px-6 py-4 border-b">
+              <h3 className="font-bold flex items-center gap-2">
+                <History className="h-4 w-4 text-primary" />
+                History
+              </h3>
+            </div>
+            <div className="p-6">
+              <AssetHistoryTimeline
+                history={history}
+                isLoading={historyLoading}
+              />
+              {hasMoreHistory && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full mt-2"
+                  onClick={() => setHistoryOpen(true)}
+                >
+                  View All History
+                </Button>
+              )}
+            </div>
+          </div>
+        </section>
       </div>
 
+      {/* Attachments */}
       <AttachmentsSection entityType="Asset" entityId={asset.id} />
 
+      {/* Dialogs */}
       <AssetFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
