@@ -5,13 +5,6 @@ import { useAssetLifecycleReport } from "@/hooks/use-reports";
 import { reportsApi } from "@/lib/api/reports";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Table,
   TableBody,
   TableCell,
@@ -66,28 +59,23 @@ export function AssetLifecycleReport() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => window.print()} className="no-print">
             <Printer className="mr-2 h-4 w-4" />
-            Print
+            Print Report
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} className="no-print">
+          <Button size="sm" onClick={handleExport} className="no-print">
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
         </div>
       </div>
 
-      {(dateRange.from || dateRange.to) && (
-        <p className="text-xs text-muted-foreground">
-          Showing: {dateRange.from ?? "start"} to {dateRange.to ?? "end"}
-        </p>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Assets by Age</CardTitle>
-          <CardDescription>Distribution of assets by purchase age</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 gap-4">
+      {/* Age buckets */}
+      <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b">
+          <h3 className="font-bold">Assets by Age</h3>
+          <p className="text-sm text-muted-foreground">Distribution of assets by purchase age</p>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {data.byAge.map((bucket) => (
               <div
                 key={bucket.bucket}
@@ -98,92 +86,86 @@ export function AssetLifecycleReport() {
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Oldest Assets (top 20)
-          </CardTitle>
-          <CardDescription>
-            Assets with the oldest purchase dates
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {data.oldestAssets.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
+      {/* Oldest assets */}
+      <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b">
+          <h3 className="font-bold">Oldest Assets (top 20)</h3>
+          <p className="text-sm text-muted-foreground">Assets with the oldest purchase dates</p>
+        </div>
+        {data.oldestAssets.length === 0 ? (
+          <div className="p-6">
+            <p className="text-sm text-muted-foreground text-center">
               No assets with purchase dates in the selected range.
             </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Purchase Date</TableHead>
-                  <TableHead className="text-right">Age (days)</TableHead>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Name</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Type</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Purchase Date</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Age (days)</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.oldestAssets.map((asset) => (
+                <TableRow key={asset.id}>
+                  <TableCell className="font-medium">{asset.name}</TableCell>
+                  <TableCell>{asset.assetTypeName}</TableCell>
+                  <TableCell>
+                    {new Date(asset.purchaseDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-right">{asset.ageDays}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.oldestAssets.map((asset) => (
-                  <TableRow key={asset.id}>
-                    <TableCell className="font-medium">{asset.name}</TableCell>
-                    <TableCell>{asset.assetTypeName}</TableCell>
-                    <TableCell>
-                      {new Date(asset.purchaseDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">{asset.ageDays}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Past Warranty ({data.pastWarranty.length})
-          </CardTitle>
-          <CardDescription>
-            Assets with expired warranties
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {data.pastWarranty.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
+      {/* Past warranty */}
+      <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b">
+          <h3 className="font-bold">Past Warranty ({data.pastWarranty.length})</h3>
+          <p className="text-sm text-muted-foreground">Assets with expired warranties</p>
+        </div>
+        {data.pastWarranty.length === 0 ? (
+          <div className="p-6">
+            <p className="text-sm text-muted-foreground text-center">
               No assets past warranty in the selected range.
             </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Warranty Expired</TableHead>
-                  <TableHead className="text-right">Days Overdue</TableHead>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Name</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Type</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Warranty Expired</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Days Overdue</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.pastWarranty.map((asset) => (
+                <TableRow key={asset.id}>
+                  <TableCell className="font-medium">{asset.name}</TableCell>
+                  <TableCell>{asset.assetTypeName}</TableCell>
+                  <TableCell>
+                    {new Date(asset.warrantyExpiryDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-right text-destructive font-medium">
+                    {Math.abs(asset.daysUntilExpiry)}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.pastWarranty.map((asset) => (
-                  <TableRow key={asset.id}>
-                    <TableCell className="font-medium">{asset.name}</TableCell>
-                    <TableCell>{asset.assetTypeName}</TableCell>
-                    <TableCell>
-                      {new Date(asset.warrantyExpiryDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right text-destructive font-medium">
-                      {Math.abs(asset.daysUntilExpiry)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
     </div>
   );
 }

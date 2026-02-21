@@ -6,13 +6,6 @@ import { reportsApi } from "@/lib/api/reports";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Table,
   TableBody,
   TableCell,
@@ -89,81 +82,71 @@ export function ExpiriesReport() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => window.print()} className="no-print">
             <Printer className="mr-2 h-4 w-4" />
-            Print
+            Print Report
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} className="no-print">
+          <Button size="sm" onClick={handleExport} className="no-print">
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
         </div>
       </div>
 
-      {(dateRange.from || dateRange.to) && (
-        <p className="text-xs text-muted-foreground">
-          Showing: {dateRange.from ?? "start"} to {dateRange.to ?? "end"}
-        </p>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Upcoming Expiries ({data.totalCount})
-          </CardTitle>
-          <CardDescription>
-            Combined warranty, certificate, and licence expiries
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {data.items.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
+      <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b">
+          <h3 className="font-bold">Upcoming Expiries ({data.totalCount})</h3>
+          <p className="text-sm text-muted-foreground">Combined warranty, certificate, and licence expiries</p>
+        </div>
+        {data.items.length === 0 ? (
+          <div className="p-6">
+            <p className="text-sm text-muted-foreground text-center">
               No expiries in the selected date range.
             </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Expiry Date</TableHead>
-                  <TableHead className="text-right">Days Left</TableHead>
-                  <TableHead>Status</TableHead>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Name</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Category</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Type</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Expiry Date</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Days Left</TableHead>
+                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.items.map((item) => (
+                <TableRow key={`${item.category}-${item.id}`}>
+                  <TableCell className="font-medium">{item.name}</TableCell>
+                  <TableCell>
+                    <Badge variant={categoryColor(item.category) as "default" | "secondary" | "outline"}>
+                      {item.category}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{item.typeName}</TableCell>
+                  <TableCell>
+                    {new Date(item.expiryDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span
+                      className={
+                        item.daysUntilExpiry <= 7
+                          ? "text-destructive font-medium"
+                          : item.daysUntilExpiry <= 14
+                            ? "text-orange-500 font-medium"
+                            : ""
+                      }
+                    >
+                      {item.daysUntilExpiry}
+                    </span>
+                  </TableCell>
+                  <TableCell>{item.status}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.items.map((item) => (
-                  <TableRow key={`${item.category}-${item.id}`}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>
-                      <Badge variant={categoryColor(item.category) as "default" | "secondary" | "outline"}>
-                        {item.category}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{item.typeName}</TableCell>
-                    <TableCell>
-                      {new Date(item.expiryDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span
-                        className={
-                          item.daysUntilExpiry <= 7
-                            ? "text-destructive font-medium"
-                            : item.daysUntilExpiry <= 14
-                              ? "text-orange-500 font-medium"
-                              : ""
-                        }
-                      >
-                        {item.daysUntilExpiry}
-                      </span>
-                    </TableCell>
-                    <TableCell>{item.status}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
     </div>
   );
 }

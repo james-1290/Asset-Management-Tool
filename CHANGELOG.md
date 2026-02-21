@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-02-21 17:16 — Reports page redesign
+
+- Redesigned Reports page with "Reports Central" header, icon-based tab navigation cards, stat cards with icons, and styled table sections matching the rest of the app
+- All 6 report types updated: Asset Summary, Upcoming Expiries, Licence Summary, Assignments, Lifecycle, Depreciation
+- Consistent card styling with `bg-card rounded-xl border` pattern, uppercase tracking-wider table headers, and status dot indicators
+
 ## 2026-02-21 16:35 — Fix Expiring Soon dashboard link
 
 - Dashboard "Expiring Soon" card now dynamically links to the correct list page (certificates, applications, or assets) based on which entity type has the most expiring items, filtered to the next 30 days
