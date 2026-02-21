@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-02-21 12:44 — Dashboard fix + Application detail redesign
+
+- Fixed dashboard summary/status breakdown queries to exclude Retired and Sold assets (matches assets page default)
+- Redesigned application detail page: icon header with breadcrumbs, 2-col details grid with uppercase labels, seat usage bar, expiry date color coding, auto renewal check icon, history timeline in right column
+
+## 2026-02-21 11:48 — Applications Page Redesign
+
+- Added 4 stat summary cards at top of applications page (Total, Active, Pending Renewal, Expired) using existing dashboard API
+- Application Name column now shows colored icon (hashed per app name) + bold name + licence key subtitle
+- Expiry Date column now color-coded: red for expired, orange for expiring within 30 days
+- Page title updated to "Applications" with new description matching mockup
+
 ## 2026-02-21 11:18 — Reassign & Delete Location
 
 - Enhanced DELETE `/locations/{id}` 409 response to include `counts` object (assets, people, certificates, applications)
