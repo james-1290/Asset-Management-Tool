@@ -119,9 +119,7 @@ export default function DashboardPage() {
           iconBg="bg-red-50 text-red-600 dark:bg-red-900/40 dark:text-red-400"
           isLoading={expiriesLoading}
           variant="attention"
-          onClick={() => {
-            document.getElementById("expiring-items")?.scrollIntoView({ behavior: "smooth" });
-          }}
+          href={`/assets?warrantyExpiryFrom=${new Date().toISOString().slice(0, 10)}&warrantyExpiryTo=${new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10)}&sortBy=warrantyExpiryDate&sortDir=asc`}
         />
       </div>
 
