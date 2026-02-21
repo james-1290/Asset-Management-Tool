@@ -12,7 +12,6 @@ import type {
   CreateAlertRuleRequest,
   UpdateAlertRuleRequest,
 } from "@/types/user-notification";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -205,92 +204,97 @@ export function MyAlertsTab() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-medium">My Alert Rules</h3>
-          <p className="text-sm text-muted-foreground">
+    <div className="space-y-8">
+      {/* My Alert Rules Card */}
+      <section className="bg-card rounded-xl border overflow-hidden shadow-sm">
+        <div className="p-6 border-b flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bell className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-bold">My Alert Rules</h2>
+          </div>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Alert Rule
+          </Button>
+        </div>
+        <div className="p-6">
+          <p className="text-sm text-muted-foreground mb-6">
             Create personal alert rules to get notified about expiring items.
           </p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Alert Rule
-        </Button>
-      </div>
 
-      {rules.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Bell className="mb-4 h-10 w-10 text-muted-foreground" />
-            <p className="text-muted-foreground">
-              No personal alert rules yet. Create one to get notified about
-              specific items.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {rules.map((rule) => (
-            <Card key={rule.id}>
-              <CardContent className="flex items-center justify-between py-4">
-                <div className="space-y-1.5">
+          {rules.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Bell className="mb-4 h-10 w-10 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                No personal alert rules yet. Create one to get notified about
+                specific items.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {rules.map((rule) => (
+                <div
+                  key={rule.id}
+                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-transparent hover:border-primary/20 transition-all"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">{rule.name}</span>
+                      {!rule.isActive && (
+                        <Badge variant="secondary">Inactive</Badge>
+                      )}
+                      {rule.notifyEmail && (
+                        <Badge variant="outline" className="text-xs">
+                          Email
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {parseEntityTypes(rule.entityTypes).map((et) => (
+                        <Badge key={et} variant="secondary" className="text-xs">
+                          {entityTypeLabel(et)}
+                        </Badge>
+                      ))}
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        {rule.thresholds
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                          .join(", ")}{" "}
+                        days
+                      </span>
+                    </div>
+                  </div>
+
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold">{rule.name}</span>
-                    {!rule.isActive && (
-                      <Badge variant="secondary">Inactive</Badge>
-                    )}
-                    {rule.notifyEmail && (
-                      <Badge variant="outline" className="text-xs">
-                        Email
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {parseEntityTypes(rule.entityTypes).map((et) => (
-                      <Badge key={et} variant="secondary" className="text-xs">
-                        {entityTypeLabel(et)}
-                      </Badge>
-                    ))}
-                    <span className="ml-2 text-sm text-muted-foreground">
-                      {rule.thresholds
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean)
-                        .join(", ")}{" "}
-                      days
-                    </span>
+                    <Switch
+                      checked={rule.isActive}
+                      onCheckedChange={() => handleToggleActive(rule)}
+                      aria-label={`Toggle ${rule.name}`}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEdit(rule)}
+                      aria-label={`Edit ${rule.name}`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => confirmDelete(rule)}
+                      aria-label={`Delete ${rule.name}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={rule.isActive}
-                    onCheckedChange={() => handleToggleActive(rule)}
-                    aria-label={`Toggle ${rule.name}`}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openEdit(rule)}
-                    aria-label={`Edit ${rule.name}`}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => confirmDelete(rule)}
-                    aria-label={`Delete ${rule.name}`}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </section>
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

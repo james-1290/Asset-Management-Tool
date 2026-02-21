@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { Settings } from "lucide-react";
 import { useSystemSettings, useUpdateSystemSettings } from "@/hooks/use-settings";
 import {
   Form,
@@ -21,13 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 const systemSchema = z.object({
   orgName: z.string().min(1, "Organisation name is required").max(200),
@@ -60,12 +54,8 @@ export function SystemTab() {
 
   function onSubmit(values: SystemFormValues) {
     updateSettings.mutate(values, {
-      onSuccess: () => {
-        toast.success("System settings updated");
-      },
-      onError: (err) => {
-        toast.error(err.message || "Failed to update settings");
-      },
+      onSuccess: () => toast.success("System settings updated"),
+      onError: (err) => toast.error(err.message || "Failed to update settings"),
     });
   }
 
@@ -74,87 +64,98 @@ export function SystemTab() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>System Settings</CardTitle>
-        <CardDescription>Configure organisation-wide settings.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-w-md">
-            <FormField
-              control={form.control}
-              name="orgName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Organisation Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="currency"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Currency Symbol</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. GBP, USD, EUR" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="dateFormat"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date Format</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="defaultPageSize"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Default Page Size</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={10}
-                      max={100}
-                      {...field}
-                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={updateSettings.isPending}>
-              {updateSettings.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+    <div className="space-y-8">
+      {/* System Settings Card */}
+      <section className="bg-card rounded-xl border overflow-hidden shadow-sm">
+        <div className="p-6 border-b flex items-center gap-2">
+          <Settings className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-bold">System Settings</h2>
+        </div>
+        <div className="p-6">
+          <p className="text-sm text-muted-foreground mb-6">
+            Configure organisation-wide settings that apply to all users.
+          </p>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="orgName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organisation Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency Symbol</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. GBP, USD, EUR" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="dateFormat"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date Format</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                          <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                          <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="defaultPageSize"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Default Page Size</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={10}
+                          max={100}
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="pt-4 border-t flex justify-end">
+                <Button type="submit" disabled={updateSettings.isPending}>
+                  {updateSettings.isPending ? "Saving..." : "Save System Settings"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
+      </section>
+    </div>
   );
 }

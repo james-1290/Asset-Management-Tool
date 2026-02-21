@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-21 18:13 — My Alerts, Users, and System tabs redesign
+
+- My Alerts: card-based layout with Bell icon header, alert rules in bg-muted/50 styled rows
+- Users: card with Users icon header, description text, full-width data table
+- System: card with Settings icon header, 2-column form grid, border-separated save footer
+- Removed max-w-4xl constraint on Users tab for full-width table
+
 ## 2026-02-21 18:10 — Dashboard settings tab redesign
 
 - Redesigned Dashboard settings tab to match new card-based design style
