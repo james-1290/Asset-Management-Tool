@@ -32,21 +32,35 @@ export function getAssetTypeColumns({
         </Button>
       ),
       cell: ({ row }) => (
-        <div className="min-w-0">
-          <button
-            type="button"
-            onClick={() => onEdit(row.original)}
-            className="font-medium text-foreground hover:text-primary transition-colors"
-          >
-            {row.original.name}
-          </button>
-          {row.original.description && (
-            <div className="text-xs text-muted-foreground truncate max-w-[300px]">
-              {row.original.description}
-            </div>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() => onEdit(row.original)}
+          className="font-medium text-foreground hover:text-primary transition-colors"
+        >
+          {row.original.name}
+        </button>
       ),
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground truncate max-w-[400px] block">
+          {row.original.description || "—"}
+        </span>
+      ),
+    },
+    {
+      id: "customFields",
+      header: "Custom Fields",
+      cell: ({ row }) => {
+        const count = row.original.customFields?.length ?? 0;
+        return (
+          <span className="text-muted-foreground">
+            {count === 0 ? "—" : `${count} field${count !== 1 ? "s" : ""}`}
+          </span>
+        );
+      },
     },
     {
       id: "actions",
