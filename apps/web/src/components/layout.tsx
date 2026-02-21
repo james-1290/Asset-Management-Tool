@@ -20,16 +20,14 @@ export function Layout() {
           <div className="flex-1 max-w-2xl">
             <CommandSearch />
           </div>
-          <div className="flex items-center gap-2 ml-8">
+          <div className="flex items-center gap-1">
             <NotificationsBell />
             <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
               <Link to="/settings">
                 <Settings className="h-5 w-5 text-muted-foreground" />
               </Link>
             </Button>
-          </div>
-          <div className="h-8 w-px bg-border mx-2" />
-          <div className="flex items-center gap-3">
+            <div className="h-8 w-px bg-border mx-2" />
             {user && (
               <div className="hidden sm:block text-right">
                 <p className="text-sm font-semibold leading-none">{user.displayName}</p>
