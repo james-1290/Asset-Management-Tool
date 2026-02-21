@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-02-21 12:50 — Location detail page redesign
+
+- Redesigned location detail page to match other detail pages: icon header with breadcrumbs, uppercase label grid, styled card sections with count badges
+
 ## 2026-02-21 12:47 — Asset + Certificate detail page redesign
 
 - Redesigned asset and certificate detail pages to match application detail mockup
