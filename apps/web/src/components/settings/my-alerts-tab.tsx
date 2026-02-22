@@ -18,7 +18,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -298,18 +297,26 @@ export function MyAlertsTab() {
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingRule ? "Edit Alert Rule" : "New Alert Rule"}
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden">
+          {/* Header */}
+          <div className="px-8 py-6 border-b">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold tracking-tight">
+                {editingRule ? "Edit Alert Rule" : "New Alert Rule"}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
 
-          <div className="space-y-4 py-2">
+          {/* Body */}
+          <div className="px-8 py-8 space-y-8">
+            {/* Rule Name */}
             <div className="space-y-2">
-              <Label htmlFor="rule-name">Name</Label>
+              <Label htmlFor="rule-name" className="text-sm font-semibold">
+                Rule Name
+              </Label>
               <Input
                 id="rule-name"
+                className="h-12 bg-muted/50"
                 value={form.name}
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, name: e.target.value }))
@@ -321,20 +328,24 @@ export function MyAlertsTab() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label>Entity Types</Label>
-              <div className="flex flex-wrap gap-4">
+            {/* Entity Types */}
+            <div className="space-y-4">
+              <Label className="text-sm font-semibold">Entity Types</Label>
+              <div className="flex flex-wrap gap-6">
                 {ENTITY_TYPE_OPTIONS.map((opt) => (
-                  <div key={opt.value} className="flex items-center gap-2">
+                  <label
+                    key={opt.value}
+                    className="flex items-center gap-3 cursor-pointer group"
+                  >
                     <Checkbox
                       id={`et-${opt.value}`}
                       checked={form.entityTypes.includes(opt.value)}
                       onCheckedChange={() => toggleEntityType(opt.value)}
                     />
-                    <Label htmlFor={`et-${opt.value}`} className="font-normal">
+                    <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground">
                       {opt.label}
-                    </Label>
-                  </div>
+                    </span>
+                  </label>
                 ))}
               </div>
               {formErrors.entityTypes && (
@@ -344,17 +355,21 @@ export function MyAlertsTab() {
               )}
             </div>
 
+            {/* Thresholds */}
             <div className="space-y-2">
-              <Label htmlFor="rule-thresholds">Thresholds (days)</Label>
+              <Label htmlFor="rule-thresholds" className="text-sm font-semibold">
+                Thresholds (days)
+              </Label>
               <Input
                 id="rule-thresholds"
+                className="h-12 bg-muted/50 font-medium"
                 value={form.thresholds}
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, thresholds: e.target.value }))
                 }
                 placeholder="60, 30, 14"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground italic">
                 Comma-separated number of days before expiry to trigger alerts.
               </p>
               {formErrors.thresholds && (
@@ -364,9 +379,10 @@ export function MyAlertsTab() {
               )}
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="rule-email">Email notifications</Label>
+            {/* Email Notification Toggle */}
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl border">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold">Email notifications</p>
                 <p className="text-xs text-muted-foreground">
                   Receive email when thresholds are reached.
                 </p>
@@ -381,9 +397,10 @@ export function MyAlertsTab() {
             </div>
           </div>
 
-          <DialogFooter>
+          {/* Footer */}
+          <div className="px-8 py-6 bg-muted/30 border-t flex items-center justify-end gap-4">
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => setDialogOpen(false)}
               disabled={isSaving}
             >
@@ -396,7 +413,7 @@ export function MyAlertsTab() {
                   ? "Update Rule"
                   : "Create Rule"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

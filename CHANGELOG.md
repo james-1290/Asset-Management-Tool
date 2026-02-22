@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-02-22 15:42 — Alert rule modal redesign
+
+- Restyled create/edit alert rule dialog to match new design system
+- Larger spacing, bg-muted/50 inputs, email toggle in card-like row, footer with muted background
+
 ## 2026-02-21 18:13 — My Alerts, Users, and System tabs redesign
 
 - My Alerts: card-based layout with Bell icon header, alert rules in bg-muted/50 styled rows
