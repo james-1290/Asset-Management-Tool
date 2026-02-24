@@ -4,6 +4,8 @@
 
 ## Done
 
+- [x] Notifications page redesign: card-based layout with urgency icons, 3-dot action menus, underline tabs
+
 - [x] Comprehensive bug sweep (35 fixes): global exception handler, input validation, optimistic locking, React Query invalidation, ErrorBoundary, LIKE escaping, batch bulk ops, date validation, accessibility
 
 - [x] ESLint bug fix sweep: resolved all 20 errors (unused imports, setState-in-effect, applyView declaration order, missing deps, react-refresh) + fixed purchaseDate type mismatch in asset request interfaces

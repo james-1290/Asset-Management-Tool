@@ -86,7 +86,7 @@ export function AuditLogsToolbar({
   }
 
   const hasAdvancedFilters = !!(dateFrom || dateTo);
-  const hasAnyFilter = !!(search || entityType || action || dateFrom || dateTo);
+  const hasAnyFilter = !!(search || (entityType && entityType !== "all") || selectedActions.size > 0 || dateFrom || dateTo);
 
   function handleClearFilters() {
     onSearchChange("");

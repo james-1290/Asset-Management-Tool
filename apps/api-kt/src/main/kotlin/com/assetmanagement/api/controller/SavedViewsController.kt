@@ -5,6 +5,7 @@ import com.assetmanagement.api.model.SavedView
 import com.assetmanagement.api.repository.SavedViewRepository
 import com.assetmanagement.api.service.CurrentUserService
 import org.springframework.http.ResponseEntity
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import java.net.URI
 import java.time.Instant
@@ -54,6 +55,7 @@ class SavedViewsController(
     }
 
     @PutMapping("/{id}/default")
+    @Transactional
     fun setDefault(@PathVariable id: UUID): ResponseEntity<Any> {
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
         val view = savedViewRepository.findById(id).orElse(null)

@@ -51,7 +51,7 @@ class ProfileController(
         }
 
         val roles = user.userRoles.mapNotNull { it.role?.name }
-        return ResponseEntity.ok(UserProfileResponse(user.id, user.username, user.displayName, user.email, roles, user.themePreference))
+        return ResponseEntity.ok(UserProfileResponse(user.id, user.username, user.displayName, user.email, roles, user.themePreference, user.authProvider))
     }
 
     @PutMapping("/password")
@@ -61,6 +61,9 @@ class ProfileController(
         val user = userRepository.findById(userId).orElse(null)
             ?: return ResponseEntity.status(401).build()
         if (!user.isActive) return ResponseEntity.status(401).build()
+
+        if (user.authProvider != null && user.authProvider != "LOCAL")
+            return ResponseEntity.badRequest().body(mapOf("error" to "Password change is not available for SSO users."))
 
         if (!passwordEncoder.matches(request.currentPassword, user.passwordHash))
             return ResponseEntity.badRequest().body(mapOf("error" to "Current password is incorrect."))

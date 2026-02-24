@@ -133,15 +133,18 @@ function NotificationCard({
   notification,
   showActions,
   showStatus,
+  onMarkRead,
+  onDismiss,
+  onSnooze,
 }: {
   notification: UserNotification;
   showActions: boolean;
   showStatus: boolean;
+  onMarkRead?: (id: string) => void;
+  onDismiss?: (id: string) => void;
+  onSnooze?: (id: string, duration: string) => void;
 }) {
   const navigate = useNavigate();
-  const markRead = useMarkRead();
-  const dismiss = useDismissNotification();
-  const snooze = useSnoozeNotification();
   const urgency = getUrgency(notification.expiryDate);
   const UrgencyIcon = urgency.icon;
   const status = showStatus ? statusBadge(notification) : null;
@@ -190,24 +193,24 @@ function NotificationCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem onClick={() => markRead.mutate(notification.id)}>
+                <DropdownMenuItem onClick={() => onMarkRead?.(notification.id)}>
                   <Eye className="mr-2 h-4 w-4" />
                   Mark as read
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => dismiss.mutate(notification.id)}>
+                <DropdownMenuItem onClick={() => onDismiss?.(notification.id)}>
                   <X className="mr-2 h-4 w-4" />
                   Dismiss
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => snooze.mutate({ id: notification.id, duration: "1d" })}>
+                <DropdownMenuItem onClick={() => onSnooze?.(notification.id, "1d")}>
                   <Clock className="mr-2 h-4 w-4" />
                   Snooze 1 day
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => snooze.mutate({ id: notification.id, duration: "3d" })}>
+                <DropdownMenuItem onClick={() => onSnooze?.(notification.id, "3d")}>
                   <Clock className="mr-2 h-4 w-4" />
                   Snooze 3 days
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => snooze.mutate({ id: notification.id, duration: "1w" })}>
+                <DropdownMenuItem onClick={() => onSnooze?.(notification.id, "1w")}>
                   <Clock className="mr-2 h-4 w-4" />
                   Snooze 1 week
                 </DropdownMenuItem>
@@ -231,6 +234,9 @@ function NotificationList({
 }) {
   const [page, setPage] = useState(1);
   const { data, isLoading } = useUserNotifications({ page, pageSize: PAGE_SIZE, status });
+  const markRead = useMarkRead();
+  const dismiss = useDismissNotification();
+  const snooze = useSnoozeNotification();
   const notifications = data?.items ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -260,6 +266,9 @@ function NotificationList({
           notification={notification}
           showActions={showActions}
           showStatus={showStatus ?? false}
+          onMarkRead={(id) => markRead.mutate(id)}
+          onDismiss={(id) => dismiss.mutate(id)}
+          onSnooze={(id, duration) => snooze.mutate({ id, duration })}
         />
       ))}
 

@@ -9,6 +9,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.server.ResponseStatusException
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.orm.ObjectOptimisticLockingFailureException
 import jakarta.validation.ConstraintViolationException
 import java.util.UUID
@@ -60,6 +61,12 @@ class GlobalExceptionHandler {
     @ExceptionHandler(ResponseStatusException::class)
     fun handleResponseStatusException(ex: ResponseStatusException): ResponseEntity<Map<String, Any>> {
         return ResponseEntity.status(ex.getStatusCode()).body(mapOf("error" to (ex.reason ?: "Error")))
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException::class)
+    fun handleDataIntegrity(ex: DataIntegrityViolationException): ResponseEntity<Map<String, Any>> {
+        return ResponseEntity.status(409)
+            .body(mapOf("error" to "A data conflict occurred. The record may already exist or reference invalid data."))
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException::class)

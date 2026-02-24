@@ -11,7 +11,7 @@ import com.assetmanagement.api.repository.UserRoleRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Component
 
 @Component
@@ -20,12 +20,12 @@ class DatabaseSeeder(
     private val userRepository: UserRepository,
     private val userRoleRepository: UserRoleRepository,
     private val systemSettingRepository: SystemSettingRepository,
+    private val passwordEncoder: PasswordEncoder,
     @Value("\${app.admin.password:admin123}") private val adminPassword: String,
     @Value("\${auth.local-login.enabled:true}") private val localLoginEnabled: Boolean
 ) : CommandLineRunner {
 
     private val log = LoggerFactory.getLogger(DatabaseSeeder::class.java)
-    private val passwordEncoder = BCryptPasswordEncoder()
 
     override fun run(vararg args: String?) {
         seedRoles()

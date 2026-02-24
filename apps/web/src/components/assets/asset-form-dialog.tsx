@@ -450,7 +450,7 @@ export function AssetFormDialog({
                         <FormLabel className="font-semibold">Purchase Cost</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">£</span>
                             <Input
                               className="pl-7"
                               type="number"
