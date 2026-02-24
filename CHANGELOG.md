@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-02-24 20:33 — Breadcrumbs above title on all detail pages
+
+- Moved breadcrumbs from below the title to above it on all 5 detail pages (assets, certificates, applications, locations, people)
+- Consistent `mb-4` spacing between breadcrumbs and title across all detail pages
+
 ## 2026-02-24 20:25 — Computed PendingRenewal / Expired status
 
 - Applications and Certificates with stored status `Active` now automatically compute to `Expired` (if expiryDate is in the past) or `PendingRenewal` (if expiryDate is within 30 days) in API responses

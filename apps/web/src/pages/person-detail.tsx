@@ -137,15 +137,16 @@ export default function PersonDetailPage() {
 
   return (
     <div className="space-y-8">
-      {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-        <Link to="/people" className="hover:text-primary">People</Link>
-        <ChevronRight className="h-3 w-3" />
-        <span className="text-foreground">{person.fullName}</span>
-      </div>
-
-      {/* Profile Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      {/* Header */}
+      <div>
+        {/* Breadcrumbs */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-4">
+          <Link to="/people" className="hover:text-primary">People</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-foreground">{person.fullName}</span>
+        </div>
+        {/* Profile Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           <div className="w-24 h-24 rounded-full border-4 border-background shadow-sm overflow-hidden bg-muted flex items-center justify-center">
             <span className="text-2xl font-bold text-muted-foreground">{initials}</span>
@@ -181,6 +182,7 @@ export default function PersonDetailPage() {
             <Pencil className="mr-2 h-4 w-4" />
             Edit Profile
           </Button>
+        </div>
         </div>
       </div>
 
