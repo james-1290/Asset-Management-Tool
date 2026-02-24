@@ -39,10 +39,7 @@ import type { Location } from "../../types/location";
 const ASSET_STATUSES = [
   { value: "Available", label: "Available" },
   { value: "Assigned", label: "Assigned" },
-  { value: "CheckedOut", label: "Checked Out" },
   { value: "InMaintenance", label: "In Maintenance" },
-  { value: "Retired", label: "Retired" },
-  { value: "Sold", label: "Sold" },
 ] as const;
 
 interface AssetFormDialogProps {

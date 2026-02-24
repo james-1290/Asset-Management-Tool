@@ -339,6 +339,22 @@ class AssetsController(
             }
         }
 
+        // Block checkout via edit if someone is already assigned
+        if (newStatus == AssetStatus.CheckedOut && asset.assignedPersonId != null)
+            return ResponseEntity.badRequest().body(
+                mapOf("error" to "Cannot check out an asset that is assigned to someone. Unassign them first.")
+            )
+
+        // Block reassigning to a different person while someone is already assigned — must unassign first
+        if (asset.assignedPersonId != null
+            && request.assignedPersonId != null
+            && request.assignedPersonId != asset.assignedPersonId
+        ) {
+            return ResponseEntity.badRequest().body(
+                mapOf("error" to "Cannot reassign an asset that is already assigned to someone. Unassign them first, then assign to the new person.")
+            )
+        }
+
         // Detect changes before applying
         val changes = mutableListOf<AuditChange>()
 
@@ -533,9 +549,14 @@ class AssetsController(
         if (asset.isArchived)
             return ResponseEntity.badRequest().body(mapOf("error" to "Cannot check out an archived asset."))
 
-        if (asset.status != AssetStatus.Available && asset.status != AssetStatus.Assigned)
+        if (asset.assignedPersonId != null)
             return ResponseEntity.badRequest().body(
-                mapOf("error" to "Asset must be Available or Assigned to check out. Current status: ${asset.status}")
+                mapOf("error" to "Cannot check out an asset that is assigned to someone. Unassign them first.")
+            )
+
+        if (asset.status != AssetStatus.Available)
+            return ResponseEntity.badRequest().body(
+                mapOf("error" to "Asset must be Available to check out. Current status: ${asset.status}")
             )
 
         val person = personRepository.findById(request.personId).orElse(null)
@@ -869,6 +890,11 @@ class AssetsController(
         for (id in request.ids) {
             val asset = entityMap[id]
             if (asset == null || asset.isArchived) {
+                failed++
+                continue
+            }
+
+            if (newStatus == AssetStatus.CheckedOut && asset.status == AssetStatus.Assigned) {
                 failed++
                 continue
             }

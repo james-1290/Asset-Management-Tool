@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "../lib/api-client";
 import { Pencil, Info, History, ChevronRight, LogOut, LogIn, Archive, PoundSterling, Copy } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
@@ -143,8 +144,8 @@ export default function AssetDetailPage() {
           toast.success("Asset updated");
           setFormOpen(false);
         },
-        onError: () => {
-          toast.error("Failed to update asset");
+        onError: (error) => {
+          toast.error(getApiErrorMessage(error, "Failed to update asset"));
         },
       },
     );
@@ -269,7 +270,7 @@ export default function AssetDetailPage() {
           <div className="flex items-center gap-3">
             {isActiveAsset && (
               <>
-                {(asset.status === "Available" || asset.status === "Assigned") && (
+                {asset.status === "Available" && (
                   <Button variant="outline" onClick={() => setCheckoutOpen(true)} className="font-semibold">
                     <LogOut className="mr-2 h-4 w-4" />
                     Check Out
@@ -498,8 +499,8 @@ export default function AssetDetailPage() {
                 toast.success("Asset checked out");
                 setCheckoutOpen(false);
               },
-              onError: () => {
-                toast.error("Failed to check out asset");
+              onError: (error) => {
+                toast.error(getApiErrorMessage(error, "Failed to check out asset"));
               },
             },
           );
@@ -520,8 +521,8 @@ export default function AssetDetailPage() {
                 toast.success("Asset checked in");
                 setCheckinOpen(false);
               },
-              onError: () => {
-                toast.error("Failed to check in asset");
+              onError: (error) => {
+                toast.error(getApiErrorMessage(error, "Failed to check in asset"));
               },
             },
           );
@@ -541,8 +542,8 @@ export default function AssetDetailPage() {
                 toast.success("Asset retired");
                 setRetireOpen(false);
               },
-              onError: () => {
-                toast.error("Failed to retire asset");
+              onError: (error) => {
+                toast.error(getApiErrorMessage(error, "Failed to retire asset"));
               },
             },
           );
@@ -562,8 +563,8 @@ export default function AssetDetailPage() {
                 toast.success("Asset marked as sold");
                 setSellOpen(false);
               },
-              onError: () => {
-                toast.error("Failed to mark asset as sold");
+              onError: (error) => {
+                toast.error(getApiErrorMessage(error, "Failed to mark asset as sold"));
               },
             },
           );
