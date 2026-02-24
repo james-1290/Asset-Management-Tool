@@ -114,6 +114,8 @@
 - [x] Phase C polish: advanced filtering (date range, numeric range, location, person, department, licence type filters), quick filter chips, active filter summary, saved view filter persistence
 - [x] Phase B: notification centre + user alerts (in-app notifications with read/dismiss/snooze, personal alert rules, notification centre page, per-type Slack webhooks, 90-day auto-purge)
 
+- [x] Computed PendingRenewal/Expired status: Active applications and certificates auto-compute to Expired (past expiry) or PendingRenewal (within 30 days) in API responses, dashboard counts, and list filters
+
 ## Later
 - [x] Retire + sold workflow
 - [x] Dedicated deactivate workflow for applications (currently via edit form status dropdown)
