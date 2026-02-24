@@ -7,6 +7,7 @@ import {
   RefreshCw,
   TrendingDown,
 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { AssetSummaryReport } from "@/components/reports/asset-summary-report";
 import { ExpiriesReport } from "@/components/reports/expiries-report";
 import { LicenceSummaryReport } from "@/components/reports/licence-summary-report";
@@ -68,14 +69,12 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reports Central</h1>
-        <p className="text-muted-foreground mt-1">
-          Real-time intelligence and asset lifecycle insights.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Reports"
+        breadcrumbs={[{ label: "Reports" }]}
+        description="Real-time intelligence and asset lifecycle insights."
+      />
 
       {/* Tab navigation */}
       <div className="flex gap-3 overflow-x-auto pb-1">

@@ -551,7 +551,7 @@ export default function AssetsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Assets"
-          breadcrumbs={[{ label: "Inventory", href: "/assets" }, { label: "Assets" }]}
+          breadcrumbs={[{ label: "Assets", href: "/assets" }, { label: "Assets" }]}
         />
         <div className="space-y-2">
           <Skeleton className="h-10 w-full" />
@@ -567,7 +567,7 @@ export default function AssetsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Assets"
-          breadcrumbs={[{ label: "Inventory", href: "/assets" }, { label: "Assets" }]}
+          breadcrumbs={[{ label: "Assets", href: "/assets" }, { label: "Assets" }]}
         />
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
           Failed to load assets. Is the API running?
@@ -584,7 +584,7 @@ export default function AssetsPage() {
       <PageHeader
         title="Assets"
         breadcrumbs={[
-          { label: "Inventory", href: "/assets" },
+          { label: "Assets", href: "/assets" },
           { label: "Assets" },
         ]}
         description={`Managing ${totalCount.toLocaleString()} total assets`}

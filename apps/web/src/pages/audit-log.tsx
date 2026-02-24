@@ -308,7 +308,7 @@ export default function AuditLogPage() {
     <div className="space-y-6">
       <PageHeader
         title="Audit Log"
-        breadcrumbs={[{ label: "Tools", href: "/audit-log" }, { label: "Audit Log" }]}
+        breadcrumbs={[{ label: "Audit Log" }]}
         description="View all actions performed across the system."
         actions={
           !isLoading && (

@@ -35,6 +35,7 @@ import {
   FileText,
   ListChecks,
 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 
 type Step = "select" | "upload" | "preview" | "results";
 
@@ -184,13 +185,11 @@ export default function ImportPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Import Data</h1>
-        <p className="text-muted-foreground mt-1">
-          Bulk import records from CSV files into your asset management system.
-        </p>
-      </div>
+      <PageHeader
+        title="Import Data"
+        breadcrumbs={[{ label: "Import Data" }]}
+        description="Bulk import records from CSV files into your asset management system."
+      />
 
       {/* Entity type selector (always visible when no type selected) */}
       {step === "select" && (
