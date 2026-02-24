@@ -1,5 +1,6 @@
 package com.assetmanagement.api.dto
 
+import jakarta.validation.constraints.NotBlank
 import java.time.Instant
 import java.util.*
 
@@ -30,6 +31,7 @@ data class CertificateDto(
 )
 
 data class CreateCertificateRequest(
+    @field:NotBlank(message = "Name is required")
     val name: String,
     val certificateTypeId: UUID,
     val issuer: String? = null,

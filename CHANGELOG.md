@@ -1,5 +1,42 @@
 # Changelog
 
+## 2026-02-24 08:20 — Comprehensive bug sweep: 35 fixes across frontend + backend
+
+### Backend — Error handling
+- Global exception handler: malformed JSON, unknown fields, missing body/params now return 400 (not 500)
+- Unauthenticated requests now return 401 (not 403)
+- Optimistic locking conflicts return 409 with clear message
+- All error responses now consistently return `{"error": "..."}` JSON format
+
+### Backend — Data integrity
+- Added `@Version` optimistic locking to Asset, Certificate, Application, Person, Location (+ migration V010)
+- Added `@NotBlank` validation on name/fullName for Locations, People, Certificates, Applications
+- Certificate date validation: expiryDate must be after issuedDate
+- People duplicate email check (409 on conflict)
+- Asset update preserves `depreciationMonths` when not provided (was being wiped to null)
+- Custom field values cleaned up when asset type changes or custom field definition is archived
+- Import controller: replaced all `!!` NPE risks with safe null handling + status alias mapping
+
+### Backend — Performance + audit
+- Bulk operations now use batch `findAllById`/`saveAll` instead of individual fetch/save
+- LIKE search patterns now escape `%` and `_` wildcards across all controllers
+- `@Transactional` added to AssetTypes, CertificateTypes, ApplicationTypes write methods
+- `reassignAndArchive` now logs individual audit entries for each moved entity
+- Date filter off-by-one fixed (was missing last millisecond of day)
+
+### Frontend — React Query
+- All mutations now invalidate `["dashboard"]` queries on success
+- `useUpdateLocation` and `useUpdatePerson` now invalidate detail queries
+- `useOffboardPerson` and `useReassignAndArchiveLocation` invalidate related entity queries
+- All `usePerson*` hooks now have `enabled: !!id` guard
+
+### Frontend — Forms + UX
+- Certificate schema: cross-field validation (expiry must be after issued date)
+- Application schema: cross-field validation (usedSeats cannot exceed maxSeats)
+- Added React ErrorBoundary wrapping the entire app (prevents white-screen crashes)
+- FilterChip dropdown: added ARIA roles, keyboard navigation, Escape-to-close
+- Asset create: double-submit protection includes duplicate check pending state
+
 ## 2026-02-24 07:50 — Bug sweep: frontend + backend fixes
 
 ### Frontend

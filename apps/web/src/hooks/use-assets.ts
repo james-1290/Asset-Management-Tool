@@ -57,6 +57,7 @@ export function useCreateAsset() {
     mutationFn: (data: CreateAssetRequest) => assetsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -71,6 +72,7 @@ export function useUpdateAsset() {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
       queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -85,6 +87,7 @@ export function useCheckoutAsset() {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
       queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -99,6 +102,7 @@ export function useCheckinAsset() {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
       queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -113,6 +117,7 @@ export function useRetireAsset() {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
       queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -127,6 +132,7 @@ export function useSellAsset() {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
       queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -138,6 +144,7 @@ export function useArchiveAsset() {
     mutationFn: (id: string) => assetsApi.archive(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -149,6 +156,7 @@ export function useBulkArchiveAssets() {
     mutationFn: (ids: string[]) => assetsApi.bulkArchive(ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -167,6 +175,7 @@ export function useBulkStatusAssets() {
       assetsApi.bulkStatus(ids, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -179,6 +188,7 @@ export function useBulkEditAssets() {
       assetsApi.bulkEdit(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assetKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }

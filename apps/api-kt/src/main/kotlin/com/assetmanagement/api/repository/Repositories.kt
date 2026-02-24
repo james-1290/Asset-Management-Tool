@@ -49,6 +49,7 @@ interface PersonRepository : JpaRepository<Person, UUID>, JpaSpecificationExecut
     @Query("SELECT p FROM Person p WHERE p.isArchived = false AND LOWER(p.fullName) LIKE LOWER(CONCAT('%', :query, '%'))")
     fun search(query: String, pageable: Pageable): List<Person>
     fun countByLocationIdAndIsArchivedFalse(locationId: UUID): Long
+    fun findByEmailIgnoreCaseAndIsArchivedFalse(email: String): Person?
 }
 
 @Repository
@@ -129,6 +130,7 @@ interface CustomFieldValueRepository : JpaRepository<CustomFieldValue, UUID> {
     fun findByEntityId(entityId: UUID): List<CustomFieldValue>
     fun findByEntityIdIn(entityIds: List<UUID>): List<CustomFieldValue>
     fun deleteByEntityId(entityId: UUID)
+    fun findByCustomFieldDefinitionId(customFieldDefinitionId: UUID): List<CustomFieldValue>
 }
 
 @Repository

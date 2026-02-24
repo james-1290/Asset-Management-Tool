@@ -59,6 +59,7 @@ export function useCreateLocation() {
     mutationFn: (data: CreateLocationRequest) => locationsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: locationKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -69,8 +70,10 @@ export function useUpdateLocation() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateLocationRequest }) =>
       locationsApi.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: locationKeys.all });
+      queryClient.invalidateQueries({ queryKey: locationKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -88,6 +91,7 @@ export function useArchiveLocation() {
     mutationFn: (id: string) => locationsApi.archive(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: locationKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -100,6 +104,11 @@ export function useReassignAndArchiveLocation() {
       locationsApi.reassignAndArchive(id, { targetLocationId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: locationKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: ["people"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }

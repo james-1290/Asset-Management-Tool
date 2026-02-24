@@ -43,5 +43,9 @@ class Person(
     var assignedAssets: MutableList<Asset> = mutableListOf(),
 
     @OneToMany(mappedBy = "person", cascade = [CascadeType.ALL])
-    var history: MutableList<PersonHistory> = mutableListOf()
+    var history: MutableList<PersonHistory> = mutableListOf(),
+
+    @Version
+    @Column(name = "version", nullable = false)
+    var entityVersion: Long = 0
 )

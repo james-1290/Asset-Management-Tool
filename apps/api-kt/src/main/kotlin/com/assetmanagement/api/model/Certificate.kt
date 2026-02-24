@@ -84,5 +84,9 @@ class Certificate(
     var history: MutableList<CertificateHistory> = mutableListOf(),
 
     @Transient
-    var customFieldValues: MutableList<CustomFieldValue> = mutableListOf()
+    var customFieldValues: MutableList<CustomFieldValue> = mutableListOf(),
+
+    @Version
+    @Column(name = "version", nullable = false)
+    var entityVersion: Long = 0
 )

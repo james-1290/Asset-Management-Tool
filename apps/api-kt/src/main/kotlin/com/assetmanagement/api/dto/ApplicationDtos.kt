@@ -1,5 +1,6 @@
 package com.assetmanagement.api.dto
 
+import jakarta.validation.constraints.NotBlank
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.*
@@ -35,6 +36,7 @@ data class ApplicationDto(
 )
 
 data class CreateApplicationRequest(
+    @field:NotBlank(message = "Name is required")
     val name: String,
     val applicationTypeId: UUID,
     val publisher: String? = null,

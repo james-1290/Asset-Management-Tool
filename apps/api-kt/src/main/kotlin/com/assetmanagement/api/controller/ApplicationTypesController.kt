@@ -1,6 +1,7 @@
 package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
+import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.model.ApplicationType
 import com.assetmanagement.api.model.CustomFieldDefinition
 import com.assetmanagement.api.model.enums.CustomFieldType
@@ -8,6 +9,7 @@ import com.assetmanagement.api.model.enums.EntityType
 import com.assetmanagement.api.repository.ApplicationRepository
 import com.assetmanagement.api.repository.ApplicationTypeRepository
 import com.assetmanagement.api.repository.CustomFieldDefinitionRepository
+import com.assetmanagement.api.repository.CustomFieldValueRepository
 import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
@@ -17,6 +19,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import org.springframework.transaction.annotation.Transactional
 import java.net.URI
 import java.time.Instant
 import java.util.*
@@ -27,6 +30,7 @@ class ApplicationTypesController(
     private val applicationTypeRepository: ApplicationTypeRepository,
     private val applicationRepository: ApplicationRepository,
     private val customFieldDefinitionRepository: CustomFieldDefinitionRepository,
+    private val customFieldValueRepository: CustomFieldValueRepository,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
@@ -41,7 +45,7 @@ class ApplicationTypesController(
         val spec = Specification<ApplicationType> { root, _, cb ->
             val preds = mutableListOf<Predicate>()
             preds.add(cb.equal(root.get<Boolean>("isArchived"), false))
-            if (!search.isNullOrBlank()) preds.add(cb.like(cb.lower(root.get("name")), "%${search.lowercase()}%"))
+            if (!search.isNullOrBlank()) preds.add(cb.like(cb.lower(root.get("name")), "%${SqlUtils.escapeLikePattern(search.lowercase())}%", '\\'))
             cb.and(*preds.toTypedArray())
         }
         val dir = if (sortDir.equals("desc", ignoreCase = true)) Sort.Direction.DESC else Sort.Direction.ASC
@@ -65,6 +69,7 @@ class ApplicationTypesController(
     }
 
     @PostMapping
+    @Transactional
     fun create(@RequestBody request: CreateApplicationTypeRequest): ResponseEntity<Any> {
         val type = ApplicationType(name = request.name, description = request.description)
         applicationTypeRepository.save(type)
@@ -80,13 +85,19 @@ class ApplicationTypesController(
     }
 
     @PutMapping("/{id}")
+    @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateApplicationTypeRequest): ResponseEntity<Any> {
         val type = applicationTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         type.name = request.name; type.description = request.description; type.updatedAt = Instant.now()
         if (request.customFields != null) {
             val existing = type.customFieldDefinitions.filter { !it.isArchived }
             val requestIds = request.customFields.mapNotNull { it.id }.toSet()
-            existing.forEach { if (it.id !in requestIds) it.isArchived = true }
+            existing.forEach { def ->
+                if (def.id !in requestIds) {
+                    def.isArchived = true
+                    customFieldValueRepository.deleteAll(customFieldValueRepository.findByCustomFieldDefinitionId(def.id!!))
+                }
+            }
             request.customFields.forEach { field ->
                 val ft = runCatching { CustomFieldType.valueOf(field.fieldType) }.getOrNull()
                     ?: return ResponseEntity.badRequest().body(mapOf("error" to "Invalid field type: ${field.fieldType}"))
@@ -105,6 +116,7 @@ class ApplicationTypesController(
     }
 
     @PostMapping("/bulk-archive")
+    @Transactional
     fun bulkArchive(@RequestBody request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {
         var s = 0; var f = 0
         request.ids.forEach { id -> val t = applicationTypeRepository.findById(id).orElse(null); if (t == null || t.isArchived) { f++; return@forEach }
@@ -115,6 +127,7 @@ class ApplicationTypesController(
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
         val t = applicationTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         val appCount = applicationRepository.countByApplicationTypeIdAndIsArchivedFalse(id)

@@ -3,6 +3,7 @@ package com.assetmanagement.api.controller
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Location
 import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.repository.ApplicationRepository
 import com.assetmanagement.api.repository.AssetRepository
 import com.assetmanagement.api.repository.CertificateRepository
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.ResponseEntity
 import org.springframework.transaction.annotation.Transactional
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 import java.io.OutputStreamWriter
 import java.net.URI
@@ -45,7 +47,7 @@ class LocationsController(
         val predicates = mutableListOf<Predicate>()
         predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
         if (!search.isNullOrBlank()) {
-            predicates.add(cb.like(cb.lower(root.get("name")), "%${search.lowercase()}%"))
+            predicates.add(cb.like(cb.lower(root.get("name")), "%${SqlUtils.escapeLikePattern(search.lowercase())}%", '\\'))
         }
         cb.and(*predicates.toTypedArray())
     }
@@ -138,7 +140,7 @@ class LocationsController(
 
     @PostMapping
     @Transactional
-    fun create(@RequestBody request: CreateLocationRequest): ResponseEntity<LocationDto> {
+    fun create(@Valid @RequestBody request: CreateLocationRequest): ResponseEntity<LocationDto> {
         val location = Location(name = request.name, address = request.address, city = request.city, country = request.country)
         locationRepository.save(location)
 
@@ -265,30 +267,63 @@ class LocationsController(
         } else null
 
         val newLocationId = request.targetLocationId // null = unassign
+        val targetName = target?.name ?: "Unassigned"
 
         // Reassign assets
         val assetSpec = Specification<com.assetmanagement.api.model.Asset> { root, _, cb ->
             cb.and(cb.equal(root.get<UUID>("locationId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
         }
-        assetRepository.findAll(assetSpec).forEach { it.locationId = newLocationId; assetRepository.save(it) }
+        val assets = assetRepository.findAll(assetSpec)
+        assets.forEach { it.locationId = newLocationId }
+        assetRepository.saveAll(assets)
+        for (asset in assets) {
+            auditService.log(AuditEntry("Updated", "Asset", asset.id.toString(), asset.name,
+                "Moved asset \"${asset.name}\" from \"${source.name}\" to \"$targetName\"",
+                currentUserService.userId, currentUserService.userName,
+                listOf(AuditChange("Location", source.name, targetName))))
+        }
 
         // Reassign people
         val personSpec = Specification<com.assetmanagement.api.model.Person> { root, _, cb ->
             cb.and(cb.equal(root.get<UUID>("locationId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
         }
-        personRepository.findAll(personSpec).forEach { it.locationId = newLocationId; personRepository.save(it) }
+        val people = personRepository.findAll(personSpec)
+        people.forEach { it.locationId = newLocationId }
+        personRepository.saveAll(people)
+        for (person in people) {
+            auditService.log(AuditEntry("Updated", "Person", person.id.toString(), person.fullName,
+                "Moved person \"${person.fullName}\" from \"${source.name}\" to \"$targetName\"",
+                currentUserService.userId, currentUserService.userName,
+                listOf(AuditChange("Location", source.name, targetName))))
+        }
 
         // Reassign certificates
         val certSpec = Specification<com.assetmanagement.api.model.Certificate> { root, _, cb ->
             cb.and(cb.equal(root.get<UUID>("locationId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
         }
-        certificateRepository.findAll(certSpec).forEach { it.locationId = newLocationId; certificateRepository.save(it) }
+        val certs = certificateRepository.findAll(certSpec)
+        certs.forEach { it.locationId = newLocationId }
+        certificateRepository.saveAll(certs)
+        for (cert in certs) {
+            auditService.log(AuditEntry("Updated", "Certificate", cert.id.toString(), cert.name,
+                "Moved certificate \"${cert.name}\" from \"${source.name}\" to \"$targetName\"",
+                currentUserService.userId, currentUserService.userName,
+                listOf(AuditChange("Location", source.name, targetName))))
+        }
 
         // Reassign applications
         val appSpec = Specification<com.assetmanagement.api.model.Application> { root, _, cb ->
             cb.and(cb.equal(root.get<UUID>("locationId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
         }
-        applicationRepository.findAll(appSpec).forEach { it.locationId = newLocationId; applicationRepository.save(it) }
+        val apps = applicationRepository.findAll(appSpec)
+        apps.forEach { it.locationId = newLocationId }
+        applicationRepository.saveAll(apps)
+        for (app in apps) {
+            auditService.log(AuditEntry("Updated", "Application", app.id.toString(), app.name,
+                "Moved application \"${app.name}\" from \"${source.name}\" to \"$targetName\"",
+                currentUserService.userId, currentUserService.userName,
+                listOf(AuditChange("Location", source.name, targetName))))
+        }
 
         // Archive the source location
         source.isArchived = true
@@ -319,7 +354,7 @@ class LocationsController(
             if (request.name.isNullOrBlank())
                 return@Specification cb.and(*predicates.toTypedArray(), cb.disjunction())
 
-            predicates.add(cb.like(cb.lower(root.get("name")), "%${request.name.lowercase()}%"))
+            predicates.add(cb.like(cb.lower(root.get("name")), "%${SqlUtils.escapeLikePattern(request.name.lowercase())}%", '\\'))
             cb.and(*predicates.toTypedArray())
         }
 

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,14 +37,22 @@ export function FilterChip({
     }
   }, [open]);
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      setOpen(false);
+    }
+  }, []);
+
   const selectedOption = options.find((o) => o.value === value);
   const displayValue = selectedOption?.label ?? allLabel;
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative" onKeyDown={handleKeyDown}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
         className={cn(
           "inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
           "hover:bg-accent",
@@ -59,9 +67,14 @@ export function FilterChip({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border bg-popover p-1 shadow-md">
+        <div
+          role="listbox"
+          className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border bg-popover p-1 shadow-md"
+        >
           <button
             type="button"
+            role="option"
+            aria-selected={!value}
             onClick={() => {
               onChange("");
               setOpen(false);
@@ -77,6 +90,8 @@ export function FilterChip({
             <button
               key={opt.value}
               type="button"
+              role="option"
+              aria-selected={value === opt.value}
               onClick={() => {
                 onChange(opt.value);
                 setOpen(false);

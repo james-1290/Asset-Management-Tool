@@ -1,5 +1,6 @@
 package com.assetmanagement.api.dto
 
+import jakarta.validation.constraints.NotBlank
 import java.time.Instant
 import java.util.*
 
@@ -17,6 +18,7 @@ data class PersonDto(
 )
 
 data class CreatePersonRequest(
+    @field:NotBlank(message = "Name is required")
     val fullName: String,
     val email: String? = null,
     val department: String? = null,
