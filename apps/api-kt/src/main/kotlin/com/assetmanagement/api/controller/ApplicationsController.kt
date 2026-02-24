@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.ResponseEntity
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import java.io.OutputStreamWriter
 import java.math.BigDecimal
@@ -161,6 +162,7 @@ class ApplicationsController(
     // ── POST / ── Create ────────────────────────────────────────────────
 
     @PostMapping
+    @Transactional
     fun create(@RequestBody request: CreateApplicationRequest): ResponseEntity<Any> {
         // Validate application type
         val appType = applicationTypeRepository.findById(request.applicationTypeId).orElse(null)
@@ -270,6 +272,7 @@ class ApplicationsController(
     // ── PUT /{id} ── Update with full change tracking ───────────────────
 
     @PutMapping("/{id}")
+    @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateApplicationRequest): ResponseEntity<Any> {
         val app = applicationRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
@@ -486,6 +489,7 @@ class ApplicationsController(
     // ── POST /{id}/deactivate ── Deactivate application ─────────────────
 
     @PostMapping("/{id}/deactivate")
+    @Transactional
     fun deactivate(
         @PathVariable id: UUID,
         @RequestBody request: DeactivateApplicationRequest
@@ -534,6 +538,7 @@ class ApplicationsController(
     // ── POST /{id}/reactivate ── Reactivate application ─────────────────
 
     @PostMapping("/{id}/reactivate")
+    @Transactional
     fun reactivate(
         @PathVariable id: UUID,
         @RequestBody request: ReactivateApplicationRequest
@@ -581,6 +586,7 @@ class ApplicationsController(
     // ── POST /bulk-archive ── Bulk archive ──────────────────────────────
 
     @PostMapping("/bulk-archive")
+    @Transactional
     fun bulkArchive(@RequestBody request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {
         var succeeded = 0
         var failed = 0
@@ -612,6 +618,7 @@ class ApplicationsController(
     // ── POST /bulk-status ── Bulk status change ─────────────────────────
 
     @PostMapping("/bulk-status")
+    @Transactional
     fun bulkStatus(@RequestBody request: BulkStatusRequest): ResponseEntity<Any> {
         val newStatus = runCatching { ApplicationStatus.valueOf(request.status) }.getOrNull()
             ?: return ResponseEntity.badRequest().body(mapOf("error" to "Invalid status: ${request.status}"))
@@ -648,6 +655,7 @@ class ApplicationsController(
     // ── DELETE /{id} ── Archive (soft delete) ───────────────────────────
 
     @DeleteMapping("/{id}")
+    @Transactional
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
         val app = applicationRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()

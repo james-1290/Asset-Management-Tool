@@ -119,6 +119,7 @@ class PeopleController(
     }
 
     @PostMapping
+    @Transactional
     fun create(@RequestBody request: CreatePersonRequest): ResponseEntity<Any> {
         if (request.locationId != null) {
             val loc = locationRepository.findById(request.locationId).orElse(null)
@@ -135,6 +136,7 @@ class PeopleController(
     }
 
     @PutMapping("/{id}")
+    @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdatePersonRequest): ResponseEntity<Any> {
         val person = personRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         if (request.locationId != null) {
@@ -163,6 +165,7 @@ class PeopleController(
     }
 
     @PostMapping("/bulk-archive")
+    @Transactional
     fun bulkArchive(@RequestBody request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {
         var succeeded = 0; var failed = 0
         request.ids.forEach { id ->
@@ -178,6 +181,7 @@ class PeopleController(
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
         val person = personRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         person.isArchived = true; person.updatedAt = Instant.now()

@@ -6,5 +6,7 @@ enum class ApplicationHistoryEventType {
     Renewed,
     Suspended,
     Archived,
-    Restored
+    Restored,
+    Deactivated,
+    Reactivated
 }

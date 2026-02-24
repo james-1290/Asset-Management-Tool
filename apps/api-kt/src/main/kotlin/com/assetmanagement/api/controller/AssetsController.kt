@@ -26,6 +26,7 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
+import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 @RestController
@@ -208,6 +209,7 @@ class AssetsController(
     // 4. POST / — Create with validation
     // ──────────────────────────────────────────────────────────────────────────
     @PostMapping
+    @Transactional
     fun create(@RequestBody request: CreateAssetRequest): ResponseEntity<Any> {
         // Validate required fields
         if (request.name.isBlank())
@@ -301,6 +303,7 @@ class AssetsController(
     // 5. PUT /{id} — Update with change tracking, custom field upsert
     // ──────────────────────────────────────────────────────────────────────────
     @PutMapping("/{id}")
+    @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateAssetRequest): ResponseEntity<Any> {
         val asset = assetRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
@@ -516,6 +519,7 @@ class AssetsController(
     // 7. POST /{id}/checkout — Checkout to person
     // ──────────────────────────────────────────────────────────────────────────
     @PostMapping("/{id}/checkout")
+    @Transactional
     fun checkout(@PathVariable id: UUID, @RequestBody request: CheckoutAssetRequest): ResponseEntity<Any> {
         val asset = assetRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
@@ -583,6 +587,7 @@ class AssetsController(
     // 8. POST /{id}/checkin — Checkin from person
     // ──────────────────────────────────────────────────────────────────────────
     @PostMapping("/{id}/checkin")
+    @Transactional
     fun checkin(@PathVariable id: UUID, @RequestBody request: CheckinAssetRequest): ResponseEntity<Any> {
         val asset = assetRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
@@ -652,6 +657,7 @@ class AssetsController(
     // 9. POST /{id}/retire — Retire asset
     // ──────────────────────────────────────────────────────────────────────────
     @PostMapping("/{id}/retire")
+    @Transactional
     fun retire(@PathVariable id: UUID, @RequestBody request: RetireAssetRequest): ResponseEntity<Any> {
         val asset = assetRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
@@ -721,6 +727,7 @@ class AssetsController(
     // 10. POST /{id}/sell — Sell asset
     // ──────────────────────────────────────────────────────────────────────────
     @PostMapping("/{id}/sell")
+    @Transactional
     fun sell(@PathVariable id: UUID, @RequestBody request: SellAssetRequest): ResponseEntity<Any> {
         val asset = assetRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
@@ -797,6 +804,7 @@ class AssetsController(
     // 11. POST /bulk-archive — Bulk archive
     // ──────────────────────────────────────────────────────────────────────────
     @PostMapping("/bulk-archive")
+    @Transactional
     fun bulkArchive(@RequestBody request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {
         var succeeded = 0
         var failed = 0
@@ -833,6 +841,7 @@ class AssetsController(
     // 12. POST /bulk-status — Bulk status change
     // ──────────────────────────────────────────────────────────────────────────
     @PostMapping("/bulk-status")
+    @Transactional
     fun bulkStatus(@RequestBody request: BulkStatusRequest): ResponseEntity<Any> {
         val newStatus = try { AssetStatus.valueOf(request.status) } catch (_: Exception) {
             return ResponseEntity.badRequest().body(mapOf("error" to "Invalid status: ${request.status}"))
@@ -875,6 +884,7 @@ class AssetsController(
     // 12b. POST /bulk-edit — Bulk edit fields on multiple assets
     // ──────────────────────────────────────────────────────────────────────────
     @PostMapping("/bulk-edit")
+    @Transactional
     fun bulkEdit(@RequestBody request: BulkEditAssetsRequest): ResponseEntity<Any> {
         if (request.ids.isEmpty())
             return ResponseEntity.badRequest().body(mapOf("error" to "No asset IDs provided."))
@@ -1023,6 +1033,7 @@ class AssetsController(
     // 13. DELETE /{id} — Archive (soft delete)
     // ──────────────────────────────────────────────────────────────────────────
     @DeleteMapping("/{id}")
+    @Transactional
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
         val asset = assetRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()

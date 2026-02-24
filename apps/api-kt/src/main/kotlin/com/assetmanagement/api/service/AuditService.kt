@@ -154,6 +154,9 @@ class AuditService(
             "Archived" -> ApplicationHistoryEventType.Archived
             "Renewed" -> ApplicationHistoryEventType.Renewed
             "Suspended" -> ApplicationHistoryEventType.Suspended
+            "Deactivated" -> ApplicationHistoryEventType.Deactivated
+            "Reactivated" -> ApplicationHistoryEventType.Reactivated
+            "StatusChanged" -> ApplicationHistoryEventType.Edited
             else -> return
         }
         val history = ApplicationHistory(
