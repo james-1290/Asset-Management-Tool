@@ -341,8 +341,8 @@ export default function ApplicationsPage() {
         toast.success("Application deleted");
         setArchivingApplication(null);
       },
-      onError: () => {
-        toast.error("Failed to delete application");
+      onError: (error) => {
+        toast.error(getApiErrorMessage(error, "Failed to delete application"));
       },
     });
   }
