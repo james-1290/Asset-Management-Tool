@@ -4,6 +4,7 @@ import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Certificate
 import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.util.SqlUtils
+import com.assetmanagement.api.util.computeStatus
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.CertificateStatus
 import com.assetmanagement.api.repository.*
@@ -73,7 +74,48 @@ class CertificatesController(
                     null
                 }
                 if (certStatus != null) {
-                    predicates.add(cb.equal(root.get<CertificateStatus>("status"), certStatus))
+                    val now = Instant.now()
+                    val pendingCutoff = now.plus(30, java.time.temporal.ChronoUnit.DAYS)
+
+                    when (certStatus) {
+                        CertificateStatus.Expired -> {
+                            predicates.add(
+                                cb.or(
+                                    cb.equal(root.get<CertificateStatus>("status"), CertificateStatus.Expired),
+                                    cb.and(
+                                        cb.equal(root.get<CertificateStatus>("status"), CertificateStatus.Active),
+                                        cb.isNotNull(root.get<Instant>("expiryDate")),
+                                        cb.lessThan(root.get("expiryDate"), now)
+                                    )
+                                )
+                            )
+                        }
+                        CertificateStatus.PendingRenewal -> {
+                            predicates.add(
+                                cb.or(
+                                    cb.equal(root.get<CertificateStatus>("status"), CertificateStatus.PendingRenewal),
+                                    cb.and(
+                                        cb.equal(root.get<CertificateStatus>("status"), CertificateStatus.Active),
+                                        cb.isNotNull(root.get<Instant>("expiryDate")),
+                                        cb.greaterThanOrEqualTo(root.get("expiryDate"), now),
+                                        cb.lessThan(root.get("expiryDate"), pendingCutoff)
+                                    )
+                                )
+                            )
+                        }
+                        CertificateStatus.Active -> {
+                            predicates.add(cb.equal(root.get<CertificateStatus>("status"), CertificateStatus.Active))
+                            predicates.add(
+                                cb.or(
+                                    cb.isNull(root.get<Instant>("expiryDate")),
+                                    cb.greaterThanOrEqualTo(root.get("expiryDate"), pendingCutoff)
+                                )
+                            )
+                        }
+                        else -> {
+                            predicates.add(cb.equal(root.get<CertificateStatus>("status"), certStatus))
+                        }
+                    }
                 }
             }
 
@@ -121,7 +163,7 @@ class CertificatesController(
         serialNumber = serialNumber,
         issuedDate = issuedDate,
         expiryDate = expiryDate,
-        status = status.name,
+        status = computeStatus(status.name, expiryDate),
         autoRenewal = autoRenewal,
         notes = notes,
         assetId = assetId,
