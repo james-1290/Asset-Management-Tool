@@ -28,7 +28,7 @@ import {
   useBulkStatusApplications,
   useCheckApplicationDuplicates,
 } from "../hooks/use-applications";
-import { useApplicationSummary } from "../hooks/use-dashboard";
+
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { BulkActionBar } from "../components/bulk-action-bar";
 import { useApplicationTypes } from "../hooks/use-application-types";
@@ -118,7 +118,7 @@ export default function ApplicationsPage() {
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedApplications(queryParams);
-  const { data: appSummary } = useApplicationSummary();
+
   const { data: applicationTypes } = useApplicationTypes();
   const { data: locations } = useLocations();
   const createMutation = useCreateApplication();
@@ -436,26 +436,6 @@ export default function ApplicationsPage() {
           </Button>
         }
       />
-
-      {/* Stats Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-card border rounded-xl p-4">
-          <p className="text-xs font-medium text-muted-foreground">Total Applications</p>
-          <p className="text-xl font-bold mt-1">{appSummary?.totalApplications ?? totalCount}</p>
-        </div>
-        <div className="bg-card border rounded-xl p-4">
-          <p className="text-xs font-medium text-muted-foreground">Active Licences</p>
-          <p className="text-xl font-bold mt-1">{appSummary?.active ?? "—"}</p>
-        </div>
-        <div className="bg-card border rounded-xl p-4">
-          <p className="text-xs font-medium text-muted-foreground">Pending Renewal</p>
-          <p className="text-xl font-bold mt-1 text-primary">{appSummary?.pendingRenewal ?? "—"}</p>
-        </div>
-        <div className="bg-card border rounded-xl p-4">
-          <p className="text-xs font-medium text-muted-foreground">Expired</p>
-          <p className="text-xl font-bold mt-1 text-orange-500">{appSummary?.expired ?? "—"}</p>
-        </div>
-      </div>
 
       <DataTable
         columns={columns}
