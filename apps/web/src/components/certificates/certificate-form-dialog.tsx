@@ -121,6 +121,26 @@ export function CertificateFormDialog({
     }
   }, [open, certificate, form]);
 
+  function handleFormSubmit(values: CertificateFormValues) {
+    if (customFieldDefs) {
+      let hasError = false;
+      for (const def of customFieldDefs) {
+        if (def.isRequired) {
+          const val = values.customFieldValues?.[def.id];
+          if (!val || val.trim() === "" || val === "__none__") {
+            form.setError(`customFieldValues.${def.id}` as `customFieldValues.${string}`, {
+              type: "manual",
+              message: `${def.name} is required`,
+            });
+            hasError = true;
+          }
+        }
+      }
+      if (hasError) return;
+    }
+    onSubmit(values);
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl p-0 gap-0 max-h-[90vh] flex flex-col">
@@ -133,7 +153,7 @@ export function CertificateFormDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-1 overflow-hidden">
             <div className="flex-1 overflow-y-auto px-8 py-8 space-y-8">
 
               {/* Section 1 - General Information */}
@@ -392,7 +412,7 @@ export function CertificateFormDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading} className="font-semibold shadow-lg">
+              <Button type="submit" disabled={loading || (isEditing && !form.formState.isDirty)} className="font-semibold shadow-lg">
                 {loading ? "Saving..." : isEditing ? "Save Changes" : "Add Certificate"}
               </Button>
             </DialogFooter>

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-02-24 14:30 — Fix asset form dirty tracking, required custom fields, dashboard widget
+
+- Fix: "Save Changes" button now disabled until a field is actually changed (assets, certificates, applications)
+- Fix: `setValue` calls for Assigned To and Status now pass `shouldDirty: true` so form tracks changes from combobox/select
+- Fix: PersonCombobox display updates to show newly selected person instead of stale original name
+- Fix: Required custom fields (marked with `*`) now validated on submit — blank values show error message
+- Fix: Dashboard "In Maintenance" widget renamed to "In Repair", link corrected to valid `InMaintenance` enum
+
 ## 2026-02-24 14:09 — Dead code cleanup: 1,302 lines removed
 
 ### Frontend — 11 orphaned files deleted
