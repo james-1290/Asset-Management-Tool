@@ -1,13 +1,25 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Eye, Clock, X, CheckCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Bell,
+  CheckCheck,
+  ChevronLeft,
+  ChevronRight,
+  AlertTriangle,
+  Clock,
+  ShieldAlert,
+  Info,
+  MoreVertical,
+  Eye,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/page-header";
@@ -33,26 +45,13 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-function urgencyColor(expiryDate: string): string {
-  const days = Math.ceil((new Date(expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  if (days <= 0) return "text-destructive";
-  if (days <= 7) return "text-destructive";
-  if (days <= 14) return "text-orange-500";
-  if (days <= 30) return "text-yellow-600";
-  return "text-muted-foreground";
-}
-
-function entityTypeBadge(type: string): { label: string; className: string } {
-  switch (type) {
-    case "warranty":
-      return { label: "Warranty", className: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" };
-    case "certificate":
-      return { label: "Certificate", className: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" };
-    case "licence":
-      return { label: "Licence", className: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300" };
-    default:
-      return { label: type, className: "bg-gray-100 text-gray-700" };
-  }
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = date.getDate().toString().padStart(2, "0");
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
 }
 
 function entityPath(notification: UserNotification): string {
@@ -68,13 +67,59 @@ function entityPath(notification: UserNotification): string {
   }
 }
 
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const day = date.getDate().toString().padStart(2, "0");
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
+interface UrgencyConfig {
+  label: string;
+  labelClass: string;
+  iconBgClass: string;
+  iconClass: string;
+  icon: typeof AlertTriangle;
+}
+
+function getUrgency(expiryDate: string): UrgencyConfig {
+  const days = Math.ceil((new Date(expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  if (days <= 0) {
+    return {
+      label: "Expired",
+      labelClass: "text-destructive",
+      iconBgClass: "bg-destructive/10",
+      iconClass: "text-destructive",
+      icon: ShieldAlert,
+    };
+  }
+  if (days <= 7) {
+    return {
+      label: "Urgent",
+      labelClass: "text-destructive",
+      iconBgClass: "bg-destructive/10",
+      iconClass: "text-destructive",
+      icon: AlertTriangle,
+    };
+  }
+  if (days <= 14) {
+    return {
+      label: "Warning",
+      labelClass: "text-amber-600",
+      iconBgClass: "bg-amber-50 dark:bg-amber-900/30",
+      iconClass: "text-amber-600",
+      icon: AlertTriangle,
+    };
+  }
+  if (days <= 30) {
+    return {
+      label: "Upcoming",
+      labelClass: "text-blue-600",
+      iconBgClass: "bg-blue-50 dark:bg-blue-900/30",
+      iconClass: "text-blue-600",
+      icon: Clock,
+    };
+  }
+  return {
+    label: "Info",
+    labelClass: "text-primary",
+    iconBgClass: "bg-primary/10",
+    iconClass: "text-primary",
+    icon: Info,
+  };
 }
 
 function statusBadge(notification: UserNotification): { label: string; variant: "default" | "secondary" | "outline" | "destructive" } | null {
@@ -84,7 +129,7 @@ function statusBadge(notification: UserNotification): { label: string; variant: 
   return { label: "Unread", variant: "default" };
 }
 
-function NotificationRow({
+function NotificationCard({
   notification,
   showActions,
   showStatus,
@@ -97,97 +142,80 @@ function NotificationRow({
   const markRead = useMarkRead();
   const dismiss = useDismissNotification();
   const snooze = useSnoozeNotification();
-  const badge = entityTypeBadge(notification.entityType);
+  const urgency = getUrgency(notification.expiryDate);
+  const UrgencyIcon = urgency.icon;
   const status = showStatus ? statusBadge(notification) : null;
 
   return (
-    <div className="flex items-start gap-3 rounded-md px-4 py-3 hover:bg-accent transition-colors group border-b last:border-b-0">
-      <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-center gap-2">
-          <span
-            className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium leading-none ${badge.className}`}
-          >
-            {badge.label}
-          </span>
+    <div className="bg-card rounded-xl shadow-sm border overflow-hidden">
+      <div className="p-4 flex gap-3">
+        {/* Urgency icon */}
+        <div className={`shrink-0 w-9 h-9 rounded-full ${urgency.iconBgClass} ${urgency.iconClass} flex items-center justify-center`}>
+          <UrgencyIcon className="h-4 w-4" />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-0.5">
+            <span className={`text-[11px] font-bold uppercase tracking-wider ${urgency.labelClass}`}>
+              {urgency.label}
+            </span>
+            <div className="flex items-center gap-2">
+              {status && (
+                <Badge variant={status.variant} className="text-[10px]">
+                  {status.label}
+                </Badge>
+              )}
+              <span className="text-xs text-muted-foreground">{timeAgo(notification.createdAt)}</span>
+            </div>
+          </div>
           <button
-            className="text-sm font-medium truncate hover:underline text-left"
+            className="text-sm font-semibold text-foreground hover:text-primary transition-colors text-left truncate block max-w-full"
             onClick={() => navigate(entityPath(notification))}
           >
             {notification.entityName}
           </button>
-          {status && (
-            <Badge variant={status.variant} className="text-[10px] ml-auto shrink-0">
-              {status.label}
-            </Badge>
-          )}
+          <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">
+            {notification.title} &middot; Expires {formatDate(notification.expiryDate)}
+          </p>
         </div>
-        <p className={`text-sm ${urgencyColor(notification.expiryDate)}`}>
-          {notification.title}
-        </p>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span>Expires {formatDate(notification.expiryDate)}</span>
-          <span>{timeAgo(notification.createdAt)}</span>
-        </div>
+
+        {/* Actions menu */}
+        {showActions && (
+          <div className="shrink-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onClick={() => markRead.mutate(notification.id)}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Mark as read
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => dismiss.mutate(notification.id)}>
+                  <X className="mr-2 h-4 w-4" />
+                  Dismiss
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => snooze.mutate({ id: notification.id, duration: "1d" })}>
+                  <Clock className="mr-2 h-4 w-4" />
+                  Snooze 1 day
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => snooze.mutate({ id: notification.id, duration: "3d" })}>
+                  <Clock className="mr-2 h-4 w-4" />
+                  Snooze 3 days
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => snooze.mutate({ id: notification.id, duration: "1w" })}>
+                  <Clock className="mr-2 h-4 w-4" />
+                  Snooze 1 week
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
-
-      {showActions && (
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            title="Mark as read"
-            onClick={() => markRead.mutate(notification.id)}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                title="Snooze"
-              >
-                <Clock className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36">
-              <DropdownMenuItem
-                onClick={() => snooze.mutate({ id: notification.id, duration: "1d" })}
-              >
-                1 day
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => snooze.mutate({ id: notification.id, duration: "3d" })}
-              >
-                3 days
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => snooze.mutate({ id: notification.id, duration: "1w" })}
-              >
-                1 week
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => snooze.mutate({ id: notification.id, duration: "until_expiry" })}
-              >
-                Until expiry
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            title="Dismiss"
-            onClick={() => dismiss.mutate(notification.id)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
@@ -225,20 +253,18 @@ function NotificationList({
   }
 
   return (
-    <div>
-      <div className="divide-y">
-        {notifications.map((notification) => (
-          <NotificationRow
-            key={notification.id}
-            notification={notification}
-            showActions={showActions}
-            showStatus={showStatus ?? false}
-          />
-        ))}
-      </div>
+    <div className="space-y-3">
+      {notifications.map((notification) => (
+        <NotificationCard
+          key={notification.id}
+          notification={notification}
+          showActions={showActions}
+          showStatus={showStatus ?? false}
+        />
+      ))}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t px-4 py-3">
+        <div className="flex items-center justify-between pt-4">
           <Button
             variant="outline"
             size="sm"
@@ -268,6 +294,7 @@ function NotificationList({
 
 export default function NotificationsPage() {
   const markAllRead = useMarkAllRead();
+  const [tab, setTab] = useState<"current" | "history">("current");
 
   return (
     <div className="space-y-6">
@@ -283,29 +310,47 @@ export default function NotificationsPage() {
             disabled={markAllRead.isPending}
           >
             <CheckCheck className="h-4 w-4" />
-            Mark all read
+            Mark all as read
           </Button>
         }
       />
 
-      <Tabs defaultValue="current">
-        <TabsList>
-          <TabsTrigger value="current">Current</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
+      {/* Underline tabs */}
+      <div>
+        <div className="flex border-b border-border gap-8">
+          <button
+            type="button"
+            onClick={() => setTab("current")}
+            className={`border-b-2 pb-3 text-sm font-semibold transition-colors ${
+              tab === "current"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Current
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("history")}
+            className={`border-b-2 pb-3 text-sm font-semibold transition-colors ${
+              tab === "history"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            History
+          </button>
+        </div>
 
-        <TabsContent value="current" className="mt-4">
-          <div className="rounded-md border bg-card">
+        <div className="mt-6">
+          {tab === "current" && (
             <NotificationList status="unread" showActions={true} />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="history" className="mt-4">
-          <div className="rounded-md border bg-card">
+          )}
+          {tab === "history" && (
             <NotificationList status="all" showActions={false} showStatus={true} />
-          </div>
-        </TabsContent>
-      </Tabs>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
