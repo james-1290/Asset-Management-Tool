@@ -168,7 +168,7 @@ export function ApplicationFormDialog({
             {isEditing ? "Edit Application" : "Add New Application"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground mt-1">
-            Fill in the details to register a new software asset.
+            {isEditing ? "Update the application details." : "Fill in the details to register a new software asset."}
           </DialogDescription>
         </DialogHeader>
 
@@ -380,7 +380,7 @@ export function ApplicationFormDialog({
                         <FormLabel className="font-semibold">Purchase Cost</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">£</span>
                             <Input
                               type="number"
                               min={0}

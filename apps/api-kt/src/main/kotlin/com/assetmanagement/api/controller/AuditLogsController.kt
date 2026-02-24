@@ -3,6 +3,7 @@ package com.assetmanagement.api.controller
 import com.assetmanagement.api.dto.AuditLogDto
 import com.assetmanagement.api.dto.PagedResponse
 import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.model.AuditLog
 import com.assetmanagement.api.repository.AuditLogRepository
 import com.opencsv.CSVWriter
@@ -71,7 +72,8 @@ class AuditLogsController(
             else if (actions.size > 1) preds.add(root.get<String>("action").`in`(actions))
         }
         if (!search.isNullOrBlank()) {
-            val pattern = "%${search.lowercase()}%"
+            val escaped = SqlUtils.escapeLikePattern(search.lowercase())
+            val pattern = "%${escaped}%"
             preds.add(cb.or(
                 cb.like(cb.lower(root.get("details")), pattern),
                 cb.like(cb.lower(root.get("actorName")), pattern),

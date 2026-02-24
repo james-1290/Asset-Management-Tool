@@ -149,7 +149,7 @@ export function CertificateFormDialog({
             {isEditing ? "Edit Certificate" : "Add Certificate"}
           </DialogTitle>
           <DialogDescription>
-            Fill in the details to register a new certificate.
+            {isEditing ? "Update the certificate details." : "Fill in the details to register a new certificate."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

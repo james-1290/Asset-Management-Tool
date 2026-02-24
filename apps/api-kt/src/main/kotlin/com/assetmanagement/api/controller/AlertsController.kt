@@ -1,6 +1,7 @@
 package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.AlertHistoryDto
+import com.assetmanagement.api.dto.PagedResponse
 import com.assetmanagement.api.dto.TestEmailRequest
 import com.assetmanagement.api.dto.TestEmailResponse
 import com.assetmanagement.api.repository.AlertHistoryRepository
@@ -10,11 +11,12 @@ import com.assetmanagement.api.service.SlackService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.ResponseEntity
-import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/alerts")
+@PreAuthorize("hasRole('Admin')")
 class AlertsController(
     private val alertProcessingService: AlertProcessingService,
     private val emailService: EmailService,
@@ -22,13 +24,8 @@ class AlertsController(
     private val alertHistoryRepository: AlertHistoryRepository
 ) {
 
-    private fun isAdmin(): Boolean =
-        SecurityContextHolder.getContext().authentication?.authorities?.any { it.authority == "ROLE_Admin" } == true
-
     @PostMapping("/send-now")
     fun sendNow(): ResponseEntity<Any> {
-        if (!isAdmin()) return ResponseEntity.status(403).build()
-
         if (!emailService.isConfigured() && !slackService.isConfigured()) {
             return ResponseEntity.badRequest().body(mapOf("error" to "Neither email nor Slack is configured. Please configure at least one delivery channel in Alert Settings."))
         }
@@ -39,8 +36,6 @@ class AlertsController(
 
     @PostMapping("/test-email")
     fun testEmail(@RequestBody request: TestEmailRequest): ResponseEntity<TestEmailResponse> {
-        if (!isAdmin()) return ResponseEntity.status(403).build()
-
         return try {
             emailService.sendTestEmail(request.recipient)
             ResponseEntity.ok(TestEmailResponse(true, "Test email sent to ${request.recipient}"))
@@ -51,8 +46,6 @@ class AlertsController(
 
     @PostMapping("/test-slack")
     fun testSlack(): ResponseEntity<TestEmailResponse> {
-        if (!isAdmin()) return ResponseEntity.status(403).build()
-
         return try {
             slackService.sendTestMessage()
             ResponseEntity.ok(TestEmailResponse(true, "Test message sent to Slack"))
@@ -63,12 +56,12 @@ class AlertsController(
 
     @GetMapping("/history")
     fun getHistory(
-        @RequestParam(defaultValue = "0") page: Int,
-        @RequestParam(defaultValue = "20") size: Int
-    ): ResponseEntity<Any> {
-        if (!isAdmin()) return ResponseEntity.status(403).build()
-
-        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "sentAt"))
+        @RequestParam(defaultValue = "1") page: Int,
+        @RequestParam(defaultValue = "20") pageSize: Int
+    ): ResponseEntity<PagedResponse<AlertHistoryDto>> {
+        val p = maxOf(1, page)
+        val ps = pageSize.coerceIn(1, 100)
+        val pageable = PageRequest.of(p - 1, ps, Sort.by(Sort.Direction.DESC, "sentAt"))
         val historyPage = alertHistoryRepository.findAllByOrderBySentAtDesc(pageable)
 
         val items = historyPage.content.map { h ->
@@ -85,12 +78,6 @@ class AlertsController(
             )
         }
 
-        return ResponseEntity.ok(mapOf(
-            "items" to items,
-            "page" to historyPage.number,
-            "size" to historyPage.size,
-            "totalElements" to historyPage.totalElements,
-            "totalPages" to historyPage.totalPages
-        ))
+        return ResponseEntity.ok(PagedResponse(items, p, ps, historyPage.totalElements))
     }
 }

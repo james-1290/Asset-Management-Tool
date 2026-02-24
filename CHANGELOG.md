@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-02-24 21:51 — Comprehensive code review fixes
+
+### Backend (Kotlin/Spring Boot)
+- Fixed `trackDecimal` null comparison bug in AssetsController and ApplicationsController (phantom audit log entries)
+- Fixed LIKE injection in AuditLogsController search (added SqlUtils.escapeLikePattern)
+- Added SSO user guard for password change in ProfileController (prevents NPE)
+- Added missing `authProvider` field to ProfileController updateProfile response
+- AlertsController: replaced manual auth checks with `@PreAuthorize`, fixed 0-based pagination to 1-based, used `PagedResponse`
+- Added `@Transactional` to AssetTemplatesController create/update and SavedViewsController setDefault
+- Added `@Transactional(readOnly = true)` to SearchController search
+- Added `DataIntegrityViolationException` handler to GlobalExceptionHandler (409 response)
+- DatabaseSeeder: injected `PasswordEncoder` bean instead of creating standalone `BCryptPasswordEncoder`
+- New V011 migration: performance indexes on status, expiry_date, is_archived columns
+
+### Frontend (React)
+- Fixed `hasAnyFilter` bug in audit-logs-toolbar (Clear Filters button always showing)
+- Fixed conditional dialog descriptions for certificate and application form dialogs
+- Fixed currency symbol from $ to £ in application, asset, and asset-template form dialogs
+- Fixed breadcrumb hrefs: certificate-types → /certificates, application-types → /applications
+- Lifted mutation hooks from NotificationCard to NotificationList (prevents N hook instances)
+
+## 2026-02-24 21:35 — Notifications page redesign
+
+- Replaced tab-based notification list with individual cards featuring urgency icons and category labels
+- Urgency system: Expired (red), Urgent (red), Warning (amber), Upcoming (blue), Info (primary) based on days to expiry
+- 3-dot action menu on each card for mark-as-read, dismiss, and snooze (1d/3d/1w)
+- Underline-style tabs for Current vs History views
+- Entity names link to detail pages (assets, certificates, applications)
+
 ## 2026-02-24 21:11 — Audit log redesign
 
 - Redesigned audit log table: two-line timestamps, actor initials avatars, color-coded uppercase action badges, entity links for all types

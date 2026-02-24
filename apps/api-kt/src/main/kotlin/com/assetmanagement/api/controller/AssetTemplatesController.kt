@@ -8,6 +8,7 @@ import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
 import org.springframework.http.ResponseEntity
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import java.net.URI
 import java.time.Instant
@@ -54,6 +55,7 @@ class AssetTemplatesController(
 
     // POST / — Create
     @PostMapping
+    @Transactional
     fun create(@RequestBody request: CreateAssetTemplateRequest): ResponseEntity<Any> {
         if (request.name.isBlank())
             return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
@@ -117,6 +119,7 @@ class AssetTemplatesController(
 
     // PUT /{id} — Update
     @PutMapping("/{id}")
+    @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateAssetTemplateRequest): ResponseEntity<Any> {
         val template = assetTemplateRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()

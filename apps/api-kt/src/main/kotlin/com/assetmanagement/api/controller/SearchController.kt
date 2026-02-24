@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.ResponseEntity
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -26,6 +27,7 @@ class SearchController(
 ) {
 
     @GetMapping
+    @Transactional(readOnly = true)
     fun search(@RequestParam(required = false) q: String?, @RequestParam(defaultValue = "5") limit: Int): ResponseEntity<SearchResponse> {
         val lim = limit.coerceIn(1, 20)
         if (q.isNullOrBlank() || q.length < 2) {

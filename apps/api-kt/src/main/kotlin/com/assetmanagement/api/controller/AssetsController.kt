@@ -1344,7 +1344,11 @@ class AssetsController(
     }
 
     private fun trackDecimal(changes: MutableList<AuditChange>, field: String, oldVal: BigDecimal?, newVal: BigDecimal?) {
-        if (oldVal?.compareTo(newVal) != 0 || (oldVal == null) != (newVal == null))
-            changes.add(AuditChange(field, oldVal?.let { String.format("%.2f", it) }, newVal?.let { String.format("%.2f", it) }))
+        val changed = when {
+            oldVal == null && newVal == null -> false
+            oldVal == null || newVal == null -> true
+            else -> oldVal.compareTo(newVal) != 0
+        }
+        if (changed) changes.add(AuditChange(field, oldVal?.let { String.format("%.2f", it) }, newVal?.let { String.format("%.2f", it) }))
     }
 }
