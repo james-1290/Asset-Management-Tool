@@ -52,6 +52,7 @@ export function useCreateCertificate() {
     mutationFn: (data: CreateCertificateRequest) => certificatesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: certificateKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -66,6 +67,7 @@ export function useUpdateCertificate() {
       queryClient.invalidateQueries({ queryKey: certificateKeys.all });
       queryClient.invalidateQueries({ queryKey: certificateKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: ["certificates", variables.id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -77,6 +79,7 @@ export function useArchiveCertificate() {
     mutationFn: (id: string) => certificatesApi.archive(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: certificateKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -94,6 +97,7 @@ export function useBulkArchiveCertificates() {
     mutationFn: (ids: string[]) => certificatesApi.bulkArchive(ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: certificateKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -106,6 +110,7 @@ export function useBulkStatusCertificates() {
       certificatesApi.bulkStatus(ids, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: certificateKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }

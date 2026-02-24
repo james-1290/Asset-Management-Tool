@@ -3,14 +3,17 @@ package com.assetmanagement.api.controller
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Person
 import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.repository.*
 import com.assetmanagement.api.service.*
 import com.opencsv.CSVWriter
 import jakarta.persistence.criteria.Predicate
 import jakarta.servlet.http.HttpServletResponse
+import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
@@ -120,11 +123,21 @@ class PeopleController(
 
     @PostMapping
     @Transactional
-    fun create(@RequestBody request: CreatePersonRequest): ResponseEntity<Any> {
+    fun create(@Valid @RequestBody request: CreatePersonRequest): ResponseEntity<Any> {
         if (request.locationId != null) {
             val loc = locationRepository.findById(request.locationId).orElse(null)
-            if (loc == null || loc.isArchived) return ResponseEntity.badRequest().body("Invalid location ID.")
+            if (loc == null || loc.isArchived) return ResponseEntity.badRequest().body(mapOf("error" to "Invalid location ID."))
         }
+
+        // Check for duplicate email
+        if (!request.email.isNullOrBlank()) {
+            val existing = personRepository.findByEmailIgnoreCaseAndIsArchivedFalse(request.email)
+            if (existing != null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(mapOf("error" to "A person with this email already exists"))
+            }
+        }
+
         val person = Person(fullName = request.fullName, email = request.email, department = request.department,
             jobTitle = request.jobTitle, locationId = request.locationId)
         personRepository.save(person)
@@ -141,7 +154,7 @@ class PeopleController(
         val person = personRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         if (request.locationId != null) {
             val loc = locationRepository.findById(request.locationId).orElse(null)
-            if (loc == null || loc.isArchived) return ResponseEntity.badRequest().body("Invalid location ID.")
+            if (loc == null || loc.isArchived) return ResponseEntity.badRequest().body(mapOf("error" to "Invalid location ID."))
         }
 
         val changes = mutableListOf<AuditChange>()
@@ -167,15 +180,24 @@ class PeopleController(
     @PostMapping("/bulk-archive")
     @Transactional
     fun bulkArchive(@RequestBody request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {
+        val entities = personRepository.findAllById(request.ids)
+        val entityMap = entities.associateBy { it.id }
+        val toSave = mutableListOf<Person>()
         var succeeded = 0; var failed = 0
-        request.ids.forEach { id ->
-            val person = personRepository.findById(id).orElse(null)
-            if (person == null || person.isArchived) { failed++; return@forEach }
+
+        for (id in request.ids) {
+            val person = entityMap[id]
+            if (person == null || person.isArchived) { failed++; continue }
             person.isArchived = true; person.updatedAt = Instant.now()
-            personRepository.save(person)
+            toSave.add(person)
+            succeeded++
+        }
+
+        personRepository.saveAll(toSave)
+
+        for (person in toSave) {
             auditService.log(AuditEntry("Archived", "Person", person.id.toString(), person.fullName,
                 "Bulk archived person \"${person.fullName}\"", currentUserService.userId, currentUserService.userName))
-            succeeded++
         }
         return ResponseEntity.ok(BulkActionResponse(succeeded, failed))
     }
@@ -207,7 +229,7 @@ class PeopleController(
                 matchConditions.add(cb.equal(cb.lower(root.get("email")), request.email.lowercase()))
 
             if (!request.fullName.isNullOrBlank())
-                matchConditions.add(cb.like(cb.lower(root.get("fullName")), "%${request.fullName.lowercase()}%"))
+                matchConditions.add(cb.like(cb.lower(root.get("fullName")), "%${SqlUtils.escapeLikePattern(request.fullName.lowercase())}%", '\\'))
 
             if (matchConditions.isEmpty())
                 return@Specification cb.and(*predicates.toTypedArray(), cb.disjunction())
@@ -389,10 +411,10 @@ class PeopleController(
         val predicates = mutableListOf<Predicate>()
         predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
         if (!search.isNullOrBlank()) {
-            val pattern = "%${search.lowercase()}%"
+            val pattern = "%${SqlUtils.escapeLikePattern(search.lowercase())}%"
             predicates.add(cb.or(
-                cb.like(cb.lower(root.get("fullName")), pattern),
-                cb.like(cb.lower(root.get("email")), pattern)
+                cb.like(cb.lower(root.get("fullName")), pattern, '\\'),
+                cb.like(cb.lower(root.get("email")), pattern, '\\')
             ))
         }
         if (locationId != null) {

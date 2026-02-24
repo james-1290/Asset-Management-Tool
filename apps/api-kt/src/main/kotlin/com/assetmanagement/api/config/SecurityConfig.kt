@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter
+import jakarta.servlet.http.HttpServletResponse
 
 @Configuration
 @EnableWebSecurity
@@ -68,6 +69,13 @@ class SecurityConfig(
             .cors { it.configurationSource(corsConfig.corsConfigurationSource()) }
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .exceptionHandling { exceptions ->
+                exceptions.authenticationEntryPoint { _, response, _ ->
+                    response.status = HttpServletResponse.SC_UNAUTHORIZED
+                    response.contentType = "application/json"
+                    response.writer.write("""{"error":"Authentication required"}""")
+                }
+            }
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers("/api/v1/auth/login").permitAll()

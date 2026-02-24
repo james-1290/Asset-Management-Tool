@@ -3,6 +3,7 @@ package com.assetmanagement.api.controller
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Asset
 import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.AssetStatus
 import com.assetmanagement.api.repository.*
@@ -381,6 +382,12 @@ class AssetsController(
         if (asset.depreciationMonths != request.depreciationMonths)
             changes.add(AuditChange("Depreciation Months", asset.depreciationMonths?.toString(), request.depreciationMonths?.toString()))
 
+        // Clean up old custom field values if asset type is changing
+        val assetTypeChanging = request.assetTypeId != asset.assetTypeId
+        if (assetTypeChanging) {
+            customFieldValueRepository.deleteByEntityId(asset.id!!)
+        }
+
         // Apply changes
         asset.name = request.name
         asset.serialNumber = request.serialNumber
@@ -390,7 +397,7 @@ class AssetsController(
         asset.purchaseDate = request.purchaseDate
         asset.purchaseCost = request.purchaseCost
         asset.warrantyExpiryDate = request.warrantyExpiryDate
-        asset.depreciationMonths = request.depreciationMonths
+        asset.depreciationMonths = request.depreciationMonths ?: asset.depreciationMonths
         asset.notes = request.notes
         if (newStatus != null) asset.status = newStatus
         asset.updatedAt = Instant.now()
@@ -588,7 +595,7 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     @PostMapping("/{id}/checkin")
     @Transactional
-    fun checkin(@PathVariable id: UUID, @RequestBody request: CheckinAssetRequest): ResponseEntity<Any> {
+    fun checkin(@PathVariable id: UUID, @RequestBody(required = false) request: CheckinAssetRequest?): ResponseEntity<Any> {
         val asset = assetRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
 
@@ -611,7 +618,7 @@ class AssetsController(
         var detailParts = "Checked in \"${asset.name}\""
         if (oldPersonName != null)
             detailParts += " from $oldPersonName"
-        if (request.notes != null)
+        if (request?.notes != null)
             detailParts += " — ${request.notes}"
 
         asset.status = AssetStatus.Available
@@ -806,20 +813,27 @@ class AssetsController(
     @PostMapping("/bulk-archive")
     @Transactional
     fun bulkArchive(@RequestBody request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {
+        val entities = assetRepository.findAllById(request.ids)
+        val entityMap = entities.associateBy { it.id }
+        val toSave = mutableListOf<Asset>()
         var succeeded = 0
         var failed = 0
 
         for (id in request.ids) {
-            val asset = assetRepository.findById(id).orElse(null)
+            val asset = entityMap[id]
             if (asset == null || asset.isArchived) {
                 failed++
                 continue
             }
-
             asset.isArchived = true
             asset.updatedAt = Instant.now()
-            assetRepository.save(asset)
+            toSave.add(asset)
+            succeeded++
+        }
 
+        assetRepository.saveAll(toSave)
+
+        for (asset in toSave) {
             auditService.log(
                 AuditEntry(
                     action = "Archived",
@@ -831,7 +845,6 @@ class AssetsController(
                     actorName = currentUserService.userName
                 )
             )
-            succeeded++
         }
 
         return ResponseEntity.ok(BulkActionResponse(succeeded, failed))
@@ -847,11 +860,15 @@ class AssetsController(
             return ResponseEntity.badRequest().body(mapOf("error" to "Invalid status: ${request.status}"))
         }
 
+        val entities = assetRepository.findAllById(request.ids)
+        val entityMap = entities.associateBy { it.id }
+        val toSave = mutableListOf<Asset>()
+        val auditData = mutableListOf<Triple<Asset, AssetStatus, AssetStatus>>() // asset, oldStatus, newStatus
         var succeeded = 0
         var failed = 0
 
         for (id in request.ids) {
-            val asset = assetRepository.findById(id).orElse(null)
+            val asset = entityMap[id]
             if (asset == null || asset.isArchived) {
                 failed++
                 continue
@@ -860,21 +877,26 @@ class AssetsController(
             val oldStatus = asset.status
             asset.status = newStatus
             asset.updatedAt = Instant.now()
-            assetRepository.save(asset)
+            toSave.add(asset)
+            auditData.add(Triple(asset, oldStatus, newStatus))
+            succeeded++
+        }
 
+        assetRepository.saveAll(toSave)
+
+        for ((asset, oldStatus, status) in auditData) {
             auditService.log(
                 AuditEntry(
                     action = "StatusChanged",
                     entityType = "Asset",
                     entityId = asset.id.toString(),
                     entityName = asset.name,
-                    details = "Bulk status change \"${asset.name}\": $oldStatus → $newStatus",
+                    details = "Bulk status change \"${asset.name}\": $oldStatus → $status",
                     actorId = currentUserService.userId,
                     actorName = currentUserService.userName,
-                    changes = listOf(AuditChange("Status", oldStatus.name, newStatus.name))
+                    changes = listOf(AuditChange("Status", oldStatus.name, status.name))
                 )
             )
-            succeeded++
         }
 
         return ResponseEntity.ok(BulkActionResponse(succeeded, failed))
@@ -1073,11 +1095,11 @@ class AssetsController(
 
             // Fuzzy match on name
             if (!request.name.isNullOrBlank())
-                matchConditions.add(cb.like(cb.lower(root.get("name")), "%${request.name.lowercase()}%"))
+                matchConditions.add(cb.like(cb.lower(root.get("name")), "%${SqlUtils.escapeLikePattern(request.name.lowercase())}%", '\\'))
 
             // Fuzzy match on serialNumber
             if (!request.serialNumber.isNullOrBlank())
-                matchConditions.add(cb.like(cb.lower(root.get("serialNumber")), "%${request.serialNumber.lowercase()}%"))
+                matchConditions.add(cb.like(cb.lower(root.get("serialNumber")), "%${SqlUtils.escapeLikePattern(request.serialNumber.lowercase())}%", '\\'))
 
             if (matchConditions.isEmpty())
                 return@Specification cb.and(*predicates.toTypedArray(), cb.disjunction())
@@ -1123,11 +1145,11 @@ class AssetsController(
 
         // Search across name and serial number
         if (!search.isNullOrBlank()) {
-            val pattern = "%${search.lowercase()}%"
+            val pattern = "%${SqlUtils.escapeLikePattern(search.lowercase())}%"
             predicates.add(
                 cb.or(
-                    cb.like(cb.lower(root.get("name")), pattern),
-                    cb.like(cb.lower(root.get("serialNumber")), pattern)
+                    cb.like(cb.lower(root.get("name")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("serialNumber")), pattern, '\\')
                 )
             )
         }
@@ -1172,8 +1194,8 @@ class AssetsController(
             predicates.add(cb.greaterThanOrEqualTo(root.get("purchaseDate"), from))
         }
         if (!purchaseDateTo.isNullOrBlank()) {
-            val to = Instant.parse("${purchaseDateTo}T23:59:59Z")
-            predicates.add(cb.lessThanOrEqualTo(root.get("purchaseDate"), to))
+            val to = Instant.parse("${purchaseDateTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS)
+            predicates.add(cb.lessThan(root.get("purchaseDate"), to))
         }
 
         // Warranty expiry date range
@@ -1182,8 +1204,8 @@ class AssetsController(
             predicates.add(cb.greaterThanOrEqualTo(root.get("warrantyExpiryDate"), from))
         }
         if (!warrantyExpiryTo.isNullOrBlank()) {
-            val to = Instant.parse("${warrantyExpiryTo}T23:59:59Z")
-            predicates.add(cb.lessThanOrEqualTo(root.get("warrantyExpiryDate"), to))
+            val to = Instant.parse("${warrantyExpiryTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS)
+            predicates.add(cb.lessThan(root.get("warrantyExpiryDate"), to))
         }
 
         // Cost range

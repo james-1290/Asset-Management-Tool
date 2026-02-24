@@ -54,6 +54,7 @@ export function useCreateApplication() {
     mutationFn: (data: CreateApplicationRequest) => applicationsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -68,6 +69,7 @@ export function useUpdateApplication() {
       queryClient.invalidateQueries({ queryKey: applicationKeys.all });
       queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -82,6 +84,7 @@ export function useDeactivateApplication() {
       queryClient.invalidateQueries({ queryKey: applicationKeys.all });
       queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -96,6 +99,7 @@ export function useReactivateApplication() {
       queryClient.invalidateQueries({ queryKey: applicationKeys.all });
       queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -113,6 +117,7 @@ export function useArchiveApplication() {
     mutationFn: (id: string) => applicationsApi.archive(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -124,6 +129,7 @@ export function useBulkArchiveApplications() {
     mutationFn: (ids: string[]) => applicationsApi.bulkArchive(ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -136,6 +142,7 @@ export function useBulkStatusApplications() {
       applicationsApi.bulkStatus(ids, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }

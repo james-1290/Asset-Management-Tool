@@ -5,6 +5,7 @@ import com.assetmanagement.api.dto.SearchResponse
 import com.assetmanagement.api.dto.SearchResultItem
 import com.assetmanagement.api.model.*
 import com.assetmanagement.api.repository.*
+import com.assetmanagement.api.util.SqlUtils
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
@@ -30,7 +31,7 @@ class SearchController(
         if (q.isNullOrBlank() || q.length < 2) {
             return ResponseEntity.ok(SearchResponse(emptyList(), emptyList(), emptyList(), emptyList(), emptyList()))
         }
-        val pattern = "%${q.lowercase()}%"
+        val pattern = "%${SqlUtils.escapeLikePattern(q.lowercase())}%"
 
         // --- Assets ---
         val assetSpec = Specification<Asset> { root, _, cb ->

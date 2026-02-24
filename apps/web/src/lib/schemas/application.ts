@@ -22,6 +22,14 @@ export const applicationSchema = z.object({
   personId: z.string().optional().or(z.literal("")),
   locationId: z.string().optional().or(z.literal("")),
   customFieldValues: z.record(z.string(), z.string().optional()).optional(),
-});
+}).refine(
+  (data) => {
+    if (data.maxSeats && data.usedSeats) {
+      return Number(data.usedSeats) <= Number(data.maxSeats);
+    }
+    return true;
+  },
+  { message: "Used seats cannot exceed max seats", path: ["usedSeats"] }
+);
 
 export type ApplicationFormValues = z.infer<typeof applicationSchema>;

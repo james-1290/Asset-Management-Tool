@@ -19,6 +19,14 @@ export const certificateSchema = z.object({
   personId: z.string().optional().or(z.literal("")),
   locationId: z.string().optional().or(z.literal("")),
   customFieldValues: z.record(z.string(), z.string().optional()).optional(),
-});
+}).refine(
+  (data) => {
+    if (data.issuedDate && data.expiryDate) {
+      return new Date(data.expiryDate) >= new Date(data.issuedDate);
+    }
+    return true;
+  },
+  { message: "Expiry date must be after issued date", path: ["expiryDate"] }
+);
 
 export type CertificateFormValues = z.infer<typeof certificateSchema>;

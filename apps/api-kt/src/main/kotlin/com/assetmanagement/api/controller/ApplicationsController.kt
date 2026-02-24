@@ -3,6 +3,7 @@ package com.assetmanagement.api.controller
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Application
 import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.ApplicationHistoryEventType
 import com.assetmanagement.api.model.enums.ApplicationStatus
@@ -12,6 +13,7 @@ import com.assetmanagement.api.service.*
 import com.opencsv.CSVWriter
 import jakarta.persistence.criteria.Predicate
 import jakarta.servlet.http.HttpServletResponse
+import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
@@ -163,7 +165,7 @@ class ApplicationsController(
 
     @PostMapping
     @Transactional
-    fun create(@RequestBody request: CreateApplicationRequest): ResponseEntity<Any> {
+    fun create(@Valid @RequestBody request: CreateApplicationRequest): ResponseEntity<Any> {
         // Validate application type
         val appType = applicationTypeRepository.findById(request.applicationTypeId).orElse(null)
         if (appType == null || appType.isArchived)
@@ -588,17 +590,27 @@ class ApplicationsController(
     @PostMapping("/bulk-archive")
     @Transactional
     fun bulkArchive(@RequestBody request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {
+        val entities = applicationRepository.findAllById(request.ids)
+        val entityMap = entities.associateBy { it.id }
+        val toSave = mutableListOf<Application>()
         var succeeded = 0
         var failed = 0
-        request.ids.forEach { appId ->
-            val app = applicationRepository.findById(appId).orElse(null)
+
+        for (appId in request.ids) {
+            val app = entityMap[appId]
             if (app == null || app.isArchived) {
                 failed++
-                return@forEach
+                continue
             }
             app.isArchived = true
             app.updatedAt = Instant.now()
-            applicationRepository.save(app)
+            toSave.add(app)
+            succeeded++
+        }
+
+        applicationRepository.saveAll(toSave)
+
+        for (app in toSave) {
             auditService.log(
                 AuditEntry(
                     action = "Archived",
@@ -610,7 +622,6 @@ class ApplicationsController(
                     actorName = currentUserService.userName
                 )
             )
-            succeeded++
         }
         return ResponseEntity.ok(BulkActionResponse(succeeded, failed))
     }
@@ -623,18 +634,30 @@ class ApplicationsController(
         val newStatus = runCatching { ApplicationStatus.valueOf(request.status) }.getOrNull()
             ?: return ResponseEntity.badRequest().body(mapOf("error" to "Invalid status: ${request.status}"))
 
+        val entities = applicationRepository.findAllById(request.ids)
+        val entityMap = entities.associateBy { it.id }
+        val toSave = mutableListOf<Application>()
+        val auditData = mutableListOf<Pair<Application, ApplicationStatus>>()
         var succeeded = 0
         var failed = 0
-        request.ids.forEach { appId ->
-            val app = applicationRepository.findById(appId).orElse(null)
+
+        for (appId in request.ids) {
+            val app = entityMap[appId]
             if (app == null || app.isArchived) {
                 failed++
-                return@forEach
+                continue
             }
             val oldStatus = app.status
             app.status = newStatus
             app.updatedAt = Instant.now()
-            applicationRepository.save(app)
+            toSave.add(app)
+            auditData.add(Pair(app, oldStatus))
+            succeeded++
+        }
+
+        applicationRepository.saveAll(toSave)
+
+        for ((app, oldStatus) in auditData) {
             auditService.log(
                 AuditEntry(
                     action = "StatusChanged",
@@ -647,7 +670,6 @@ class ApplicationsController(
                     changes = listOf(AuditChange("Status", oldStatus.name, newStatus.name))
                 )
             )
-            succeeded++
         }
         return ResponseEntity.ok(BulkActionResponse(succeeded, failed))
     }
@@ -702,11 +724,11 @@ class ApplicationsController(
 
         // Search
         if (!search.isNullOrBlank()) {
-            val pattern = "%${search.lowercase()}%"
+            val pattern = "%${SqlUtils.escapeLikePattern(search.lowercase())}%"
             predicates.add(
                 cb.or(
-                    cb.like(cb.lower(root.get("name")), pattern),
-                    cb.like(cb.lower(root.get("publisher")), pattern)
+                    cb.like(cb.lower(root.get("name")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("publisher")), pattern, '\\')
                 )
             )
         }
@@ -738,8 +760,8 @@ class ApplicationsController(
             predicates.add(cb.greaterThanOrEqualTo(root.get("expiryDate"), from))
         }
         if (!expiryTo.isNullOrBlank()) {
-            val to = Instant.parse("${expiryTo}T23:59:59Z")
-            predicates.add(cb.lessThanOrEqualTo(root.get("expiryDate"), to))
+            val to = Instant.parse("${expiryTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS)
+            predicates.add(cb.lessThan(root.get("expiryDate"), to))
         }
 
         // Licence type filter
@@ -836,10 +858,10 @@ class ApplicationsController(
                 matchConditions.add(cb.equal(cb.lower(root.get("licenceKey")), request.licenceKey.lowercase()))
 
             if (!request.name.isNullOrBlank())
-                matchConditions.add(cb.like(cb.lower(root.get("name")), "%${request.name.lowercase()}%"))
+                matchConditions.add(cb.like(cb.lower(root.get("name")), "%${SqlUtils.escapeLikePattern(request.name.lowercase())}%", '\\'))
 
             if (!request.publisher.isNullOrBlank())
-                matchConditions.add(cb.like(cb.lower(root.get("publisher")), "%${request.publisher.lowercase()}%"))
+                matchConditions.add(cb.like(cb.lower(root.get("publisher")), "%${SqlUtils.escapeLikePattern(request.publisher.lowercase())}%", '\\'))
 
             if (matchConditions.isEmpty())
                 return@Specification cb.and(*predicates.toTypedArray(), cb.disjunction())

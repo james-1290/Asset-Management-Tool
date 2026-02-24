@@ -33,5 +33,9 @@ class Location(
     var updatedAt: Instant = Instant.now(),
 
     @OneToMany(mappedBy = "location")
-    var assets: MutableList<Asset> = mutableListOf()
+    var assets: MutableList<Asset> = mutableListOf(),
+
+    @Version
+    @Column(name = "version", nullable = false)
+    var entityVersion: Long = 0
 )

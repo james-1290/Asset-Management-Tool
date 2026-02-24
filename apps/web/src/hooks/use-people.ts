@@ -52,6 +52,7 @@ export function usePerson(id: string) {
   return useQuery({
     queryKey: personKeys.detail(id),
     queryFn: () => peopleApi.getById(id),
+    enabled: !!id,
   });
 }
 
@@ -59,6 +60,7 @@ export function usePersonHistory(id: string, limit?: number) {
   return useQuery({
     queryKey: personKeys.history(id, limit),
     queryFn: () => peopleApi.getHistory(id, limit),
+    enabled: !!id,
   });
 }
 
@@ -66,6 +68,7 @@ export function usePersonAssets(id: string) {
   return useQuery({
     queryKey: personKeys.assets(id),
     queryFn: () => peopleApi.getAssignedAssets(id),
+    enabled: !!id,
   });
 }
 
@@ -73,6 +76,7 @@ export function usePersonSummary(id: string) {
   return useQuery({
     queryKey: personKeys.summary(id),
     queryFn: () => peopleApi.getSummary(id),
+    enabled: !!id,
   });
 }
 
@@ -80,6 +84,7 @@ export function usePersonCertificates(id: string) {
   return useQuery({
     queryKey: personKeys.certificates(id),
     queryFn: () => peopleApi.getCertificates(id),
+    enabled: !!id,
   });
 }
 
@@ -87,6 +92,7 @@ export function usePersonApplications(id: string) {
   return useQuery({
     queryKey: personKeys.applications(id),
     queryFn: () => peopleApi.getApplications(id),
+    enabled: !!id,
   });
 }
 
@@ -97,6 +103,7 @@ export function useCreatePerson() {
     mutationFn: (data: CreatePersonRequest) => peopleApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: personKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -107,8 +114,10 @@ export function useUpdatePerson() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdatePersonRequest }) =>
       peopleApi.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: personKeys.all });
+      queryClient.invalidateQueries({ queryKey: personKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -126,6 +135,7 @@ export function useArchivePerson() {
     mutationFn: (id: string) => peopleApi.archive(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: personKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -137,6 +147,7 @@ export function useBulkArchivePeople() {
     mutationFn: (ids: string[]) => peopleApi.bulkArchive(ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: personKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -149,6 +160,10 @@ export function useOffboardPerson() {
       peopleApi.offboard(id, request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: personKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }

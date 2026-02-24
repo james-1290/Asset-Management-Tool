@@ -19,7 +19,7 @@ class SavedViewsController(
 
     @GetMapping
     fun getAll(@RequestParam entityType: String): ResponseEntity<Any> {
-        if (entityType.isBlank()) return ResponseEntity.badRequest().body("entityType is required")
+        if (entityType.isBlank()) return ResponseEntity.badRequest().body(mapOf("error" to "entityType is required"))
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
         val views = savedViewRepository.findByUserIdAndEntityType(userId, entityType)
             .sortedBy { it.name }.map { it.toDto() }

@@ -1,5 +1,6 @@
 package com.assetmanagement.api.dto
 
+import jakarta.validation.constraints.NotBlank
 import java.time.Instant
 import java.util.*
 
@@ -15,6 +16,7 @@ data class LocationDto(
 )
 
 data class CreateLocationRequest(
+    @field:NotBlank(message = "Name is required")
     val name: String,
     val address: String? = null,
     val city: String? = null,

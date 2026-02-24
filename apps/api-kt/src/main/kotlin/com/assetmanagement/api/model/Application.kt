@@ -99,5 +99,9 @@ class Application(
     var history: MutableList<ApplicationHistory> = mutableListOf(),
 
     @Transient
-    var customFieldValues: MutableList<CustomFieldValue> = mutableListOf()
+    var customFieldValues: MutableList<CustomFieldValue> = mutableListOf(),
+
+    @Version
+    @Column(name = "entity_version", nullable = false)
+    var entityVersion: Long = 0
 )

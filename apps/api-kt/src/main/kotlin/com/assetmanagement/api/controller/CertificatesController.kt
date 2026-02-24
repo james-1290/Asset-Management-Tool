@@ -3,6 +3,7 @@ package com.assetmanagement.api.controller
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Certificate
 import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.CertificateStatus
 import com.assetmanagement.api.repository.*
@@ -13,6 +14,7 @@ import com.assetmanagement.api.service.CurrentUserService
 import com.opencsv.CSVWriter
 import jakarta.persistence.criteria.Predicate
 import jakarta.servlet.http.HttpServletResponse
+import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
@@ -52,14 +54,14 @@ class CertificatesController(
             predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
 
             if (!search.isNullOrBlank()) {
-                val pattern = "%${search.lowercase()}%"
+                val pattern = "%${SqlUtils.escapeLikePattern(search.lowercase())}%"
                 predicates.add(
                     cb.or(
-                        cb.like(cb.lower(root.get("name")), pattern),
-                        cb.like(cb.lower(root.get("issuer")), pattern),
-                        cb.like(cb.lower(root.get("subject")), pattern),
-                        cb.like(cb.lower(root.get("serialNumber")), pattern),
-                        cb.like(cb.lower(root.get("thumbprint")), pattern)
+                        cb.like(cb.lower(root.get("name")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("issuer")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("subject")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("serialNumber")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("thumbprint")), pattern, '\\')
                     )
                 )
             }
@@ -84,8 +86,8 @@ class CertificatesController(
                 predicates.add(cb.greaterThanOrEqualTo(root.get("expiryDate"), from))
             }
             if (!expiryTo.isNullOrBlank()) {
-                val to = Instant.parse("${expiryTo}T23:59:59Z")
-                predicates.add(cb.lessThanOrEqualTo(root.get("expiryDate"), to))
+                val to = Instant.parse("${expiryTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS)
+                predicates.add(cb.lessThan(root.get("expiryDate"), to))
             }
 
             cb.and(*predicates.toTypedArray())
@@ -330,9 +332,16 @@ class CertificatesController(
 
     @PostMapping
     @Transactional
-    fun create(@RequestBody request: CreateCertificateRequest): ResponseEntity<Any> {
+    fun create(@Valid @RequestBody request: CreateCertificateRequest): ResponseEntity<Any> {
         val validationError = validateForeignKeys(request)
-        if (validationError != null) return ResponseEntity.badRequest().body(validationError)
+        if (validationError != null) return ResponseEntity.badRequest().body(mapOf("error" to validationError))
+
+        // Validate date range
+        if (request.issuedDate != null && request.expiryDate != null) {
+            if (request.expiryDate.isBefore(request.issuedDate)) {
+                return ResponseEntity.badRequest().body(mapOf("error" to "Expiry date must be after issued date"))
+            }
+        }
 
         val certificate = Certificate(
             name = request.name,
@@ -374,7 +383,14 @@ class CertificatesController(
             ?: return ResponseEntity.notFound().build()
 
         val validationError = validateForeignKeys(request)
-        if (validationError != null) return ResponseEntity.badRequest().body(validationError)
+        if (validationError != null) return ResponseEntity.badRequest().body(mapOf("error" to validationError))
+
+        // Validate date range
+        if (request.issuedDate != null && request.expiryDate != null) {
+            if (request.expiryDate.isBefore(request.issuedDate)) {
+                return ResponseEntity.badRequest().body(mapOf("error" to "Expiry date must be after issued date"))
+            }
+        }
 
         val changes = mutableListOf<AuditChange>()
         trackString("Name", certificate.name, request.name, changes)
@@ -461,17 +477,27 @@ class CertificatesController(
     @PostMapping("/bulk-archive")
     @Transactional
     fun bulkArchive(@RequestBody request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {
+        val entities = certificateRepository.findAllById(request.ids)
+        val entityMap = entities.associateBy { it.id }
+        val toSave = mutableListOf<Certificate>()
         var succeeded = 0
         var failed = 0
-        request.ids.forEach { id ->
-            val certificate = certificateRepository.findById(id).orElse(null)
+
+        for (id in request.ids) {
+            val certificate = entityMap[id]
             if (certificate == null || certificate.isArchived) {
                 failed++
-                return@forEach
+                continue
             }
             certificate.isArchived = true
             certificate.updatedAt = Instant.now()
-            certificateRepository.save(certificate)
+            toSave.add(certificate)
+            succeeded++
+        }
+
+        certificateRepository.saveAll(toSave)
+
+        for (certificate in toSave) {
             auditService.log(
                 AuditEntry(
                     "Archived", "Certificate", certificate.id.toString(), certificate.name,
@@ -479,7 +505,6 @@ class CertificatesController(
                     currentUserService.userId, currentUserService.userName
                 )
             )
-            succeeded++
         }
         return ResponseEntity.ok(BulkActionResponse(succeeded, failed))
     }
@@ -493,18 +518,30 @@ class CertificatesController(
             return ResponseEntity.badRequest().body(BulkActionResponse(0, request.ids.size))
         }
 
+        val entities = certificateRepository.findAllById(request.ids)
+        val entityMap = entities.associateBy { it.id }
+        val toSave = mutableListOf<Certificate>()
+        val auditData = mutableListOf<Pair<Certificate, CertificateStatus>>()
         var succeeded = 0
         var failed = 0
-        request.ids.forEach { id ->
-            val certificate = certificateRepository.findById(id).orElse(null)
+
+        for (id in request.ids) {
+            val certificate = entityMap[id]
             if (certificate == null || certificate.isArchived) {
                 failed++
-                return@forEach
+                continue
             }
             val oldStatus = certificate.status
             certificate.status = newStatus
             certificate.updatedAt = Instant.now()
-            certificateRepository.save(certificate)
+            toSave.add(certificate)
+            auditData.add(Pair(certificate, oldStatus))
+            succeeded++
+        }
+
+        certificateRepository.saveAll(toSave)
+
+        for ((certificate, oldStatus) in auditData) {
             auditService.log(
                 AuditEntry(
                     "Updated", "Certificate", certificate.id.toString(), certificate.name,
@@ -513,7 +550,6 @@ class CertificatesController(
                     listOf(AuditChange("Status", oldStatus.name, newStatus.name))
                 )
             )
-            succeeded++
         }
         return ResponseEntity.ok(BulkActionResponse(succeeded, failed))
     }
@@ -555,10 +591,10 @@ class CertificatesController(
                 matchConditions.add(cb.equal(cb.lower(root.get("thumbprint")), request.thumbprint.lowercase()))
 
             if (!request.name.isNullOrBlank())
-                matchConditions.add(cb.like(cb.lower(root.get("name")), "%${request.name.lowercase()}%"))
+                matchConditions.add(cb.like(cb.lower(root.get("name")), "%${SqlUtils.escapeLikePattern(request.name.lowercase())}%", '\\'))
 
             if (!request.serialNumber.isNullOrBlank())
-                matchConditions.add(cb.like(cb.lower(root.get("serialNumber")), "%${request.serialNumber.lowercase()}%"))
+                matchConditions.add(cb.like(cb.lower(root.get("serialNumber")), "%${SqlUtils.escapeLikePattern(request.serialNumber.lowercase())}%", '\\'))
 
             if (matchConditions.isEmpty())
                 return@Specification cb.and(*predicates.toTypedArray(), cb.disjunction())

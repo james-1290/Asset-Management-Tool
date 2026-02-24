@@ -296,8 +296,9 @@ class ImportController(
 
         val statusStr = data["Status"]
         if (!statusStr.isNullOrBlank()) {
+            val normalized = normalizeAssetStatus(statusStr)
             try {
-                AssetStatus.valueOf(statusStr)
+                AssetStatus.valueOf(normalized)
             } catch (_: IllegalArgumentException) {
                 errors.add("Invalid Status '$statusStr'. Valid values: ${AssetStatus.entries.joinToString(", ") { it.name }}")
             }
@@ -359,8 +360,9 @@ class ImportController(
 
         val statusStr = data["Status"]
         if (!statusStr.isNullOrBlank()) {
+            val normalized = normalizeCertificateStatus(statusStr)
             try {
-                CertificateStatus.valueOf(statusStr)
+                CertificateStatus.valueOf(normalized)
             } catch (_: IllegalArgumentException) {
                 errors.add("Invalid Status '$statusStr'. Valid values: ${CertificateStatus.entries.joinToString(", ") { it.name }}")
             }
@@ -399,8 +401,9 @@ class ImportController(
 
         val statusStr = data["Status"]
         if (!statusStr.isNullOrBlank()) {
+            val normalized = normalizeApplicationStatus(statusStr)
             try {
-                ApplicationStatus.valueOf(statusStr)
+                ApplicationStatus.valueOf(normalized)
             } catch (_: IllegalArgumentException) {
                 errors.add("Invalid Status '$statusStr'. Valid values: ${ApplicationStatus.entries.joinToString(", ") { it.name }}")
             }
@@ -465,8 +468,9 @@ class ImportController(
     // ========================================================================
 
     private fun importLocation(data: Map<String, String?>) {
+        val name = data["Name"] ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Missing required field: Name")
         val location = Location(
-            name = data["Name"]!!,
+            name = name,
             address = data["Address"],
             city = data["City"],
             country = data["Country"]
@@ -488,8 +492,9 @@ class ImportController(
         val locationName = data["Location"]
         val location = if (!locationName.isNullOrBlank()) findLocationByName(locationName) else null
 
+        val fullName = data["FullName"] ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Missing required field: FullName")
         val person = Person(
-            fullName = data["FullName"]!!,
+            fullName = fullName,
             email = data["Email"],
             department = data["Department"],
             jobTitle = data["JobTitle"],
@@ -509,7 +514,8 @@ class ImportController(
     }
 
     private fun importAsset(data: Map<String, String?>) {
-        val assetType = findAssetTypeByName(data["AssetType"]!!)!!
+        val assetTypeName = data["AssetType"] ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Missing required field: AssetType")
+        val assetType = findAssetTypeByName(assetTypeName) ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "AssetType '$assetTypeName' not found")
         val locationName = data["Location"]
         val location = if (!locationName.isNullOrBlank()) findLocationByName(locationName) else null
         val assignedToName = data["AssignedTo"]
@@ -517,13 +523,14 @@ class ImportController(
 
         val statusStr = data["Status"]
         val status = if (!statusStr.isNullOrBlank()) {
-            try { AssetStatus.valueOf(statusStr) } catch (_: IllegalArgumentException) { AssetStatus.Available }
+            val normalized = normalizeAssetStatus(statusStr)
+            try { AssetStatus.valueOf(normalized) } catch (_: IllegalArgumentException) { AssetStatus.Available }
         } else {
             if (person != null) AssetStatus.Assigned else AssetStatus.Available
         }
 
         val asset = Asset(
-            name = data["Name"]!!,
+            name = data["Name"] ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Missing required field: Name"),
             serialNumber = data["SerialNumber"],
             assetTypeId = assetType.id,
             status = status,
@@ -549,17 +556,19 @@ class ImportController(
     }
 
     private fun importCertificate(data: Map<String, String?>) {
-        val certType = findCertificateTypeByName(data["CertificateType"]!!)!!
+        val certTypeName = data["CertificateType"] ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Missing required field: CertificateType")
+        val certType = findCertificateTypeByName(certTypeName) ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "CertificateType '$certTypeName' not found")
 
         val statusStr = data["Status"]
         val status = if (!statusStr.isNullOrBlank()) {
-            try { CertificateStatus.valueOf(statusStr) } catch (_: IllegalArgumentException) { CertificateStatus.Active }
+            val normalized = normalizeCertificateStatus(statusStr)
+            try { CertificateStatus.valueOf(normalized) } catch (_: IllegalArgumentException) { CertificateStatus.Active }
         } else {
             CertificateStatus.Active
         }
 
         val certificate = Certificate(
-            name = data["Name"]!!,
+            name = data["Name"] ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Missing required field: Name"),
             certificateTypeId = certType.id,
             issuer = data["Issuer"],
             subject = data["Subject"],
@@ -585,11 +594,13 @@ class ImportController(
     }
 
     private fun importApplication(data: Map<String, String?>) {
-        val appType = findApplicationTypeByName(data["ApplicationType"]!!)!!
+        val appTypeName = data["ApplicationType"] ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Missing required field: ApplicationType")
+        val appType = findApplicationTypeByName(appTypeName) ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "ApplicationType '$appTypeName' not found")
 
         val statusStr = data["Status"]
         val status = if (!statusStr.isNullOrBlank()) {
-            try { ApplicationStatus.valueOf(statusStr) } catch (_: IllegalArgumentException) { ApplicationStatus.Active }
+            val normalized = normalizeApplicationStatus(statusStr)
+            try { ApplicationStatus.valueOf(normalized) } catch (_: IllegalArgumentException) { ApplicationStatus.Active }
         } else {
             ApplicationStatus.Active
         }
@@ -600,7 +611,7 @@ class ImportController(
         } else null
 
         val application = Application(
-            name = data["Name"]!!,
+            name = data["Name"] ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Missing required field: Name"),
             applicationTypeId = appType.id,
             publisher = data["Publisher"],
             version = data["Version"],
@@ -680,6 +691,44 @@ class ImportController(
             )
         }
         return applicationTypeRepository.findAll(spec).firstOrNull()
+    }
+
+    // ========================================================================
+    // Status normalization helpers
+    // ========================================================================
+
+    private fun normalizeAssetStatus(raw: String): String {
+        return when (raw.lowercase().trim()) {
+            "active" -> "Available"
+            "in use", "inuse" -> "Assigned"
+            "maintenance", "in maintenance" -> "InMaintenance"
+            "checked out", "checkedout" -> "CheckedOut"
+            "retired" -> "Retired"
+            "sold" -> "Sold"
+            "archived" -> "Archived"
+            else -> raw
+        }
+    }
+
+    private fun normalizeCertificateStatus(raw: String): String {
+        return when (raw.lowercase().trim()) {
+            "active" -> "Active"
+            "expired" -> "Expired"
+            "revoked" -> "Revoked"
+            "pending renewal", "pendingrenewal", "pending" -> "PendingRenewal"
+            else -> raw
+        }
+    }
+
+    private fun normalizeApplicationStatus(raw: String): String {
+        return when (raw.lowercase().trim()) {
+            "active" -> "Active"
+            "expired" -> "Expired"
+            "suspended" -> "Suspended"
+            "pending renewal", "pendingrenewal", "pending" -> "PendingRenewal"
+            "inactive" -> "Inactive"
+            else -> raw
+        }
     }
 
     // ========================================================================
