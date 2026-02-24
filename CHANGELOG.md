@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-02-24 14:09 — Dead code cleanup: 1,302 lines removed
+
+### Frontend — 11 orphaned files deleted
+- `quick-actions.tsx` (433 lines), `import-tab.tsx` (382 lines), `password-form.tsx` (123 lines) — replaced by other components
+- `date-range-filter.tsx`, `numeric-range-filter.tsx`, `quick-filter-bar.tsx` — never imported
+- `theme-toggle.tsx`, `collapsible.tsx`, `certificates.tsx.tmp` — unused/replaced
+- `use-notifications.ts`, `lib/api/notifications.ts` — replaced by use-user-notifications.ts
+
+### Backend — Unused repository interfaces + methods removed
+- Removed 6 unused repository interfaces: `PermissionRepository`, `RolePermissionRepository`, `AssetHistoryChangeRepository`, `CertificateHistoryChangeRepository`, `ApplicationHistoryChangeRepository`, `PersonHistoryChangeRepository`
+- Removed 5 unused repository methods: `RoleRepository.existsByName`, `countByIsArchivedFalse` (3 repos), `SavedViewRepository.findByUserId` (single-param)
+- Removed unused `Tuple` import from DashboardController
+- Removed unused `val parsed` variables from ApplicationsController + AssetsController
+
 ## 2026-02-24 08:20 — Comprehensive bug sweep: 35 fixes across frontend + backend
 
 ### Backend — Error handling

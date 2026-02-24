@@ -68,7 +68,7 @@ class ApplicationsController(
 
         // Validate status filter
         if (!status.isNullOrBlank()) {
-            val parsed = runCatching { ApplicationStatus.valueOf(status) }.getOrNull()
+            runCatching { ApplicationStatus.valueOf(status) }.getOrNull()
                 ?: return ResponseEntity.badRequest().body(mapOf("error" to "Invalid status: $status"))
         }
 
