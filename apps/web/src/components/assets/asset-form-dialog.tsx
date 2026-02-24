@@ -177,22 +177,22 @@ export function AssetFormDialog({
   }, [open, asset, form, isEditing, initialValues]);
 
   function handleAssignedPersonChange(personId: string) {
-    form.setValue("assignedPersonId", personId);
+    form.setValue("assignedPersonId", personId, { shouldDirty: true });
     if (isEditing) return;
 
     const currentStatus = form.getValues("status");
     const isNone = !personId || personId === "none";
 
     if (!isNone && currentStatus === "Available" && !statusManuallySet.current) {
-      form.setValue("status", "Assigned");
+      form.setValue("status", "Assigned", { shouldDirty: true });
     } else if (isNone && currentStatus === "Assigned" && !statusManuallySet.current) {
-      form.setValue("status", "Available");
+      form.setValue("status", "Available", { shouldDirty: true });
     }
   }
 
   function handleStatusChange(status: string) {
     statusManuallySet.current = true;
-    form.setValue("status", status);
+    form.setValue("status", status, { shouldDirty: true });
   }
 
   function handleTemplateChange(templateId: string) {
@@ -229,6 +229,27 @@ export function AssetFormDialog({
     }
   }
 
+  function handleFormSubmit(values: AssetFormValues) {
+    // Validate required custom fields
+    if (customFieldDefs) {
+      let hasError = false;
+      for (const def of customFieldDefs) {
+        if (def.isRequired) {
+          const val = values.customFieldValues?.[def.id];
+          if (!val || val.trim() === "" || val === "__none__") {
+            form.setError(`customFieldValues.${def.id}` as `customFieldValues.${string}`, {
+              type: "manual",
+              message: `${def.name} is required`,
+            });
+            hasError = true;
+          }
+        }
+      }
+      if (hasError) return;
+    }
+    onSubmit(values);
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl p-0 gap-0 max-h-[90vh] flex flex-col">
@@ -241,7 +262,7 @@ export function AssetFormDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-1 overflow-hidden">
             <div className="flex-1 overflow-y-auto px-8 py-8 space-y-8">
 
               {/* Section 1 - General Information */}
@@ -346,7 +367,7 @@ export function AssetFormDialog({
                         <FormLabel className="font-semibold">Assigned To</FormLabel>
                         <PersonCombobox
                           value={field.value ?? ""}
-                          displayName={asset?.assignedPersonName ?? undefined}
+                          displayName={field.value === asset?.assignedPersonId ? asset?.assignedPersonName ?? undefined : undefined}
                           onValueChange={handleAssignedPersonChange}
                         />
                         <FormMessage />
@@ -525,7 +546,7 @@ export function AssetFormDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading} className="font-semibold shadow-lg">
+              <Button type="submit" disabled={loading || (isEditing && !form.formState.isDirty)} className="font-semibold shadow-lg">
                 {loading ? "Saving..." : isEditing ? "Save Changes" : "Add Asset"}
               </Button>
             </DialogFooter>
