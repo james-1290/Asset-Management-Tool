@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 import java.io.OutputStreamWriter
 import java.net.URI
 import java.time.Instant
@@ -40,7 +41,8 @@ class PeopleController(
 
     @GetMapping("/search")
     fun search(@RequestParam(required = false) q: String?, @RequestParam(defaultValue = "5") limit: Int): ResponseEntity<List<PersonSearchResult>> {
-        val results = personRepository.search(q ?: "", PageRequest.of(0, limit))
+        val safeLim = limit.coerceIn(1, 50)
+        val results = personRepository.search(q ?: "", PageRequest.of(0, safeLim))
             .map { PersonSearchResult(it.id, it.fullName) }
         return ResponseEntity.ok(results)
     }
@@ -145,12 +147,12 @@ class PeopleController(
         auditService.log(AuditEntry("Created", "Person", person.id.toString(), person.fullName,
             "Created person \"${person.fullName}\"", currentUserService.userId, currentUserService.userName))
 
-        return ResponseEntity.created(URI("/api/v1/people/${person.id}")).body(personRepository.findById(person.id).get().toDto())
+        return ResponseEntity.created(URI("/api/v1/people/${person.id}")).body(personRepository.findById(person.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }.toDto())
     }
 
     @PutMapping("/{id}")
     @Transactional
-    fun update(@PathVariable id: UUID, @RequestBody request: UpdatePersonRequest): ResponseEntity<Any> {
+    fun update(@PathVariable id: UUID, @Valid @RequestBody request: UpdatePersonRequest): ResponseEntity<Any> {
         val person = personRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         if (request.locationId != null) {
             val loc = locationRepository.findById(request.locationId).orElse(null)
@@ -174,7 +176,7 @@ class PeopleController(
         auditService.log(AuditEntry("Updated", "Person", person.id.toString(), person.fullName,
             "Updated person \"${person.fullName}\"", currentUserService.userId, currentUserService.userName, changes))
 
-        return ResponseEntity.ok(personRepository.findById(person.id).get().toDto())
+        return ResponseEntity.ok(personRepository.findById(person.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }.toDto())
     }
 
     @PostMapping("/bulk-archive")

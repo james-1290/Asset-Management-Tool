@@ -18,9 +18,11 @@ import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 import java.io.OutputStreamWriter
 import java.math.BigDecimal
 import java.net.URI
@@ -266,7 +268,7 @@ class ApplicationsController(
         )
 
         // Reload with relations
-        val saved = applicationRepository.findById(app.id).get()
+        val saved = applicationRepository.findById(app.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }
         val cfvs = loadCustomFieldValues(saved.id)
 
         return ResponseEntity.created(URI("/api/v1/applications/${saved.id}")).body(saved.toDto(cfvs))
@@ -457,7 +459,7 @@ class ApplicationsController(
         )
 
         // Reload with relations
-        val updated = applicationRepository.findById(app.id).get()
+        val updated = applicationRepository.findById(app.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }
         val updatedCfvs = loadCustomFieldValues(updated.id)
         return ResponseEntity.ok(updated.toDto(updatedCfvs))
     }
@@ -533,7 +535,7 @@ class ApplicationsController(
             )
         )
 
-        val reloaded = applicationRepository.findById(app.id).get()
+        val reloaded = applicationRepository.findById(app.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }
         val cfvs = loadCustomFieldValues(reloaded.id)
         return ResponseEntity.ok(reloaded.toDto(cfvs))
     }
@@ -581,7 +583,7 @@ class ApplicationsController(
             )
         )
 
-        val reloaded = applicationRepository.findById(app.id).get()
+        val reloaded = applicationRepository.findById(app.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }
         val cfvs = loadCustomFieldValues(reloaded.id)
         return ResponseEntity.ok(reloaded.toDto(cfvs))
     }

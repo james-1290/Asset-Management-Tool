@@ -413,7 +413,7 @@ class CertificatesController(
             )
         )
 
-        val saved = certificateRepository.findById(certificate.id).get()
+        val saved = certificateRepository.findById(certificate.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }
         val cfValues = buildCustomFieldValueDtos(saved.id)
         return ResponseEntity.created(URI("/api/v1/certificates/${saved.id}")).body(saved.toDto(cfValues))
     }
@@ -491,7 +491,7 @@ class CertificatesController(
             )
         )
 
-        val saved = certificateRepository.findById(certificate.id).get()
+        val saved = certificateRepository.findById(certificate.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }
         val cfValues = buildCustomFieldValueDtos(saved.id)
         return ResponseEntity.ok(saved.toDto(cfValues))
     }

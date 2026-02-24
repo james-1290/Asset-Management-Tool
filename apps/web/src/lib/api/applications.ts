@@ -25,6 +25,7 @@ export interface ApplicationQueryParams {
   licenceType?: string;
   costMin?: string;
   costMax?: string;
+  publisher?: string;
 }
 
 export const applicationsApi = {

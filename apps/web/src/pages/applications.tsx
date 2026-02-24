@@ -248,6 +248,7 @@ export default function ApplicationsPage() {
         licenceType: licenceTypeParam || undefined,
         costMin: costMinParam || undefined,
         costMax: costMaxParam || undefined,
+        publisher: publisherParam || undefined,
         ids: selectedIds.length > 0 ? selectedIds.join(",") : undefined,
       });
     } catch {

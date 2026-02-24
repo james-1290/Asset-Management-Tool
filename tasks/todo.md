@@ -4,6 +4,10 @@
 
 ## Done
 
+- [x] Code review round 2 (10 fixes): DashboardController auth, date parsing validation, search limit enforcement, @Modifying/@Valid annotations, 14x unsafe .get() replaced, publisher export filter, BulkEditDialog validation, type cast safety, staleTime tuning
+
+- [x] Comprehensive code review (16 fixes): trackDecimal null bug, LIKE injection, SSO guard, AlertsController rewrite, @Transactional annotations, V011 indexes, hasAnyFilter bug, currency £, breadcrumb hrefs, notification hook lifting
+
 - [x] Notifications page redesign: card-based layout with urgency icons, 3-dot action menus, underline tabs
 
 - [x] Comprehensive bug sweep (35 fixes): global exception handler, input validation, optimistic locking, React Query invalidation, ErrorBoundary, LIKE escaping, batch bulk ops, date validation, accessibility
