@@ -1,5 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
+import { PageHeader } from "@/components/page-header";
 import { ProfileTab } from "@/components/settings/profile-tab";
 import { UsersTab } from "@/components/settings/users-tab";
 import { AlertsTab } from "@/components/settings/alerts-tab";
@@ -32,10 +33,10 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-0">
-      {/* Header */}
-      <div className="mb-0">
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-      </div>
+      <PageHeader
+        title="Settings"
+        breadcrumbs={[{ label: "Settings" }]}
+      />
 
       {/* Underline tab navigation */}
       <div className="border-b border-border mt-4">

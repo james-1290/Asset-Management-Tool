@@ -186,6 +186,7 @@ export default function AssetTemplatesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Asset Templates"
+        breadcrumbs={[{ label: "Assets", href: "/assets" }, { label: "Asset Templates" }]}
         description="Saved presets for quickly creating assets with pre-filled fields."
         actions={
           <div className="flex items-center gap-3">

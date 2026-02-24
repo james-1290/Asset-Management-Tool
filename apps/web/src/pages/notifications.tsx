@@ -273,6 +273,7 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Notifications"
+        breadcrumbs={[{ label: "Notifications" }]}
         actions={
           <Button
             variant="outline"

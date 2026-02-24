@@ -318,7 +318,7 @@ export default function AssetTypesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Asset Types"
-        breadcrumbs={[{ label: "Inventory", href: "/asset-types" }, { label: "Asset Types" }]}
+        breadcrumbs={[{ label: "Assets", href: "/assets" }, { label: "Asset Types" }]}
         description="Manage categories for your assets."
         actions={
           <div className="flex items-center gap-3">

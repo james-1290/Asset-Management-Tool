@@ -153,7 +153,7 @@ export default function PersonDetailPage() {
           </div>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">{person.fullName}</h1>
+              <h1 className="text-2xl font-bold tracking-tight">{person.fullName}</h1>
               {!person.isArchived ? (
                 <span className="px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 text-xs font-semibold uppercase tracking-wider">Active</span>
               ) : (
