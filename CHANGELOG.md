@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-24 20:25 — Computed PendingRenewal / Expired status
+
+- Applications and Certificates with stored status `Active` now automatically compute to `Expired` (if expiryDate is in the past) or `PendingRenewal` (if expiryDate is within 30 days) in API responses
+- Dashboard summary counts (application-summary, certificate-summary) reflect computed statuses
+- List filtering by `PendingRenewal`, `Expired`, or `Active` includes/excludes computed matches
+- No DB schema changes — computation is read-only on the DTO layer
+
 ## 2026-02-24 20:15 — Block delete of assigned applications
 
 - Block: cannot delete an application that is assigned to someone (returns 400 with clear error message)

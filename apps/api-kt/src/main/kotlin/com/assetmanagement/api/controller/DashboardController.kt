@@ -331,9 +331,12 @@ class DashboardController(
         return ResponseEntity.ok(items)
     }
 
-    // 12. GET /certificate-summary - count by CertificateStatus
+    // 12. GET /certificate-summary - count by CertificateStatus (with computed statuses)
     @GetMapping("/certificate-summary")
     fun getCertificateSummary(): ResponseEntity<CertificateSummaryDto> {
+        val now = Instant.now()
+        val pendingCutoff = now.plus(30, ChronoUnit.DAYS)
+
         @Suppress("UNCHECKED_CAST")
         val results = em.createQuery(
             """SELECT c.status, COUNT(c) FROM com.assetmanagement.api.model.Certificate c
@@ -345,13 +348,36 @@ class DashboardController(
             (row[0] as CertificateStatus).name to (row[1] as Long).toInt()
         }
 
+        // Count Active certificates that compute to Expired (expiryDate in past)
+        val computedExpired = em.createQuery(
+            """SELECT COUNT(c) FROM com.assetmanagement.api.model.Certificate c
+               WHERE c.isArchived = false AND c.status = :active
+               AND c.expiryDate IS NOT NULL AND c.expiryDate < :now""",
+            java.lang.Long::class.java
+        ).setParameter("active", CertificateStatus.Active)
+         .setParameter("now", now)
+         .singleResult.toInt()
+
+        // Count Active certificates that compute to PendingRenewal (expiryDate within 30 days)
+        val computedPending = em.createQuery(
+            """SELECT COUNT(c) FROM com.assetmanagement.api.model.Certificate c
+               WHERE c.isArchived = false AND c.status = :active
+               AND c.expiryDate IS NOT NULL AND c.expiryDate >= :now AND c.expiryDate < :cutoff""",
+            java.lang.Long::class.java
+        ).setParameter("active", CertificateStatus.Active)
+         .setParameter("now", now)
+         .setParameter("cutoff", pendingCutoff)
+         .singleResult.toInt()
+
+        val storedActive = statusMap["Active"] ?: 0
         val total = statusMap.values.sum()
+
         return ResponseEntity.ok(
             CertificateSummaryDto(
                 totalCertificates = total,
-                active = statusMap["Active"] ?: 0,
-                expired = statusMap["Expired"] ?: 0,
-                pendingRenewal = statusMap["PendingRenewal"] ?: 0,
+                active = storedActive - computedExpired - computedPending,
+                expired = (statusMap["Expired"] ?: 0) + computedExpired,
+                pendingRenewal = (statusMap["PendingRenewal"] ?: 0) + computedPending,
                 revoked = statusMap["Revoked"] ?: 0
             )
         )
@@ -498,9 +524,12 @@ class DashboardController(
         return ResponseEntity.ok(items)
     }
 
-    // 14. GET /application-summary - count by ApplicationStatus
+    // 14. GET /application-summary - count by ApplicationStatus (with computed statuses)
     @GetMapping("/application-summary")
     fun getApplicationSummary(): ResponseEntity<ApplicationSummaryDto> {
+        val now = Instant.now()
+        val pendingCutoff = now.plus(30, ChronoUnit.DAYS)
+
         @Suppress("UNCHECKED_CAST")
         val results = em.createQuery(
             """SELECT app.status, COUNT(app) FROM com.assetmanagement.api.model.Application app
@@ -512,13 +541,36 @@ class DashboardController(
             (row[0] as ApplicationStatus).name to (row[1] as Long).toInt()
         }
 
+        // Count Active applications that compute to Expired (expiryDate in past)
+        val computedExpired = em.createQuery(
+            """SELECT COUNT(app) FROM com.assetmanagement.api.model.Application app
+               WHERE app.isArchived = false AND app.status = :active
+               AND app.expiryDate IS NOT NULL AND app.expiryDate < :now""",
+            java.lang.Long::class.java
+        ).setParameter("active", ApplicationStatus.Active)
+         .setParameter("now", now)
+         .singleResult.toInt()
+
+        // Count Active applications that compute to PendingRenewal (expiryDate within 30 days)
+        val computedPending = em.createQuery(
+            """SELECT COUNT(app) FROM com.assetmanagement.api.model.Application app
+               WHERE app.isArchived = false AND app.status = :active
+               AND app.expiryDate IS NOT NULL AND app.expiryDate >= :now AND app.expiryDate < :cutoff""",
+            java.lang.Long::class.java
+        ).setParameter("active", ApplicationStatus.Active)
+         .setParameter("now", now)
+         .setParameter("cutoff", pendingCutoff)
+         .singleResult.toInt()
+
+        val storedActive = statusMap["Active"] ?: 0
         val total = statusMap.values.sum()
+
         return ResponseEntity.ok(
             ApplicationSummaryDto(
                 totalApplications = total,
-                active = statusMap["Active"] ?: 0,
-                expired = statusMap["Expired"] ?: 0,
-                pendingRenewal = statusMap["PendingRenewal"] ?: 0,
+                active = storedActive - computedExpired - computedPending,
+                expired = (statusMap["Expired"] ?: 0) + computedExpired,
+                pendingRenewal = (statusMap["PendingRenewal"] ?: 0) + computedPending,
                 suspended = statusMap["Suspended"] ?: 0
             )
         )

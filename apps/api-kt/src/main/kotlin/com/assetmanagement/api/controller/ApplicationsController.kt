@@ -4,6 +4,7 @@ import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Application
 import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.util.SqlUtils
+import com.assetmanagement.api.util.computeStatus
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.ApplicationHistoryEventType
 import com.assetmanagement.api.model.enums.ApplicationStatus
@@ -738,11 +739,55 @@ class ApplicationsController(
             )
         }
 
-        // Status filtering
+        // Status filtering with computed status support
         if (!status.isNullOrBlank()) {
             val parsedStatus = runCatching { ApplicationStatus.valueOf(status) }.getOrNull()
             if (parsedStatus != null) {
-                predicates.add(cb.equal(root.get<ApplicationStatus>("status"), parsedStatus))
+                val now = Instant.now()
+                val pendingCutoff = now.plus(30, java.time.temporal.ChronoUnit.DAYS)
+
+                when (parsedStatus) {
+                    ApplicationStatus.Expired -> {
+                        // Stored Expired OR (Active with expiryDate in past)
+                        predicates.add(
+                            cb.or(
+                                cb.equal(root.get<ApplicationStatus>("status"), ApplicationStatus.Expired),
+                                cb.and(
+                                    cb.equal(root.get<ApplicationStatus>("status"), ApplicationStatus.Active),
+                                    cb.isNotNull(root.get<Instant>("expiryDate")),
+                                    cb.lessThan(root.get("expiryDate"), now)
+                                )
+                            )
+                        )
+                    }
+                    ApplicationStatus.PendingRenewal -> {
+                        // Stored PendingRenewal OR (Active with expiryDate within 30 days)
+                        predicates.add(
+                            cb.or(
+                                cb.equal(root.get<ApplicationStatus>("status"), ApplicationStatus.PendingRenewal),
+                                cb.and(
+                                    cb.equal(root.get<ApplicationStatus>("status"), ApplicationStatus.Active),
+                                    cb.isNotNull(root.get<Instant>("expiryDate")),
+                                    cb.greaterThanOrEqualTo(root.get("expiryDate"), now),
+                                    cb.lessThan(root.get("expiryDate"), pendingCutoff)
+                                )
+                            )
+                        )
+                    }
+                    ApplicationStatus.Active -> {
+                        // Active but NOT computed to Expired or PendingRenewal
+                        predicates.add(cb.equal(root.get<ApplicationStatus>("status"), ApplicationStatus.Active))
+                        predicates.add(
+                            cb.or(
+                                cb.isNull(root.get<Instant>("expiryDate")),
+                                cb.greaterThanOrEqualTo(root.get("expiryDate"), pendingCutoff)
+                            )
+                        )
+                    }
+                    else -> {
+                        predicates.add(cb.equal(root.get<ApplicationStatus>("status"), parsedStatus))
+                    }
+                }
             }
         } else {
             // By default hide Inactive unless explicitly included
@@ -822,7 +867,7 @@ class ApplicationsController(
             expiryDate = expiryDate,
             purchaseCost = purchaseCost,
             autoRenewal = autoRenewal,
-            status = status.name,
+            status = computeStatus(status.name, expiryDate),
             deactivatedDate = deactivatedDate,
             notes = notes,
             assetId = assetId,
