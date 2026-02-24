@@ -598,7 +598,7 @@ class ApplicationsController(
 
         for (appId in request.ids) {
             val app = entityMap[appId]
-            if (app == null || app.isArchived) {
+            if (app == null || app.isArchived || app.personId != null) {
                 failed++
                 continue
             }
@@ -681,6 +681,11 @@ class ApplicationsController(
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
         val app = applicationRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
+
+        if (app.personId != null)
+            return ResponseEntity.badRequest().body(
+                mapOf("error" to "Cannot delete an application that is assigned to someone. Unassign them first.")
+            )
 
         app.isArchived = true
         app.updatedAt = Instant.now()

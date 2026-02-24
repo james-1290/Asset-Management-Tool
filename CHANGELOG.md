@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-02-24 20:15 — Block delete of assigned applications
+
+- Block: cannot delete an application that is assigned to someone (returns 400 with clear error message)
+- Block: bulk-archive skips applications that are assigned to someone
+- UI: delete error toast now shows actual API error message instead of generic fallback
+
 ## 2026-02-24 19:58 — Block checkout/reassignment of assigned assets + show API error messages
 
 - Block: cannot check out an asset that already has someone assigned (checks `assignedPersonId`, not just status)
