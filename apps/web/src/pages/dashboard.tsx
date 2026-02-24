@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Package,
   PoundSterling,
@@ -77,10 +78,15 @@ export default function DashboardPage() {
     certificateExpiries.isLoading ||
     licenceExpiries.isLoading;
 
+  // Compute date range once per mount (avoid impure Date.now() during render)
+  const { today, in30 } = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const in30Str = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+    return { today: todayStr, in30: in30Str };
+  }, []);
+
   // Build expiring soon link based on which type has the most items
   const expiringSoonHref = (() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     const wCount = warrantyExpiries.data?.length ?? 0;
     const cCount = certificateExpiries.data?.length ?? 0;
     const lCount = licenceExpiries.data?.length ?? 0;

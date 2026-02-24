@@ -10,6 +10,7 @@ import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
@@ -23,6 +24,7 @@ class ProfileController(
 ) {
 
     @PutMapping
+    @Transactional
     fun updateProfile(@RequestBody request: UpdateProfileRequest): ResponseEntity<Any> {
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
         val user = userRepository.findById(userId).orElse(null)
@@ -53,6 +55,7 @@ class ProfileController(
     }
 
     @PutMapping("/password")
+    @Transactional
     fun changePassword(@RequestBody request: ChangePasswordRequest): ResponseEntity<Any> {
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
         val user = userRepository.findById(userId).orElse(null)
@@ -62,8 +65,8 @@ class ProfileController(
         if (!passwordEncoder.matches(request.currentPassword, user.passwordHash))
             return ResponseEntity.badRequest().body(mapOf("error" to "Current password is incorrect."))
 
-        if (request.newPassword.length < 6)
-            return ResponseEntity.badRequest().body(mapOf("error" to "Password must be at least 6 characters."))
+        if (request.newPassword.length < 8)
+            return ResponseEntity.badRequest().body(mapOf("error" to "Password must be at least 8 characters."))
 
         user.passwordHash = passwordEncoder.encode(request.newPassword)
         user.updatedAt = Instant.now()

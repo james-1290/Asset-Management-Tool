@@ -17,7 +17,10 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.ResponseEntity
+import org.springframework.http.HttpStatus
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 import java.io.OutputStreamWriter
 import java.net.URI
 import java.time.Instant
@@ -237,7 +240,7 @@ class CertificatesController(
         return try {
             CertificateStatus.valueOf(statusStr)
         } catch (_: Exception) {
-            CertificateStatus.Active
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid certificate status: $statusStr")
         }
     }
 
@@ -326,6 +329,7 @@ class CertificatesController(
     }
 
     @PostMapping
+    @Transactional
     fun create(@RequestBody request: CreateCertificateRequest): ResponseEntity<Any> {
         val validationError = validateForeignKeys(request)
         if (validationError != null) return ResponseEntity.badRequest().body(validationError)
@@ -364,6 +368,7 @@ class CertificatesController(
     }
 
     @PutMapping("/{id}")
+    @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateCertificateRequest): ResponseEntity<Any> {
         val certificate = certificateRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
@@ -454,6 +459,7 @@ class CertificatesController(
     }
 
     @PostMapping("/bulk-archive")
+    @Transactional
     fun bulkArchive(@RequestBody request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {
         var succeeded = 0
         var failed = 0
@@ -479,6 +485,7 @@ class CertificatesController(
     }
 
     @PostMapping("/bulk-status")
+    @Transactional
     fun bulkStatus(@RequestBody request: BulkStatusRequest): ResponseEntity<BulkActionResponse> {
         val newStatus = try {
             CertificateStatus.valueOf(request.status)
@@ -512,6 +519,7 @@ class CertificatesController(
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
         val certificate = certificateRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()

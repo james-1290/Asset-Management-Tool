@@ -170,7 +170,7 @@ export default function AssetDetailPage() {
           : null,
       purchaseDate: values.purchaseDate
         ? `${values.purchaseDate}T00:00:00Z`
-        : values.purchaseDate,
+        : null,
       purchaseCost: values.purchaseCost
         ? parseFloat(values.purchaseCost)
         : null,

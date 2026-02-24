@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-02-24 07:50 — Bug sweep: frontend + backend fixes
+
+### Frontend
+- Fix impure `Date.now()` call during render in dashboard (wrapped in useMemo)
+- Fix clone asset `purchaseDate` falling through to `""` instead of `null`
+- Add catch-all 404 route for unknown URLs
+- Remove unused eslint-disable directive in assets/columns.tsx
+
+### Backend
+- Add `@Transactional` to 32 write methods across 7 controllers (data integrity)
+- Fix AuditService silently dropping Deactivated/Reactivated/StatusChanged app history events
+- Fix inconsistent password validation (ProfileController was 6 chars, now 8 to match UsersController)
+- Add field change tracking to location updates in audit log
+- Certificate status now returns 400 on invalid input instead of silently defaulting to Active
+
 ## 2026-02-22 15:42 — Alert rule modal redesign
 
 - Restyled create/edit alert rule dialog to match new design system

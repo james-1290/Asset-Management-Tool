@@ -8,6 +8,7 @@ import com.assetmanagement.api.repository.AssetRepository
 import com.assetmanagement.api.repository.CertificateRepository
 import com.assetmanagement.api.repository.LocationRepository
 import com.assetmanagement.api.repository.PersonRepository
+import com.assetmanagement.api.service.AuditChange
 import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
@@ -136,6 +137,7 @@ class LocationsController(
     }
 
     @PostMapping
+    @Transactional
     fun create(@RequestBody request: CreateLocationRequest): ResponseEntity<LocationDto> {
         val location = Location(name = request.name, address = request.address, city = request.city, country = request.country)
         locationRepository.save(location)
@@ -147,8 +149,16 @@ class LocationsController(
     }
 
     @PutMapping("/{id}")
+    @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateLocationRequest): ResponseEntity<Any> {
         val location = locationRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+
+        // Track field changes before applying
+        val changes = mutableListOf<AuditChange>()
+        if (location.name != request.name) changes.add(AuditChange("Name", location.name, request.name))
+        if (location.address != request.address) changes.add(AuditChange("Address", location.address, request.address))
+        if (location.city != request.city) changes.add(AuditChange("City", location.city, request.city))
+        if (location.country != request.country) changes.add(AuditChange("Country", location.country, request.country))
 
         location.name = request.name
         location.address = request.address
@@ -158,12 +168,14 @@ class LocationsController(
         locationRepository.save(location)
 
         auditService.log(AuditEntry("Updated", "Location", location.id.toString(), location.name,
-            "Updated location \"${location.name}\"", currentUserService.userId, currentUserService.userName))
+            "Updated location \"${location.name}\"", currentUserService.userId, currentUserService.userName,
+            if (changes.isNotEmpty()) changes else null))
 
         return ResponseEntity.ok(location.toDto())
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
         val location = locationRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
 

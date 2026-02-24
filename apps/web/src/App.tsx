@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom"
 import { Layout } from "@/components/layout"
 import { ProtectedRoute } from "@/components/protected-route"
 import LoginPage from "@/pages/login"
@@ -50,6 +50,7 @@ function App() {
             <Route path="/audit-log" element={<AuditLogPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="*" element={<div className="flex flex-col items-center justify-center py-20 gap-4"><h1 className="text-2xl font-bold">Page not found</h1><p className="text-muted-foreground">The page you are looking for does not exist.</p><Link to="/" className="text-primary hover:underline">Go to Dashboard</Link></div>} />
           </Route>
         </Route>
       </Routes>
