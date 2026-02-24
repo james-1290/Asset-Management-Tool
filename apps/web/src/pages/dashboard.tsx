@@ -62,8 +62,8 @@ export default function DashboardPage() {
   const licenceExpiries = useLicenceExpiries(30, true);
   const inventorySnapshot = useInventorySnapshot(isVisible("inventorySnapshot"));
 
-  // Derive "In Maintenance" count from status breakdown
-  const maintenanceCount = statusBreakdown.data
+  // Derive "In Repair" count from status breakdown
+  const inRepairCount = statusBreakdown.data
     ?.filter((s) => s.status === "InRepair" || s.status === "InMaintenance")
     .reduce((sum, s) => sum + s.count, 0) ?? 0;
 
@@ -127,12 +127,12 @@ export default function DashboardPage() {
           href="/assets?status=CheckedOut"
         />
         <StatCard
-          title="In Maintenance"
-          value={maintenanceCount.toString()}
+          title="In Repair"
+          value={inRepairCount.toString()}
           icon={Wrench}
           iconBg="bg-amber-50 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400"
           isLoading={statusBreakdown.isLoading}
-          href="/assets?status=InRepair"
+          href="/assets?status=InMaintenance"
         />
         <StatCard
           title="Expiring Soon"
