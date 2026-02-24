@@ -17,8 +17,10 @@ import jakarta.persistence.criteria.Predicate
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
 import java.time.Instant
@@ -89,7 +91,7 @@ class AssetTypesController(
             "Created asset type \"${type.name}\"", currentUserService.userId, currentUserService.userName))
 
         return ResponseEntity.created(URI("/api/v1/assettypes/${type.id}"))
-            .body(assetTypeRepository.findById(type.id).get().toDto())
+            .body(assetTypeRepository.findById(type.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }.toDto())
     }
 
     @PutMapping("/{id}")
@@ -129,7 +131,7 @@ class AssetTypesController(
         auditService.log(AuditEntry("Updated", "AssetType", type.id.toString(), type.name,
             "Updated asset type \"${type.name}\"", currentUserService.userId, currentUserService.userName))
 
-        return ResponseEntity.ok(assetTypeRepository.findById(type.id).get().toDto())
+        return ResponseEntity.ok(assetTypeRepository.findById(type.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }.toDto())
     }
 
     @PostMapping("/bulk-archive")

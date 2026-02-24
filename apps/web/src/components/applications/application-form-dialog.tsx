@@ -301,7 +301,7 @@ export function ApplicationFormDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="font-semibold">Licence Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value as string}>
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
                         <FormControl>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select type" />
@@ -326,7 +326,7 @@ export function ApplicationFormDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="font-semibold">Location</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value as string}>
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
                         <FormControl>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="None" />

@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-02-24 21:59 — Code review round 2
+
+### Backend (Kotlin/Spring Boot)
+- Added `@PreAuthorize("hasAnyRole('Admin','Operator')")` to DashboardController (was unauthenticated)
+- Wrapped date parsing in AuditLogsController with try-catch (returns 400 on invalid dates)
+- Enforced search limit max 50 in PeopleController (`limit.coerceIn(1, 50)`)
+- Added `@Modifying` to repository delete methods (deleteByUserIdAndRoleId, deleteByEntityId)
+- Added `@Valid` to request bodies in AssetsController and PeopleController
+- Replaced 14 unsafe `.get()` calls with `.orElseThrow` across 6 controllers
+
+### Frontend (React)
+- Fixed missing publisher filter in applications CSV export
+- Added validation to BulkEditDialog (toast error when checkbox checked but no value selected)
+- Fixed unsafe `as string` type casts in application-form-dialog (replaced with `?? ""`)
+- Increased global React Query staleTime from 30s to 5 minutes
+
 ## 2026-02-24 21:51 — Comprehensive code review fixes
 
 ### Backend (Kotlin/Spring Boot)

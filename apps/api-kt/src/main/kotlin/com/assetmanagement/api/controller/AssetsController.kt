@@ -14,6 +14,7 @@ import com.assetmanagement.api.service.CurrentUserService
 import com.opencsv.CSVWriter
 import jakarta.persistence.criteria.Predicate
 import jakarta.servlet.http.HttpServletResponse
+import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
@@ -210,7 +211,7 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     @PostMapping
     @Transactional
-    fun create(@RequestBody request: CreateAssetRequest): ResponseEntity<Any> {
+    fun create(@Valid @RequestBody request: CreateAssetRequest): ResponseEntity<Any> {
         // Validate required fields
         if (request.name.isBlank())
             return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
@@ -304,7 +305,7 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     @PutMapping("/{id}")
     @Transactional
-    fun update(@PathVariable id: UUID, @RequestBody request: UpdateAssetRequest): ResponseEntity<Any> {
+    fun update(@PathVariable id: UUID, @Valid @RequestBody request: UpdateAssetRequest): ResponseEntity<Any> {
         val asset = assetRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
 

@@ -17,8 +17,10 @@ import jakarta.persistence.criteria.Predicate
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
 import java.time.Instant
@@ -81,7 +83,7 @@ class ApplicationTypesController(
         }
         auditService.log(AuditEntry("Created", "ApplicationType", type.id.toString(), type.name,
             "Created application type \"${type.name}\"", currentUserService.userId, currentUserService.userName))
-        return ResponseEntity.created(URI("/api/v1/applicationtypes/${type.id}")).body(applicationTypeRepository.findById(type.id).get().toDto())
+        return ResponseEntity.created(URI("/api/v1/applicationtypes/${type.id}")).body(applicationTypeRepository.findById(type.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }.toDto())
     }
 
     @PutMapping("/{id}")
@@ -112,7 +114,7 @@ class ApplicationTypesController(
         applicationTypeRepository.save(type)
         auditService.log(AuditEntry("Updated", "ApplicationType", type.id.toString(), type.name,
             "Updated application type \"${type.name}\"", currentUserService.userId, currentUserService.userName))
-        return ResponseEntity.ok(applicationTypeRepository.findById(type.id).get().toDto())
+        return ResponseEntity.ok(applicationTypeRepository.findById(type.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }.toDto())
     }
 
     @PostMapping("/bulk-archive")

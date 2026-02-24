@@ -12,10 +12,12 @@ import java.math.RoundingMode
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
+import org.springframework.security.access.prepost.PreAuthorize
 import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/dashboard")
+@PreAuthorize("hasAnyRole('Admin','Operator')")
 class DashboardController(
     private val em: EntityManager
 ) {

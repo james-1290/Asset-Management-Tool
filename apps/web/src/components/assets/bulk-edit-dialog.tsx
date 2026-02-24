@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,16 @@ export function BulkEditDialog({
   const hasAnyField = includeStatus || includeLocation || includePerson || includeNotes;
 
   function handleSubmit() {
+    // Validate that checked fields have values selected
+    if (includeStatus && !status) {
+      toast.error("Please select a status or uncheck the Status field");
+      return;
+    }
+    if (includeLocation && !locationId) {
+      toast.error("Please select a location or uncheck the Location field");
+      return;
+    }
+
     const request: BulkEditAssetsRequest = {
       ids: selectedIds,
     };

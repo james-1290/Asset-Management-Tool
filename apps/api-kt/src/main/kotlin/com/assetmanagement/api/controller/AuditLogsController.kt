@@ -81,11 +81,21 @@ class AuditLogsController(
             ))
         }
         if (!dateFrom.isNullOrBlank()) {
-            val from = java.time.Instant.parse("${dateFrom}T00:00:00Z")
+            val from = try {
+                java.time.Instant.parse("${dateFrom}T00:00:00Z")
+            } catch (_: Exception) {
+                throw org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid dateFrom format: $dateFrom. Expected yyyy-MM-dd.")
+            }
             preds.add(cb.greaterThanOrEqualTo(root.get("timestamp"), from))
         }
         if (!dateTo.isNullOrBlank()) {
-            val to = java.time.Instant.parse("${dateTo}T23:59:59Z")
+            val to = try {
+                java.time.Instant.parse("${dateTo}T23:59:59Z")
+            } catch (_: Exception) {
+                throw org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid dateTo format: $dateTo. Expected yyyy-MM-dd.")
+            }
             preds.add(cb.lessThanOrEqualTo(root.get("timestamp"), to))
         }
         if (preds.isEmpty()) null else cb.and(*preds.toTypedArray())
