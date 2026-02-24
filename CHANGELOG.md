@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-02-24 19:58 — Block checkout/reassignment of assigned assets + show API error messages
+
+- Block: cannot check out an asset that already has someone assigned (checks `assignedPersonId`, not just status)
+- Block: cannot reassign an asset to a different person via edit — must unassign first
+- Block: cannot set status to CheckedOut via edit form when someone is assigned
+- UI: Check Out button only appears for Available assets (removed from Assigned)
+- UI: Edit form status dropdown limited to Available, Assigned, In Maintenance (Retired/Sold/CheckedOut have dedicated buttons)
+- UI: All asset detail error toasts now show the actual API error message instead of generic fallback
+- Backend: bulk status change skips assigned assets when target is CheckedOut
+
 ## 2026-02-24 14:30 — Fix asset form dirty tracking, required custom fields, dashboard widget
 
 - Fix: "Save Changes" button now disabled until a field is actually changed (assets, certificates, applications)
