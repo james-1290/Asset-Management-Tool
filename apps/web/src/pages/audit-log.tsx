@@ -29,7 +29,7 @@ export default function AuditLogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const page = Number(searchParams.get("page")) || 1;
-  const pageSize = Number(searchParams.get("pageSize")) || 25;
+  const pageSize = Number(searchParams.get("pageSize")) || 50;
   const searchParam = searchParams.get("search") ?? "";
   const entityTypeParam = searchParams.get("entityType") ?? "";
   const actionParam = searchParams.get("action") ?? "";
@@ -309,13 +309,18 @@ export default function AuditLogPage() {
       <PageHeader
         title="Audit Log"
         breadcrumbs={[{ label: "Audit Log" }]}
-        description="View all actions performed across the system."
+        description="Monitor all administrative actions and system-level events."
         actions={
-          !isLoading && (
-            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
-              {totalCount}
-            </span>
-          )
+          <div className="flex items-center gap-3">
+            <ExportButton onExport={handleExport} loading={exporting} />
+            <SavedViewSelector
+              entityType="audit-log"
+              activeViewId={activeViewId}
+              onApplyView={applyView}
+              onResetToDefault={handleResetToDefault}
+              getCurrentConfiguration={getCurrentConfiguration}
+            />
+          </div>
         }
       />
 
@@ -333,29 +338,19 @@ export default function AuditLogPage() {
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <AuditLogsToolbar
-                table={table}
-                search={searchInput}
-                onSearchChange={setSearchInput}
-                entityType={entityTypeParam}
-                onEntityTypeChange={handleEntityTypeChange}
-                action={actionParam}
-                onActionChange={handleActionChange}
-                dateFrom={dateFromParam}
-                dateTo={dateToParam}
-                onDateFromChange={(v) => handleFilterChange("dateFrom", v)}
-                onDateToChange={(v) => handleFilterChange("dateTo", v)}
-              />
-              <ExportButton onExport={handleExport} loading={exporting} />
-              <SavedViewSelector
-                entityType="audit-log"
-                activeViewId={activeViewId}
-                onApplyView={applyView}
-                onResetToDefault={handleResetToDefault}
-                getCurrentConfiguration={getCurrentConfiguration}
-              />
-            </div>
+            <AuditLogsToolbar
+              table={table}
+              search={searchInput}
+              onSearchChange={setSearchInput}
+              entityType={entityTypeParam}
+              onEntityTypeChange={handleEntityTypeChange}
+              action={actionParam}
+              onActionChange={handleActionChange}
+              dateFrom={dateFromParam}
+              dateTo={dateToParam}
+              onDateFromChange={(v) => handleFilterChange("dateFrom", v)}
+              onDateToChange={(v) => handleFilterChange("dateTo", v)}
+            />
             <ActiveFilterChips filters={activeFilters} onClearAll={handleClearAllFilters} />
           </div>
         )}

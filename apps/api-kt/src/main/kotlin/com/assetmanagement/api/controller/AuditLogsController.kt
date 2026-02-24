@@ -65,7 +65,11 @@ class AuditLogsController(
     private fun buildSpec(entityType: String?, action: String?, search: String?, dateFrom: String? = null, dateTo: String? = null): Specification<AuditLog> = Specification { root, _, cb ->
         val preds = mutableListOf<Predicate>()
         if (!entityType.isNullOrBlank()) preds.add(cb.equal(root.get<String>("entityType"), entityType))
-        if (!action.isNullOrBlank()) preds.add(cb.equal(root.get<String>("action"), action))
+        if (!action.isNullOrBlank()) {
+            val actions = action.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            if (actions.size == 1) preds.add(cb.equal(root.get<String>("action"), actions[0]))
+            else if (actions.size > 1) preds.add(root.get<String>("action").`in`(actions))
+        }
         if (!search.isNullOrBlank()) {
             val pattern = "%${search.lowercase()}%"
             preds.add(cb.or(

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-02-24 21:11 — Audit log redesign
+
+- Redesigned audit log table: two-line timestamps, actor initials avatars, color-coded uppercase action badges, entity links for all types
+- Replaced text search filter with multi-select checkbox dropdown for activity types (supports selecting multiple actions)
+- Backend: action filter now supports comma-separated values for multi-select
+- Switched filters to consistent shadcn Button/Popover/Select components
+- Default page size increased from 25 to 50
+- Export and Saved Views moved to page header actions
+
+## 2026-02-24 20:46 — UI consistency audit across all pages
+
+- Breadcrumb group labels now match sidebar names ("Inventory" → "Assets", removed "Tools" prefix from Audit Log)
+- Added missing breadcrumbs to Asset Templates, Notifications pages
+- Replaced raw `<h1>` with PageHeader component on Reports, Settings, Import pages
+- Fixed person-detail title size (text-3xl → text-2xl) to match other detail pages
+- Fixed Reports page spacing (space-y-8 → space-y-6) to match all other list pages
+
 ## 2026-02-24 20:33 — Breadcrumbs above title on all detail pages
 
 - Moved breadcrumbs from below the title to above it on all 5 detail pages (assets, certificates, applications, locations, people)
