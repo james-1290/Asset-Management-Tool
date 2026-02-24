@@ -75,8 +75,7 @@ class AssetsController(
 
         // Validate status param if provided
         if (!status.isNullOrBlank()) {
-            val parsed = try { AssetStatus.valueOf(status) } catch (_: Exception) { null }
-            if (parsed == null) {
+            try { AssetStatus.valueOf(status) } catch (_: Exception) {
                 return ResponseEntity.badRequest().body(mapOf("error" to "Invalid status: $status"))
             }
         }

@@ -5,7 +5,6 @@ import com.assetmanagement.api.model.enums.AssetStatus
 import com.assetmanagement.api.model.enums.CertificateStatus
 import com.assetmanagement.api.model.enums.ApplicationStatus
 import jakarta.persistence.EntityManager
-import jakarta.persistence.Tuple
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.math.BigDecimal

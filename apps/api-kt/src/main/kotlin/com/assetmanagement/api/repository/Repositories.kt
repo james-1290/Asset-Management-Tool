@@ -26,20 +26,13 @@ interface UserRepository : JpaRepository<User, UUID> {
 @Repository
 interface RoleRepository : JpaRepository<Role, UUID> {
     fun findByName(name: String): Role?
-    fun existsByName(name: String): Boolean
 }
-
-@Repository
-interface PermissionRepository : JpaRepository<Permission, UUID>
 
 @Repository
 interface UserRoleRepository : JpaRepository<UserRole, UserRoleId> {
     fun findByUserId(userId: UUID): List<UserRole>
     fun deleteByUserIdAndRoleId(userId: UUID, roleId: UUID)
 }
-
-@Repository
-interface RolePermissionRepository : JpaRepository<RolePermission, RolePermissionId>
 
 @Repository
 interface LocationRepository : JpaRepository<Location, UUID>, JpaSpecificationExecutor<Location>
@@ -57,7 +50,6 @@ interface AssetTypeRepository : JpaRepository<AssetType, UUID>, JpaSpecification
 
 @Repository
 interface AssetRepository : JpaRepository<Asset, UUID>, JpaSpecificationExecutor<Asset> {
-    fun countByIsArchivedFalse(): Long
     fun countByAssetTypeIdAndIsArchivedFalse(assetTypeId: UUID): Long
     fun countByLocationIdAndIsArchivedFalse(locationId: UUID): Long
 }
@@ -69,14 +61,10 @@ interface AssetHistoryRepository : JpaRepository<AssetHistory, UUID> {
 }
 
 @Repository
-interface AssetHistoryChangeRepository : JpaRepository<AssetHistoryChange, UUID>
-
-@Repository
 interface CertificateTypeRepository : JpaRepository<CertificateType, UUID>, JpaSpecificationExecutor<CertificateType>
 
 @Repository
 interface CertificateRepository : JpaRepository<Certificate, UUID>, JpaSpecificationExecutor<Certificate> {
-    fun countByIsArchivedFalse(): Long
     fun countByCertificateTypeIdAndIsArchivedFalse(certificateTypeId: UUID): Long
     fun countByLocationIdAndIsArchivedFalse(locationId: UUID): Long
 }
@@ -88,14 +76,10 @@ interface CertificateHistoryRepository : JpaRepository<CertificateHistory, UUID>
 }
 
 @Repository
-interface CertificateHistoryChangeRepository : JpaRepository<CertificateHistoryChange, UUID>
-
-@Repository
 interface ApplicationTypeRepository : JpaRepository<ApplicationType, UUID>, JpaSpecificationExecutor<ApplicationType>
 
 @Repository
 interface ApplicationRepository : JpaRepository<Application, UUID>, JpaSpecificationExecutor<Application> {
-    fun countByIsArchivedFalse(): Long
     fun countByApplicationTypeIdAndIsArchivedFalse(applicationTypeId: UUID): Long
     fun countByLocationIdAndIsArchivedFalse(locationId: UUID): Long
 }
@@ -107,16 +91,10 @@ interface ApplicationHistoryRepository : JpaRepository<ApplicationHistory, UUID>
 }
 
 @Repository
-interface ApplicationHistoryChangeRepository : JpaRepository<ApplicationHistoryChange, UUID>
-
-@Repository
 interface PersonHistoryRepository : JpaRepository<PersonHistory, UUID> {
     fun findByPersonIdOrderByTimestampDesc(personId: UUID, pageable: Pageable): List<PersonHistory>
     fun findByPersonIdOrderByTimestampDesc(personId: UUID): List<PersonHistory>
 }
-
-@Repository
-interface PersonHistoryChangeRepository : JpaRepository<PersonHistoryChange, UUID>
 
 @Repository
 interface CustomFieldDefinitionRepository : JpaRepository<CustomFieldDefinition, UUID> {
@@ -138,7 +116,6 @@ interface AuditLogRepository : JpaRepository<AuditLog, UUID>, JpaSpecificationEx
 
 @Repository
 interface SavedViewRepository : JpaRepository<SavedView, UUID> {
-    fun findByUserId(userId: UUID): List<SavedView>
     fun findByUserIdAndEntityType(userId: UUID, entityType: String): List<SavedView>
     fun findByUserIdAndEntityTypeAndIsDefaultTrue(userId: UUID, entityType: String): SavedView?
 }
