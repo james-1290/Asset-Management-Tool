@@ -129,6 +129,12 @@ export default function LocationDetailPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
+        {/* Breadcrumbs */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-4">
+          <Link to="/locations" className="hover:text-primary">Locations</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-foreground">{location.name}</span>
+        </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="size-12 rounded-xl bg-muted flex items-center justify-center">
@@ -153,12 +159,6 @@ export default function LocationDetailPage() {
               Edit Details
             </Button>
           </div>
-        </div>
-        {/* Breadcrumbs */}
-        <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground font-medium">
-          <Link to="/locations" className="hover:text-primary">Locations</Link>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground">{location.name}</span>
         </div>
       </div>
 
