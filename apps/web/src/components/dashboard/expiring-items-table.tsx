@@ -159,7 +159,7 @@ export function ExpiringItemsTable() {
           <div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1.5 text-xl font-bold text-foreground hover:text-foreground/80 transition-colors">
+                <button type="button" className="flex items-center gap-1.5 text-xl font-bold text-foreground hover:text-foreground/80 transition-colors">
                   {config.label}
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </button>
@@ -183,6 +183,7 @@ export function ExpiringItemsTable() {
             {/* View mode toggle */}
             <div className="flex rounded-lg border border-border overflow-hidden">
               <button
+                type="button"
                 onClick={() => { setViewMode("comfortable"); setPage(1); }}
                 className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                   viewMode === "comfortable"
@@ -193,6 +194,7 @@ export function ExpiringItemsTable() {
                 Comfortable
               </button>
               <button
+                type="button"
                 onClick={() => { setViewMode("compact"); setPage(1); }}
                 className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                   viewMode === "compact"
@@ -283,6 +285,7 @@ export function ExpiringItemsTable() {
               </p>
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage <= 1}
                   className="px-3 py-1.5 border border-border rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -290,6 +293,7 @@ export function ExpiringItemsTable() {
                   Previous
                 </button>
                 <button
+                  type="button"
                   onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
                   disabled={currentPage >= pageCount}
                   className="px-3 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"

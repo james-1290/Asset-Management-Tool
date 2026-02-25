@@ -32,6 +32,7 @@ export function DataTablePagination({
       </p>
       <div className="flex items-center gap-2">
         <button
+          type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           className="px-3 py-1.5 border border-border rounded-lg text-sm font-medium text-muted-foreground disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent transition-colors"
@@ -39,6 +40,7 @@ export function DataTablePagination({
           Previous
         </button>
         <button
+          type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= pageCount}
           className="px-3 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent transition-colors"

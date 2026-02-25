@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-02-25 09:29 — Code review round 3
+
+### Backend (Kotlin/Spring Boot)
+- Fixed LIKE escape character missing from all 6 `cb.like()` calls in SearchController (escape pattern was applied but escape char `'\\'` was not passed to JPA, making escaping ineffective)
+- Added null safety to `queryTotalAssets()` in ReportsController (`singleResult ?: 0L`)
+
+### Frontend (React)
+- Added `type="button"` to 8 `<button>` elements across data-table-pagination, notifications-bell, and expiring-items-table (prevents unintended form submissions)
+- Added `aria-label="User actions"` to icon-only dropdown trigger in users-tab
+
 ## 2026-02-24 21:59 — Code review round 2
 
 ### Backend (Kotlin/Spring Boot)

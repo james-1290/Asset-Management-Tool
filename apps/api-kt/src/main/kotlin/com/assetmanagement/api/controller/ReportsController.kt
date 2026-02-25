@@ -53,7 +53,7 @@ class ReportsController(
     private fun queryTotalAssets(): Int {
         return (em.createQuery(
             "SELECT COUNT(a) FROM Asset a WHERE a.isArchived = false", java.lang.Long::class.java
-        ).singleResult).toInt()
+        ).singleResult ?: 0L).toInt()
     }
 
     private fun queryTotalValue(): BigDecimal {

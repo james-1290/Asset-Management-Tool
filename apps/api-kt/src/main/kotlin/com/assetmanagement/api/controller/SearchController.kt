@@ -40,8 +40,8 @@ class SearchController(
             cb.and(
                 cb.equal(root.get<Boolean>("isArchived"), false),
                 cb.or(
-                    cb.like(cb.lower(root.get("name")), pattern),
-                    cb.like(cb.lower(root.get("serialNumber")), pattern)
+                    cb.like(cb.lower(root.get("name")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("serialNumber")), pattern, '\\')
                 )
             )
         }
@@ -61,7 +61,7 @@ class SearchController(
         val certSpec = Specification<Certificate> { root, _, cb ->
             cb.and(
                 cb.equal(root.get<Boolean>("isArchived"), false),
-                cb.like(cb.lower(root.get("name")), pattern)
+                cb.like(cb.lower(root.get("name")), pattern, '\\')
             )
         }
         val certCount = certificateRepository.count(certSpec).toInt()
@@ -83,7 +83,7 @@ class SearchController(
         val appSpec = Specification<Application> { root, _, cb ->
             cb.and(
                 cb.equal(root.get<Boolean>("isArchived"), false),
-                cb.like(cb.lower(root.get("name")), pattern)
+                cb.like(cb.lower(root.get("name")), pattern, '\\')
             )
         }
         val appCount = applicationRepository.count(appSpec).toInt()
@@ -98,7 +98,7 @@ class SearchController(
         val personSpec = Specification<Person> { root, _, cb ->
             cb.and(
                 cb.equal(root.get<Boolean>("isArchived"), false),
-                cb.like(cb.lower(root.get("fullName")), pattern)
+                cb.like(cb.lower(root.get("fullName")), pattern, '\\')
             )
         }
         val personCount = personRepository.count(personSpec).toInt()
@@ -117,7 +117,7 @@ class SearchController(
         val locationSpec = Specification<Location> { root, _, cb ->
             cb.and(
                 cb.equal(root.get<Boolean>("isArchived"), false),
-                cb.like(cb.lower(root.get("name")), pattern)
+                cb.like(cb.lower(root.get("name")), pattern, '\\')
             )
         }
         val locationCount = locationRepository.count(locationSpec).toInt()

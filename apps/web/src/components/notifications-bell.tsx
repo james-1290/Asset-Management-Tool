@@ -91,6 +91,7 @@ function NotificationRow({
             {badge.label}
           </span>
           <button
+            type="button"
             className="text-sm font-medium truncate hover:underline text-left"
             onClick={() => onNavigate(entityPath(notification))}
           >
