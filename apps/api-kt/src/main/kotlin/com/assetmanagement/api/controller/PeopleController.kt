@@ -67,6 +67,7 @@ class PeopleController(
     }
 
     @GetMapping("/export")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
         @RequestParam(required = false) search: String?,
         @RequestParam(required = false) locationId: UUID?,

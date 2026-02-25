@@ -30,8 +30,14 @@ class ReportsController(
 
     /** Parse optional from/to date strings into Instants (start of day UTC). */
     private fun parseDateRange(from: String?, to: String?): Pair<Instant?, Instant?> {
-        val fromInstant = from?.let { LocalDate.parse(it).atStartOfDay(ZoneOffset.UTC).toInstant() }
-        val toInstant = to?.let { LocalDate.parse(it).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() } // inclusive end
+        val fromInstant = from?.let {
+            try { LocalDate.parse(it).atStartOfDay(ZoneOffset.UTC).toInstant() }
+            catch (_: Exception) { throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid from date: $it") }
+        }
+        val toInstant = to?.let {
+            try { LocalDate.parse(it).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() }
+            catch (_: Exception) { throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid to date: $it") }
+        }
         return Pair(fromInstant, toInstant)
     }
 

@@ -62,7 +62,7 @@ class AlertsController(
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
         val pageable = PageRequest.of(p - 1, ps, Sort.by(Sort.Direction.DESC, "sentAt"))
-        val historyPage = alertHistoryRepository.findAllByOrderBySentAtDesc(pageable)
+        val historyPage = alertHistoryRepository.findAll(pageable)
 
         val items = historyPage.content.map { h ->
             AlertHistoryDto(

@@ -94,6 +94,7 @@ class ApplicationsController(
     // ── GET /export ── CSV export ───────────────────────────────────────
 
     @GetMapping("/export")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
         @RequestParam(required = false) search: String?,
         @RequestParam(required = false) status: String?,
@@ -808,11 +809,15 @@ class ApplicationsController(
 
         // Expiry date range
         if (!expiryFrom.isNullOrBlank()) {
-            val from = Instant.parse("${expiryFrom}T00:00:00Z")
+            val from = try { Instant.parse("${expiryFrom}T00:00:00Z") } catch (_: Exception) {
+                throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid expiryFrom: $expiryFrom")
+            }
             predicates.add(cb.greaterThanOrEqualTo(root.get("expiryDate"), from))
         }
         if (!expiryTo.isNullOrBlank()) {
-            val to = Instant.parse("${expiryTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS)
+            val to = try { Instant.parse("${expiryTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS) } catch (_: Exception) {
+                throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid expiryTo: $expiryTo")
+            }
             predicates.add(cb.lessThan(root.get("expiryDate"), to))
         }
 

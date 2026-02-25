@@ -44,6 +44,7 @@ class AuditLogsController(
     }
 
     @GetMapping("/export")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
         @RequestParam(required = false) entityType: String?, @RequestParam(required = false) action: String?,
         @RequestParam(required = false) search: String?, @RequestParam(defaultValue = "timestamp") sortBy: String,
@@ -75,9 +76,9 @@ class AuditLogsController(
             val escaped = SqlUtils.escapeLikePattern(search.lowercase())
             val pattern = "%${escaped}%"
             preds.add(cb.or(
-                cb.like(cb.lower(root.get("details")), pattern),
-                cb.like(cb.lower(root.get("actorName")), pattern),
-                cb.like(cb.lower(root.get("entityName")), pattern)
+                cb.like(cb.lower(root.get("details")), pattern, '\\'),
+                cb.like(cb.lower(root.get("actorName")), pattern, '\\'),
+                cb.like(cb.lower(root.get("entityName")), pattern, '\\')
             ))
         }
         if (!dateFrom.isNullOrBlank()) {

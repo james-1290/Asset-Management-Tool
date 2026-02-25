@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-02-25 10:30 — Code review round 4
+
+### Backend (Kotlin/Spring Boot)
+- Fixed LIKE escape char missing from 3 `cb.like()` calls in AuditLogsController search
+- Added date validation try-catch in AssetsController (5 date params), CertificatesController (2), ApplicationsController (2), ReportsController parseDateRange — now returns 400 instead of 500 on malformed dates
+- Added `@Transactional` to UsersController create/update (atomic user+role saves)
+- Added `@Transactional` to SettingsController updateSystem/updateAlerts (atomic multi-setting saves)
+- Added `@Transactional(readOnly = true)` to 6 export endpoints (Assets, Certificates, Applications, People, Locations, AuditLogs) — prevents LazyInitializationException if OSIV disabled
+- Fixed UsersController SSO check: `authProvider != "LOCAL"` → `authProvider != null && authProvider != "LOCAL"` (null authProvider was treated as SSO)
+- Fixed AlertsController redundant double-sort: removed method-name sort, kept Pageable sort
+- Fixed AssetsController bulkEdit N+1: replaced per-asset `findById` loop with batch `findAllById`
+
+### Frontend (React)
+- Fixed command search: location results now navigate to `/locations/:id` detail page instead of `/locations` list
+- Removed dead "quickFilter" key from certificates clearAllFilters
+
 ## 2026-02-25 09:33 — Code review round 3 (part 2)
 
 ### Backend (Kotlin/Spring Boot)
