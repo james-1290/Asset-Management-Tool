@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-02-25 14:23 — Fix theme toggle (dark/light/system)
+
+- Theme radio buttons in Settings > Profile now apply immediately on selection (not just on save)
+- Fixed `syncTheme()` in auth context to apply dark class to document — was only saving to localStorage without toggling the CSS class
+- Theme now correctly applies on login, SSO token callback, and profile update
+
 ## 2026-02-25 14:15 — Code review round 4 (part 2)
 
 ### Backend (Kotlin/Spring Boot)
