@@ -204,6 +204,23 @@ export function AlertsTab() {
     });
   }
 
+  function handleExportLogs() {
+    if (!history || history.items.length === 0) return;
+    const headers = ["Type", "Name", "Threshold (days)", "Expiry Date", "Sent At", "Recipients"];
+    const rows = history.items.map((h) => [
+      h.entityType, h.entityName, String(h.thresholdDays),
+      h.expiryDate, h.sentAt, h.recipients,
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `alert-history-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -561,7 +578,7 @@ export function AlertsTab() {
                     <History className="h-5 w-5 text-primary" />
                     <h2 className="text-lg font-bold">Alert History</h2>
                   </div>
-                  <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm font-medium">
+                  <button type="button" onClick={handleExportLogs} className="flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm font-medium">
                     <Download className="h-4 w-4" />
                     Export Logs
                   </button>
@@ -647,7 +664,30 @@ export function AlertsTab() {
                 </div>
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <span className="text-sm text-muted-foreground">Next Scheduled Scan</span>
-                  <span className="text-sm font-bold">Tomorrow 08:00</span>
+                  <span className="text-sm font-bold">{(() => {
+                    const type = form.watch("scheduleType");
+                    const time = form.watch("scheduleTime") || "09:00";
+                    if (type === "disabled") return "Disabled";
+                    const day = form.watch("scheduleDay") || "MONDAY";
+                    const now = new Date();
+                    const [h, m] = time.split(":").map(Number);
+                    if (type === "daily") {
+                      const next = new Date(now);
+                      next.setHours(h, m, 0, 0);
+                      if (next <= now) next.setDate(next.getDate() + 1);
+                      const label = next.toDateString() === new Date(now.getTime() + 86400000).toDateString() ? "Tomorrow" : next.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+                      return `${label} ${time}`;
+                    }
+                    const dayMap: Record<string, number> = { SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6 };
+                    const targetDay = dayMap[day] ?? 1;
+                    const next = new Date(now);
+                    next.setHours(h, m, 0, 0);
+                    let daysUntil = (targetDay - now.getDay() + 7) % 7;
+                    if (daysUntil === 0 && next <= now) daysUntil = 7;
+                    if (type === "biweekly" && daysUntil < 7) daysUntil += 7;
+                    next.setDate(now.getDate() + daysUntil);
+                    return `${next.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} ${time}`;
+                  })()}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <span className="text-sm text-muted-foreground">Alerts Sent (30d)</span>

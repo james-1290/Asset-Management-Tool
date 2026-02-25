@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-02-25 14:15 — Code review round 4 (part 2)
+
+### Backend (Kotlin/Spring Boot)
+- Removed ambiguous `MM/dd/yyyy` date format from ImportController — UK `dd/MM/yyyy` is the standard
+
+### Frontend (React)
+- Fixed "Next Scheduled Scan" in alerts summary — now computes actual next run time from scheduleType, scheduleTime, and scheduleDay (was hardcoded "Tomorrow 08:00")
+- Wired "Export Logs" button in alerts tab — downloads current alert history page as CSV
+
 ## 2026-02-25 10:30 — Code review round 4
 
 ### Backend (Kotlin/Spring Boot)
