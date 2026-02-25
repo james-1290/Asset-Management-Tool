@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-02-25 09:33 — Code review round 3 (part 2)
+
+### Backend (Kotlin/Spring Boot)
+- Fixed webhook URL masking detection in SettingsController: replaced fragile `endsWith("...")` check with comparison against `maskWebhookUrl(currentValue)` — prevents silently ignoring URLs that legitimately end in `...`
+- Simplified UsersController filter: removed redundant `!isAdmin()` check (endpoint already requires Admin role via `@PreAuthorize`)
+
 ## 2026-02-25 09:29 — Code review round 3
 
 ### Backend (Kotlin/Spring Boot)
