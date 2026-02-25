@@ -7,6 +7,7 @@ import { Monitor, Sun, Moon, Eye, EyeOff, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useUpdateProfile } from "@/hooks/use-profile";
 import { useChangePassword } from "@/hooks/use-profile";
+import { useTheme } from "@/hooks/use-theme";
 import {
   Form,
   FormControl,
@@ -68,6 +69,7 @@ export function ProfileTab() {
   const { user, updateUser } = useAuth();
   const updateProfile = useUpdateProfile();
   const changePassword = useChangePassword();
+  const { setTheme: applyTheme } = useTheme();
   const isSsoUser = !!user?.authProvider && user.authProvider !== "LOCAL";
 
   const form = useForm<ProfileFormValues>({
@@ -199,7 +201,10 @@ export function ProfileTab() {
                               name="theme"
                               value={opt.value}
                               checked={isSelected}
-                              onChange={() => field.onChange(opt.value)}
+                              onChange={() => {
+                                field.onChange(opt.value);
+                                applyTheme(opt.value as "light" | "dark" | "system");
+                              }}
                             />
                             <div
                               className={[

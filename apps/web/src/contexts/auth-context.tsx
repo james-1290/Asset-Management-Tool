@@ -113,9 +113,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 function syncTheme(preference?: string | null) {
-  if (preference) {
-    localStorage.setItem("theme", preference)
-  }
+  const theme = preference || "system"
+  localStorage.setItem("theme", theme)
+  const resolved = theme === "system"
+    ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+    : theme
+  document.documentElement.classList.toggle("dark", resolved === "dark")
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
