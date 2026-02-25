@@ -328,7 +328,7 @@ export default function CertificatesPage() {
 
   const handleClearAllFilters = useCallback(() => {
     setSearchParams((prev) => {
-      ["expiryFrom", "expiryTo", "quickFilter"].forEach(k => prev.delete(k));
+      ["expiryFrom", "expiryTo"].forEach(k => prev.delete(k));
       prev.set("page", "1");
       return prev;
     });

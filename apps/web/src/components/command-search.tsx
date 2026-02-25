@@ -86,7 +86,7 @@ export function CommandSearch() {
           navigate(`/people/${id}`);
           break;
         case "locations":
-          navigate("/locations");
+          navigate(`/locations/${id}`);
           break;
       }
     },

@@ -63,6 +63,7 @@ class SettingsController(
 
     @PutMapping("/system")
     @PreAuthorize("hasRole('Admin')")
+    @org.springframework.transaction.annotation.Transactional
     fun updateSystem(@RequestBody request: SystemSettingsDto): ResponseEntity<Any> {
 
         val userName = currentUserService.userName
@@ -110,6 +111,7 @@ class SettingsController(
 
     @PutMapping("/alerts")
     @PreAuthorize("hasRole('Admin')")
+    @org.springframework.transaction.annotation.Transactional
     fun updateAlerts(@RequestBody request: AlertSettingsDto): ResponseEntity<Any> {
 
         val userName = currentUserService.userName

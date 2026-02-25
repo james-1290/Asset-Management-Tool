@@ -101,6 +101,7 @@ class AssetsController(
     // 2. GET /export — CSV export with same filters + optional ids param
     // ──────────────────────────────────────────────────────────────────────────
     @GetMapping("/export")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
         @RequestParam(required = false) search: String?,
         @RequestParam(required = false) status: String?,
@@ -970,8 +971,10 @@ class AssetsController(
         var succeeded = 0
         var failed = 0
 
+        val assetsById = assetRepository.findAllById(request.ids).associateBy { it.id }
+
         for (id in request.ids) {
-            val asset = assetRepository.findById(id).orElse(null)
+            val asset = assetsById[id]
             if (asset == null || asset.isArchived) {
                 failed++
                 continue
@@ -1216,21 +1219,29 @@ class AssetsController(
 
         // Purchase date range
         if (!purchaseDateFrom.isNullOrBlank()) {
-            val from = Instant.parse("${purchaseDateFrom}T00:00:00Z")
+            val from = try { Instant.parse("${purchaseDateFrom}T00:00:00Z") } catch (_: Exception) {
+                throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid purchaseDateFrom: $purchaseDateFrom")
+            }
             predicates.add(cb.greaterThanOrEqualTo(root.get("purchaseDate"), from))
         }
         if (!purchaseDateTo.isNullOrBlank()) {
-            val to = Instant.parse("${purchaseDateTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS)
+            val to = try { Instant.parse("${purchaseDateTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS) } catch (_: Exception) {
+                throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid purchaseDateTo: $purchaseDateTo")
+            }
             predicates.add(cb.lessThan(root.get("purchaseDate"), to))
         }
 
         // Warranty expiry date range
         if (!warrantyExpiryFrom.isNullOrBlank()) {
-            val from = Instant.parse("${warrantyExpiryFrom}T00:00:00Z")
+            val from = try { Instant.parse("${warrantyExpiryFrom}T00:00:00Z") } catch (_: Exception) {
+                throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid warrantyExpiryFrom: $warrantyExpiryFrom")
+            }
             predicates.add(cb.greaterThanOrEqualTo(root.get("warrantyExpiryDate"), from))
         }
         if (!warrantyExpiryTo.isNullOrBlank()) {
-            val to = Instant.parse("${warrantyExpiryTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS)
+            val to = try { Instant.parse("${warrantyExpiryTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS) } catch (_: Exception) {
+                throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid warrantyExpiryTo: $warrantyExpiryTo")
+            }
             predicates.add(cb.lessThan(root.get("warrantyExpiryDate"), to))
         }
 
@@ -1244,7 +1255,9 @@ class AssetsController(
 
         // Created after filter (for "recently added")
         if (!createdAfter.isNullOrBlank()) {
-            val after = Instant.parse("${createdAfter}T00:00:00Z")
+            val after = try { Instant.parse("${createdAfter}T00:00:00Z") } catch (_: Exception) {
+                throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid createdAfter: $createdAfter")
+            }
             predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), after))
         }
 

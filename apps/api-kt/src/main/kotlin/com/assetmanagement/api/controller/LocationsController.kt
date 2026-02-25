@@ -82,6 +82,7 @@ class LocationsController(
     }
 
     @GetMapping("/export")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
         @RequestParam(required = false) search: String?,
         @RequestParam(defaultValue = "name") sortBy: String,

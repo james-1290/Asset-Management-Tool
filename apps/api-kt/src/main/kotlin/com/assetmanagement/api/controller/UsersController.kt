@@ -53,6 +53,7 @@ class UsersController(
 
     @PostMapping
     @PreAuthorize("hasRole('Admin')")
+    @org.springframework.transaction.annotation.Transactional
     fun create(@Valid @RequestBody request: CreateUserRequest): ResponseEntity<Any> {
         if (userRepository.existsByUsername(request.username)) return ResponseEntity.status(409).body(mapOf("error" to "Username is already taken."))
         if (userRepository.existsByEmail(request.email)) return ResponseEntity.status(409).body(mapOf("error" to "Email is already in use."))
@@ -73,10 +74,11 @@ class UsersController(
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('Admin')")
+    @org.springframework.transaction.annotation.Transactional
     fun update(@PathVariable id: UUID, @Valid @RequestBody request: UpdateUserRequest): ResponseEntity<Any> {
         val user = userRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
 
-        val isSsoUser = user.authProvider != "LOCAL"
+        val isSsoUser = user.authProvider != null && user.authProvider != "LOCAL"
 
         // For SSO users, only role changes are allowed — displayName, email, active are managed by the identity provider
         if (isSsoUser) {
