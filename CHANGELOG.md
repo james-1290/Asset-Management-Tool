@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-02-25 15:40 — Add asset restore endpoint
+
+- Added `POST /api/v1/assets/{id}/restore` to un-archive soft-deleted assets
+- Sets `isArchived = false`, logs "Restored" audit entry
+- Returns 400 if asset is not archived, 404 if not found
+- Frontend already has "Restored" labels in history timelines and audit log
+
 ## 2026-02-25 14:23 — Fix theme toggle (dark/light/system)
 
 - Theme radio buttons in Settings > Profile now apply immediately on selection (not just on save)

@@ -1109,6 +1109,38 @@ class AssetsController(
     }
 
     // ──────────────────────────────────────────────────────────────────────────
+    // 13b. POST /{id}/restore — Restore archived asset
+    // ──────────────────────────────────────────────────────────────────────────
+    @PostMapping("/{id}/restore")
+    @Transactional
+    fun restore(@PathVariable id: UUID): ResponseEntity<Any> {
+        val asset = assetRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+
+        if (!asset.isArchived)
+            return ResponseEntity.badRequest().body(mapOf("error" to "Asset is not archived."))
+
+        asset.isArchived = false
+        asset.updatedAt = Instant.now()
+        assetRepository.save(asset)
+
+        auditService.log(
+            AuditEntry(
+                action = "Restored",
+                entityType = "Asset",
+                entityId = asset.id.toString(),
+                entityName = asset.name,
+                details = "Restored asset \"${asset.name}\"",
+                actorId = currentUserService.userId,
+                actorName = currentUserService.userName
+            )
+        )
+
+        val cfvs = customFieldValueRepository.findByEntityId(asset.id)
+        return ResponseEntity.ok(toDto(asset, cfvs))
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     // 14. POST /check-duplicates — Find potential duplicates before creating
     // ──────────────────────────────────────────────────────────────────────────
     @PostMapping("/check-duplicates")
