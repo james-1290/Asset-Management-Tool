@@ -50,6 +50,7 @@ interface AssetModelFormDialogProps {
   assetTypes: AssetType[];
   onSubmit: (values: ModelFormValues) => void;
   loading?: boolean;
+  defaultAssetTypeId?: string;
 }
 
 export type { ModelFormValues };
@@ -154,6 +155,7 @@ export function AssetModelFormDialog({
   assetTypes,
   onSubmit,
   loading,
+  defaultAssetTypeId,
 }: AssetModelFormDialogProps) {
   const isEditing = !!model;
 
@@ -169,7 +171,7 @@ export function AssetModelFormDialog({
   useEffect(() => {
     if (open) {
       form.reset({
-        assetTypeId: model?.assetTypeId ?? "",
+        assetTypeId: model?.assetTypeId ?? defaultAssetTypeId ?? "",
         name: model?.name ?? "",
         manufacturer: model?.manufacturer ?? "",
       });

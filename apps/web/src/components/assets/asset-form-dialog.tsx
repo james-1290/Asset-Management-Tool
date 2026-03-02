@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -29,10 +31,11 @@ import {
 import { Button } from "../ui/button";
 import { PersonCombobox } from "../person-combobox";
 import { CustomFieldsSection } from "./custom-fields-section";
+import { AssetModelFormDialog } from "../asset-models/asset-model-form-dialog";
 import { assetSchema, type AssetFormValues } from "../../lib/schemas/asset";
 import { useCustomFieldDefinitions } from "../../hooks/use-asset-types";
 import { useAssetTemplates } from "../../hooks/use-asset-templates";
-import { useAssetModels } from "../../hooks/use-asset-models";
+import { useAssetModels, useCreateAssetModel } from "../../hooks/use-asset-models";
 import type { Asset } from "../../types/asset";
 import type { AssetType } from "../../types/asset-type";
 import type { Location } from "../../types/location";
@@ -96,6 +99,8 @@ export function AssetFormDialog({
     !isEditing && watchedAssetTypeId ? watchedAssetTypeId : undefined,
   );
   const { data: models } = useAssetModels(watchedAssetTypeId || undefined);
+  const createModel = useCreateAssetModel();
+  const [showCreateModel, setShowCreateModel] = useState(false);
 
   // Auto-fill depreciation months from asset type default (only when creating)
   useEffect(() => {
@@ -434,7 +439,16 @@ export function AssetFormDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="font-semibold">Model</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select
+                          onValueChange={(value) => {
+                            if (value === "__create_new__") {
+                              setShowCreateModel(true);
+                              return;
+                            }
+                            field.onChange(value);
+                          }}
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select model" />
@@ -447,12 +461,33 @@ export function AssetFormDialog({
                                 {m.manufacturer ? `${m.manufacturer} ${m.name}` : m.name}
                               </SelectItem>
                             ))}
+                            <SelectItem value="__create_new__">
+                              <span className="flex items-center gap-1.5 text-primary">
+                                <Plus className="h-3.5 w-3.5" />
+                                Create New Model
+                              </span>
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                )}
+
+                {watchedAssetTypeId && (!models || models.length === 0) && (
+                  <div>
+                    <label className="text-sm font-semibold">Model</label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full mt-1.5 justify-start text-muted-foreground"
+                      onClick={() => setShowCreateModel(true)}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create New Model
+                    </Button>
+                  </div>
                 )}
               </div>
 
@@ -583,6 +618,28 @@ export function AssetFormDialog({
           </form>
         </Form>
       </DialogContent>
+
+      <AssetModelFormDialog
+        open={showCreateModel}
+        onOpenChange={setShowCreateModel}
+        assetTypes={assetTypes}
+        defaultAssetTypeId={watchedAssetTypeId}
+        onSubmit={async (values) => {
+          try {
+            const created = await createModel.mutateAsync({
+              assetTypeId: values.assetTypeId,
+              name: values.name,
+              manufacturer: values.manufacturer || undefined,
+            });
+            form.setValue("assetModelId", created.id, { shouldDirty: true });
+            setShowCreateModel(false);
+            toast.success("Model created");
+          } catch {
+            toast.error("Failed to create model");
+          }
+        }}
+        loading={createModel.isPending}
+      />
     </Dialog>
   );
 }
