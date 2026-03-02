@@ -14,15 +14,10 @@ import {
 import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { ConfirmDialog } from "../components/confirm-dialog";
-import {
-  AssetModelFormDialog,
-  type ModelFormValues,
-} from "../components/asset-models/asset-model-form-dialog";
+import { AssetModelFormDialog } from "../components/asset-models/asset-model-form-dialog";
 import { getAssetModelColumns } from "../components/asset-models/columns";
 import {
   useAssetModels,
-  useCreateAssetModel,
-  useUpdateAssetModel,
   useArchiveAssetModel,
 } from "../hooks/use-asset-models";
 import { useAssetTypes } from "../hooks/use-asset-types";
@@ -37,8 +32,6 @@ export default function AssetModelsPage() {
     filterTypeId || undefined,
   );
 
-  const createMutation = useCreateAssetModel();
-  const updateMutation = useUpdateAssetModel();
   const archiveMutation = useArchiveAssetModel();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -58,47 +51,6 @@ export default function AssetModelsPage() {
       }),
     [],
   );
-
-  function handleFormSubmit(values: ModelFormValues) {
-    if (editingModel) {
-      updateMutation.mutate(
-        {
-          id: editingModel.id,
-          data: {
-            name: values.name,
-            manufacturer: values.manufacturer || null,
-          },
-        },
-        {
-          onSuccess: () => {
-            toast.success("Model updated");
-            setFormOpen(false);
-            setEditingModel(null);
-          },
-          onError: () => {
-            toast.error("Failed to update model");
-          },
-        },
-      );
-    } else {
-      createMutation.mutate(
-        {
-          assetTypeId: values.assetTypeId,
-          name: values.name,
-          manufacturer: values.manufacturer || null,
-        },
-        {
-          onSuccess: () => {
-            toast.success("Model created");
-            setFormOpen(false);
-          },
-          onError: () => {
-            toast.error("Failed to create model");
-          },
-        },
-      );
-    }
-  }
 
   function handleArchive() {
     if (!archivingModel) return;
@@ -209,8 +161,13 @@ export default function AssetModelsPage() {
         }}
         model={editingModel}
         assetTypes={assetTypes ?? []}
-        onSubmit={handleFormSubmit}
-        loading={createMutation.isPending || updateMutation.isPending}
+        onSaved={() => {
+          if (editingModel) {
+            setFormOpen(false);
+            setEditingModel(null);
+          }
+          // For create: dialog handles the image step, stays open
+        }}
       />
 
       <ConfirmDialog

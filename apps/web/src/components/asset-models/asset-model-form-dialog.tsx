@@ -32,6 +32,7 @@ import {
 import { Button } from "../ui/button";
 import { assetModelsApi } from "../../lib/api/asset-models";
 import { useAssetModelImage, clearAssetModelImageCache } from "../../hooks/use-asset-model-image";
+import { useCreateAssetModel, useUpdateAssetModel } from "../../hooks/use-asset-models";
 import type { AssetModel } from "../../types/asset-model";
 import type { AssetType } from "../../types/asset-type";
 
@@ -48,11 +49,12 @@ interface AssetModelFormDialogProps {
   onOpenChange: (open: boolean) => void;
   model?: AssetModel | null;
   assetTypes: AssetType[];
-  onSubmit: (values: ModelFormValues) => void;
-  loading?: boolean;
   defaultAssetTypeId?: string;
-  /** When provided, the dialog shows the image upload step for this just-created model */
-  createdModel?: AssetModel | null;
+  /** Called after a model is successfully created or updated */
+  onSaved?: (model: AssetModel) => void;
+  /** @deprecated Use onSaved instead. Legacy callback for form submission. */
+  onSubmit?: (values: ModelFormValues) => void;
+  loading?: boolean;
 }
 
 export type { ModelFormValues };
@@ -155,12 +157,15 @@ export function AssetModelFormDialog({
   onOpenChange,
   model,
   assetTypes,
+  onSaved,
   onSubmit,
-  loading,
+  loading: externalLoading,
   defaultAssetTypeId,
-  createdModel,
 }: AssetModelFormDialogProps) {
   const isEditing = !!model;
+  const createMutation = useCreateAssetModel();
+  const updateMutation = useUpdateAssetModel();
+  const [createdModel, setCreatedModel] = useState<AssetModel | null>(null);
 
   const form = useForm<ModelFormValues>({
     resolver: zodResolver(modelSchema),
@@ -173,23 +178,57 @@ export function AssetModelFormDialog({
 
   useEffect(() => {
     if (open) {
+      setCreatedModel(null);
       form.reset({
         assetTypeId: model?.assetTypeId ?? defaultAssetTypeId ?? "",
         name: model?.name ?? "",
         manufacturer: model?.manufacturer ?? "",
       });
     }
-  }, [open, model, form]);
+  }, [open, model, form, defaultAssetTypeId]);
+
+  const loading = externalLoading || createMutation.isPending || updateMutation.isPending;
+
+  async function handleFormSubmit(values: ModelFormValues) {
+    // Legacy path: if parent provided onSubmit, delegate to it
+    if (onSubmit) {
+      onSubmit(values);
+      return;
+    }
+
+    try {
+      if (isEditing && model) {
+        const updated = await updateMutation.mutateAsync({
+          id: model.id,
+          data: {
+            name: values.name,
+            manufacturer: values.manufacturer || null,
+          },
+        });
+        toast.success("Model updated");
+        onSaved?.(updated);
+        onOpenChange(false);
+      } else {
+        const created = await createMutation.mutateAsync({
+          assetTypeId: values.assetTypeId,
+          name: values.name,
+          manufacturer: values.manufacturer || null,
+        });
+        toast.success("Model created");
+        onSaved?.(created);
+        // Transition to image upload step
+        setCreatedModel(created);
+      }
+    } catch {
+      toast.error(isEditing ? "Failed to update model" : "Failed to create model");
+    }
+  }
 
   // The model to show image section for (either editing existing or just-created)
   const imageModel = model ?? createdModel;
 
-  function handleOpenChange(value: boolean) {
-    onOpenChange(value);
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg p-0 gap-0 max-h-[90vh] flex flex-col">
         <DialogHeader className="px-8 py-6 border-b">
           <DialogTitle className="text-2xl font-bold">
@@ -214,7 +253,7 @@ export function AssetModelFormDialog({
               <Button
                 type="button"
                 className="font-semibold shadow-lg"
-                onClick={() => handleOpenChange(false)}
+                onClick={() => onOpenChange(false)}
               >
                 Done
               </Button>
@@ -223,7 +262,7 @@ export function AssetModelFormDialog({
         ) : (
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={form.handleSubmit(handleFormSubmit)}
               className="flex flex-col flex-1 overflow-hidden"
             >
               <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
@@ -236,7 +275,7 @@ export function AssetModelFormDialog({
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
-                        disabled={isEditing}
+                        disabled={isEditing || !!defaultAssetTypeId}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
