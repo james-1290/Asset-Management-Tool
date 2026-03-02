@@ -46,6 +46,7 @@ export interface CreateAssetRequest {
   serialNumber: string;
   status?: string | null;
   assetTypeId: string;
+  assetModelId?: string | null;
   locationId: string;
   assignedPersonId?: string | null;
   purchaseDate?: string | null;
@@ -90,6 +91,7 @@ export interface UpdateAssetRequest {
   serialNumber: string;
   status?: string | null;
   assetTypeId: string;
+  assetModelId?: string | null;
   locationId: string;
   assignedPersonId?: string | null;
   purchaseDate?: string | null;
