@@ -57,6 +57,7 @@ const navItems: NavItem[] = [
     children: [
       { title: "Asset Types", url: "/asset-types" },
       { title: "Asset Templates", url: "/asset-templates" },
+      { title: "Asset Models", url: "/asset-models" },
     ],
   },
   {
