@@ -32,6 +32,7 @@ import { CustomFieldsSection } from "./custom-fields-section";
 import { assetSchema, type AssetFormValues } from "../../lib/schemas/asset";
 import { useCustomFieldDefinitions } from "../../hooks/use-asset-types";
 import { useAssetTemplates } from "../../hooks/use-asset-templates";
+import { useAssetModels } from "../../hooks/use-asset-models";
 import type { Asset } from "../../types/asset";
 import type { AssetType } from "../../types/asset-type";
 import type { Location } from "../../types/location";
@@ -75,6 +76,7 @@ export function AssetFormDialog({
       serialNumber: "",
       status: "Available",
       assetTypeId: "",
+      assetModelId: "",
       locationId: "",
       assignedPersonId: "",
       purchaseDate: "",
@@ -93,6 +95,7 @@ export function AssetFormDialog({
   const { data: templates } = useAssetTemplates(
     !isEditing && watchedAssetTypeId ? watchedAssetTypeId : undefined,
   );
+  const { data: models } = useAssetModels(watchedAssetTypeId || undefined);
 
   // Auto-fill depreciation months from asset type default (only when creating)
   useEffect(() => {
@@ -122,12 +125,13 @@ export function AssetFormDialog({
     form.setValue("name", generatedName);
   }, [watchedAssetTypeId, watchedSerialNumber, isEditing, assetTypes, form]);
 
-  // Reset template picker when asset type changes
+  // Reset template picker and model when asset type changes
   useEffect(() => {
     if (!isEditing) {
       setSelectedTemplateId("");
+      form.setValue("assetModelId", "");
     }
-  }, [watchedAssetTypeId, isEditing]);
+  }, [watchedAssetTypeId, isEditing, form]);
 
   useEffect(() => {
     if (open) {
@@ -147,6 +151,7 @@ export function AssetFormDialog({
         serialNumber: asset?.serialNumber ?? "",
         status: asset?.status ?? "Available",
         assetTypeId: asset?.assetTypeId ?? "",
+        assetModelId: asset?.assetModelId ?? "",
         locationId: asset?.locationId ?? "",
         assignedPersonId: asset?.assignedPersonId ?? "",
         purchaseDate: asset?.purchaseDate
@@ -420,6 +425,34 @@ export function AssetFormDialog({
                       </SelectContent>
                     </Select>
                   </div>
+                )}
+
+                {watchedAssetTypeId && models && models.length > 0 && (
+                  <FormField
+                    control={form.control}
+                    name="assetModelId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold">Model</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select model" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="__none__">None</SelectItem>
+                            {models.map((m) => (
+                              <SelectItem key={m.id} value={m.id}>
+                                {m.manufacturer ? `${m.manufacturer} ${m.name}` : m.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
               </div>
 

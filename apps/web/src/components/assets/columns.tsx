@@ -73,7 +73,11 @@ export function getAssetColumns({
       ),
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <AssetTypeIcon typeName={row.original.assetTypeName} />
+          <AssetTypeIcon
+            typeName={row.original.assetTypeName}
+            assetModelId={row.original.assetModelId}
+            assetModelImageUrl={row.original.assetModelImageUrl}
+          />
           <div className="min-w-0">
             <Link
               to={`/assets/${row.original.id}`}

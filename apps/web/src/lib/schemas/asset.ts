@@ -11,6 +11,7 @@ export const assetSchema = z.object({
     .max(200, "Serial number must be 200 characters or less"),
   status: z.string().optional(),
   assetTypeId: z.string().min(1, "Asset type is required"),
+  assetModelId: z.string().optional().or(z.literal("")),
   locationId: z.string().min(1, "Location is required"),
   assignedPersonId: z.string().optional().or(z.literal("")),
   purchaseDate: z.string().min(1, "Purchase date is required"),

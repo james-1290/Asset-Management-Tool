@@ -423,6 +423,7 @@ export default function AssetsPage() {
       serialNumber: values.serialNumber,
       status: values.status || "Available",
       assetTypeId: values.assetTypeId,
+      assetModelId: values.assetModelId && values.assetModelId !== "" && values.assetModelId !== "__none__" ? values.assetModelId : null,
       locationId: values.locationId,
       assignedPersonId:
         values.assignedPersonId && values.assignedPersonId !== "none"
