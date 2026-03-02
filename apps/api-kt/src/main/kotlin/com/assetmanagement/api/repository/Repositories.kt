@@ -50,9 +50,17 @@ interface PersonRepository : JpaRepository<Person, UUID>, JpaSpecificationExecut
 interface AssetTypeRepository : JpaRepository<AssetType, UUID>, JpaSpecificationExecutor<AssetType>
 
 @Repository
+interface AssetModelRepository : JpaRepository<AssetModel, UUID>, JpaSpecificationExecutor<AssetModel> {
+    fun findByAssetTypeIdAndIsArchivedFalse(assetTypeId: UUID): List<AssetModel>
+    fun findByIsArchivedFalse(): List<AssetModel>
+    fun countByAssetTypeIdAndIsArchivedFalse(assetTypeId: UUID): Long
+}
+
+@Repository
 interface AssetRepository : JpaRepository<Asset, UUID>, JpaSpecificationExecutor<Asset> {
     fun countByAssetTypeIdAndIsArchivedFalse(assetTypeId: UUID): Long
     fun countByLocationIdAndIsArchivedFalse(locationId: UUID): Long
+    fun countByAssetModelIdAndIsArchivedFalse(assetModelId: UUID): Long
 }
 
 @Repository
