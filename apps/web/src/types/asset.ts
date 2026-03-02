@@ -17,6 +17,9 @@ export interface Asset {
   status: AssetStatus;
   assetTypeId: string;
   assetTypeName: string;
+  assetModelId: string | null;
+  assetModelName: string | null;
+  assetModelImageUrl: string | null;
   locationId: string | null;
   locationName: string | null;
   assignedPersonId: string | null;
