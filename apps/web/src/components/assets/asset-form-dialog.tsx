@@ -37,6 +37,7 @@ import { useCustomFieldDefinitions } from "../../hooks/use-asset-types";
 import { useAssetTemplates } from "../../hooks/use-asset-templates";
 import { useAssetModels, useCreateAssetModel } from "../../hooks/use-asset-models";
 import type { Asset } from "../../types/asset";
+import type { AssetModel } from "../../types/asset-model";
 import type { AssetType } from "../../types/asset-type";
 import type { Location } from "../../types/location";
 
@@ -101,6 +102,7 @@ export function AssetFormDialog({
   const { data: models } = useAssetModels(watchedAssetTypeId || undefined);
   const createModel = useCreateAssetModel();
   const [showCreateModel, setShowCreateModel] = useState(false);
+  const [justCreatedModel, setJustCreatedModel] = useState<AssetModel | null>(null);
 
   // Auto-fill depreciation months from asset type default (only when creating)
   useEffect(() => {
@@ -621,9 +623,15 @@ export function AssetFormDialog({
 
       <AssetModelFormDialog
         open={showCreateModel}
-        onOpenChange={setShowCreateModel}
+        onOpenChange={(value) => {
+          if (!value) {
+            setJustCreatedModel(null);
+          }
+          setShowCreateModel(value);
+        }}
         assetTypes={assetTypes}
         defaultAssetTypeId={watchedAssetTypeId}
+        createdModel={justCreatedModel}
         onSubmit={async (values) => {
           try {
             const created = await createModel.mutateAsync({
@@ -632,7 +640,7 @@ export function AssetFormDialog({
               manufacturer: values.manufacturer || undefined,
             });
             form.setValue("assetModelId", created.id, { shouldDirty: true });
-            setShowCreateModel(false);
+            setJustCreatedModel(created);
             toast.success("Model created");
           } catch {
             toast.error("Failed to create model");

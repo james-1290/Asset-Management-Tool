@@ -51,6 +51,8 @@ interface AssetModelFormDialogProps {
   onSubmit: (values: ModelFormValues) => void;
   loading?: boolean;
   defaultAssetTypeId?: string;
+  /** When provided, the dialog shows the image upload step for this just-created model */
+  createdModel?: AssetModel | null;
 }
 
 export type { ModelFormValues };
@@ -156,6 +158,7 @@ export function AssetModelFormDialog({
   onSubmit,
   loading,
   defaultAssetTypeId,
+  createdModel,
 }: AssetModelFormDialogProps) {
   const isEditing = !!model;
 
@@ -178,107 +181,137 @@ export function AssetModelFormDialog({
     }
   }, [open, model, form]);
 
+  // The model to show image section for (either editing existing or just-created)
+  const imageModel = model ?? createdModel;
+
+  function handleOpenChange(value: boolean) {
+    onOpenChange(value);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg p-0 gap-0 max-h-[90vh] flex flex-col">
         <DialogHeader className="px-8 py-6 border-b">
           <DialogTitle className="text-2xl font-bold">
-            {isEditing ? "Edit Model" : "Add Model"}
+            {createdModel ? "Add Image" : isEditing ? "Edit Model" : "Add Model"}
           </DialogTitle>
           <DialogDescription>
-            {isEditing ? "Update the asset model details." : "Create a new asset model."}
+            {createdModel
+              ? "Model created! You can now add a product image."
+              : isEditing
+                ? "Update the asset model details."
+                : "Create a new asset model."}
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col flex-1 overflow-hidden"
-          >
-            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
-              <FormField
-                control={form.control}
-                name="assetTypeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-semibold">Asset Type *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isEditing}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {assetTypes.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>
-                            {t.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-semibold">Model Name *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Latitude 5540" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="manufacturer"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-semibold">Manufacturer</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Dell" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {isEditing && model && (
-                <>
-                  <hr className="border-border" />
-                  <ImageSection model={model} />
-                </>
-              )}
+        {createdModel ? (
+          // After creation: show image upload and Done button
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-8 py-8">
+              <ImageSection model={createdModel} />
             </div>
-
             <DialogFooter className="px-8 py-6 border-t bg-muted/50 flex justify-end gap-4">
               <Button
                 type="button"
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
+                className="font-semibold shadow-lg"
+                onClick={() => handleOpenChange(false)}
               >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading} className="font-semibold shadow-lg">
-                {loading
-                  ? "Saving..."
-                  : isEditing
-                    ? "Save Changes"
-                    : "Add Model"}
+                Done
               </Button>
             </DialogFooter>
-          </form>
-        </Form>
+          </div>
+        ) : (
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="flex flex-col flex-1 overflow-hidden"
+            >
+              <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
+                <FormField
+                  control={form.control}
+                  name="assetTypeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Asset Type *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isEditing}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {assetTypes.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Model Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Latitude 5540" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="manufacturer"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Manufacturer</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Dell" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {isEditing && imageModel && (
+                  <>
+                    <hr className="border-border" />
+                    <ImageSection model={imageModel} />
+                  </>
+                )}
+              </div>
+
+              <DialogFooter className="px-8 py-6 border-t bg-muted/50 flex justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => onOpenChange(false)}
+                  disabled={loading}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading} className="font-semibold shadow-lg">
+                  {loading
+                    ? "Saving..."
+                    : isEditing
+                      ? "Save Changes"
+                      : "Add Model"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   );
