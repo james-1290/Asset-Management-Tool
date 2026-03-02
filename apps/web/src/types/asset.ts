@@ -17,6 +17,9 @@ export interface Asset {
   status: AssetStatus;
   assetTypeId: string;
   assetTypeName: string;
+  assetModelId: string | null;
+  assetModelName: string | null;
+  assetModelImageUrl: string | null;
   locationId: string | null;
   locationName: string | null;
   assignedPersonId: string | null;
@@ -43,6 +46,7 @@ export interface CreateAssetRequest {
   serialNumber: string;
   status?: string | null;
   assetTypeId: string;
+  assetModelId?: string | null;
   locationId: string;
   assignedPersonId?: string | null;
   purchaseDate?: string | null;
@@ -87,6 +91,7 @@ export interface UpdateAssetRequest {
   serialNumber: string;
   status?: string | null;
   assetTypeId: string;
+  assetModelId?: string | null;
   locationId: string;
   assignedPersonId?: string | null;
   purchaseDate?: string | null;

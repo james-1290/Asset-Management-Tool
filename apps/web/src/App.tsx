@@ -13,6 +13,7 @@ import ApplicationDetailPage from "@/pages/application-detail"
 import ApplicationTypesPage from "@/pages/application-types"
 import AssetTypesPage from "@/pages/asset-types"
 import AssetTemplatesPage from "@/pages/asset-templates"
+import AssetModelsPage from "@/pages/asset-models"
 import LocationsPage from "@/pages/locations"
 import LocationDetailPage from "@/pages/location-detail"
 import PeoplePage from "@/pages/people"
@@ -41,6 +42,7 @@ function App() {
             <Route path="/application-types" element={<ApplicationTypesPage />} />
             <Route path="/asset-types" element={<AssetTypesPage />} />
             <Route path="/asset-templates" element={<AssetTemplatesPage />} />
+            <Route path="/asset-models" element={<AssetModelsPage />} />
             <Route path="/locations" element={<LocationsPage />} />
             <Route path="/locations/:id" element={<LocationDetailPage />} />
             <Route path="/people" element={<PeoplePage />} />

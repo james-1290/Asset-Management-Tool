@@ -80,6 +80,13 @@ class Asset(
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = Instant.now(),
 
+    @Column(name = "asset_model_id")
+    var assetModelId: UUID? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "asset_model_id", insertable = false, updatable = false)
+    var assetModel: AssetModel? = null,
+
     @OneToMany(mappedBy = "asset", cascade = [CascadeType.ALL])
     var history: MutableList<AssetHistory> = mutableListOf(),
 

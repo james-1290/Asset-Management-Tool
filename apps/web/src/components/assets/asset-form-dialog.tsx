@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,9 +30,11 @@ import {
 import { Button } from "../ui/button";
 import { PersonCombobox } from "../person-combobox";
 import { CustomFieldsSection } from "./custom-fields-section";
+import { AssetModelFormDialog } from "../asset-models/asset-model-form-dialog";
 import { assetSchema, type AssetFormValues } from "../../lib/schemas/asset";
 import { useCustomFieldDefinitions } from "../../hooks/use-asset-types";
 import { useAssetTemplates } from "../../hooks/use-asset-templates";
+import { useAssetModels } from "../../hooks/use-asset-models";
 import type { Asset } from "../../types/asset";
 import type { AssetType } from "../../types/asset-type";
 import type { Location } from "../../types/location";
@@ -75,6 +78,7 @@ export function AssetFormDialog({
       serialNumber: "",
       status: "Available",
       assetTypeId: "",
+      assetModelId: "",
       locationId: "",
       assignedPersonId: "",
       purchaseDate: "",
@@ -93,6 +97,8 @@ export function AssetFormDialog({
   const { data: templates } = useAssetTemplates(
     !isEditing && watchedAssetTypeId ? watchedAssetTypeId : undefined,
   );
+  const { data: models } = useAssetModels(watchedAssetTypeId || undefined);
+  const [showCreateModel, setShowCreateModel] = useState(false);
 
   // Auto-fill depreciation months from asset type default (only when creating)
   useEffect(() => {
@@ -122,12 +128,13 @@ export function AssetFormDialog({
     form.setValue("name", generatedName);
   }, [watchedAssetTypeId, watchedSerialNumber, isEditing, assetTypes, form]);
 
-  // Reset template picker when asset type changes
+  // Reset template picker and model when asset type changes
   useEffect(() => {
     if (!isEditing) {
       setSelectedTemplateId("");
+      form.setValue("assetModelId", "");
     }
-  }, [watchedAssetTypeId, isEditing]);
+  }, [watchedAssetTypeId, isEditing, form]);
 
   useEffect(() => {
     if (open) {
@@ -147,6 +154,7 @@ export function AssetFormDialog({
         serialNumber: asset?.serialNumber ?? "",
         status: asset?.status ?? "Available",
         assetTypeId: asset?.assetTypeId ?? "",
+        assetModelId: asset?.assetModelId ?? "",
         locationId: asset?.locationId ?? "",
         assignedPersonId: asset?.assignedPersonId ?? "",
         purchaseDate: asset?.purchaseDate
@@ -421,6 +429,64 @@ export function AssetFormDialog({
                     </Select>
                   </div>
                 )}
+
+                {watchedAssetTypeId && models && models.length > 0 && (
+                  <FormField
+                    control={form.control}
+                    name="assetModelId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold">Model</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            if (value === "__create_new__") {
+                              setShowCreateModel(true);
+                              return;
+                            }
+                            field.onChange(value);
+                          }}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select model" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="__none__">None</SelectItem>
+                            {models.map((m) => (
+                              <SelectItem key={m.id} value={m.id}>
+                                {m.manufacturer ? `${m.manufacturer} ${m.name}` : m.name}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="__create_new__">
+                              <span className="flex items-center gap-1.5 text-primary">
+                                <Plus className="h-3.5 w-3.5" />
+                                Create New Model
+                              </span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {watchedAssetTypeId && (!models || models.length === 0) && (
+                  <div>
+                    <label className="text-sm font-semibold">Model</label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full mt-1.5 justify-start text-muted-foreground"
+                      onClick={() => setShowCreateModel(true)}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create New Model
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <hr className="border-border" />
@@ -550,6 +616,16 @@ export function AssetFormDialog({
           </form>
         </Form>
       </DialogContent>
+
+      <AssetModelFormDialog
+        open={showCreateModel}
+        onOpenChange={setShowCreateModel}
+        assetTypes={assetTypes}
+        defaultAssetTypeId={watchedAssetTypeId}
+        onSaved={(created) => {
+          form.setValue("assetModelId", created.id, { shouldDirty: true });
+        }}
+      />
     </Dialog>
   );
 }

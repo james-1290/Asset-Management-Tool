@@ -36,6 +36,7 @@ import java.util.*
 class AssetsController(
     private val assetRepository: AssetRepository,
     private val assetTypeRepository: AssetTypeRepository,
+    private val assetModelRepository: AssetModelRepository,
     private val locationRepository: LocationRepository,
     private val personRepository: PersonRepository,
     private val assetHistoryRepository: AssetHistoryRepository,
@@ -236,6 +237,12 @@ class AssetsController(
                 return ResponseEntity.badRequest().body(mapOf("error" to "Assigned person not found."))
         }
 
+        // Validate asset model
+        val modelCount = assetModelRepository.countByAssetTypeIdAndIsArchivedFalse(request.assetTypeId)
+        if (modelCount > 0 && request.assetModelId == null) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "A model must be selected for this asset type"))
+        }
+
         // Parse status
         val status = if (!request.status.isNullOrBlank()) {
             try { AssetStatus.valueOf(request.status) } catch (_: Exception) {
@@ -250,6 +257,7 @@ class AssetsController(
             serialNumber = request.serialNumber,
             status = status,
             assetTypeId = request.assetTypeId,
+            assetModelId = request.assetModelId,
             locationId = request.locationId,
             assignedPersonId = request.assignedPersonId,
             purchaseDate = request.purchaseDate,
@@ -333,6 +341,12 @@ class AssetsController(
                 return ResponseEntity.badRequest().body(mapOf("error" to "Assigned person not found."))
         }
 
+        // Validate asset model
+        val modelCount = assetModelRepository.countByAssetTypeIdAndIsArchivedFalse(request.assetTypeId)
+        if (modelCount > 0 && request.assetModelId == null) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "A model must be selected for this asset type"))
+        }
+
         // Parse status
         var newStatus: AssetStatus? = null
         if (!request.status.isNullOrBlank()) {
@@ -409,6 +423,7 @@ class AssetsController(
         asset.name = request.name
         asset.serialNumber = request.serialNumber
         asset.assetTypeId = request.assetTypeId
+        asset.assetModelId = request.assetModelId
         asset.locationId = request.locationId
         asset.assignedPersonId = request.assignedPersonId
         asset.purchaseDate = request.purchaseDate
@@ -1370,6 +1385,9 @@ class AssetsController(
             soldPrice = asset.soldPrice,
             retiredDate = asset.retiredDate,
             notes = asset.notes,
+            assetModelId = asset.assetModelId,
+            assetModelName = asset.assetModel?.name,
+            assetModelImageUrl = asset.assetModel?.imageUrl,
             isArchived = asset.isArchived,
             createdAt = asset.createdAt,
             updatedAt = asset.updatedAt,

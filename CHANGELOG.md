@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-03-02 10:00 — Asset Models feature
+
+- Added new **Asset Models** entity for product-level identity (e.g., "MacBook Pro 14" M3 Max")
+- Each model belongs to an asset type and has: name, manufacturer, product image
+- New `/api/v1/asset-models` endpoints: CRUD + image upload/delete/serve
+- **Conditional model requirement**: if an asset type has models defined, selecting a model is required when creating/editing assets of that type
+- New Asset Models management page at `/asset-models` with image upload support
+- Model selector dropdown in asset create/edit form (appears when models exist for selected type)
+- Model product images display in asset list table and asset detail page header
+- DB migration: V012 creates `asset_models` table and adds `asset_model_id` FK to `assets`
+
 ## 2026-02-25 15:40 — Add asset restore endpoint
 
 - Added `POST /api/v1/assets/{id}/restore` to un-archive soft-deleted assets

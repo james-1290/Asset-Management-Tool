@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAssetModelImage } from "@/hooks/use-asset-model-image";
 
 const TYPE_ICON_MAP: Record<string, { icon: LucideIcon; bg: string; fg: string }> = {
   laptop: { icon: Laptop, bg: "bg-blue-50 dark:bg-blue-900/20", fg: "text-blue-600 dark:text-blue-400" },
@@ -52,13 +53,24 @@ function matchType(typeName: string) {
 interface AssetTypeIconProps {
   typeName: string;
   className?: string;
+  assetModelId?: string | null;
+  assetModelImageUrl?: string | null;
 }
 
-export function AssetTypeIcon({ typeName, className }: AssetTypeIconProps) {
+export function AssetTypeIcon({ typeName, className, assetModelId, assetModelImageUrl }: AssetTypeIconProps) {
+  const { src } = useAssetModelImage(assetModelId, assetModelImageUrl);
   const match = matchType(typeName);
   const Icon = match?.icon ?? Monitor;
   const bg = match?.bg ?? "bg-slate-50 dark:bg-slate-800";
   const fg = match?.fg ?? "text-slate-600 dark:text-slate-400";
+
+  if (src) {
+    return (
+      <div className={cn("h-10 w-10 shrink-0 overflow-hidden rounded-lg", className)}>
+        <img src={src} alt={typeName} className="h-full w-full object-cover" />
+      </div>
+    );
+  }
 
   return (
     <div

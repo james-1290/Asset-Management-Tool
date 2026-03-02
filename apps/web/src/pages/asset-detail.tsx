@@ -26,6 +26,7 @@ import {
 import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
 import { AttachmentsSection } from "../components/shared/attachments-section";
+import { AssetTypeIcon } from "../components/assets/asset-type-icon";
 import type { AssetFormValues } from "../lib/schemas/asset";
 
 function formatDate(iso: string | null): string | null {
@@ -116,6 +117,7 @@ export default function AssetDetailPage() {
       serialNumber: values.serialNumber,
       status: values.status || "Available",
       assetTypeId: values.assetTypeId,
+      assetModelId: values.assetModelId && values.assetModelId !== "" && values.assetModelId !== "__none__" ? values.assetModelId : null,
       locationId: values.locationId,
       assignedPersonId:
         values.assignedPersonId && values.assignedPersonId !== "none"
@@ -164,6 +166,7 @@ export default function AssetDetailPage() {
       serialNumber: values.serialNumber,
       status: values.status || "Available",
       assetTypeId: values.assetTypeId,
+      assetModelId: values.assetModelId && values.assetModelId !== "" && values.assetModelId !== "__none__" ? values.assetModelId : null,
       locationId: values.locationId,
       assignedPersonId:
         values.assignedPersonId && values.assignedPersonId !== "none"
@@ -207,6 +210,7 @@ export default function AssetDetailPage() {
 
     return {
       assetTypeId: asset.assetTypeId,
+      assetModelId: asset.assetModelId ?? "",
       locationId: asset.locationId ?? "",
       purchaseCost: asset.purchaseCost != null ? String(asset.purchaseCost) : "",
       depreciationMonths: asset.depreciationMonths != null ? String(asset.depreciationMonths) : "",
@@ -257,11 +261,12 @@ export default function AssetDetailPage() {
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="size-12 rounded-xl bg-muted flex items-center justify-center">
-              <span className="text-lg font-bold text-muted-foreground">
-                {asset.name.charAt(0).toUpperCase()}
-              </span>
-            </div>
+            <AssetTypeIcon
+              typeName={asset.assetTypeName}
+              assetModelId={asset.assetModelId}
+              assetModelImageUrl={asset.assetModelImageUrl}
+              className="size-12 rounded-xl"
+            />
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold tracking-tight">{asset.name}</h1>
@@ -269,6 +274,7 @@ export default function AssetDetailPage() {
               </div>
               <p className="text-sm text-muted-foreground">
                 {asset.assetTypeName}
+                {asset.assetModelName && ` · ${asset.assetModelName}`}
                 {asset.serialNumber && ` · ${asset.serialNumber}`}
               </p>
             </div>
@@ -330,6 +336,10 @@ export default function AssetDetailPage() {
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Type</p>
                   <p className="text-sm font-medium">{asset.assetTypeName || "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Model</p>
+                  <p className="text-sm font-medium">{asset.assetModelName || "—"}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Serial Number</p>

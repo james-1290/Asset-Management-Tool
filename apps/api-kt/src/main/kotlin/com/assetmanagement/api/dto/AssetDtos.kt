@@ -27,6 +27,9 @@ data class AssetDto(
     val soldPrice: BigDecimal?,
     val retiredDate: Instant?,
     val notes: String?,
+    val assetModelId: UUID?,
+    val assetModelName: String?,
+    val assetModelImageUrl: String?,
     val isArchived: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
@@ -45,6 +48,7 @@ data class CreateAssetRequest(
     val warrantyExpiryDate: Instant? = null,
     val depreciationMonths: Int? = null,
     val notes: String? = null,
+    val assetModelId: UUID? = null,
     val customFieldValues: List<CustomFieldValueInput>? = null
 )
 
@@ -60,6 +64,7 @@ data class UpdateAssetRequest(
     val warrantyExpiryDate: Instant? = null,
     val depreciationMonths: Int? = null,
     val notes: String? = null,
+    val assetModelId: UUID? = null,
     val customFieldValues: List<CustomFieldValueInput>? = null
 )
 
