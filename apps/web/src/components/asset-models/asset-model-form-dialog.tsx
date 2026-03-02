@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ImagePlus, Trash2 } from "lucide-react";
+import { ImagePlus, Trash2, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -59,7 +59,8 @@ interface AssetModelFormDialogProps {
 
 export type { ModelFormValues };
 
-function ImageSection({ model }: { model: AssetModel }) {
+/** Image management for an existing model (edit mode) */
+function ExistingImageSection({ model }: { model: AssetModel }) {
   const queryClient = useQueryClient();
   const { src } = useAssetModelImage(model.id, model.imageUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -152,6 +153,88 @@ function ImageSection({ model }: { model: AssetModel }) {
   );
 }
 
+/** Inline image picker for create mode — queues the file for upload after creation */
+function ImagePicker({
+  pendingFile,
+  onFileChange,
+}: {
+  pendingFile: File | null;
+  onFileChange: (file: File | null) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingFile) {
+      setPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(pendingFile);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [pendingFile]);
+
+  function handleSelect(file: File) {
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB");
+      return;
+    }
+    const allowed = ["image/jpeg", "image/png", "image/gif"];
+    if (!allowed.includes(file.type)) {
+      toast.error("Only JPG, PNG, or GIF images are allowed");
+      return;
+    }
+    onFileChange(file);
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-semibold">Model Image</p>
+      <div className="flex items-center gap-4">
+        {preview ? (
+          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border">
+            <img src={preview} alt="Preview" className="h-full w-full object-cover" />
+            <button
+              type="button"
+              className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground shadow-sm hover:bg-destructive/90"
+              onClick={() => onFileChange(null)}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border border-dashed bg-muted">
+            <ImagePlus className="h-8 w-8 text-muted-foreground" />
+          </div>
+        )}
+        <div className="flex flex-col gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".jpg,.jpeg,.png,.gif"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleSelect(file);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <ImagePlus className="mr-2 h-4 w-4" />
+            {pendingFile ? "Change Image" : "Choose Image"}
+          </Button>
+          <p className="text-xs text-muted-foreground">JPG, PNG, or GIF. Max 2MB.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AssetModelFormDialog({
   open,
   onOpenChange,
@@ -163,9 +246,10 @@ export function AssetModelFormDialog({
   defaultAssetTypeId,
 }: AssetModelFormDialogProps) {
   const isEditing = !!model;
+  const queryClient = useQueryClient();
   const createMutation = useCreateAssetModel();
   const updateMutation = useUpdateAssetModel();
-  const [createdModel, setCreatedModel] = useState<AssetModel | null>(null);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
 
   const form = useForm<ModelFormValues>({
     resolver: zodResolver(modelSchema),
@@ -178,7 +262,7 @@ export function AssetModelFormDialog({
 
   useEffect(() => {
     if (open) {
-      setCreatedModel(null);
+      setPendingImageFile(null);
       form.reset({
         assetTypeId: model?.assetTypeId ?? defaultAssetTypeId ?? "",
         name: model?.name ?? "",
@@ -214,143 +298,134 @@ export function AssetModelFormDialog({
           name: values.name,
           manufacturer: values.manufacturer || null,
         });
+
+        // Auto-upload queued image if one was selected
+        if (pendingImageFile) {
+          try {
+            await assetModelsApi.uploadImage(created.id, pendingImageFile);
+            queryClient.invalidateQueries({ queryKey: ["asset-models"] });
+          } catch {
+            toast.error("Model created but image upload failed");
+          }
+        }
+
         toast.success("Model created");
         onSaved?.(created);
-        // Transition to image upload step
-        setCreatedModel(created);
+        onOpenChange(false);
       }
     } catch {
       toast.error(isEditing ? "Failed to update model" : "Failed to create model");
     }
   }
 
-  // The model to show image section for (either editing existing or just-created)
-  const imageModel = model ?? createdModel;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg p-0 gap-0 max-h-[90vh] flex flex-col">
         <DialogHeader className="px-8 py-6 border-b">
           <DialogTitle className="text-2xl font-bold">
-            {createdModel ? "Add Image" : isEditing ? "Edit Model" : "Add Model"}
+            {isEditing ? "Edit Model" : "Add Model"}
           </DialogTitle>
           <DialogDescription>
-            {createdModel
-              ? "Model created! You can now add a product image."
-              : isEditing
-                ? "Update the asset model details."
-                : "Create a new asset model."}
+            {isEditing
+              ? "Update the asset model details."
+              : "Create a new asset model."}
           </DialogDescription>
         </DialogHeader>
 
-        {createdModel ? (
-          // After creation: show image upload and Done button
-          <div className="flex flex-col flex-1 overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-8 py-8">
-              <ImageSection model={createdModel} />
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleFormSubmit)}
+            className="flex flex-col flex-1 overflow-hidden"
+          >
+            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
+              <FormField
+                control={form.control}
+                name="assetTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-semibold">Asset Type *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isEditing || !!defaultAssetTypeId}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {assetTypes.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-semibold">Model Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Latitude 5540" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="manufacturer"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-semibold">Manufacturer</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Dell" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <hr className="border-border" />
+
+              {isEditing && model ? (
+                <ExistingImageSection model={model} />
+              ) : (
+                <ImagePicker
+                  pendingFile={pendingImageFile}
+                  onFileChange={setPendingImageFile}
+                />
+              )}
             </div>
+
             <DialogFooter className="px-8 py-6 border-t bg-muted/50 flex justify-end gap-4">
               <Button
                 type="button"
-                className="font-semibold shadow-lg"
+                variant="ghost"
                 onClick={() => onOpenChange(false)}
+                disabled={loading}
               >
-                Done
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading} className="font-semibold shadow-lg">
+                {loading
+                  ? "Saving..."
+                  : isEditing
+                    ? "Save Changes"
+                    : "Add Model"}
               </Button>
             </DialogFooter>
-          </div>
-        ) : (
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleFormSubmit)}
-              className="flex flex-col flex-1 overflow-hidden"
-            >
-              <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
-                <FormField
-                  control={form.control}
-                  name="assetTypeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-semibold">Asset Type *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isEditing || !!defaultAssetTypeId}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {assetTypes.map((t) => (
-                            <SelectItem key={t.id} value={t.id}>
-                              {t.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-semibold">Model Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Latitude 5540" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="manufacturer"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-semibold">Manufacturer</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Dell" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {isEditing && imageModel && (
-                  <>
-                    <hr className="border-border" />
-                    <ImageSection model={imageModel} />
-                  </>
-                )}
-              </div>
-
-              <DialogFooter className="px-8 py-6 border-t bg-muted/50 flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => onOpenChange(false)}
-                  disabled={loading}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={loading} className="font-semibold shadow-lg">
-                  {loading
-                    ? "Saving..."
-                    : isEditing
-                      ? "Save Changes"
-                      : "Add Model"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        )}
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
