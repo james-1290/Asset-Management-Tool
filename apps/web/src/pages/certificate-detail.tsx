@@ -1,9 +1,20 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Pencil, Info, History, ChevronRight, CheckCircle2 } from "lucide-react";
+import {
+  Pencil,
+  ChevronRight,
+  CheckCircle2,
+  ShieldCheck,
+  CalendarClock,
+  History,
+  Layers,
+  StickyNote,
+  Maximize2,
+} from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
+import { DetailCard, SectionHeader, DetailRow } from "../components/detail-layout";
 import { CertificateStatusBadge } from "../components/certificates/certificate-status-badge";
 import { CertificateHistoryTimeline } from "../components/certificates/certificate-history-timeline";
 import { CertificateHistoryDialog } from "../components/certificates/certificate-history-dialog";
@@ -73,6 +84,18 @@ export default function CertificateDetailPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
+  const detailsRef = useRef<HTMLDivElement>(null);
+  const [detailsHeight, setDetailsHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!detailsRef.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setDetailsHeight(entry.contentRect.height);
+    });
+    observer.observe(detailsRef.current);
+    return () => observer.disconnect();
+  }, [certificate]);
+
   function handleFormSubmit(values: CertificateFormValues) {
     if (!certificate) return;
 
@@ -115,14 +138,22 @@ export default function CertificateDetailPage() {
     );
   }
 
+  /* ── Loading ─────────────────────────────────────────── */
+
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-5 w-48" />
+        <Skeleton className="h-36 w-full rounded-xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="lg:col-span-2 h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl" />
+        </div>
       </div>
     );
   }
+
+  /* ── Error ───────────────────────────────────────────── */
 
   if (isError || !certificate) {
     return (
@@ -139,184 +170,168 @@ export default function CertificateDetailPage() {
 
   const hasMoreHistory = history && history.length >= HISTORY_PREVIEW_LIMIT;
 
+  const expiryClassName = isExpired(certificate.expiryDate)
+    ? "text-red-500 font-bold"
+    : isExpiringSoon(certificate.expiryDate)
+      ? "text-orange-500 font-bold"
+      : "";
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        {/* Breadcrumbs */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-4">
-          <Link to="/certificates" className="hover:text-primary">Certificates</Link>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground">{certificate.name}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="size-12 rounded-xl bg-muted flex items-center justify-center">
-              <span className="text-lg font-bold text-muted-foreground">
-                {certificate.name.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight">{certificate.name}</h1>
-                <CertificateStatusBadge status={certificate.status} />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {certificate.certificateTypeName}
-                {certificate.issuer && ` · ${certificate.issuer}`}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button onClick={() => setFormOpen(true)} className="font-semibold shadow-lg">
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit Details
-            </Button>
-          </div>
-        </div>
+    <div className="space-y-6">
+      {/* ── Breadcrumbs ────────────────────────────────── */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+        <Link to="/certificates" className="hover:text-primary transition-colors">
+          Certificates
+        </Link>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-foreground">{certificate.name}</span>
       </div>
 
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Certificate Details */}
-        <section className="lg:col-span-2">
-          <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b flex items-center">
-              <h3 className="font-bold flex items-center gap-2">
-                <Info className="h-4 w-4 text-primary" />
-                Certificate Details
-              </h3>
+      {/* ── Hero Card ──────────────────────────────────── */}
+      <DetailCard className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-5">
+          <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-border/60 bg-muted">
+            <ShieldCheck className="h-9 w-9 text-muted-foreground" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight">{certificate.name}</h1>
+              <CertificateStatusBadge status={certificate.status} />
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Name</p>
-                  <p className="text-sm font-medium">{certificate.name}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Type</p>
-                  <p className="text-sm font-medium">{certificate.certificateTypeName || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Issuer</p>
-                  <p className="text-sm font-medium">{certificate.issuer || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Subject</p>
-                  <p className="text-sm font-medium">{certificate.subject || "—"}</p>
-                </div>
-                {certificate.thumbprint && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Thumbprint</p>
-                    <p className="text-sm font-medium font-mono text-xs">{certificate.thumbprint}</p>
-                  </div>
-                )}
+            <p className="text-sm text-muted-foreground">
+              {certificate.certificateTypeName}
+              {certificate.issuer && ` · ${certificate.issuer}`}
+            </p>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" onClick={() => setFormOpen(true)}>
+            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+            Edit
+          </Button>
+        </div>
+      </DetailCard>
+
+      {/* ── Three-column grid ──────────────────────────── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left two-thirds */}
+        <div ref={detailsRef} className="lg:col-span-2 flex flex-col gap-6">
+          {/* Top row: Certificate details + Dates & renewal side by side */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* Certificate details card */}
+            <DetailCard>
+              <SectionHeader icon={ShieldCheck} title="Certificate details" />
+              <div className="space-y-3">
+                <DetailRow label="Type" value={certificate.certificateTypeName || "—"} />
+                <DetailRow label="Issuer" value={certificate.issuer || "—"} />
+                <DetailRow label="Subject" value={certificate.subject || "—"} />
                 {certificate.serialNumber && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Serial Number</p>
-                    <p className="text-sm font-medium font-mono text-xs">{certificate.serialNumber}</p>
-                  </div>
+                  <DetailRow label="Serial number" value={certificate.serialNumber} />
                 )}
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Issued Date</p>
-                  <p className="text-sm font-medium">{formatDate(certificate.issuedDate) ?? "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Expiry Date</p>
-                  <p className={`text-sm font-medium ${isExpired(certificate.expiryDate) ? "text-red-500 font-bold" : isExpiringSoon(certificate.expiryDate) ? "text-orange-500 font-bold" : ""}`}>
-                    {formatDate(certificate.expiryDate) ?? "—"}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Auto Renewal</p>
-                  <p className="text-sm font-medium flex items-center gap-1.5">
-                    {certificate.autoRenewal ? (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                        Enabled
-                      </>
-                    ) : (
-                      "Disabled"
-                    )}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Location</p>
-                  <p className="text-sm font-medium">{certificate.locationName || "—"}</p>
-                </div>
+                {certificate.thumbprint && (
+                  <DetailRow label="Thumbprint" value={certificate.thumbprint} />
+                )}
                 {certificate.assetName && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Linked Asset</p>
-                    <p className="text-sm font-medium text-primary">{certificate.assetName}</p>
-                  </div>
+                  <DetailRow
+                    label="Linked asset"
+                    value={<span className="text-primary">{certificate.assetName}</span>}
+                  />
                 )}
                 {certificate.personName && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Managed By</p>
-                    <p className="text-sm font-medium">{certificate.personName}</p>
-                  </div>
+                  <DetailRow label="Managed by" value={certificate.personName} />
                 )}
               </div>
+            </DetailCard>
 
-              {/* Custom Fields */}
-              {certificate.customFieldValues && certificate.customFieldValues.length > 0 && (
-                <div className="mt-6 pt-6 border-t">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Custom Fields</p>
-                  <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-                    {certificate.customFieldValues.map((cfv) => (
-                      <div key={cfv.fieldDefinitionId} className="space-y-1">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{cfv.fieldName}</p>
-                        <p className="text-sm font-medium">{formatCustomFieldValue(cfv.value, cfv.fieldType) ?? "—"}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Notes */}
-              {certificate.notes && (
-                <div className="mt-6 pt-6 border-t">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Notes</p>
-                  <p className="text-sm whitespace-pre-wrap">{certificate.notes}</p>
-                </div>
-              )}
-            </div>
+            {/* Dates & renewal card */}
+            <DetailCard>
+              <SectionHeader icon={CalendarClock} title="Dates & renewal" />
+              <div className="space-y-3">
+                <DetailRow label="Issued date" value={formatDate(certificate.issuedDate) ?? "—"} />
+                <DetailRow
+                  label="Expiry date"
+                  value={formatDate(certificate.expiryDate) ?? "—"}
+                  className={expiryClassName}
+                />
+                <DetailRow
+                  label="Auto renewal"
+                  value={
+                    certificate.autoRenewal ? (
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        Enabled
+                      </span>
+                    ) : (
+                      "Disabled"
+                    )
+                  }
+                />
+              </div>
+            </DetailCard>
           </div>
-        </section>
 
-        {/* History */}
-        <section>
-          <div className="bg-card rounded-xl border overflow-hidden shadow-sm h-full">
-            <div className="px-6 py-4 border-b">
-              <h3 className="font-bold flex items-center gap-2">
-                <History className="h-4 w-4 text-primary" />
-                History
-              </h3>
+          {/* Custom fields */}
+          {certificate.customFieldValues && certificate.customFieldValues.length > 0 && (
+            <DetailCard>
+              <SectionHeader icon={Layers} title="Custom fields" />
+              <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                {certificate.customFieldValues.map((cfv) => (
+                  <DetailRow
+                    key={cfv.fieldDefinitionId}
+                    label={cfv.fieldName}
+                    value={formatCustomFieldValue(cfv.value, cfv.fieldType) ?? "—"}
+                  />
+                ))}
+              </div>
+            </DetailCard>
+          )}
+
+          {/* Notes */}
+          {certificate.notes && (
+            <DetailCard>
+              <SectionHeader icon={StickyNote} title="Notes" />
+              <p className="text-sm whitespace-pre-wrap leading-relaxed">{certificate.notes}</p>
+            </DetailCard>
+          )}
+        </div>
+
+        {/* Right one-third: Timeline */}
+        <div className="flex flex-col gap-6">
+          <DetailCard
+            className="flex flex-col overflow-hidden"
+            style={{ maxHeight: detailsHeight ? `${detailsHeight}px` : undefined }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <History className="h-[18px] w-[18px] text-primary" />
+                <h3 className="text-sm font-bold text-foreground">History</h3>
+              </div>
+              {hasMoreHistory && (
+                <button
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setHistoryOpen(true)}
+                  title="View full history"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </button>
+              )}
             </div>
-            <div className="p-6">
+            <div className="flex-1 overflow-y-auto min-h-0">
               <CertificateHistoryTimeline
                 history={history}
                 isLoading={historyLoading}
               />
-              {hasMoreHistory && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full mt-2"
-                  onClick={() => setHistoryOpen(true)}
-                >
-                  View All History
-                </Button>
-              )}
             </div>
-          </div>
-        </section>
+          </DetailCard>
+        </div>
       </div>
 
-      {/* Attachments */}
+      {/* ── Attachments ────────────────────────────────── */}
       <AttachmentsSection entityType="Certificate" entityId={certificate.id} />
 
-      {/* Dialogs */}
+      {/* ── Dialogs ────────────────────────────────────── */}
       <CertificateFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}

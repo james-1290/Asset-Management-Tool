@@ -132,9 +132,9 @@ export function StatusBreakdownChart({
                           <tspan
                             x="50%"
                             dy="22"
-                            className="fill-muted-foreground text-[11px] uppercase tracking-widest"
+                            className="fill-muted-foreground text-xs"
                           >
-                            ASSETS
+                            Assets
                           </tspan>
                         </text>
                       )}

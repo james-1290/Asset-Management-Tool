@@ -118,7 +118,7 @@ export function AuditLogsToolbar({
         </PopoverTrigger>
         <PopoverContent className="w-[220px] p-0" align="start">
           <div className="p-3 space-y-1">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Activity Types</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Activity Types</p>
             {actionOptions.map((opt) => (
               <label
                 key={opt.value}
@@ -128,7 +128,7 @@ export function AuditLogsToolbar({
                   checked={selectedActions.has(opt.value)}
                   onCheckedChange={() => toggleAction(opt.value)}
                 />
-                <span className={`inline-block px-1.5 py-0.5 text-[10px] font-bold rounded uppercase tracking-wide ${opt.color}`}>
+                <span className={`inline-block px-1.5 py-0.5 text-[10px] font-bold rounded ${opt.color}`}>
                   {opt.label}
                 </span>
               </label>

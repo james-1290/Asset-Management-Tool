@@ -99,7 +99,7 @@ export const auditLogColumns: ColumnDef<AuditLogEntry, unknown>[] = [
       const action = row.getValue("action") as string;
       const colorClass = actionBadgeClasses[action] ?? "bg-muted text-muted-foreground";
       return (
-        <span className={`inline-block px-2 py-0.5 text-[11px] font-bold rounded uppercase tracking-wide ${colorClass}`}>
+        <span className={`inline-block px-2 py-0.5 text-[11px] font-bold rounded ${colorClass}`}>
           {action}
         </span>
       );

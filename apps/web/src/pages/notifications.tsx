@@ -160,7 +160,7 @@ function NotificationCard({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-0.5">
-            <span className={`text-[11px] font-bold uppercase tracking-wider ${urgency.labelClass}`}>
+            <span className={`text-xs font-medium ${urgency.labelClass}`}>
               {urgency.label}
             </span>
             <div className="flex items-center gap-2">

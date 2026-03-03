@@ -230,11 +230,11 @@ export function ExpiringItemsTable() {
           <>
             {/* Table header */}
             <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-slate-50/80 dark:bg-slate-800/40 rounded-t-lg border-b border-border/60">
-              <div className="col-span-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Name</div>
-              <div className="col-span-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Type</div>
-              <div className="col-span-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Expiry Date</div>
-              <div className="col-span-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</div>
-              <div className="col-span-2 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Actions</div>
+              <div className="col-span-4 text-xs font-medium text-muted-foreground">Name</div>
+              <div className="col-span-2 text-xs font-medium text-muted-foreground">Type</div>
+              <div className="col-span-2 text-xs font-medium text-muted-foreground">Expiry Date</div>
+              <div className="col-span-2 text-xs font-medium text-muted-foreground">Status</div>
+              <div className="col-span-2 text-xs font-medium text-muted-foreground text-right">Actions</div>
             </div>
 
             {/* Rows */}
@@ -255,7 +255,7 @@ export function ExpiringItemsTable() {
                     </div>
                     <div className="col-span-2">
                       <div className="text-sm text-foreground">{formatDate(item.expiryDate)}</div>
-                      <div className={`text-[10px] font-bold uppercase tracking-wide ${expiry.color}`}>
+                      <div className={`text-xs font-medium ${expiry.color}`}>
                         {expiry.text}
                       </div>
                     </div>

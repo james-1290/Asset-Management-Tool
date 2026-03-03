@@ -1,10 +1,27 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "../lib/api-client";
-import { Pencil, Info, History, ChevronRight, LogOut, LogIn, Archive, PoundSterling, Copy } from "lucide-react";
+import {
+  Pencil,
+  History,
+  ChevronRight,
+  LogOut,
+  LogIn,
+  Archive,
+  PoundSterling,
+  Copy,
+  MapPin,
+  UserCheck,
+  Wallet,
+  Cpu,
+  StickyNote,
+  Layers,
+  Maximize2,
+} from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
+import { DetailCard, SectionHeader, DetailRow, MetricBlock } from "../components/detail-layout";
 import { AssetStatusBadge } from "../components/assets/asset-status-badge";
 import { AssetHistoryTimeline } from "../components/assets/asset-history-timeline";
 import { AssetHistoryDialog } from "../components/assets/asset-history-dialog";
@@ -27,6 +44,7 @@ import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
 import { AttachmentsSection } from "../components/shared/attachments-section";
 import { AssetTypeIcon } from "../components/assets/asset-type-icon";
+import { AvatarPlaceholder } from "../components/avatar-placeholder";
 import type { AssetFormValues } from "../lib/schemas/asset";
 
 function formatDate(iso: string | null): string | null {
@@ -78,6 +96,8 @@ function isExpired(iso: string | null): boolean {
   return new Date(iso) < new Date();
 }
 
+/* ── Main page ────────────────────────────────────────── */
+
 const HISTORY_PREVIEW_LIMIT = 5;
 
 export default function AssetDetailPage() {
@@ -93,6 +113,18 @@ export default function AssetDetailPage() {
   const checkinMutation = useCheckinAsset();
   const retireMutation = useRetireAsset();
   const sellMutation = useSellAsset();
+
+  const detailsRef = useRef<HTMLDivElement>(null);
+  const [detailsHeight, setDetailsHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!detailsRef.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setDetailsHeight(entry.contentRect.height);
+    });
+    observer.observe(detailsRef.current);
+    return () => observer.disconnect();
+  }, [asset]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [cloneFormOpen, setCloneFormOpen] = useState(false);
@@ -224,14 +256,22 @@ export default function AssetDetailPage() {
     };
   }
 
+  /* ── Loading ─────────────────────────────────────────── */
+
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-5 w-48" />
+        <Skeleton className="h-36 w-full rounded-xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="lg:col-span-2 h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl" />
+        </div>
       </div>
     );
   }
+
+  /* ── Error ───────────────────────────────────────────── */
 
   if (isError || !asset) {
     return (
@@ -249,227 +289,263 @@ export default function AssetDetailPage() {
   const hasMoreHistory = history && history.length >= HISTORY_PREVIEW_LIMIT;
   const isActiveAsset = asset.status !== "Retired" && asset.status !== "Sold" && asset.status !== "Archived";
 
+  const warrantyClassName = isExpired(asset.warrantyExpiryDate)
+    ? "text-red-500 font-bold"
+    : isExpiringSoon(asset.warrantyExpiryDate)
+      ? "text-orange-500 font-bold"
+      : "";
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        {/* Breadcrumbs */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-4">
-          <Link to="/assets" className="hover:text-primary">Assets</Link>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground">{asset.name}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <AssetTypeIcon
-              typeName={asset.assetTypeName}
-              assetModelId={asset.assetModelId}
-              assetModelImageUrl={asset.assetModelImageUrl}
-              className="size-12 rounded-xl"
-            />
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight">{asset.name}</h1>
-                <AssetStatusBadge status={asset.status} />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {asset.assetTypeName}
-                {asset.assetModelName && ` · ${asset.assetModelName}`}
-                {asset.serialNumber && ` · ${asset.serialNumber}`}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {isActiveAsset && (
-              <>
-                {asset.status === "Available" && (
-                  <Button variant="outline" onClick={() => setCheckoutOpen(true)} className="font-semibold">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Check Out
-                  </Button>
-                )}
-                {asset.status === "CheckedOut" && (
-                  <Button variant="outline" onClick={() => setCheckinOpen(true)} className="font-semibold">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Check In
-                  </Button>
-                )}
-                <Button variant="outline" onClick={() => setRetireOpen(true)} className="font-semibold">
-                  <Archive className="mr-2 h-4 w-4" />
-                  Retire
-                </Button>
-                <Button variant="outline" onClick={() => setSellOpen(true)} className="font-semibold">
-                  <PoundSterling className="mr-1 h-4 w-4" />
-                  Sold
-                </Button>
-              </>
-            )}
-            <Button variant="outline" onClick={() => setCloneFormOpen(true)} className="font-semibold">
-              <Copy className="mr-2 h-4 w-4" />
-              Clone
-            </Button>
-            <Button onClick={() => setFormOpen(true)} className="font-semibold shadow-lg">
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit Details
-            </Button>
-          </div>
-        </div>
+    <div className="space-y-6">
+      {/* ── Breadcrumbs ────────────────────────────────── */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+        <Link to="/assets" className="hover:text-primary transition-colors">
+          Assets
+        </Link>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-foreground">{asset.name}</span>
       </div>
 
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Asset Details */}
-        <section className="lg:col-span-2">
-          <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b flex items-center">
-              <h3 className="font-bold flex items-center gap-2">
-                <Info className="h-4 w-4 text-primary" />
-                Asset Details
-              </h3>
+      {/* ── Hero Card ──────────────────────────────────── */}
+      <DetailCard className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-5">
+          <AssetTypeIcon
+            typeName={asset.assetTypeName}
+            assetModelId={asset.assetModelId}
+            assetModelImageUrl={asset.assetModelImageUrl}
+            className="!h-20 !w-20 rounded-xl border border-border/60 [&_svg]:!h-9 [&_svg]:!w-9"
+          />
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight">{asset.name}</h1>
+              <AssetStatusBadge status={asset.status} />
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Name</p>
-                  <p className="text-sm font-medium">{asset.name}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Type</p>
-                  <p className="text-sm font-medium">{asset.assetTypeName || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Model</p>
-                  <p className="text-sm font-medium">{asset.assetModelName || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Serial Number</p>
-                  <p className="text-sm font-medium font-mono">{asset.serialNumber || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Location</p>
-                  <p className="text-sm font-medium">{asset.locationName || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Assigned To</p>
-                  <p className="text-sm font-medium">{asset.assignedPersonName || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Purchase Date</p>
-                  <p className="text-sm font-medium">{formatDate(asset.purchaseDate) ?? "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Purchase Cost</p>
-                  <p className="text-sm font-medium">{formatCurrency(asset.purchaseCost) ?? "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Warranty Expiry</p>
-                  <p className={`text-sm font-medium ${isExpired(asset.warrantyExpiryDate) ? "text-red-500 font-bold" : isExpiringSoon(asset.warrantyExpiryDate) ? "text-orange-500 font-bold" : ""}`}>
-                    {formatDate(asset.warrantyExpiryDate) ?? "—"}
-                  </p>
-                </div>
+            <p className="text-sm text-muted-foreground">
+              {asset.assetTypeName}
+              {asset.assetModelName && <> · {asset.assetModelName}</>}
+              {asset.serialNumber && (
+                <>
+                  {" · "}
+                  <span className="font-medium text-foreground">{asset.serialNumber}</span>
+                </>
+              )}
+            </p>
+            {asset.locationName && (
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">{asset.locationName}</p>
+              </div>
+            )}
+          </div>
+        </div>
 
-                {/* Depreciation fields */}
-                {asset.depreciationMonths != null && (
-                  <>
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Depreciation Period</p>
-                      <p className="text-sm font-medium">{asset.depreciationMonths} months</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Monthly Depreciation</p>
-                      <p className="text-sm font-medium">{formatCurrency(asset.monthlyDepreciation) ?? "—"}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Total Depreciation</p>
-                      <p className="text-sm font-medium">{formatCurrency(asset.totalDepreciation) ?? "—"}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Book Value</p>
-                      <p className="text-sm font-medium">{formatCurrency(asset.bookValue) ?? "—"}</p>
-                    </div>
-                  </>
-                )}
+        {/* Action buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          {isActiveAsset && (
+            <>
+              {asset.status === "Available" && (
+                <Button variant="outline" size="sm" onClick={() => setCheckoutOpen(true)}>
+                  <LogOut className="mr-1.5 h-3.5 w-3.5" />
+                  Check out
+                </Button>
+              )}
+              {asset.status === "CheckedOut" && (
+                <Button variant="outline" size="sm" onClick={() => setCheckinOpen(true)}>
+                  <LogIn className="mr-1.5 h-3.5 w-3.5" />
+                  Check in
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => setRetireOpen(true)}>
+                <Archive className="mr-1.5 h-3.5 w-3.5" />
+                Retire
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setSellOpen(true)}>
+                <PoundSterling className="mr-1.5 h-3.5 w-3.5" />
+                Sold
+              </Button>
+            </>
+          )}
+          <Button variant="outline" size="sm" onClick={() => setCloneFormOpen(true)}>
+            <Copy className="mr-1.5 h-3.5 w-3.5" />
+            Clone
+          </Button>
+          <Button size="sm" onClick={() => setFormOpen(true)}>
+            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+            Edit
+          </Button>
+        </div>
+      </DetailCard>
 
-                {/* Retired / Sold fields */}
-                {asset.retiredDate && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Retired Date</p>
-                    <p className="text-sm font-medium">{formatDate(asset.retiredDate)}</p>
+      {/* ── Three-column grid ──────────────────────────── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left two-thirds */}
+        <div ref={detailsRef} className="lg:col-span-2 flex flex-col gap-6">
+          {/* Top row: Details + Assignment side by side */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* Asset details card */}
+            <DetailCard>
+              <SectionHeader icon={Cpu} title="Hardware details" />
+              <div className="space-y-3">
+                <DetailRow label="Type" value={asset.assetTypeName || "—"} />
+                <DetailRow label="Model" value={asset.assetModelName || "—"} />
+                <DetailRow
+                  label="Serial"
+                  value={asset.serialNumber || "—"}
+                />
+                <DetailRow label="Location" value={asset.locationName || "—"} />
+                <DetailRow label="Purchase date" value={formatDate(asset.purchaseDate) ?? "—"} />
+              </div>
+            </DetailCard>
+
+            {/* Assignment card */}
+            <DetailCard>
+              <SectionHeader icon={UserCheck} title="Assignment" />
+              {asset.assignedPersonName ? (
+                <div className="mb-4 flex items-center gap-3 rounded-lg bg-muted/60 p-3">
+                  <AvatarPlaceholder name={asset.assignedPersonName} size="lg" />
+                  <div>
+                    <p className="text-sm font-bold">{asset.assignedPersonName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {asset.status === "CheckedOut" ? "Checked out" : "Assigned"}
+                    </p>
                   </div>
+                </div>
+              ) : (
+                <div className="mb-4 flex items-center gap-3 rounded-lg border border-dashed border-border/60 p-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <UserCheck className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Unassigned</p>
+                    <p className="text-xs text-muted-foreground">No one is using this asset</p>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-3">
+                <DetailRow label="Status" value={asset.status} />
+                <DetailRow label="Location" value={asset.locationName || "—"} />
+                {asset.retiredDate && (
+                  <DetailRow label="Retired" value={formatDate(asset.retiredDate)!} />
                 )}
                 {asset.soldDate && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Sold Date</p>
-                    <p className="text-sm font-medium">{formatDate(asset.soldDate)}</p>
-                  </div>
+                  <DetailRow label="Sold" value={formatDate(asset.soldDate)!} />
                 )}
-                {asset.soldPrice != null && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Sold Price</p>
-                    <p className="text-sm font-medium">{formatCurrency(asset.soldPrice)}</p>
-                  </div>
+              </div>
+            </DetailCard>
+          </div>
+
+          {/* Financial & warranty — spans full left width */}
+          {(asset.purchaseCost != null || asset.warrantyExpiryDate || asset.depreciationMonths != null) && (
+            <DetailCard>
+              <SectionHeader icon={Wallet} title="Financial & warranty" />
+              <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+                <MetricBlock
+                  label="Purchase price"
+                  value={formatCurrency(asset.purchaseCost) ?? "—"}
+                />
+                {asset.depreciationMonths != null ? (
+                  <MetricBlock
+                    label="Depreciation"
+                    value={`${asset.depreciationMonths} mo`}
+                  />
+                ) : (
+                  <MetricBlock label="Depreciation" value="—" />
+                )}
+                <MetricBlock
+                  label="Warranty expiry"
+                  value={formatDate(asset.warrantyExpiryDate) ?? "—"}
+                  className={warrantyClassName}
+                />
+                {asset.bookValue != null ? (
+                  <MetricBlock
+                    label="Book value"
+                    value={formatCurrency(asset.bookValue)!}
+                    className="text-primary"
+                  />
+                ) : asset.soldPrice != null ? (
+                  <MetricBlock
+                    label="Sold price"
+                    value={formatCurrency(asset.soldPrice)!}
+                  />
+                ) : (
+                  <MetricBlock label="Book value" value="—" />
                 )}
               </div>
 
-              {/* Custom Fields */}
-              {asset.customFieldValues && asset.customFieldValues.length > 0 && (
-                <div className="mt-6 pt-6 border-t">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Custom Fields</p>
-                  <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-                    {asset.customFieldValues.map((cfv) => (
-                      <div key={cfv.fieldDefinitionId} className="space-y-1">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{cfv.fieldName}</p>
-                        <p className="text-sm font-medium">{formatCustomFieldValue(cfv.value, cfv.fieldType) ?? "—"}</p>
-                      </div>
-                    ))}
-                  </div>
+              {/* Extra depreciation detail row */}
+              {asset.depreciationMonths != null && (asset.monthlyDepreciation != null || asset.totalDepreciation != null) && (
+                <div className="mt-5 grid grid-cols-2 gap-6 border-t border-border/40 pt-4 sm:grid-cols-4">
+                  <MetricBlock
+                    label="Monthly depreciation"
+                    value={formatCurrency(asset.monthlyDepreciation) ?? "—"}
+                  />
+                  <MetricBlock
+                    label="Total depreciation"
+                    value={formatCurrency(asset.totalDepreciation) ?? "—"}
+                  />
                 </div>
               )}
+            </DetailCard>
+          )}
 
-              {/* Notes */}
-              {asset.notes && (
-                <div className="mt-6 pt-6 border-t">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Notes</p>
-                  <p className="text-sm whitespace-pre-wrap">{asset.notes}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+          {/* Custom fields */}
+          {asset.customFieldValues && asset.customFieldValues.length > 0 && (
+            <DetailCard>
+              <SectionHeader icon={Layers} title="Custom fields" />
+              <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                {asset.customFieldValues.map((cfv) => (
+                  <DetailRow
+                    key={cfv.fieldDefinitionId}
+                    label={cfv.fieldName}
+                    value={formatCustomFieldValue(cfv.value, cfv.fieldType) ?? "—"}
+                  />
+                ))}
+              </div>
+            </DetailCard>
+          )}
 
-        {/* History */}
-        <section>
-          <div className="bg-card rounded-xl border overflow-hidden shadow-sm h-full">
-            <div className="px-6 py-4 border-b">
-              <h3 className="font-bold flex items-center gap-2">
-                <History className="h-4 w-4 text-primary" />
-                History
-              </h3>
+          {/* Notes */}
+          {asset.notes && (
+            <DetailCard>
+              <SectionHeader icon={StickyNote} title="Notes" />
+              <p className="text-sm whitespace-pre-wrap leading-relaxed">{asset.notes}</p>
+            </DetailCard>
+          )}
+        </div>
+
+        {/* Right one-third: Timeline */}
+        <DetailCard
+          className="flex flex-col overflow-hidden"
+          style={{ maxHeight: detailsHeight ? `${detailsHeight}px` : undefined }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <History className="h-[18px] w-[18px] text-primary" />
+              <h3 className="text-sm font-bold text-foreground">Asset timeline</h3>
             </div>
-            <div className="p-6">
-              <AssetHistoryTimeline
-                history={history}
-                isLoading={historyLoading}
-              />
-              {hasMoreHistory && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full mt-2"
-                  onClick={() => setHistoryOpen(true)}
-                >
-                  View All History
-                </Button>
-              )}
-            </div>
+            {hasMoreHistory && (
+              <button
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setHistoryOpen(true)}
+                title="View full history"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
+            )}
           </div>
-        </section>
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <AssetHistoryTimeline
+              history={history}
+              isLoading={historyLoading}
+            />
+          </div>
+        </DetailCard>
       </div>
 
-      {/* Attachments */}
+      {/* ── Attachments ────────────────────────────────── */}
       <AttachmentsSection entityType="Asset" entityId={asset.id} />
 
-      {/* Dialogs */}
+      {/* ── Dialogs ────────────────────────────────────── */}
       <AssetFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}

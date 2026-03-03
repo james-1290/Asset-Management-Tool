@@ -276,7 +276,7 @@ export default function ImportPage() {
 
                   <div className="flex flex-col gap-4">
                     {/* File requirements */}
-                    <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-muted-foreground bg-card p-3 rounded-lg border">
+                    <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground bg-card p-3 rounded-lg border">
                       <span className="flex items-center gap-1.5">
                         <FileText className="h-3.5 w-3.5" />
                         MAX SIZE: 10MB
@@ -401,12 +401,12 @@ export default function ImportPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider w-16">Row</TableHead>
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider w-16">Status</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground w-16">Row</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground w-16">Status</TableHead>
                     {(PREVIEW_COLUMNS[entityType as ImportEntityType] ?? []).map((col) => (
-                      <TableHead key={col} className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{col}</TableHead>
+                      <TableHead key={col} className="text-xs font-medium text-muted-foreground">{col}</TableHead>
                     ))}
-                    <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Errors</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Errors</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

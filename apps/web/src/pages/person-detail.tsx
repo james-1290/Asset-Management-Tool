@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Pencil, Archive, UserMinus, Info, ChevronRight } from "lucide-react";
+import { Pencil, Archive, UserMinus, UserRound, History, ChevronRight, Maximize2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { Badge } from "../components/ui/badge";
@@ -13,8 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
+import { DetailCard, SectionHeader, DetailRow } from "../components/detail-layout";
 import { AssetStatusBadge } from "../components/assets/asset-status-badge";
 import { PersonHistoryTimeline } from "../components/people/person-history-timeline";
+import { PersonHistoryDialog } from "../components/people/person-history-dialog";
 import { PersonFormDialog } from "../components/people/person-form-dialog";
 import { OffboardDialog } from "../components/people/offboard-dialog";
 import { ConfirmDialog } from "../components/confirm-dialog";
@@ -48,11 +50,13 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge variant={variant}>{status}</Badge>;
 }
 
+const HISTORY_PREVIEW_LIMIT = 5;
+
 export default function PersonDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: person, isLoading, isError } = usePerson(id!);
-  const { data: allHistory, isLoading: allHistoryLoading } = usePersonHistory(id!);
+  const { data: allHistory, isLoading: allHistoryLoading } = usePersonHistory(id!, HISTORY_PREVIEW_LIMIT);
   const { data: assignedAssets, isLoading: assetsLoading } = usePersonAssets(id!);
   const { data: summary } = usePersonSummary(id!);
   const { data: certificates, isLoading: certsLoading } = usePersonCertificates(id!);
@@ -64,7 +68,20 @@ export default function PersonDetailPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [offboardOpen, setOffboardOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("assets");
+
+  const detailsRef = useRef<HTMLDivElement>(null);
+  const [detailsHeight, setDetailsHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!detailsRef.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setDetailsHeight(entry.contentRect.height);
+    });
+    observer.observe(detailsRef.current);
+    return () => observer.disconnect();
+  }, [person]);
 
   function handleFormSubmit(values: PersonFormValues) {
     if (!person) return;
@@ -108,8 +125,9 @@ export default function PersonDetailPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-5 w-48" />
+        <Skeleton className="h-36 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     );
   }
@@ -128,6 +146,7 @@ export default function PersonDetailPage() {
   }
 
   const hasAssignments = (summary?.assetCount ?? 0) + (summary?.certificateCount ?? 0) + (summary?.applicationCount ?? 0) > 0;
+  const hasMoreHistory = allHistory && allHistory.length >= HISTORY_PREVIEW_LIMIT;
   const initials = person.fullName
     .split(" ")
     .map((n) => n.charAt(0))
@@ -136,101 +155,112 @@ export default function PersonDetailPage() {
     .slice(0, 2);
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        {/* Breadcrumbs */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-4">
-          <Link to="/people" className="hover:text-primary">People</Link>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground">{person.fullName}</span>
-        </div>
-        {/* Profile Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+        <Link to="/people" className="hover:text-primary transition-colors">
+          People
+        </Link>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-foreground">{person.fullName}</span>
+      </div>
+
+      {/* Hero Card */}
+      <DetailCard className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-5">
-          <div className="w-24 h-24 rounded-full border-4 border-background shadow-sm overflow-hidden bg-muted flex items-center justify-center">
-            <span className="text-2xl font-bold text-muted-foreground">{initials}</span>
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted text-2xl font-bold text-muted-foreground">
+            {initials}
           </div>
-          <div>
+          <div className="flex flex-col gap-1">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight">{person.fullName}</h1>
               {!person.isArchived ? (
-                <span className="px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 text-xs font-semibold uppercase tracking-wider">Active</span>
+                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/10 dark:text-green-400">
+                  Active
+                </span>
               ) : (
-                <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Archived</span>
+                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                  Archived
+                </span>
               )}
             </div>
             {person.jobTitle && (
-              <p className="text-muted-foreground mt-1 text-lg">{person.jobTitle}</p>
+              <p className="text-sm text-muted-foreground">{person.jobTitle}</p>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap items-center gap-2">
           {!person.isArchived && (
-            <Button variant="outline" onClick={() => setArchiveOpen(true)} className="font-semibold">
-              <Archive className="mr-2 h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={() => setArchiveOpen(true)}>
+              <Archive className="mr-1.5 h-3.5 w-3.5" />
               Archive
             </Button>
           )}
           {!person.isArchived && hasAssignments && (
-            <Button variant="outline" onClick={() => setOffboardOpen(true)} className="font-semibold">
-              <UserMinus className="mr-2 h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={() => setOffboardOpen(true)}>
+              <UserMinus className="mr-1.5 h-3.5 w-3.5" />
               Offboard
             </Button>
           )}
-          <Button onClick={() => setFormOpen(true)} className="font-semibold shadow-lg">
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit Profile
+          <Button size="sm" onClick={() => setFormOpen(true)}>
+            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+            Edit
           </Button>
         </div>
-        </div>
-      </div>
+      </DetailCard>
 
-      {/* Details Card */}
-      <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
-        <div className="px-8 py-5 flex items-center gap-2">
-          <Info className="h-4 w-4 text-primary" />
-          <h3 className="text-lg font-bold">Details</h3>
+      {/* Details + History side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="lg:col-span-2" ref={detailsRef}>
+          <DetailCard>
+            <SectionHeader icon={UserRound} title="Details" />
+            <div className="space-y-3">
+              <DetailRow label="Full name" value={person.fullName} />
+              <DetailRow label="Email" value={person.email || "—"} />
+              <DetailRow label="Department" value={person.department || "—"} />
+              <DetailRow label="Job title" value={person.jobTitle || "—"} />
+              <DetailRow label="Location" value={person.locationName || "—"} />
+              <DetailRow label="Created" value={formatDate(person.createdAt) ?? "—"} />
+              <DetailRow label="Last updated" value={formatDate(person.updatedAt) ?? "—"} />
+            </div>
+          </DetailCard>
         </div>
-        <div className="px-8 pb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-y-8 gap-x-12">
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Full Name</p>
-              <p className="text-sm font-medium">{person.fullName}</p>
+
+        <DetailCard
+          className="flex flex-col overflow-hidden"
+          style={{ maxHeight: detailsHeight ? `${detailsHeight}px` : undefined }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <History className="h-[18px] w-[18px] text-primary" />
+              <h3 className="text-sm font-bold text-foreground">History</h3>
             </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Email</p>
-              <p className="text-sm font-medium">{person.email || "—"}</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Department</p>
-              <p className="text-sm font-medium">{person.department || "—"}</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Job Title</p>
-              <p className="text-sm font-medium">{person.jobTitle || "—"}</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Location</p>
-              <p className="text-sm font-medium">{person.locationName || "—"}</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Created</p>
-              <p className="text-sm font-medium">{formatDate(person.createdAt) ?? "—"}</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Last Updated</p>
-              <p className="text-sm font-medium">{formatDate(person.updatedAt) ?? "—"}</p>
-            </div>
+            {hasMoreHistory && (
+              <button
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setHistoryOpen(true)}
+                title="View full history"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
+            )}
           </div>
-        </div>
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <PersonHistoryTimeline
+              history={allHistory}
+              isLoading={allHistoryLoading}
+            />
+          </div>
+        </DetailCard>
       </div>
 
       {/* Tabbed Section */}
-      <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
+      <DetailCard className="!p-0 overflow-hidden">
         {/* Tab bar */}
         <div className="border-b flex overflow-x-auto">
-          {(["assets", "certificates", "applications", "history"] as const).map((tab) => (
+          {(["assets", "certificates", "applications"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -241,7 +271,7 @@ export default function PersonDetailPage() {
               }`}
               onClick={() => setActiveTab(tab)}
             >
-              {tab === "assets" ? "Assets" : tab === "certificates" ? "Certificates" : tab === "applications" ? "Applications" : "History"}
+              {tab === "assets" ? "Assets" : tab === "certificates" ? "Certificates" : "Applications"}
             </button>
           ))}
         </div>
@@ -379,17 +409,8 @@ export default function PersonDetailPage() {
             </div>
           )}
 
-          {/* History Tab */}
-          {activeTab === "history" && (
-            <div className="p-6">
-              <PersonHistoryTimeline
-                history={allHistory}
-                isLoading={allHistoryLoading}
-              />
-            </div>
-          )}
         </div>
-      </div>
+      </DetailCard>
 
       {/* Dialogs */}
       <PersonFormDialog
@@ -409,6 +430,13 @@ export default function PersonDetailPage() {
         confirmLabel="Archive"
         loading={archiveMutation.isPending}
         onConfirm={handleArchive}
+      />
+
+      <PersonHistoryDialog
+        personId={person.id}
+        personName={person.fullName}
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
       />
 
       <OffboardDialog

@@ -77,7 +77,7 @@ export function AssetSummaryReport() {
               <Package className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Assets</p>
+          <p className="text-xs font-medium text-muted-foreground">Total Assets</p>
           <p className="text-2xl font-bold tracking-tight mt-1">{data.totalAssets.toLocaleString()}</p>
         </div>
 
@@ -87,7 +87,7 @@ export function AssetSummaryReport() {
               <PoundSterling className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Value</p>
+          <p className="text-xs font-medium text-muted-foreground">Total Value</p>
           <p className="text-2xl font-bold tracking-tight mt-1">
             {new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 2 }).format(data.totalValue)}
           </p>
@@ -99,7 +99,7 @@ export function AssetSummaryReport() {
               <AlertTriangle className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Asset Types</p>
+          <p className="text-xs font-medium text-muted-foreground">Asset Types</p>
           <p className="text-2xl font-bold tracking-tight mt-1">{data.byType.length}</p>
         </div>
 
@@ -109,7 +109,7 @@ export function AssetSummaryReport() {
               <ShieldCheck className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Locations</p>
+          <p className="text-xs font-medium text-muted-foreground">Locations</p>
           <p className="text-2xl font-bold tracking-tight mt-1">{data.byLocation.length}</p>
         </div>
       </div>
@@ -125,9 +125,9 @@ export function AssetSummaryReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Count</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Percentage</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Count</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Percentage</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -158,9 +158,9 @@ export function AssetSummaryReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Asset Category</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Total Items</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Percentage</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Asset Category</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Total Items</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Percentage</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -186,9 +186,9 @@ export function AssetSummaryReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Location</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Count</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Percentage</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Location</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Count</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Percentage</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

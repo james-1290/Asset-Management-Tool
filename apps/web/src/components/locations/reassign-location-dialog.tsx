@@ -105,7 +105,7 @@ export function ReassignLocationDialog({
         <div className="p-8 space-y-8">
           {/* Impact Summary Cards */}
           <div>
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+            <h4 className="text-xs font-medium text-muted-foreground mb-4">
               Items impacted by this action
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -142,7 +142,7 @@ export function ReassignLocationDialog({
 
           {/* Mode Selection */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <h4 className="text-xs font-medium text-muted-foreground">
               What should happen to these items?
             </h4>
             <div className="grid grid-cols-2 gap-3">

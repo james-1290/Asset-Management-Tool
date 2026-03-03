@@ -44,7 +44,7 @@ export function InventorySnapshot({ data, isLoading }: InventorySnapshotProps) {
             className="block no-underline"
           >
             <div className="rounded-md border bg-muted/30 p-3 transition-all duration-200 hover:shadow-[0_2px_6px_0_rgba(0,0,0,0.12)] hover:bg-muted/50 cursor-pointer">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
+              <p className="text-xs font-medium text-muted-foreground truncate">
                 {item.label}
               </p>
               <p className="text-xl font-semibold tracking-tight tabular-nums mt-1">

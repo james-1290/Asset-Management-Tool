@@ -139,7 +139,7 @@ export function AppSidebar() {
           </div>
           <div className="min-w-0">
             <span className="text-base font-bold block truncate leading-none">Asset Manager</span>
-            <span className="text-[10px] text-muted-foreground font-medium block uppercase tracking-widest mt-0.5">Asset Management</span>
+            <span className="text-xs text-muted-foreground font-medium block mt-0.5">Asset Management</span>
           </div>
           <div className="ml-auto">
             <Button
@@ -175,7 +175,7 @@ export function AppSidebar() {
       <SidebarContent>
         {Array.from(sections.entries()).map(([sectionLabel, items], sectionIdx) => (
           <SidebarGroup key={sectionLabel} className={sectionIdx > 0 ? "border-t border-sidebar-border" : ""}>
-            <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-3">
+            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground/60 px-3">
               {sectionLabel}
             </SidebarGroupLabel>
             <SidebarGroupContent>

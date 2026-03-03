@@ -92,7 +92,7 @@ export function LicenceSummaryReport() {
               <FileText className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Applications</p>
+          <p className="text-xs font-medium text-muted-foreground">Total Applications</p>
           <p className="text-2xl font-bold tracking-tight mt-1">{data.totalApplications}</p>
         </div>
 
@@ -102,7 +102,7 @@ export function LicenceSummaryReport() {
               <PoundSterling className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Spend</p>
+          <p className="text-xs font-medium text-muted-foreground">Total Spend</p>
           <p className="text-2xl font-bold tracking-tight mt-1">
             {new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 2 }).format(data.totalSpend)}
           </p>
@@ -114,7 +114,7 @@ export function LicenceSummaryReport() {
               <CheckCircle2 className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Active</p>
+          <p className="text-xs font-medium text-muted-foreground">Active</p>
           <p className="text-2xl font-bold tracking-tight mt-1">{data.active}</p>
         </div>
 
@@ -124,7 +124,7 @@ export function LicenceSummaryReport() {
               <XCircle className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Expired</p>
+          <p className="text-xs font-medium text-muted-foreground">Expired</p>
           <p className="text-2xl font-bold tracking-tight mt-1">{data.expired}</p>
         </div>
       </div>
@@ -137,9 +137,9 @@ export function LicenceSummaryReport() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</TableHead>
-              <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Count</TableHead>
-              <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Percentage</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground text-right">Count</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground text-right">Percentage</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -177,11 +177,11 @@ export function LicenceSummaryReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Name</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Type</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Expiry Date</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Days Left</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Name</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Type</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Expiry Date</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Days Left</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

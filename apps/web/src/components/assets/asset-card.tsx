@@ -23,7 +23,7 @@ export function AssetCard({ asset, onEdit, onArchive }: AssetCardProps) {
             {asset.name}
           </Link>
           {asset.serialNumber && (
-            <p className="text-[11px] text-muted-foreground mt-0.5 font-mono truncate">
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
               {asset.serialNumber}
             </p>
           )}
