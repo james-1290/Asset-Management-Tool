@@ -1,9 +1,20 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Pencil, Info, History, ChevronRight, CheckCircle2 } from "lucide-react";
+import {
+  Pencil,
+  History,
+  ChevronRight,
+  CheckCircle2,
+  AppWindow,
+  Key,
+  Layers,
+  StickyNote,
+  Maximize2,
+} from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
+import { DetailCard, SectionHeader, DetailRow, MetricBlock } from "../components/detail-layout";
 import { ApplicationStatusBadge } from "../components/applications/application-status-badge";
 import { ApplicationHistoryTimeline } from "../components/applications/application-history-timeline";
 import { ApplicationHistoryDialog } from "../components/applications/application-history-dialog";
@@ -99,6 +110,18 @@ export default function ApplicationDetailPage() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
 
+  const detailsRef = useRef<HTMLDivElement>(null);
+  const [detailsHeight, setDetailsHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!detailsRef.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setDetailsHeight(entry.contentRect.height);
+    });
+    observer.observe(detailsRef.current);
+    return () => observer.disconnect();
+  }, [application]);
+
   function handleFormSubmit(values: ApplicationFormValues) {
     if (!application) return;
 
@@ -178,8 +201,12 @@ export default function ApplicationDetailPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-5 w-48" />
+        <Skeleton className="h-36 w-full rounded-xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="lg:col-span-2 h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl" />
+        </div>
       </div>
     );
   }
@@ -205,214 +232,214 @@ export default function ApplicationDetailPage() {
       ? Math.min(100, Math.round((application.usedSeats / application.maxSeats) * 100))
       : null;
 
+  const hasDates = application.purchaseDate || application.expiryDate;
+
+  const expiryClassName = isExpired(application.expiryDate)
+    ? "text-red-500 font-bold"
+    : isExpiringSoon(application.expiryDate)
+      ? "text-orange-500 font-bold"
+      : "";
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        {/* Breadcrumbs */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-4">
-          <Link to="/applications" className="hover:text-primary">Applications</Link>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground">{application.name}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="size-12 rounded-xl bg-muted flex items-center justify-center">
-              <span className="text-lg font-bold text-muted-foreground">
-                {application.name.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight">{application.name}</h1>
-                <ApplicationStatusBadge status={application.status} />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {application.applicationTypeName}
-                {application.publisher && ` · ${application.publisher}`}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {application.status !== "Inactive" && !application.isArchived && (
-              <Button
-                variant="outline"
-                onClick={() => setDeactivateOpen(true)}
-                className="font-semibold"
-              >
-                Deactivate
-              </Button>
-            )}
-            {application.status === "Inactive" && !application.isArchived && (
-              <Button
-                variant="outline"
-                onClick={handleReactivate}
-                disabled={reactivateMutation.isPending}
-                className="font-semibold"
-              >
-                {reactivateMutation.isPending ? "Reactivating..." : "Reactivate"}
-              </Button>
-            )}
-            <Button onClick={() => setFormOpen(true)} className="font-semibold shadow-lg">
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit Details
-            </Button>
-          </div>
-        </div>
+    <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+        <Link to="/applications" className="hover:text-primary transition-colors">
+          Applications
+        </Link>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-foreground">{application.name}</span>
       </div>
 
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Application Details */}
-        <section className="lg:col-span-2">
-          <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b flex items-center">
-              <h3 className="font-bold flex items-center gap-2">
-                <Info className="h-4 w-4 text-primary" />
-                Application Details
-              </h3>
+      {/* Hero Card */}
+      <DetailCard className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-5">
+          <div className="size-20 rounded-xl bg-muted flex items-center justify-center">
+            <AppWindow className="h-9 w-9 text-muted-foreground" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight">{application.name}</h1>
+              <ApplicationStatusBadge status={application.status} />
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Name</p>
-                  <p className="text-sm font-medium">{application.name}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Publisher</p>
-                  <p className="text-sm font-medium">{application.publisher || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">License Type</p>
-                  <p className="text-sm font-medium">
-                    {application.licenceType ? LICENCE_TYPE_LABELS[application.licenceType] ?? application.licenceType : "—"}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Max Seats</p>
-                  <p className="text-sm font-medium">{application.maxSeats?.toString() ?? "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Used Seats</p>
-                  <div className="flex items-center gap-3">
-                    <p className="text-sm font-medium">{application.usedSeats?.toString() ?? "—"}</p>
-                    {seatPercent !== null && (
-                      <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div className="bg-primary h-full" style={{ width: `${seatPercent}%` }} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Purchase Date</p>
-                  <p className="text-sm font-medium">{formatDate(application.purchaseDate) ?? "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Expiry Date</p>
-                  <p className={`text-sm font-medium ${isExpired(application.expiryDate) ? "text-red-500 font-bold" : isExpiringSoon(application.expiryDate) ? "text-orange-500 font-bold" : ""}`}>
-                    {formatDate(application.expiryDate) ?? "—"}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Purchase Cost</p>
-                  <p className="text-sm font-medium">{formatCurrency(application.purchaseCost) ?? "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Auto Renewal</p>
-                  <p className="text-sm font-medium flex items-center gap-1.5">
-                    {application.autoRenewal ? (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                        Enabled
-                      </>
-                    ) : (
-                      "Disabled"
-                    )}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Location</p>
-                  <p className="text-sm font-medium">{application.locationName || "—"}</p>
-                </div>
-                {application.version && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Version</p>
-                    <p className="text-sm font-medium">{application.version}</p>
-                  </div>
-                )}
-                {application.licenceKey && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Licence Key</p>
-                    <p className="text-sm font-medium font-mono text-xs">{application.licenceKey}</p>
-                  </div>
-                )}
+            <p className="text-sm text-muted-foreground">
+              {application.applicationTypeName}
+              {application.publisher && ` · ${application.publisher}`}
+            </p>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          {application.status !== "Inactive" && !application.isArchived && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeactivateOpen(true)}
+            >
+              Deactivate
+            </Button>
+          )}
+          {application.status === "Inactive" && !application.isArchived && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReactivate}
+              disabled={reactivateMutation.isPending}
+            >
+              {reactivateMutation.isPending ? "Reactivating..." : "Reactivate"}
+            </Button>
+          )}
+          <Button size="sm" onClick={() => setFormOpen(true)}>
+            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+            Edit
+          </Button>
+        </div>
+      </DetailCard>
+
+      {/* Three-column grid */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left two-thirds */}
+        <div ref={detailsRef} className="lg:col-span-2 flex flex-col gap-6">
+          {/* Top row: Details + Licensing side by side */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* Application details card */}
+            <DetailCard>
+              <SectionHeader icon={AppWindow} title="Application details" />
+              <div className="space-y-3">
+                <DetailRow label="Name" value={application.name} />
+                <DetailRow label="Publisher" value={application.publisher || "—"} />
+                <DetailRow label="Version" value={application.version || "—"} />
+                <DetailRow
+                  label="Licence type"
+                  value={
+                    application.licenceType
+                      ? LICENCE_TYPE_LABELS[application.licenceType] ?? application.licenceType
+                      : "—"
+                  }
+                />
+                <DetailRow label="Licence key" value={application.licenceKey || "—"} />
                 {application.assetName && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Linked Asset</p>
-                    <p className="text-sm font-medium text-primary">{application.assetName}</p>
-                  </div>
+                  <DetailRow
+                    label="Linked asset"
+                    value={
+                      <span className="text-primary">{application.assetName}</span>
+                    }
+                  />
                 )}
                 {application.personName && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Managed By</p>
-                    <p className="text-sm font-medium">{application.personName}</p>
-                  </div>
+                  <DetailRow label="Managed by" value={application.personName} />
                 )}
               </div>
+            </DetailCard>
 
-              {/* Custom Fields */}
-              {application.customFieldValues && application.customFieldValues.length > 0 && (
-                <div className="mt-6 pt-6 border-t">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Custom Fields</p>
-                  <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-                    {application.customFieldValues.map((cfv) => (
-                      <div key={cfv.fieldDefinitionId} className="space-y-1">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{cfv.fieldName}</p>
-                        <p className="text-sm font-medium">{formatCustomFieldValue(cfv.value, cfv.fieldType) ?? "—"}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Notes */}
-              {application.notes && (
-                <div className="mt-6 pt-6 border-t">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Notes</p>
-                  <p className="text-sm whitespace-pre-wrap">{application.notes}</p>
-                </div>
-              )}
-            </div>
+            {/* Licensing card */}
+            <DetailCard>
+              <SectionHeader icon={Key} title="Licensing" />
+              <div className="space-y-3">
+                <DetailRow label="Max seats" value={application.maxSeats?.toString() ?? "—"} />
+                <DetailRow
+                  label="Used seats"
+                  value={
+                    <div className="flex items-center gap-3">
+                      <span>{application.usedSeats?.toString() ?? "—"}</span>
+                      {seatPercent !== null && (
+                        <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className="bg-primary h-full" style={{ width: `${seatPercent}%` }} />
+                        </div>
+                      )}
+                    </div>
+                  }
+                />
+                <DetailRow label="Purchase cost" value={formatCurrency(application.purchaseCost) ?? "—"} />
+                <DetailRow
+                  label="Auto renewal"
+                  value={
+                    application.autoRenewal ? (
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        Enabled
+                      </span>
+                    ) : (
+                      "Disabled"
+                    )
+                  }
+                />
+              </div>
+            </DetailCard>
           </div>
-        </section>
 
-        {/* History */}
-        <section>
-          <div className="bg-card rounded-xl border overflow-hidden shadow-sm h-full">
-            <div className="px-6 py-4 border-b">
-              <h3 className="font-bold flex items-center gap-2">
-                <History className="h-4 w-4 text-primary" />
-                History
-              </h3>
+          {/* Dates MetricBlock row */}
+          {hasDates && (
+            <DetailCard>
+              <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+                <MetricBlock
+                  label="Purchase date"
+                  value={formatDate(application.purchaseDate) ?? "—"}
+                />
+                <MetricBlock
+                  label="Expiry date"
+                  value={formatDate(application.expiryDate) ?? "—"}
+                  className={expiryClassName}
+                />
+              </div>
+            </DetailCard>
+          )}
+
+          {/* Custom fields */}
+          {application.customFieldValues && application.customFieldValues.length > 0 && (
+            <DetailCard>
+              <SectionHeader icon={Layers} title="Custom fields" />
+              <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                {application.customFieldValues.map((cfv) => (
+                  <DetailRow
+                    key={cfv.fieldDefinitionId}
+                    label={cfv.fieldName}
+                    value={formatCustomFieldValue(cfv.value, cfv.fieldType) ?? "—"}
+                  />
+                ))}
+              </div>
+            </DetailCard>
+          )}
+
+          {/* Notes */}
+          {application.notes && (
+            <DetailCard>
+              <SectionHeader icon={StickyNote} title="Notes" />
+              <p className="text-sm whitespace-pre-wrap leading-relaxed">{application.notes}</p>
+            </DetailCard>
+          )}
+        </div>
+
+        {/* Right one-third: Timeline */}
+        <div className="flex flex-col gap-6">
+          <DetailCard
+            className="flex flex-col overflow-hidden"
+            style={{ maxHeight: detailsHeight ? `${detailsHeight}px` : undefined }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <History className="h-[18px] w-[18px] text-primary" />
+                <h3 className="text-sm font-bold text-foreground">History</h3>
+              </div>
+              {hasMoreHistory && (
+                <button
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setHistoryOpen(true)}
+                  title="View full history"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </button>
+              )}
             </div>
-            <div className="p-6">
+            <div className="flex-1 overflow-y-auto min-h-0">
               <ApplicationHistoryTimeline
                 history={history}
                 isLoading={historyLoading}
               />
-              {hasMoreHistory && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full mt-2"
-                  onClick={() => setHistoryOpen(true)}
-                >
-                  View All History
-                </Button>
-              )}
             </div>
-          </div>
-        </section>
+          </DetailCard>
+        </div>
       </div>
 
       {/* Attachments */}

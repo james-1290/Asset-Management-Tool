@@ -31,7 +31,7 @@ export function Layout() {
             {user && (
               <div className="hidden sm:block text-right">
                 <p className="text-sm font-semibold leading-none">{user.displayName}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">{user.roles?.[0] ?? "User"}</p>
+                <p className="text-xs text-muted-foreground mt-1">{user.roles?.[0] ?? "User"}</p>
               </div>
             )}
             <UserMenu />

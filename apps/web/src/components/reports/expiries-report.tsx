@@ -106,12 +106,12 @@ export function ExpiriesReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Name</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Category</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Type</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Expiry Date</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Days Left</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Name</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Category</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Type</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Expiry Date</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Days Left</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -64,7 +64,7 @@ export function getAssetColumns({
       header: ({ column }) => (
         <Button
           variant="ghost"
-          className="-ml-4 uppercase tracking-wider text-xs font-bold"
+          className="-ml-4 text-xs font-medium"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Asset Name
@@ -126,7 +126,7 @@ export function getAssetColumns({
       header: ({ column }) => (
         <Button
           variant="ghost"
-          className="-ml-4 uppercase tracking-wider text-xs font-bold"
+          className="-ml-4 text-xs font-medium"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Financials

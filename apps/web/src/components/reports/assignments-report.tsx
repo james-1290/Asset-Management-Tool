@@ -64,7 +64,7 @@ export function AssignmentsReport() {
               <Package className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Assigned</p>
+          <p className="text-xs font-medium text-muted-foreground">Total Assigned</p>
           <p className="text-2xl font-bold tracking-tight mt-1">{data.totalAssigned}</p>
         </div>
 
@@ -74,7 +74,7 @@ export function AssignmentsReport() {
               <Users className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">People with Assignments</p>
+          <p className="text-xs font-medium text-muted-foreground">People with Assignments</p>
           <p className="text-2xl font-bold tracking-tight mt-1">{data.totalPeople}</p>
         </div>
       </div>
@@ -95,10 +95,10 @@ export function AssignmentsReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Person</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Email</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Assets</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Assigned Items</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Person</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Email</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Assets</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Assigned Items</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

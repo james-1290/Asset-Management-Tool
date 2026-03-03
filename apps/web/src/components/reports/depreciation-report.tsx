@@ -91,7 +91,7 @@ export function DepreciationReport() {
               <PoundSterling className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Original Cost</p>
+          <p className="text-xs font-medium text-muted-foreground">Total Original Cost</p>
           <p className="text-2xl font-bold tracking-tight mt-1">{formatCurrency(data.totalOriginalCost)}</p>
         </div>
 
@@ -101,7 +101,7 @@ export function DepreciationReport() {
               <TrendingDown className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Depreciation</p>
+          <p className="text-xs font-medium text-muted-foreground">Total Depreciation</p>
           <p className="text-2xl font-bold tracking-tight mt-1 text-orange-600 dark:text-orange-400">{formatCurrency(data.totalAccumulatedDepreciation)}</p>
         </div>
 
@@ -111,7 +111,7 @@ export function DepreciationReport() {
               <BookOpen className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Book Value</p>
+          <p className="text-xs font-medium text-muted-foreground">Total Book Value</p>
           <p className="text-2xl font-bold tracking-tight mt-1 text-green-600 dark:text-green-400">{formatCurrency(data.totalBookValue)}</p>
         </div>
       </div>
@@ -243,14 +243,14 @@ export function DepreciationReport() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Asset Name</TableHead>
-                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Purchase Date</TableHead>
-                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Original Cost</TableHead>
-                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Method</TableHead>
-                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Useful Life (Yrs)</TableHead>
-                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Accum. Depreciation</TableHead>
-                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Book Value</TableHead>
-                      <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Remaining (Mths)</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">Asset Name</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">Purchase Date</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground text-right">Original Cost</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground">Method</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground text-right">Useful Life (Yrs)</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground text-right">Accum. Depreciation</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground text-right">Book Value</TableHead>
+                      <TableHead className="text-xs font-medium text-muted-foreground text-right">Remaining (Mths)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

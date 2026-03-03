@@ -67,7 +67,7 @@ export function StatCard({
           </div>
         )}
       </div>
-      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+      <p className="text-xs font-medium text-muted-foreground">
         {title}
       </p>
       {isLoading ? (

@@ -105,10 +105,10 @@ export function AssetLifecycleReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Name</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Type</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Purchase Date</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Age (days)</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Name</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Type</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Purchase Date</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Age (days)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -143,10 +143,10 @@ export function AssetLifecycleReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Name</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Type</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Warranty Expired</TableHead>
-                <TableHead className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Days Overdue</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Name</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Type</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">Warranty Expired</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground text-right">Days Overdue</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
