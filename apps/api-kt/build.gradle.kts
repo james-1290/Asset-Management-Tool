@@ -47,6 +47,9 @@ dependencies {
     // CSV
     implementation("com.opencsv:opencsv:5.9")
 
+    // File content detection
+    implementation("org.apache.tika:tika-core:2.9.1")
+
     // API Docs
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.4.0")
 

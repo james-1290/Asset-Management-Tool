@@ -199,7 +199,7 @@ export function AppSidebar() {
                             end={!item.children}
                             style={parentHighlighted ? activeStyle : inactiveStyle}
                           >
-                            <item.icon className={parentHighlighted ? "h-[22px] w-[22px]" : expanded ? "h-[22px] w-[22px]" : "h-[22px] w-[22px] text-gray-400 dark:text-gray-500"} />
+                            <item.icon className={parentHighlighted ? "h-[22px] w-[22px]" : expanded ? "h-[22px] w-[22px]" : "h-[22px] w-[22px] text-muted-foreground"} />
                             <span className="text-sm">{item.title}</span>
                           </NavLink>
                         </SidebarMenuButton>

@@ -93,7 +93,7 @@ export function CertificatesToolbar({
                 : "border-border text-muted-foreground"
             )}
           >
-            <ListFilter className="h-3 w-3 shrink-0" />
+            <ListFilter className="h-4 w-4 shrink-0" />
             More
             {hasAdvancedFilters && (
               <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">1</span>

@@ -21,6 +21,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.ResponseEntity
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
@@ -33,6 +34,7 @@ import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/certificates")
+@PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class CertificatesController(
     private val certificateRepository: CertificateRepository,
     private val certificateTypeRepository: CertificateTypeRepository,
@@ -294,6 +296,7 @@ class CertificatesController(
 
     // ── Endpoints ────────────────────────────────────────────────────────
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
@@ -319,6 +322,7 @@ class CertificatesController(
         return ResponseEntity.ok(PagedResponse(items, p, ps, result.totalElements))
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/export")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
@@ -369,6 +373,7 @@ class CertificatesController(
         writer.flush()
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<CertificateDto> {
         val certificate = certificateRepository.findById(id).orElse(null)
@@ -501,6 +506,7 @@ class CertificatesController(
         return ResponseEntity.ok(saved.toDto(cfValues))
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/history")
     fun getHistory(
         @PathVariable id: UUID,

@@ -8,7 +8,9 @@ import com.assetmanagement.api.repository.UserRepository
 import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
+import com.assetmanagement.api.service.LoginRateLimitService
 import com.assetmanagement.api.service.TokenService
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.ResponseEntity
@@ -23,30 +25,43 @@ class AuthController(
     private val passwordEncoder: PasswordEncoder,
     private val currentUserService: CurrentUserService,
     private val auditService: AuditService,
+    private val loginRateLimitService: LoginRateLimitService,
     @Value("\${saml.enabled:false}") private val samlEnabled: Boolean,
     @Value("\${saml.registration-id:entra}") private val samlRegistrationId: String,
     @Value("\${auth.local-login.enabled:true}") private val localLoginEnabled: Boolean
 ) {
 
     @PostMapping("/login")
-    fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<Any> {
+    fun login(@Valid @RequestBody request: LoginRequest, httpRequest: HttpServletRequest): ResponseEntity<Any> {
         if (!localLoginEnabled) {
             return ResponseEntity.status(404).body(mapOf("error" to "Local login is disabled. Use SSO to sign in."))
+        }
+
+        val clientIp = httpRequest.getHeader("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim() ?: httpRequest.remoteAddr
+        val rateLimitKey = "$clientIp:${request.username}"
+
+        if (loginRateLimitService.isBlocked(rateLimitKey)) {
+            val remaining = loginRateLimitService.remainingLockoutSeconds(rateLimitKey)
+            return ResponseEntity.status(429).body(mapOf("error" to "Too many login attempts. Try again in ${remaining / 60 + 1} minutes."))
         }
 
         val user = userRepository.findByUsername(request.username)
         if (user == null) {
             auditService.log(AuditEntry("LoginFailed", "User", "", request.username,
                 "Failed login attempt — user not found", null, request.username))
+            loginRateLimitService.recordFailedAttempt(rateLimitKey)
             return ResponseEntity.status(401).body(mapOf("error" to "Invalid username or password."))
         }
 
-        if (user.authProvider != "LOCAL")
+        if (user.authProvider != "LOCAL") {
+            loginRateLimitService.recordFailedAttempt(rateLimitKey)
             return ResponseEntity.status(401).body(mapOf("error" to "This account uses SSO. Please sign in with your identity provider."))
+        }
 
         if (!user.isActive) {
             auditService.log(AuditEntry("LoginFailed", "User", user.id.toString(), request.username,
                 "Failed login attempt — account inactive", null, request.username))
+            loginRateLimitService.recordFailedAttempt(rateLimitKey)
             return ResponseEntity.status(401).body(mapOf("error" to "Invalid username or password."))
         }
 
@@ -54,11 +69,14 @@ class AuthController(
         if (passwordHash == null || !passwordEncoder.matches(request.password, passwordHash)) {
             auditService.log(AuditEntry("LoginFailed", "User", user.id.toString(), request.username,
                 "Failed login attempt — invalid password", null, request.username))
+            loginRateLimitService.recordFailedAttempt(rateLimitKey)
             return ResponseEntity.status(401).body(mapOf("error" to "Invalid username or password."))
         }
 
         val roles = user.userRoles.mapNotNull { it.role?.name }
         val token = tokenService.generateToken(user, roles)
+
+        loginRateLimitService.recordSuccessfulLogin(rateLimitKey)
 
         auditService.log(AuditEntry("Login", "User", user.id.toString(), user.displayName,
             "User logged in successfully", user.id, user.username))

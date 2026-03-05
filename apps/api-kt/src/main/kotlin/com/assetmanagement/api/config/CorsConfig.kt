@@ -15,11 +15,16 @@ class CorsConfig {
 
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
+        val validOrigins = origins.split(",")
+            .map { it.trim() }
+            .filter { it.matches(Regex("^https?://.+$")) && it != "*" }
+
         val config = CorsConfiguration().apply {
-            allowedOrigins = origins.split(",").map { it.trim() }
-            allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
-            allowedHeaders = listOf("Content-Type", "Authorization", "X-Requested-With")
+            allowedOrigins = validOrigins
+            allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            allowedHeaders = listOf("Content-Type", "Authorization")
             allowCredentials = true
+            maxAge = 3600
         }
         val source = UrlBasedCorsConfigurationSource()
         source.registerCorsConfiguration("/**", config)

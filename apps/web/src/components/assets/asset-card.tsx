@@ -58,7 +58,7 @@ export function AssetCard({ asset, onEdit, onArchive }: AssetCardProps) {
           className="h-6 w-6 p-0"
           onClick={() => onEdit(asset)}
         >
-          <Pencil className="h-3 w-3" />
+          <Pencil className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"
@@ -66,7 +66,7 @@ export function AssetCard({ asset, onEdit, onArchive }: AssetCardProps) {
           className="h-6 w-6 p-0 text-destructive hover:text-destructive"
           onClick={() => onArchive(asset)}
         >
-          <Trash2 className="h-3 w-3" />
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>

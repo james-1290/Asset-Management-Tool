@@ -2,7 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.service.ScimService
-import jakarta.servlet.http.HttpServletRequest
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -14,17 +14,14 @@ import java.util.*
 @RequestMapping("/scim/v2")
 @ConditionalOnProperty(name = ["scim.enabled"], havingValue = "true")
 class ScimController(
-    private val scimService: ScimService
+    private val scimService: ScimService,
+    @Value("\${scim.base-url:http://localhost:5115}") private val scimBaseUrl: String
 ) {
     companion object {
         val SCIM_JSON = MediaType.parseMediaType("application/scim+json")
     }
 
-    private fun baseUrl(request: HttpServletRequest): String {
-        val scheme = request.getHeader("X-Forwarded-Proto") ?: request.scheme
-        val host = request.getHeader("X-Forwarded-Host") ?: "${request.serverName}:${request.serverPort}"
-        return "$scheme://$host"
-    }
+    private fun baseUrl(): String = scimBaseUrl
 
     @GetMapping("/ServiceProviderConfig", produces = ["application/scim+json"])
     fun serviceProviderConfig(): ResponseEntity<Map<String, Any>> {
@@ -94,24 +91,23 @@ class ScimController(
     fun listUsers(
         @RequestParam(required = false) filter: String?,
         @RequestParam(defaultValue = "1") startIndex: Int,
-        @RequestParam(defaultValue = "100") count: Int,
-        request: HttpServletRequest
+        @RequestParam(defaultValue = "100") count: Int
     ): ResponseEntity<ScimListResponse<ScimUser>> {
-        val result = scimService.listUsers(filter, startIndex, count, baseUrl(request))
+        val result = scimService.listUsers(filter, startIndex, count, baseUrl())
         return ResponseEntity.ok().contentType(SCIM_JSON).body(result)
     }
 
     @GetMapping("/Users/{id}", produces = ["application/scim+json"])
-    fun getUser(@PathVariable id: UUID, request: HttpServletRequest): ResponseEntity<Any> {
-        val user = scimService.getUser(id, baseUrl(request))
+    fun getUser(@PathVariable id: UUID): ResponseEntity<Any> {
+        val user = scimService.getUser(id, baseUrl())
             ?: return notFound("User $id not found")
         return ResponseEntity.ok().contentType(SCIM_JSON).body(user)
     }
 
     @PostMapping("/Users", produces = ["application/scim+json"], consumes = ["application/scim+json", "application/json"])
-    fun createUser(@RequestBody scimUser: ScimUser, request: HttpServletRequest): ResponseEntity<Any> {
+    fun createUser(@RequestBody scimUser: ScimUser): ResponseEntity<Any> {
         return try {
-            val created = scimService.createUser(scimUser, baseUrl(request))
+            val created = scimService.createUser(scimUser, baseUrl())
             ResponseEntity.status(HttpStatus.CREATED).contentType(SCIM_JSON).body(created)
         } catch (e: Exception) {
             ResponseEntity.status(HttpStatus.CONFLICT).contentType(SCIM_JSON).body(
@@ -121,15 +117,15 @@ class ScimController(
     }
 
     @PutMapping("/Users/{id}", produces = ["application/scim+json"], consumes = ["application/scim+json", "application/json"])
-    fun replaceUser(@PathVariable id: UUID, @RequestBody scimUser: ScimUser, request: HttpServletRequest): ResponseEntity<Any> {
-        val updated = scimService.replaceUser(id, scimUser, baseUrl(request))
+    fun replaceUser(@PathVariable id: UUID, @RequestBody scimUser: ScimUser): ResponseEntity<Any> {
+        val updated = scimService.replaceUser(id, scimUser, baseUrl())
             ?: return notFound("User $id not found")
         return ResponseEntity.ok().contentType(SCIM_JSON).body(updated)
     }
 
     @PatchMapping("/Users/{id}", produces = ["application/scim+json"], consumes = ["application/scim+json", "application/json"])
-    fun patchUser(@PathVariable id: UUID, @RequestBody patchOp: ScimPatchOp, request: HttpServletRequest): ResponseEntity<Any> {
-        val updated = scimService.patchUser(id, patchOp, baseUrl(request))
+    fun patchUser(@PathVariable id: UUID, @RequestBody patchOp: ScimPatchOp): ResponseEntity<Any> {
+        val updated = scimService.patchUser(id, patchOp, baseUrl())
             ?: return notFound("User $id not found")
         return ResponseEntity.ok().contentType(SCIM_JSON).body(updated)
     }

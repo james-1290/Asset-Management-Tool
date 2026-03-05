@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -20,7 +20,6 @@ type LoginFormValues = z.infer<typeof loginSchema>
 export default function LoginPage() {
   const { login, loginWithToken } = useAuth()
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [ssoConfig, setSsoConfig] = useState<SsoConfig | null>(null)
@@ -31,19 +30,22 @@ export default function LoginPage() {
     defaultValues: { username: "", password: "" },
   })
 
-  // Handle SSO token callback
+  // Handle SSO token callback (token passed in URL fragment to avoid server logs/referrer leakage)
   useEffect(() => {
-    const token = searchParams.get("token")
-    const sso = searchParams.get("sso")
+    const hash = window.location.hash.substring(1)
+    const hashParams = new URLSearchParams(hash)
+    const token = hashParams.get("token")
+    const sso = hashParams.get("sso")
     if (token && sso === "1") {
       setSsoLoading(true)
-      setSearchParams({}, { replace: true })
+      // Clear the fragment to remove token from URL
+      window.history.replaceState(null, "", window.location.pathname)
       loginWithToken(token)
         .then(() => navigate("/", { replace: true }))
         .catch(() => setError("SSO login failed. Please try again."))
         .finally(() => setSsoLoading(false))
     }
-  }, [searchParams, setSearchParams, loginWithToken, navigate])
+  }, [loginWithToken, navigate])
 
   // Fetch SSO config
   useEffect(() => {

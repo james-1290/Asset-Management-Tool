@@ -47,29 +47,35 @@ class JwtAuthenticationFilter(
                 val userId = claims.subject
 
                 // Reject tokens for deactivated or deleted users
-                val user = userRepository.findById(UUID.fromString(userId)).orElse(null)
+                // Use JOIN FETCH query to load roles from database (not JWT claims)
+                val user = userRepository.findWithRolesById(UUID.fromString(userId))
                 if (user == null || !user.isActive) {
                     filterChain.doFilter(request, response)
                     return
                 }
 
+                // Reject tokens issued before security-sensitive changes
+                val issuedAt = claims.issuedAt
+                if (issuedAt != null && user.tokenInvalidatedAt != null) {
+                    if (issuedAt.toInstant().isBefore(user.tokenInvalidatedAt)) {
+                        filterChain.doFilter(request, response)
+                        return
+                    }
+                }
+
                 val username = claims["unique_name"] as? String ?: ""
-                val roles = (claims["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] as? List<*>)
-                    ?.mapNotNull { it as? String }
-                    ?: (claims["role"] as? List<*>)?.mapNotNull { it as? String }
-                    ?: listOfNotNull(claims["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] as? String)
-                    .plus(listOfNotNull(claims["role"] as? String))
+                val roles = user.userRoles.mapNotNull { it.role?.name }
 
                 val authorities = roles.map { SimpleGrantedAuthority("ROLE_$it") }
 
                 val auth = UsernamePasswordAuthenticationToken(
-                    JwtUserDetails(userId, username, claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] as? String ?: username),
+                    JwtUserDetails(userId, username, user.displayName),
                     null,
                     authorities
                 )
                 SecurityContextHolder.getContext().authentication = auth
             } catch (e: Exception) {
-                log.warn("Invalid JWT token: {}", e.message)
+                log.debug("Invalid JWT token: {}", e.message)
                 SecurityContextHolder.clearContext()
             }
         }

@@ -8,6 +8,7 @@ import com.assetmanagement.api.service.AuditChange
 import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
+import com.assetmanagement.api.util.PasswordValidator
 import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.transaction.annotation.Transactional
@@ -68,11 +69,11 @@ class ProfileController(
         if (!passwordEncoder.matches(request.currentPassword, user.passwordHash))
             return ResponseEntity.badRequest().body(mapOf("error" to "Current password is incorrect."))
 
-        if (request.newPassword.length < 8)
-            return ResponseEntity.badRequest().body(mapOf("error" to "Password must be at least 8 characters."))
+        PasswordValidator.validate(request.newPassword)?.let { return ResponseEntity.badRequest().body(mapOf("error" to it)) }
 
         user.passwordHash = passwordEncoder.encode(request.newPassword)
         user.updatedAt = Instant.now()
+        user.tokenInvalidatedAt = Instant.now()
         userRepository.save(user)
 
         auditService.log(AuditEntry("PasswordChanged", "User", user.id.toString(), user.displayName,

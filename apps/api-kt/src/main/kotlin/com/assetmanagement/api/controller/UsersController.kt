@@ -7,6 +7,7 @@ import com.assetmanagement.api.repository.RoleRepository
 import com.assetmanagement.api.repository.UserRepository
 import com.assetmanagement.api.repository.UserRoleRepository
 import com.assetmanagement.api.service.*
+import com.assetmanagement.api.util.PasswordValidator
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
@@ -57,7 +58,7 @@ class UsersController(
     fun create(@Valid @RequestBody request: CreateUserRequest): ResponseEntity<Any> {
         if (userRepository.existsByUsername(request.username)) return ResponseEntity.status(409).body(mapOf("error" to "Username is already taken."))
         if (userRepository.existsByEmail(request.email)) return ResponseEntity.status(409).body(mapOf("error" to "Email is already in use."))
-        if (request.password.length < 8) return ResponseEntity.badRequest().body(mapOf("error" to "Password must be at least 8 characters."))
+        PasswordValidator.validate(request.password)?.let { return ResponseEntity.badRequest().body(mapOf("error" to it)) }
         val role = roleRepository.findByName(request.role) ?: return ResponseEntity.badRequest().body(mapOf("error" to "Role '${request.role}' not found."))
 
         val user = User(username = request.username, displayName = request.displayName, email = request.email,
@@ -108,6 +109,7 @@ class UsersController(
                 userRoleRepository.deleteByUserIdAndRoleId(user.id, currentRole.roleId)
             }
             userRoleRepository.save(UserRole(userId = user.id, roleId = newRole.id))
+            user.tokenInvalidatedAt = Instant.now()
         }
         userRepository.save(user)
 
@@ -126,8 +128,9 @@ class UsersController(
         val user = userRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         if (user.authProvider != "LOCAL")
             return ResponseEntity.badRequest().body(mapOf("error" to "Cannot reset password for SSO users."))
-        if (request.newPassword.length < 8) return ResponseEntity.badRequest().body(mapOf("error" to "Password must be at least 8 characters."))
+        PasswordValidator.validate(request.newPassword)?.let { return ResponseEntity.badRequest().body(mapOf("error" to it)) }
         user.passwordHash = passwordEncoder.encode(request.newPassword); user.updatedAt = Instant.now()
+        user.tokenInvalidatedAt = Instant.now()
         userRepository.save(user)
         auditService.log(AuditEntry("PasswordReset", "User", user.id.toString(), user.displayName,
             "Password reset by admin", currentUserService.userId, currentUserService.userName))

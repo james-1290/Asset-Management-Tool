@@ -28,11 +28,13 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.time.format.DateTimeFormatter
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/assets")
+@PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class AssetsController(
     private val assetRepository: AssetRepository,
     private val assetTypeRepository: AssetTypeRepository,
@@ -51,6 +53,7 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     // 1. GET / — Paged list with search, status filter, includeStatuses, sorting, typeId
     // ──────────────────────────────────────────────────────────────────────────
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
@@ -101,6 +104,7 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     // 2. GET /export — CSV export with same filters + optional ids param
     // ──────────────────────────────────────────────────────────────────────────
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/export")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
@@ -199,6 +203,7 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     // 3. GET /{id} — Get by ID with custom field values
     // ──────────────────────────────────────────────────────────────────────────
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<Any> {
         val asset = assetRepository.findById(id).orElse(null)
@@ -524,6 +529,7 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     // 6. GET /{id}/history — History timeline with changes
     // ──────────────────────────────────────────────────────────────────────────
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/history")
     fun getHistory(
         @PathVariable id: UUID,
