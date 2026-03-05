@@ -182,6 +182,14 @@ class SlackService(
     }
 
     private fun postToSlack(webhookUrl: String, payload: String) {
+        // Validate webhook URL to prevent SSRF — only allow Slack domains
+        val url = try { java.net.URI(webhookUrl) } catch (e: Exception) {
+            throw IllegalArgumentException("Invalid webhook URL")
+        }
+        if (url.host?.endsWith("hooks.slack.com") != true && url.host?.endsWith("slack.com") != true) {
+            throw IllegalArgumentException("Webhook URL must be a Slack domain (hooks.slack.com)")
+        }
+
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_JSON
         val entity = HttpEntity(payload, headers)

@@ -8,6 +8,7 @@ import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import java.net.URI
@@ -16,6 +17,7 @@ import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/asset-templates")
+@PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class AssetTemplatesController(
     private val assetTemplateRepository: AssetTemplateRepository,
     private val assetTypeRepository: AssetTypeRepository,
@@ -27,6 +29,7 @@ class AssetTemplatesController(
 ) {
 
     // GET / — List all (optionally filter by assetTypeId)
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     fun getAll(@RequestParam(required = false) assetTypeId: UUID?): ResponseEntity<List<AssetTemplateDto>> {
         val templates = if (assetTypeId != null) {
@@ -44,6 +47,7 @@ class AssetTemplatesController(
     }
 
     // GET /{id} — Get by ID with custom field values
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<Any> {
         val template = assetTemplateRepository.findById(id).orElse(null)

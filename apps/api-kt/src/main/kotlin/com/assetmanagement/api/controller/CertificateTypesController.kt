@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
 import java.time.Instant
@@ -28,6 +29,7 @@ import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/certificatetypes")
+@PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class CertificateTypesController(
     private val certificateTypeRepository: CertificateTypeRepository,
     private val certificateRepository: CertificateRepository,
@@ -37,6 +39,7 @@ class CertificateTypesController(
     private val currentUserService: CurrentUserService
 ) {
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int, @RequestParam(defaultValue = "25") pageSize: Int,
@@ -56,12 +59,14 @@ class CertificateTypesController(
         return ResponseEntity.ok(PagedResponse(result.content.map { it.toDto() }, p, ps, result.totalElements))
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<CertificateTypeDto> {
         val type = certificateTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(type.toDto())
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/customfields")
     fun getCustomFields(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!certificateTypeRepository.existsById(id)) return ResponseEntity.notFound().build()

@@ -43,7 +43,7 @@ export function ApplicationCard({ application, onEdit, onArchive }: ApplicationC
         )}
         {expiryFormatted && (
           <div className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
+            <Calendar className="h-3.5 w-3.5" />
             <span>Expires {expiryFormatted}</span>
           </div>
         )}

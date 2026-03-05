@@ -15,6 +15,7 @@ import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
@@ -24,6 +25,7 @@ import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/asset-models")
+@PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class AssetModelsController(
     private val assetModelRepository: AssetModelRepository,
     private val assetTypeRepository: AssetTypeRepository,
@@ -45,6 +47,7 @@ class AssetModelsController(
     // ──────────────────────────────────────────────────────────────────────────
     // GET / — Paged list with search + assetTypeId filter
     // ──────────────────────────────────────────────────────────────────────────
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
@@ -106,6 +109,7 @@ class AssetModelsController(
     // ──────────────────────────────────────────────────────────────────────────
     // GET /{id}
     // ──────────────────────────────────────────────────────────────────────────
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<Any> {
         val model = assetModelRepository.findById(id).orElse(null)
@@ -288,6 +292,7 @@ class AssetModelsController(
     // ──────────────────────────────────────────────────────────────────────────
     // GET /{id}/image — Serve image with correct MIME type
     // ──────────────────────────────────────────────────────────────────────────
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/image")
     fun getImage(@PathVariable id: UUID): ResponseEntity<InputStreamResource> {
         val model = assetModelRepository.findById(id).orElse(null)

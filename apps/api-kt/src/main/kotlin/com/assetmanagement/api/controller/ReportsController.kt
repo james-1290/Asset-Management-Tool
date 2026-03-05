@@ -20,9 +20,11 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.*
+import org.springframework.security.access.prepost.PreAuthorize
 
 @RestController
 @RequestMapping("/api/v1/reports")
+@PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class ReportsController(
     private val em: EntityManager
 ) {
@@ -133,6 +135,7 @@ class ReportsController(
     // ========================================================================
     // 1. GET /asset-summary
     // ========================================================================
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/asset-summary")
     fun assetSummary(
         @RequestParam(required = false) format: String?
@@ -174,6 +177,7 @@ class ReportsController(
     // ========================================================================
     // 2. GET /expiries?days=30
     // ========================================================================
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/expiries")
     fun expiries(
         @RequestParam(required = false) days: Int?,
@@ -281,6 +285,7 @@ class ReportsController(
     // ========================================================================
     // 3. GET /licence-summary
     // ========================================================================
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/licence-summary")
     fun licenceSummary(
         @RequestParam(required = false) from: String?,
@@ -377,6 +382,7 @@ class ReportsController(
     // ========================================================================
     // 4. GET /assignments
     // ========================================================================
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/assignments")
     fun assignments(
         @RequestParam(required = false) format: String?
@@ -441,6 +447,7 @@ class ReportsController(
     // ========================================================================
     // 5. GET /asset-lifecycle
     // ========================================================================
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/asset-lifecycle")
     fun assetLifecycle(
         @RequestParam(required = false) from: String?,
@@ -561,6 +568,7 @@ class ReportsController(
     // ========================================================================
     // 6. GET /depreciation
     // ========================================================================
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/depreciation")
     fun depreciation(
         @RequestParam(required = false) assetTypeId: UUID?,

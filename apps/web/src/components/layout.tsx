@@ -22,9 +22,9 @@ export function Layout() {
           </div>
           <div className="flex items-center gap-1">
             <NotificationsBell />
-            <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
               <Link to="/settings">
-                <Settings className="h-5 w-5 text-muted-foreground" />
+                <Settings className="h-4 w-4" />
               </Link>
             </Button>
             <div className="h-8 w-px bg-border mx-2" />

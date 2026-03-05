@@ -53,7 +53,7 @@ class SamlAuthSuccessHandler(
             "http://schemas.microsoft.com/identity/claims/displayname"
         ) ?: email.substringBefore("@")
 
-        log.info("SAML login: externalId={}, email={}, displayName={}", externalId, email, displayName)
+        log.info("SAML login: externalId={}", externalId)
 
         val user = findOrCreateUser(externalId, email, displayName)
 
@@ -67,7 +67,8 @@ class SamlAuthSuccessHandler(
         val jwt = tokenService.generateToken(user, roles)
 
         val encodedToken = URLEncoder.encode(jwt, StandardCharsets.UTF_8)
-        response.sendRedirect("$frontendOrigin/login?token=$encodedToken&sso=1")
+        // Use fragment (#) instead of query param (?) to prevent token from appearing in server logs and referrer headers
+        response.sendRedirect("$frontendOrigin/login#token=$encodedToken&sso=1")
     }
 
     private fun findOrCreateUser(externalId: String, email: String, displayName: String): User {
@@ -76,17 +77,18 @@ class SamlAuthSuccessHandler(
             return updateIfNeeded(user, email, displayName)
         }
 
-        // 2. Try by email — only auto-link if user is already SSO-provisioned (SAML/SCIM)
-        //    Local users are NOT silently linked to prevent account takeover
+        // 2. Try by email — only auto-link if user is SCIM-provisioned (pre-provisioned via identity provider)
+        //    Local users and existing SAML users are NOT silently linked to prevent account takeover
         if (email.isNotBlank()) {
             userRepository.findByEmail(email)?.let { user ->
-                if (user.authProvider == "SAML" || user.authProvider == "SCIM") {
+                if (user.authProvider == "SCIM") {
                     user.externalId = externalId
+                    user.authProvider = "SAML"
                     user.displayName = displayName
                     user.updatedAt = Instant.now()
                     return userRepository.save(user)
                 }
-                log.warn("SAML login: email {} matches local user {}, refusing auto-link", email, user.id)
+                log.warn("SAML login: email matches existing user {}, refusing auto-link (authProvider={})", user.id, user.authProvider)
             }
         }
 
@@ -107,7 +109,7 @@ class SamlAuthSuccessHandler(
             userRoleRepository.save(UserRole(userId = user.id, roleId = role.id))
         }
 
-        log.info("JIT provisioned SAML user: id={}, email={}", user.id, email)
+        log.info("JIT provisioned SAML user: id={}", user.id)
         return user
     }
 

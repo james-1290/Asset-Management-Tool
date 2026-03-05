@@ -52,7 +52,7 @@ function entityTypeBadge(type: string): { label: string; className: string } {
     case "licence":
       return { label: "Licence", className: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300" };
     default:
-      return { label: type, className: "bg-gray-100 text-gray-700" };
+      return { label: type, className: "bg-muted text-muted-foreground" };
   }
 }
 

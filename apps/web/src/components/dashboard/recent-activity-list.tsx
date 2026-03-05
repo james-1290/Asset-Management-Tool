@@ -106,7 +106,7 @@ export function RecentActivityList({
           <div className="space-y-5">
             {items.map((entry) => {
               const actionLabel = ACTION_LABELS[entry.action] ?? entry.action.toLowerCase();
-              const dotColor = DOT_COLORS[entry.action] ?? "text-gray-400";
+              const dotColor = DOT_COLORS[entry.action] ?? "text-muted-foreground";
 
               return (
                 <div key={entry.id} className="flex gap-3">

@@ -15,6 +15,7 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.interfaces.RSAPrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
+import org.slf4j.LoggerFactory
 import java.util.Base64
 
 @Configuration
@@ -29,8 +30,14 @@ class SamlConfig(
     private val resourceLoader: ResourceLoader
 ) {
 
+    private val log = LoggerFactory.getLogger(SamlConfig::class.java)
+
     @Bean
     fun relyingPartyRegistrationRepository(): RelyingPartyRegistrationRepository {
+        if (!metadataUrl.startsWith("https://") && !metadataUrl.startsWith("classpath:")) {
+            log.warn("SECURITY: SAML metadata URL is not HTTPS: {}. Use HTTPS in production to prevent MITM attacks.", metadataUrl)
+        }
+
         val signingKey = loadPrivateKey(signingKeyLocation)
         val signingCert = loadCertificate(signingCertLocation)
         val signingCredential = Saml2X509Credential.signing(signingKey, signingCert)

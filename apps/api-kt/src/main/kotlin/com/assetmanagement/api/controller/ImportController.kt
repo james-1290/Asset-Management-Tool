@@ -43,6 +43,7 @@ class ImportController(
 ) {
 
     companion object {
+        private const val MAX_IMPORT_ROWS = 10000
         private val VALID_ENTITY_TYPES = setOf("locations", "people", "assets", "certificates", "applications")
 
         private val LOCATION_HEADERS = arrayOf("Name", "Address", "City", "Country")
@@ -123,6 +124,10 @@ class ImportController(
         val headers = allRows[0].map { it.trim() }
         val dataRows = allRows.drop(1)
 
+        if (dataRows.size > MAX_IMPORT_ROWS) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "CSV exceeds maximum of $MAX_IMPORT_ROWS rows"))
+        }
+
         val rows = dataRows.mapIndexed { index, row ->
             val data = mutableMapOf<String, String?>()
             headers.forEachIndexed { colIndex, header ->
@@ -184,6 +189,10 @@ class ImportController(
 
         val headers = allRows[0].map { it.trim() }
         val dataRows = allRows.drop(1)
+
+        if (dataRows.size > MAX_IMPORT_ROWS) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "CSV exceeds maximum of $MAX_IMPORT_ROWS rows"))
+        }
 
         var imported = 0
         var skipped = 0

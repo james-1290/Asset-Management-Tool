@@ -19,6 +19,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.transaction.annotation.Transactional
@@ -28,6 +29,7 @@ import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/assettypes")
+@PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class AssetTypesController(
     private val assetTypeRepository: AssetTypeRepository,
     private val assetRepository: AssetRepository,
@@ -37,6 +39,7 @@ class AssetTypesController(
     private val currentUserService: CurrentUserService
 ) {
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int, @RequestParam(defaultValue = "25") pageSize: Int,
@@ -57,12 +60,14 @@ class AssetTypesController(
         return ResponseEntity.ok(PagedResponse(items, p, ps, result.totalElements))
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<AssetTypeDto> {
         val type = assetTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(type.toDto())
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/customfields")
     fun getCustomFields(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!assetTypeRepository.existsById(id)) return ResponseEntity.notFound().build()

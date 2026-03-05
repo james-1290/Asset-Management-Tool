@@ -29,7 +29,7 @@ export function CertificateCard({ certificate, onEdit, onArchive }: CertificateC
         <p>{certificate.certificateTypeName}</p>
         {expiryFormatted && (
           <div className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
+            <Calendar className="h-3.5 w-3.5" />
             <span>Expires {expiryFormatted}</span>
           </div>
         )}

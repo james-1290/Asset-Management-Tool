@@ -7,6 +7,7 @@ import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
 import com.assetmanagement.api.service.StorageService
+import org.apache.tika.Tika
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -16,9 +17,11 @@ import org.springframework.web.multipart.MultipartFile
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.*
+import org.springframework.security.access.prepost.PreAuthorize
 
 @RestController
 @RequestMapping("/api/v1/attachments")
+@PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class AttachmentsController(
     private val attachmentRepository: AttachmentRepository,
     private val assetRepository: AssetRepository,
@@ -80,6 +83,13 @@ class AttachmentsController(
             return ResponseEntity.badRequest().body(mapOf("error" to "File type not allowed"))
         }
 
+        // Content-based MIME type validation using Apache Tika
+        val tika = Tika()
+        val detectedType = tika.detect(file.inputStream)
+        if (detectedType !in ALLOWED_MIME_TYPES) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "File content does not match allowed types"))
+        }
+
         val originalFileName = sanitizeFileName(file.originalFilename ?: "unnamed")
         val extension = originalFileName.substringAfterLast('.', "").lowercase()
         if (extension !in ALLOWED_EXTENSIONS) {
@@ -122,6 +132,7 @@ class AttachmentsController(
         }
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{entityType}/{entityId}")
     fun list(
         @PathVariable entityType: String,
@@ -137,6 +148,7 @@ class AttachmentsController(
         return ResponseEntity.ok(attachments.map { toDto(it) })
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/download")
     fun download(@PathVariable id: UUID): ResponseEntity<InputStreamResource> {
         val attachment = attachmentRepository.findById(id).orElse(null)

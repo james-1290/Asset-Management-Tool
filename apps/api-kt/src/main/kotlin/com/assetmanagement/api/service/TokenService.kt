@@ -21,18 +21,11 @@ class TokenService(
         val now = Date()
         val expiry = Date(now.time + expiryHours * 3600 * 1000)
 
+        // Only include minimal claims — roles are loaded from DB on each request,
+        // and PII (email, displayName) should not be in plaintext JWT tokens
         val claims = mutableMapOf<String, Any>(
-            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier" to user.id.toString(),
-            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" to user.displayName,
-            "unique_name" to user.username,
-            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" to user.email
+            "unique_name" to user.username
         )
-
-        if (roles.size == 1) {
-            claims["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] = roles[0]
-        } else if (roles.size > 1) {
-            claims["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] = roles
-        }
 
         return Jwts.builder()
             .subject(user.id.toString())

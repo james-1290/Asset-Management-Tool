@@ -20,6 +20,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
@@ -33,6 +34,7 @@ import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/applications")
+@PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class ApplicationsController(
     private val applicationRepository: ApplicationRepository,
     private val applicationTypeRepository: ApplicationTypeRepository,
@@ -50,6 +52,7 @@ class ApplicationsController(
 
     // ── GET / ── Paged list ─────────────────────────────────────────────
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
@@ -93,6 +96,7 @@ class ApplicationsController(
 
     // ── GET /export ── CSV export ───────────────────────────────────────
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/export")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
@@ -156,6 +160,7 @@ class ApplicationsController(
 
     // ── GET /{id} ── Get by ID ──────────────────────────────────────────
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<Any> {
         val app = applicationRepository.findById(id).orElse(null)
@@ -467,6 +472,7 @@ class ApplicationsController(
 
     // ── GET /{id}/history ── History timeline ────────────────────────────
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/history")
     fun getHistory(
         @PathVariable id: UUID,

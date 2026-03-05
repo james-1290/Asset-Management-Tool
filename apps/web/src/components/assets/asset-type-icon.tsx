@@ -38,8 +38,8 @@ const TYPE_ICON_MAP: Record<string, { icon: LucideIcon; bg: string; fg: string }
   storage: { icon: HardDrive, bg: "bg-orange-50 dark:bg-orange-900/20", fg: "text-orange-600 dark:text-orange-400" },
   drive: { icon: HardDrive, bg: "bg-orange-50 dark:bg-orange-900/20", fg: "text-orange-600 dark:text-orange-400" },
   processor: { icon: Cpu, bg: "bg-indigo-50 dark:bg-indigo-900/20", fg: "text-indigo-600 dark:text-indigo-400" },
-  cable: { icon: Cable, bg: "bg-gray-50 dark:bg-gray-800", fg: "text-gray-600 dark:text-gray-400" },
-  accessory: { icon: MonitorSmartphone, bg: "bg-gray-50 dark:bg-gray-800", fg: "text-gray-600 dark:text-gray-400" },
+  cable: { icon: Cable, bg: "bg-gray-50 dark:bg-gray-800", fg: "text-muted-foreground" },
+  accessory: { icon: MonitorSmartphone, bg: "bg-gray-50 dark:bg-gray-800", fg: "text-muted-foreground" },
 };
 
 function matchType(typeName: string) {
