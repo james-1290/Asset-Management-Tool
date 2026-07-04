@@ -47,7 +47,7 @@ export const dashboardApi = {
   async getRecentActivity(limit: number = 10): Promise<AuditLogEntry[]> {
     // Fetch extra items to compensate for filtering, then trim to requested limit
     const result = await apiClient.get<{ items: AuditLogEntry[] }>(
-      `/auditlogs?page=1&pageSize=${limit * 3}&sortBy=timestamp&sortDir=desc`
+      `/audit-logs?page=1&pageSize=${limit * 3}&sortBy=timestamp&sortDir=desc`
     );
     // Exclude user/auth events (logins, password changes, user updates) from dashboard activity
     const EXCLUDED_ENTITY_TYPES = new Set(["User"]);

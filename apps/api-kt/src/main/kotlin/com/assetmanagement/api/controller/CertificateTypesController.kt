@@ -28,7 +28,7 @@ import java.time.Instant
 import java.util.*
 
 @RestController
-@RequestMapping("/api/v1/certificatetypes")
+@RequestMapping(value = ["/api/v1/certificate-types", "/api/v1/certificatetypes"]) // legacy concatenated path kept as an alias
 @PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class CertificateTypesController(
     private val certificateTypeRepository: CertificateTypeRepository,

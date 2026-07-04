@@ -18,35 +18,35 @@ export interface CertificateTypeQueryParams {
 export const certificateTypesApi = {
   getAll(): Promise<CertificateType[]> {
     return apiClient
-      .get<PagedResponse<CertificateType>>("/certificatetypes", { pageSize: 1000 })
+      .get<PagedResponse<CertificateType>>("/certificate-types", { pageSize: 1000 })
       .then((r) => r.items);
   },
 
   getPaged(params: CertificateTypeQueryParams): Promise<PagedResponse<CertificateType>> {
-    return apiClient.get<PagedResponse<CertificateType>>("/certificatetypes", params as Record<string, string | number | undefined>);
+    return apiClient.get<PagedResponse<CertificateType>>("/certificate-types", params as Record<string, string | number | undefined>);
   },
 
   getById(id: string): Promise<CertificateType> {
-    return apiClient.get<CertificateType>(`/certificatetypes/${id}`);
+    return apiClient.get<CertificateType>(`/certificate-types/${id}`);
   },
 
   create(data: CreateCertificateTypeRequest): Promise<CertificateType> {
-    return apiClient.post<CertificateType>("/certificatetypes", data);
+    return apiClient.post<CertificateType>("/certificate-types", data);
   },
 
   update(id: string, data: UpdateCertificateTypeRequest): Promise<CertificateType> {
-    return apiClient.put<CertificateType>(`/certificatetypes/${id}`, data);
+    return apiClient.put<CertificateType>(`/certificate-types/${id}`, data);
   },
 
   archive(id: string): Promise<void> {
-    return apiClient.delete(`/certificatetypes/${id}`);
+    return apiClient.delete(`/certificate-types/${id}`);
   },
 
   bulkArchive(ids: string[]): Promise<{ succeeded: number; failed: number }> {
-    return apiClient.post("/certificatetypes/bulk-archive", { ids });
+    return apiClient.post("/certificate-types/bulk-archive", { ids });
   },
 
   getCustomFields(certificateTypeId: string): Promise<CustomFieldDefinition[]> {
-    return apiClient.get<CustomFieldDefinition[]>(`/certificatetypes/${certificateTypeId}/customfields`);
+    return apiClient.get<CustomFieldDefinition[]>(`/certificate-types/${certificateTypeId}/customfields`);
   },
 };
