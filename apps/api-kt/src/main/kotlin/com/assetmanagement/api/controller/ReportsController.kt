@@ -3,6 +3,7 @@ package com.assetmanagement.api.controller
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.enums.AssetStatus
 import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.DepreciationCalculator
 import com.assetmanagement.api.model.enums.ApplicationStatus
 import com.assetmanagement.api.model.enums.CertificateStatus
 import com.opencsv.CSVWriter
@@ -633,15 +634,9 @@ class ReportsController(
             val remainingUsefulLifeMonths: Int?
 
             if (depMonths != null && depMonths > 0) {
-                val monthly = cost.divide(BigDecimal(depMonths), 4, RoundingMode.HALF_UP)
-                val elapsedDays = ChronoUnit.DAYS.between(purchaseDate, now)
-                val elapsedMonths = BigDecimal(elapsedDays)
-                    .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong()
-                    .coerceIn(0, depMonths.toLong())
-                accumulatedDepreciation = (monthly * BigDecimal(elapsedMonths))
-                    .setScale(2, RoundingMode.HALF_UP)
-                    .coerceAtMost(cost)
-                currentBookValue = (cost - accumulatedDepreciation).coerceAtLeast(BigDecimal.ZERO)
+                val dep = DepreciationCalculator.compute(cost, depMonths, purchaseDate, now)
+                accumulatedDepreciation = dep.total ?: BigDecimal.ZERO
+                currentBookValue = dep.bookValue ?: cost
                 val totalElapsedMonths = BigDecimal(ChronoUnit.DAYS.between(purchaseDate, now))
                     .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong()
                 remainingUsefulLifeMonths = (depMonths - totalElapsedMonths).coerceAtLeast(0).toInt()

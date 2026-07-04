@@ -3,6 +3,7 @@ package com.assetmanagement.api.controller
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Asset
 import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.DepreciationCalculator
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
@@ -162,24 +163,9 @@ class AssetsController(
         ))
         val now = Instant.now()
         assets.forEach { a ->
-            var csvBookValue = ""
-            var csvTotalDepr = ""
-            val cost = a.purchaseCost
-            val months = a.depreciationMonths
-            val pDate = a.purchaseDate
-            if (cost != null && months != null && months > 0) {
-                if (pDate != null) {
-                    val monthly = cost.divide(BigDecimal(months), 2, RoundingMode.HALF_UP)
-                    val elapsed = ChronoUnit.DAYS.between(pDate, now).toBigDecimal()
-                        .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong().coerceIn(0, months.toLong())
-                    val totalDepr = (monthly * BigDecimal(elapsed)).setScale(2, RoundingMode.HALF_UP)
-                    csvTotalDepr = String.format("%.2f", totalDepr)
-                    csvBookValue = String.format("%.2f", (cost - totalDepr).coerceAtLeast(BigDecimal.ZERO))
-                } else {
-                    csvTotalDepr = "0.00"
-                    csvBookValue = String.format("%.2f", cost)
-                }
-            }
+            val dep = DepreciationCalculator.compute(a.purchaseCost, a.depreciationMonths, a.purchaseDate, now)
+            val csvBookValue = dep.bookValue?.let { String.format("%.2f", it) } ?: ""
+            val csvTotalDepr = dep.total?.let { String.format("%.2f", it) } ?: ""
             writer.writeNext(CsvUtils.sanitizeRow(arrayOf(
                 a.name,
                 a.status.name,
@@ -1347,29 +1333,12 @@ class AssetsController(
                 )
             }
 
-        // Compute depreciation fields
-        var bookValue: BigDecimal? = null
-        var totalDepreciation: BigDecimal? = null
-        var monthlyDepreciation: BigDecimal? = null
-
-        val cost = asset.purchaseCost
-        val months = asset.depreciationMonths
-        val purchaseDate = asset.purchaseDate
-
-        if (cost != null && months != null && months > 0) {
-            monthlyDepreciation = cost.divide(BigDecimal(months), 2, RoundingMode.HALF_UP)
-            if (purchaseDate != null) {
-                val elapsedMonths = ChronoUnit.DAYS.between(purchaseDate, Instant.now()).toBigDecimal()
-                    .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong()
-                val cappedMonths = elapsedMonths.coerceIn(0, months.toLong())
-                totalDepreciation = (monthlyDepreciation * BigDecimal(cappedMonths)).setScale(2, RoundingMode.HALF_UP)
-                bookValue = (cost - totalDepreciation).coerceAtLeast(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP)
-            } else {
-                // No purchase date: no depreciation has occurred yet
-                totalDepreciation = BigDecimal.ZERO.setScale(2)
-                bookValue = cost.setScale(2, RoundingMode.HALF_UP)
-            }
-        }
+        // Compute depreciation fields (shared calculator keeps this consistent
+        // with the depreciation report and dashboard)
+        val dep = DepreciationCalculator.compute(asset.purchaseCost, asset.depreciationMonths, asset.purchaseDate)
+        val monthlyDepreciation = dep.monthly
+        val totalDepreciation = dep.total
+        val bookValue = dep.bookValue
 
         return AssetDto(
             id = asset.id,
