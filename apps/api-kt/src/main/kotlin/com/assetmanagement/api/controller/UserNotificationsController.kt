@@ -39,11 +39,13 @@ class UserNotificationsController(
             }
             cb.and(*predicates.toTypedArray())
         }
-        val pageable = PageRequest.of((page - 1).coerceAtLeast(0), pageSize, Sort.by(Sort.Direction.DESC, "createdAt"))
+        val safePage = page.coerceAtLeast(1)
+        val safePageSize = pageSize.coerceIn(1, 100)
+        val pageable = PageRequest.of(safePage - 1, safePageSize, Sort.by(Sort.Direction.DESC, "createdAt"))
         val result = userNotificationRepository.findAll(spec, pageable)
         return ResponseEntity.ok(PagedResponse(
             items = result.content.map { it.toDto() },
-            page = page, pageSize = pageSize, totalCount = result.totalElements
+            page = safePage, pageSize = safePageSize, totalCount = result.totalElements
         ))
     }
 

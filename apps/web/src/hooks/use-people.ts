@@ -117,6 +117,10 @@ export function useUpdatePerson() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: personKeys.all });
       queryClient.invalidateQueries({ queryKey: personKeys.detail(variables.id) });
+      // assignedPersonName is denormalised onto assets/certificates/applications.
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });

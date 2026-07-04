@@ -73,6 +73,11 @@ export function useUpdateLocation() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: locationKeys.all });
       queryClient.invalidateQueries({ queryKey: locationKeys.detail(variables.id) });
+      // Entities embed a denormalised locationName; refresh them after a rename.
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: ["people"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });

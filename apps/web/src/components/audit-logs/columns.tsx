@@ -80,7 +80,7 @@ export const auditLogColumns: ColumnDef<AuditLogEntry, unknown>[] = [
     accessorKey: "actorName",
     header: "Actor",
     cell: ({ row }) => {
-      const name = row.getValue("actorName") as string;
+      const name = (row.getValue("actorName") as string | null) ?? "System";
       const initials = getInitials(name);
       return (
         <div className="flex items-center gap-2 whitespace-nowrap">

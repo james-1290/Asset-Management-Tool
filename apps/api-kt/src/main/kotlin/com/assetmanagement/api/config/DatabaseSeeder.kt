@@ -54,9 +54,17 @@ class DatabaseSeeder(
             }
         }
 
+        // Seed Operator role — referenced by @PreAuthorize on the business controllers
+        // (hasAnyRole('Admin','Operator')) but was never created, so it could not be
+        // assigned to anyone. Without it, only Admins can perform writes.
+        if (roleRepository.findByName("Operator") == null) {
+            roleRepository.save(Role(name = "Operator", description = "Can create and edit records"))
+            log.info("Seeded Operator role")
+        }
+
         // Seed User role
         if (roleRepository.findByName("User") == null) {
-            roleRepository.save(Role(name = "User", description = "Standard user"))
+            roleRepository.save(Role(name = "User", description = "Read-only access"))
             log.info("Seeded User role")
         }
     }

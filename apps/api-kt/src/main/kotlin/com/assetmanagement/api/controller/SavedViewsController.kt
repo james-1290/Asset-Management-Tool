@@ -65,7 +65,7 @@ class SavedViewsController(
             .filter { it.isDefault && it.id != id }
             .forEach { it.isDefault = false; it.updatedAt = Instant.now(); savedViewRepository.save(it) }
 
-        view.isDefault = !view.isDefault; view.updatedAt = Instant.now()
+        view.isDefault = true; view.updatedAt = Instant.now()
         savedViewRepository.save(view)
         return ResponseEntity.ok(view.toDto())
     }
