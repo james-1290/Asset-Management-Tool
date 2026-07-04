@@ -14,7 +14,8 @@ data class PersonDto(
     val locationName: String?,
     val isArchived: Boolean,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
+    val entityVersion: Long
 )
 
 data class CreatePersonRequest(
@@ -27,6 +28,7 @@ data class CreatePersonRequest(
 )
 
 data class UpdatePersonRequest(
+    val entityVersion: Long? = null,
     val fullName: String,
     val email: String? = null,
     val department: String? = null,

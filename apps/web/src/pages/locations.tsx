@@ -245,7 +245,7 @@ export default function LocationsPage() {
 
     if (editingLocation) {
       updateMutation.mutate(
-        { id: editingLocation.id, data },
+        { id: editingLocation.id, data: { ...data, entityVersion: editingLocation.entityVersion } },
         {
           onSuccess: () => {
             toast.success("Location updated");

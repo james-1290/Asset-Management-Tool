@@ -4,6 +4,7 @@ import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Location
 import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.util.SqlUtils
+import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.repository.ApplicationRepository
 import com.assetmanagement.api.repository.AssetRepository
 import com.assetmanagement.api.repository.CertificateRepository
@@ -162,6 +163,7 @@ class LocationsController(
     @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateLocationRequest): ResponseEntity<Any> {
         val location = locationRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+        versionConflict(request.entityVersion, location.entityVersion)?.let { return it }
 
         // Track field changes before applying
         val changes = mutableListOf<AuditChange>()
@@ -374,5 +376,5 @@ class LocationsController(
         return ResponseEntity.ok(results)
     }
 
-    private fun Location.toDto() = LocationDto(id, name, address, city, country, isArchived, createdAt, updatedAt)
+    private fun Location.toDto() = LocationDto(id, name, address, city, country, isArchived, createdAt, updatedAt, entityVersion)
 }

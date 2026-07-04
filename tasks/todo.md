@@ -8,7 +8,7 @@ Prioritised backlog from a whole-codebase review (8 parallel area reviews coveri
 source file). Items marked `[~]` are being worked this session.
 
 ### A. Correctness bugs (small, high-value)
-- [ ] List-page edits rebuild the full PUT payload from cached (stale) row data → silent lost-update; send only dirty fields or seed dialog from a fresh fetch (assets/certificates/applications/people pages)
+- [x] Lost-update fixed via optimistic locking: a stale edit now gets a 409 ("modified by another user") instead of silently overwriting newer data (PR #143)
 - [x] Renaming a location/type/model/person leaves the old denormalised name in asset/cert/app lists — added cross-entity cache invalidation (PR #129)
 - [x] `—` rendered as literal text in empty asset table cells (PR #129)
 - [x] Applications licence-type filter values don't match the enum → filter matched nothing (PR #129)
@@ -28,7 +28,7 @@ source file). Items marked `[~]` are being worked this session.
 - [x] Reports: licence-summary now applies the computed-status correction (Active-but-expired/near → Expired/PendingRenewal), matching the dashboard/list views (PR #139)
 - [x] Duplicate alerts: per-run seen-set assigns each item to its smallest matching threshold (PR #138)
 - [ ] `updatedAt` never auto-managed — add @UpdateTimestamp/@CreationTimestamp via a @MappedSuperclass audit base
-- [ ] Optimistic locking inert — accept a client version/ETag on PUT so the 409 path can fire
+- [x] Optimistic locking now live: read DTOs expose entityVersion, updates send it, controllers reject a mismatched version with 409 (Asset/Certificate/Application/Person/Location) (PR #143)
 - [ ] Timezone/date-only hazard end-to-end — store date-only fields as DATE/LocalDate; centralise date formatting; fix truncating daysUntilExpiry
 - [x] Unique constraints added (V015, PR #142): custom_field_values(definition,entity), roles/permissions/*_types name, asset_models(type,name); migration disambiguates pre-existing duplicates first. Duplicates now return 409.
 - [ ] N+1 on list endpoints (DTOs flatten related names off LAZY relations) — use fetch-joins/projections

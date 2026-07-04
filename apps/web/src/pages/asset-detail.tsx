@@ -172,7 +172,7 @@ export default function AssetDetailPage() {
     };
 
     updateMutation.mutate(
-      { id: asset.id, data },
+      { id: asset.id, data: { ...data, entityVersion: asset.entityVersion } },
       {
         onSuccess: () => {
           toast.success("Asset updated");

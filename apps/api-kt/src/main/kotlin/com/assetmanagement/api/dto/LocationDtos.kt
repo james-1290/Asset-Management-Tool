@@ -12,7 +12,8 @@ data class LocationDto(
     val country: String?,
     val isArchived: Boolean,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
+    val entityVersion: Long
 )
 
 data class CreateLocationRequest(
@@ -24,6 +25,7 @@ data class CreateLocationRequest(
 )
 
 data class UpdateLocationRequest(
+    val entityVersion: Long? = null,
     val name: String,
     val address: String? = null,
     val city: String? = null,

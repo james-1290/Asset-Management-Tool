@@ -38,6 +38,7 @@ export interface Asset {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+  entityVersion: number;
   customFieldValues: CustomFieldValueDto[];
 }
 
@@ -87,6 +88,7 @@ export interface BulkEditAssetsRequest {
 }
 
 export interface UpdateAssetRequest {
+  entityVersion?: number;
   name: string;
   serialNumber: string;
   status?: string | null;

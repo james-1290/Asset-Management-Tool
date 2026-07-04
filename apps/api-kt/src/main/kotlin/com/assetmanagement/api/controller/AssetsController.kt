@@ -4,6 +4,7 @@ import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Asset
 import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.util.SqlUtils
+import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.AssetStatus
 import com.assetmanagement.api.repository.*
@@ -322,6 +323,8 @@ class AssetsController(
     fun update(@PathVariable id: UUID, @Valid @RequestBody request: UpdateAssetRequest): ResponseEntity<Any> {
         val asset = assetRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
+
+        versionConflict(request.entityVersion, asset.entityVersion)?.let { return it }
 
         // Validate required fields
         if (request.name.isBlank())
@@ -1397,6 +1400,7 @@ class AssetsController(
             isArchived = asset.isArchived,
             createdAt = asset.createdAt,
             updatedAt = asset.updatedAt,
+            entityVersion = asset.entityVersion,
             customFieldValues = cfvDtos
         )
     }

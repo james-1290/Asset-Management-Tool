@@ -95,7 +95,7 @@ export default function PersonDetailPage() {
     };
 
     updateMutation.mutate(
-      { id: person.id, data },
+      { id: person.id, data: { ...data, entityVersion: person.entityVersion } },
       {
         onSuccess: () => {
           toast.success("Person updated");

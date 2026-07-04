@@ -9,6 +9,7 @@ export interface Person {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+  entityVersion: number;
 }
 
 export interface CreatePersonRequest {
@@ -20,6 +21,7 @@ export interface CreatePersonRequest {
 }
 
 export interface UpdatePersonRequest {
+  entityVersion?: number;
   fullName: string;
   email?: string | null;
   department?: string | null;

@@ -53,6 +53,7 @@ export interface Application {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+  entityVersion: number;
   customFieldValues: CustomFieldValueDto[];
 }
 
@@ -78,6 +79,7 @@ export interface CreateApplicationRequest {
 }
 
 export interface UpdateApplicationRequest {
+  entityVersion?: number;
   name: string;
   applicationTypeId: string;
   publisher?: string | null;

@@ -289,7 +289,7 @@ export default function ApplicationsPage() {
 
     if (editingApplication) {
       updateMutation.mutate(
-        { id: editingApplication.id, data },
+        { id: editingApplication.id, data: { ...data, entityVersion: editingApplication.entityVersion } },
         {
           onSuccess: () => {
             toast.success("Application updated");

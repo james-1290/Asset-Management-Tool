@@ -144,7 +144,7 @@ export default function CertificateDetailPage() {
     };
 
     updateMutation.mutate(
-      { id: certificate.id, data },
+      { id: certificate.id, data: { ...data, entityVersion: certificate.entityVersion } },
       {
         onSuccess: () => {
           toast.success("Certificate updated");

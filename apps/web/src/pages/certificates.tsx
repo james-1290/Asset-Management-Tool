@@ -383,7 +383,7 @@ export default function CertificatesPage() {
 
     if (editingCertificate) {
       updateMutation.mutate(
-        { id: editingCertificate.id, data },
+        { id: editingCertificate.id, data: { ...data, entityVersion: editingCertificate.entityVersion } },
         {
           onSuccess: () => {
             toast.success("Certificate updated");

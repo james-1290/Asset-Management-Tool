@@ -6,6 +6,7 @@ import com.assetmanagement.api.model.ApplicationSeatAssignment
 import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.util.computeStatus
+import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.ApplicationHistoryEventType
 import com.assetmanagement.api.model.enums.ApplicationStatus
@@ -291,6 +292,8 @@ class ApplicationsController(
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateApplicationRequest): ResponseEntity<Any> {
         val app = applicationRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
+
+        versionConflict(request.entityVersion, app.entityVersion)?.let { return it }
 
         val existingCfvs = loadCustomFieldValues(app.id)
 
@@ -1041,6 +1044,7 @@ class ApplicationsController(
             isArchived = isArchived,
             createdAt = createdAt,
             updatedAt = updatedAt,
+            entityVersion = entityVersion,
             customFieldValues = (cfvs ?: emptyList())
                 .filter { it.customFieldDefinition?.isArchived == false }
                 .map { v ->

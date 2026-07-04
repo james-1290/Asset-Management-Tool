@@ -32,6 +32,7 @@ data class ApplicationDto(
     val isArchived: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val entityVersion: Long,
     val customFieldValues: List<CustomFieldValueDto>
 )
 
@@ -58,6 +59,7 @@ data class CreateApplicationRequest(
 )
 
 data class UpdateApplicationRequest(
+    val entityVersion: Long? = null,
     val name: String,
     val applicationTypeId: UUID,
     val publisher: String? = null,
