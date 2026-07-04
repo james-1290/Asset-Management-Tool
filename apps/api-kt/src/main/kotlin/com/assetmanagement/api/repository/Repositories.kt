@@ -121,8 +121,14 @@ interface CustomFieldDefinitionRepository : JpaRepository<CustomFieldDefinition,
 
 @Repository
 interface CustomFieldValueRepository : JpaRepository<CustomFieldValue, UUID> {
+    // Fetch-join the (LAZY, to-one) definition — list DTOs read its name/type per
+    // value, so batch-loading the values alone would still N+1 on the definition.
+    @Query("SELECT v FROM CustomFieldValue v LEFT JOIN FETCH v.customFieldDefinition WHERE v.entityId = :entityId")
     fun findByEntityId(entityId: UUID): List<CustomFieldValue>
+
+    @Query("SELECT v FROM CustomFieldValue v LEFT JOIN FETCH v.customFieldDefinition WHERE v.entityId IN :entityIds")
     fun findByEntityIdIn(entityIds: List<UUID>): List<CustomFieldValue>
+
     @Modifying
     fun deleteByEntityId(entityId: UUID)
     fun findByCustomFieldDefinitionId(customFieldDefinitionId: UUID): List<CustomFieldValue>

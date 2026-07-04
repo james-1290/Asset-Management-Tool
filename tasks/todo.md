@@ -31,7 +31,7 @@ source file). Items marked `[~]` are being worked this session.
 - [x] Optimistic locking now live: read DTOs expose entityVersion, updates send it, controllers reject a mismatched version with 409 (Asset/Certificate/Application/Person/Location) (PR #143)
 - [ ] Timezone/date-only hazard end-to-end — store date-only fields as DATE/LocalDate; centralise date formatting; fix truncating daysUntilExpiry
 - [x] Unique constraints added (V015, PR #142): custom_field_values(definition,entity), roles/permissions/*_types name, asset_models(type,name); migration disambiguates pre-existing duplicates first. Duplicates now return 409.
-- [ ] N+1 on list endpoints (DTOs flatten related names off LAZY relations) — use fetch-joins/projections
+- [x] N+1 on list endpoints (DTOs flatten related names off LAZY relations) — use fetch-joins/projections — shared count-safe withFetch() Specification on Assets/Certificates/Applications/People list queries + fetch-join on CustomFieldValue loaders; 25-row assets list ~100+ queries → constant 5 (PR #155)
 - [~] Alert-run: processAlerts is now @Transactional so history+notification writes are atomic (PR #138). Full crash-idempotency (claim-before-send, so an email sent then rolled back can't re-send) is a deeper design change, still open.
 
 ### C. Duplication to refactor (highest leverage)

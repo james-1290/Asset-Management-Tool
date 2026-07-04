@@ -5,6 +5,7 @@ import com.assetmanagement.api.model.Application
 import com.assetmanagement.api.model.ApplicationSeatAssignment
 import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.SqlUtils
+import com.assetmanagement.api.util.withFetch
 import com.assetmanagement.api.util.computeStatus
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
@@ -83,6 +84,7 @@ class ApplicationsController(
         }
 
         val spec = buildSpec(search, status, includeStatuses, typeId, expiryFrom, expiryTo, licenceType, costMin, costMax)
+            .and(withFetch("applicationType", "asset", "person", "location"))
         val sort = sortOf(sortBy, sortDir)
         val result = applicationRepository.findAll(spec, PageRequest.of(p - 1, ps, sort))
 

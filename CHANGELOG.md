@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-04 22:50 — Fix N+1 on paged list endpoints (fetch-joins)
+
+- The Assets/Certificates/Applications/People paged list endpoints fired one extra SELECT per row for each denormalised name read off a LAZY `@ManyToOne` (assetType/location/assignedPerson/assetModel, certificateType/asset/person/location, etc.).
+- Added a shared, count-safe `withFetch(...)` Specification (`util/FetchSpecs.kt`) that LEFT JOIN FETCHes the to-one relations only on the data query (skips the `resultType == Long` paging count query), composed into each list spec. All fetched relations are to-one, so pagination stays a real SQL `LIMIT` (no in-memory paging).
+- Also fetch-joined `CustomFieldValue.customFieldDefinition` on the batch value loaders (`findByEntityId`/`findByEntityIdIn`) to remove the secondary per-value N+1.
+- Verified with SQL logging: a 25-row assets list dropped from ~100+ queries to a constant **5** (constant across page sizes); denormalised names, `totalCount` and pagination all still correct. No DB or API-shape change.
+
 ## 2026-07-04 22:35 — CustomFieldValueService (unify 4× value upsert)
 
 - New `CustomFieldValueService.upsert(...)` replaces the four hand-rolled custom-field *value* upserts in Assets, Certificates, Applications and AssetTemplates controllers (create + update = 8 sites).

@@ -4,6 +4,7 @@ import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Person
 import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.SqlUtils
+import com.assetmanagement.api.util.withFetch
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.repository.*
 import com.assetmanagement.api.service.*
@@ -63,7 +64,7 @@ class PeopleController(
     ): ResponseEntity<PagedResponse<PersonDto>> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
-        val spec = buildSpec(search, locationId, department)
+        val spec = buildSpec(search, locationId, department).and(withFetch("location"))
         val sort = sortOf(sortBy, sortDir)
         val result = personRepository.findAll(spec, PageRequest.of(p - 1, ps, sort))
         val items = result.content.map { it.toDto() }

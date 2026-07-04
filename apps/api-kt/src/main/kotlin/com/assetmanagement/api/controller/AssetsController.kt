@@ -5,6 +5,7 @@ import com.assetmanagement.api.model.Asset
 import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.DepreciationCalculator
 import com.assetmanagement.api.util.SqlUtils
+import com.assetmanagement.api.util.withFetch
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.AssetStatus
@@ -92,6 +93,8 @@ class AssetsController(
         val spec = buildFilteredSpec(search, status, includeStatuses, typeId,
             locationId, assignedPersonId, purchaseDateFrom, purchaseDateTo,
             warrantyExpiryFrom, warrantyExpiryTo, costMin, costMax, unassigned, createdAfter)
+            // Fetch the to-one relations the row DTO reads, to avoid an N+1 per row.
+            .and(withFetch("assetType", "location", "assignedPerson", "assetModel"))
         val pageReq = PageRequest.of(p - 1, ps, sortOf(sortBy, sortDir))
         val result = assetRepository.findAll(spec, pageReq)
         val assets = result.content
