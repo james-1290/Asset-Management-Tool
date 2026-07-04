@@ -2,6 +2,7 @@ package com.assetmanagement.api.dto
 
 import jakarta.validation.constraints.NotBlank
 import java.time.Instant
+import java.time.LocalDate
 import java.util.*
 
 data class LocationDto(
@@ -52,14 +53,14 @@ data class LocationCertificateDto(
     val id: UUID,
     val name: String,
     val certificateTypeName: String?,
-    val expiryDate: Instant?
+    val expiryDate: LocalDate?
 )
 
 data class LocationApplicationDto(
     val id: UUID,
     val name: String,
     val applicationTypeName: String?,
-    val expiryDate: Instant?
+    val expiryDate: LocalDate?
 )
 
 data class ReassignAndArchiveRequest(

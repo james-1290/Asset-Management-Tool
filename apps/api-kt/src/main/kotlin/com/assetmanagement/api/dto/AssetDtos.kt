@@ -2,6 +2,7 @@ package com.assetmanagement.api.dto
 
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
 import java.util.*
 
 data class AssetDto(
@@ -16,16 +17,16 @@ data class AssetDto(
     val locationName: String?,
     val assignedPersonId: UUID?,
     val assignedPersonName: String?,
-    val purchaseDate: Instant?,
+    val purchaseDate: LocalDate?,
     val purchaseCost: BigDecimal?,
-    val warrantyExpiryDate: Instant?,
+    val warrantyExpiryDate: LocalDate?,
     val depreciationMonths: Int? = null,
     val bookValue: BigDecimal? = null,
     val totalDepreciation: BigDecimal? = null,
     val monthlyDepreciation: BigDecimal? = null,
-    val soldDate: Instant?,
+    val soldDate: LocalDate?,
     val soldPrice: BigDecimal?,
-    val retiredDate: Instant?,
+    val retiredDate: LocalDate?,
     val notes: String?,
     val assetModelId: UUID?,
     val assetModelName: String?,
@@ -44,9 +45,9 @@ data class CreateAssetRequest(
     val assetTypeId: UUID,
     val locationId: UUID? = null,
     val assignedPersonId: UUID? = null,
-    val purchaseDate: Instant? = null,
+    val purchaseDate: LocalDate? = null,
     val purchaseCost: BigDecimal? = null,
-    val warrantyExpiryDate: Instant? = null,
+    val warrantyExpiryDate: LocalDate? = null,
     val depreciationMonths: Int? = null,
     val notes: String? = null,
     val assetModelId: UUID? = null,
@@ -60,9 +61,9 @@ data class UpdateAssetRequest(
     val assetTypeId: UUID,
     val locationId: UUID? = null,
     val assignedPersonId: UUID? = null,
-    val purchaseDate: Instant? = null,
+    val purchaseDate: LocalDate? = null,
     val purchaseCost: BigDecimal? = null,
-    val warrantyExpiryDate: Instant? = null,
+    val warrantyExpiryDate: LocalDate? = null,
     val depreciationMonths: Int? = null,
     val notes: String? = null,
     val assetModelId: UUID? = null,
@@ -85,7 +86,7 @@ data class RetireAssetRequest(
 
 data class SellAssetRequest(
     val soldPrice: BigDecimal? = null,
-    val soldDate: Instant? = null,
+    val soldDate: LocalDate? = null,
     val notes: String? = null
 )
 

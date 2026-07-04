@@ -1,6 +1,7 @@
 package com.assetmanagement.api.dto
 
 import java.time.Instant
+import java.time.LocalDate
 import java.util.*
 
 data class UserNotificationDto(
@@ -12,7 +13,7 @@ data class UserNotificationDto(
     val title: String,
     val message: String,
     val thresholdDays: Int,
-    val expiryDate: Instant,
+    val expiryDate: LocalDate,
     val isRead: Boolean,
     val readAt: Instant?,
     val isDismissed: Boolean,

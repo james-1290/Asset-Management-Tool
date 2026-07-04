@@ -35,10 +35,10 @@ class Certificate(
     var serialNumber: String? = null,
 
     @Column(name = "issued_date")
-    var issuedDate: Instant? = null,
+    var issuedDate: java.time.LocalDate? = null,
 
     @Column(name = "expiry_date")
-    var expiryDate: Instant? = null,
+    var expiryDate: java.time.LocalDate? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, columnDefinition = "VARCHAR(50)")

@@ -20,6 +20,7 @@ class JacksonConfig {
     fun objectMapper(): ObjectMapper {
         val timeModule = JavaTimeModule().apply {
             addDeserializer(Instant::class.java, FlexibleInstantDeserializer())
+            addDeserializer(LocalDate::class.java, FlexibleLocalDateDeserializer())
         }
         return ObjectMapper().apply {
             registerModule(kotlinModule())
@@ -41,5 +42,22 @@ class FlexibleInstantDeserializer : StdDeserializer<Instant>(Instant::class.java
         } else {
             LocalDate.parse(text).atStartOfDay(ZoneOffset.UTC).toInstant()
         }
+    }
+}
+
+/**
+ * Deserializer for date-only fields that accepts both a plain date ("2026-02-20")
+ * and a full ISO instant ("2026-02-20T00:00:00Z") — the latter for backwards
+ * compatibility with older clients — by keeping only the calendar date.
+ */
+class FlexibleLocalDateDeserializer : StdDeserializer<LocalDate>(LocalDate::class.java) {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): LocalDate {
+        val text = p.text.trim()
+        val datePart = if (text.length >= 10 && (text.contains('T') || text.contains('t'))) {
+            text.substring(0, 10)
+        } else {
+            text
+        }
+        return LocalDate.parse(datePart)
     }
 }

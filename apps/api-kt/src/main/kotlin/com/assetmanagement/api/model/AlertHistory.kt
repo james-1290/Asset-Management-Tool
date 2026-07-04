@@ -24,7 +24,7 @@ class AlertHistory(
     var thresholdDays: Int = 0,
 
     @Column(name = "expiry_date", nullable = false)
-    var expiryDate: Instant = Instant.now(),
+    var expiryDate: java.time.LocalDate = java.time.LocalDate.now(),
 
     @Column(name = "sent_at", nullable = false)
     var sentAt: Instant = Instant.now(),

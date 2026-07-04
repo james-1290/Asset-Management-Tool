@@ -2,7 +2,7 @@ package com.assetmanagement.api.util
 
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.time.Instant
+import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 data class Depreciation(
@@ -22,8 +22,8 @@ object DepreciationCalculator {
     fun compute(
         cost: BigDecimal?,
         months: Int?,
-        purchaseDate: Instant?,
-        asOf: Instant = Instant.now()
+        purchaseDate: LocalDate?,
+        asOf: LocalDate = today()
     ): Depreciation {
         if (cost == null || months == null || months <= 0) return Depreciation(null, null, null)
 

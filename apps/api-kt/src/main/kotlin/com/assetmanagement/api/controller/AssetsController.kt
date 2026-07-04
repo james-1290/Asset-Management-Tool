@@ -6,6 +6,7 @@ import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.DepreciationCalculator
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.util.withFetch
+import com.assetmanagement.api.util.today
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.AssetStatus
@@ -156,7 +157,7 @@ class AssetsController(
             assetRepository.findAll(spec, PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir))).content
         }
 
-        val now = Instant.now()
+        val now = today()
         CsvExport.stream(
             response,
             "assets-export.csv",
@@ -678,10 +679,11 @@ class AssetsController(
             changes.add(AuditChange("Assigned To", oldPersonName, null))
 
         val now = Instant.now()
-        changes.add(AuditChange("Retired Date", null, dateOnlyFormat.format(now)))
+        val retiredOn = today()
+        changes.add(AuditChange("Retired Date", null, retiredOn.toString()))
 
         asset.status = AssetStatus.Retired
-        asset.retiredDate = now
+        asset.retiredDate = retiredOn
         asset.assignedPersonId = null
         asset.updatedAt = now
         assetRepository.save(asset)
@@ -747,8 +749,8 @@ class AssetsController(
         if (oldPersonName != null)
             changes.add(AuditChange("Assigned To", oldPersonName, null))
 
-        val soldDate = request.soldDate ?: Instant.now()
-        changes.add(AuditChange("Sold Date", null, dateOnlyFormat.format(soldDate)))
+        val soldDate = request.soldDate ?: today()
+        changes.add(AuditChange("Sold Date", null, soldDate.toString()))
 
         if (request.soldPrice != null)
             changes.add(AuditChange("Sold Price", null, String.format("%.2f", request.soldPrice)))
@@ -1220,32 +1222,32 @@ class AssetsController(
             predicates.add(cb.isNull(root.get<UUID>("assignedPersonId")))
         }
 
-        // Purchase date range
+        // Purchase date range (date-only, inclusive bounds)
         if (!purchaseDateFrom.isNullOrBlank()) {
-            val from = try { Instant.parse("${purchaseDateFrom}T00:00:00Z") } catch (_: Exception) {
+            val from = try { java.time.LocalDate.parse(purchaseDateFrom) } catch (_: Exception) {
                 throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid purchaseDateFrom: $purchaseDateFrom")
             }
-            predicates.add(cb.greaterThanOrEqualTo(root.get("purchaseDate"), from))
+            predicates.add(cb.greaterThanOrEqualTo(root.get<java.time.LocalDate>("purchaseDate"), from))
         }
         if (!purchaseDateTo.isNullOrBlank()) {
-            val to = try { Instant.parse("${purchaseDateTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS) } catch (_: Exception) {
+            val to = try { java.time.LocalDate.parse(purchaseDateTo) } catch (_: Exception) {
                 throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid purchaseDateTo: $purchaseDateTo")
             }
-            predicates.add(cb.lessThan(root.get("purchaseDate"), to))
+            predicates.add(cb.lessThanOrEqualTo(root.get<java.time.LocalDate>("purchaseDate"), to))
         }
 
-        // Warranty expiry date range
+        // Warranty expiry date range (date-only, inclusive bounds)
         if (!warrantyExpiryFrom.isNullOrBlank()) {
-            val from = try { Instant.parse("${warrantyExpiryFrom}T00:00:00Z") } catch (_: Exception) {
+            val from = try { java.time.LocalDate.parse(warrantyExpiryFrom) } catch (_: Exception) {
                 throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid warrantyExpiryFrom: $warrantyExpiryFrom")
             }
-            predicates.add(cb.greaterThanOrEqualTo(root.get("warrantyExpiryDate"), from))
+            predicates.add(cb.greaterThanOrEqualTo(root.get<java.time.LocalDate>("warrantyExpiryDate"), from))
         }
         if (!warrantyExpiryTo.isNullOrBlank()) {
-            val to = try { Instant.parse("${warrantyExpiryTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS) } catch (_: Exception) {
+            val to = try { java.time.LocalDate.parse(warrantyExpiryTo) } catch (_: Exception) {
                 throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid warrantyExpiryTo: $warrantyExpiryTo")
             }
-            predicates.add(cb.lessThan(root.get("warrantyExpiryDate"), to))
+            predicates.add(cb.lessThanOrEqualTo(root.get<java.time.LocalDate>("warrantyExpiryDate"), to))
         }
 
         // Cost range
@@ -1340,9 +1342,9 @@ class AssetsController(
             changes.add(AuditChange(field, oldVal, newVal))
     }
 
-    private fun trackDate(changes: MutableList<AuditChange>, field: String, oldVal: Instant?, newVal: Instant?) {
-        val oldStr = oldVal?.let { dateOnlyFormat.format(it) }
-        val newStr = newVal?.let { dateOnlyFormat.format(it) }
+    private fun trackDate(changes: MutableList<AuditChange>, field: String, oldVal: java.time.LocalDate?, newVal: java.time.LocalDate?) {
+        val oldStr = oldVal?.toString()
+        val newStr = newVal?.toString()
         if (oldStr != newStr)
             changes.add(AuditChange(field, oldStr, newStr))
     }

@@ -43,7 +43,7 @@ export function SellAssetDialog({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const price = soldPrice ? parseFloat(soldPrice) : null;
-    const date = soldDate ? `${soldDate}T00:00:00Z` : null;
+    const date = soldDate ? soldDate : null;
     onSubmit(price, date, notes.trim() || null);
   }
 

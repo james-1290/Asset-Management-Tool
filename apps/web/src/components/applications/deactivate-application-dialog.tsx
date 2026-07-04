@@ -44,7 +44,7 @@ export function DeactivateApplicationDialog({
     e.preventDefault();
     onSubmit(
       notes.trim() || null,
-      deactivatedDate ? `${deactivatedDate}T00:00:00Z` : null,
+      deactivatedDate ? deactivatedDate : null,
     );
   }
 

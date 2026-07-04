@@ -1,5 +1,7 @@
 package com.assetmanagement.api.service
 
+import com.assetmanagement.api.util.today
+import com.assetmanagement.api.util.daysUntil
 import com.assetmanagement.api.dto.AlertRunResult
 import com.assetmanagement.api.model.AlertHistory
 import com.assetmanagement.api.model.Application
@@ -22,7 +24,7 @@ data class ExpiringItem(
     val entityType: String,
     val entityId: UUID,
     val entityName: String,
-    val expiryDate: Instant,
+    val expiryDate: java.time.LocalDate,
     val thresholdDays: Int,
     val daysUntilExpiry: Long
 )
@@ -53,6 +55,7 @@ class AlertProcessingService(
     fun processAlerts(): AlertRunResult {
         val runId = UUID.randomUUID()
         val now = Instant.now()
+        val today = today()
 
         if (!emailService.isConfigured() && !slackService.isConfigured()) {
             log.warn("Neither email nor Slack configured, skipping alert processing")
@@ -79,21 +82,21 @@ class AlertProcessingService(
         val seen = mutableSetOf<Pair<String, UUID>>()
 
         for (threshold in thresholds) {
-            val cutoff = now.plus(threshold.toLong(), ChronoUnit.DAYS)
+            val cutoff = today.plusDays(threshold.toLong())
 
             if (warrantyEnabled) {
                 val spec = Specification<Asset> { root, _, cb ->
                     cb.and(
                         cb.equal(root.get<Boolean>("isArchived"), false),
-                        cb.isNotNull(root.get<Instant>("warrantyExpiryDate")),
-                        cb.greaterThanOrEqualTo(root.get("warrantyExpiryDate"), now),
-                        cb.lessThanOrEqualTo(root.get("warrantyExpiryDate"), cutoff)
+                        cb.isNotNull(root.get<java.time.LocalDate>("warrantyExpiryDate")),
+                        cb.greaterThanOrEqualTo(root.get<java.time.LocalDate>("warrantyExpiryDate"), today),
+                        cb.lessThanOrEqualTo(root.get<java.time.LocalDate>("warrantyExpiryDate"), cutoff)
                     )
                 }
                 assetRepository.findAll(spec).forEach { asset ->
                     if (seen.add("warranty" to asset.id) &&
                         !alertHistoryRepository.existsByEntityTypeAndEntityIdAndThresholdDays("warranty", asset.id, threshold)) {
-                        val daysUntil = ChronoUnit.DAYS.between(now, asset.warrantyExpiryDate!!)
+                        val daysUntil = daysUntil(asset.warrantyExpiryDate!!)
                         allItems.add(ExpiringItem("warranty", asset.id, asset.name, asset.warrantyExpiryDate!!, threshold, daysUntil))
                     }
                 }
@@ -103,15 +106,15 @@ class AlertProcessingService(
                 val spec = Specification<Certificate> { root, _, cb ->
                     cb.and(
                         cb.equal(root.get<Boolean>("isArchived"), false),
-                        cb.isNotNull(root.get<Instant>("expiryDate")),
-                        cb.greaterThanOrEqualTo(root.get("expiryDate"), now),
-                        cb.lessThanOrEqualTo(root.get("expiryDate"), cutoff)
+                        cb.isNotNull(root.get<java.time.LocalDate>("expiryDate")),
+                        cb.greaterThanOrEqualTo(root.get<java.time.LocalDate>("expiryDate"), today),
+                        cb.lessThanOrEqualTo(root.get<java.time.LocalDate>("expiryDate"), cutoff)
                     )
                 }
                 certificateRepository.findAll(spec).forEach { cert ->
                     if (seen.add("certificate" to cert.id) &&
                         !alertHistoryRepository.existsByEntityTypeAndEntityIdAndThresholdDays("certificate", cert.id, threshold)) {
-                        val daysUntil = ChronoUnit.DAYS.between(now, cert.expiryDate!!)
+                        val daysUntil = daysUntil(cert.expiryDate!!)
                         allItems.add(ExpiringItem("certificate", cert.id, cert.name, cert.expiryDate!!, threshold, daysUntil))
                     }
                 }
@@ -121,15 +124,15 @@ class AlertProcessingService(
                 val spec = Specification<Application> { root, _, cb ->
                     cb.and(
                         cb.equal(root.get<Boolean>("isArchived"), false),
-                        cb.isNotNull(root.get<Instant>("expiryDate")),
-                        cb.greaterThanOrEqualTo(root.get("expiryDate"), now),
-                        cb.lessThanOrEqualTo(root.get("expiryDate"), cutoff)
+                        cb.isNotNull(root.get<java.time.LocalDate>("expiryDate")),
+                        cb.greaterThanOrEqualTo(root.get<java.time.LocalDate>("expiryDate"), today),
+                        cb.lessThanOrEqualTo(root.get<java.time.LocalDate>("expiryDate"), cutoff)
                     )
                 }
                 applicationRepository.findAll(spec).forEach { app ->
                     if (seen.add("licence" to app.id) &&
                         !alertHistoryRepository.existsByEntityTypeAndEntityIdAndThresholdDays("licence", app.id, threshold)) {
-                        val daysUntil = ChronoUnit.DAYS.between(now, app.expiryDate!!)
+                        val daysUntil = daysUntil(app.expiryDate!!)
                         allItems.add(ExpiringItem("licence", app.id, app.name, app.expiryDate!!, threshold, daysUntil))
                     }
                 }
@@ -235,6 +238,7 @@ class AlertProcessingService(
 
     fun processPersonalAlerts() {
         val now = Instant.now()
+        val today = today()
         val activeRules = userAlertRuleRepository.findByIsActiveTrue()
         if (activeRules.isEmpty()) {
             log.info("No active personal alert rules found")
@@ -251,15 +255,15 @@ class AlertProcessingService(
             val personalItems = mutableListOf<ExpiringItem>()
 
             for (threshold in thresholds) {
-                val cutoff = now.plus(threshold.toLong(), ChronoUnit.DAYS)
+                val cutoff = today.plusDays(threshold.toLong())
 
                 if ("warranty" in entityTypes) {
                     val spec = Specification<Asset> { root, _, cb ->
                         cb.and(
                             cb.equal(root.get<Boolean>("isArchived"), false),
-                            cb.isNotNull(root.get<Instant>("warrantyExpiryDate")),
-                            cb.greaterThanOrEqualTo(root.get("warrantyExpiryDate"), now),
-                            cb.lessThanOrEqualTo(root.get("warrantyExpiryDate"), cutoff)
+                            cb.isNotNull(root.get<java.time.LocalDate>("warrantyExpiryDate")),
+                            cb.greaterThanOrEqualTo(root.get<java.time.LocalDate>("warrantyExpiryDate"), today),
+                            cb.lessThanOrEqualTo(root.get<java.time.LocalDate>("warrantyExpiryDate"), cutoff)
                         )
                     }
                     assetRepository.findAll(spec).forEach { asset ->
@@ -267,7 +271,7 @@ class AlertProcessingService(
                             "warranty", asset.id, rule.userId, threshold
                         )
                         if (!exists) {
-                            val daysUntil = ChronoUnit.DAYS.between(now, asset.warrantyExpiryDate!!)
+                            val daysUntil = daysUntil(asset.warrantyExpiryDate!!)
                             personalItems.add(ExpiringItem("warranty", asset.id, asset.name, asset.warrantyExpiryDate!!, threshold, daysUntil))
                         }
                     }
@@ -277,9 +281,9 @@ class AlertProcessingService(
                     val spec = Specification<Certificate> { root, _, cb ->
                         cb.and(
                             cb.equal(root.get<Boolean>("isArchived"), false),
-                            cb.isNotNull(root.get<Instant>("expiryDate")),
-                            cb.greaterThanOrEqualTo(root.get("expiryDate"), now),
-                            cb.lessThanOrEqualTo(root.get("expiryDate"), cutoff)
+                            cb.isNotNull(root.get<java.time.LocalDate>("expiryDate")),
+                            cb.greaterThanOrEqualTo(root.get<java.time.LocalDate>("expiryDate"), today),
+                            cb.lessThanOrEqualTo(root.get<java.time.LocalDate>("expiryDate"), cutoff)
                         )
                     }
                     certificateRepository.findAll(spec).forEach { cert ->
@@ -287,7 +291,7 @@ class AlertProcessingService(
                             "certificate", cert.id, rule.userId, threshold
                         )
                         if (!exists) {
-                            val daysUntil = ChronoUnit.DAYS.between(now, cert.expiryDate!!)
+                            val daysUntil = daysUntil(cert.expiryDate!!)
                             personalItems.add(ExpiringItem("certificate", cert.id, cert.name, cert.expiryDate!!, threshold, daysUntil))
                         }
                     }
@@ -297,9 +301,9 @@ class AlertProcessingService(
                     val spec = Specification<Application> { root, _, cb ->
                         cb.and(
                             cb.equal(root.get<Boolean>("isArchived"), false),
-                            cb.isNotNull(root.get<Instant>("expiryDate")),
-                            cb.greaterThanOrEqualTo(root.get("expiryDate"), now),
-                            cb.lessThanOrEqualTo(root.get("expiryDate"), cutoff)
+                            cb.isNotNull(root.get<java.time.LocalDate>("expiryDate")),
+                            cb.greaterThanOrEqualTo(root.get<java.time.LocalDate>("expiryDate"), today),
+                            cb.lessThanOrEqualTo(root.get<java.time.LocalDate>("expiryDate"), cutoff)
                         )
                     }
                     applicationRepository.findAll(spec).forEach { app ->
@@ -307,7 +311,7 @@ class AlertProcessingService(
                             "licence", app.id, rule.userId, threshold
                         )
                         if (!exists) {
-                            val daysUntil = ChronoUnit.DAYS.between(now, app.expiryDate!!)
+                            val daysUntil = daysUntil(app.expiryDate!!)
                             personalItems.add(ExpiringItem("licence", app.id, app.name, app.expiryDate!!, threshold, daysUntil))
                         }
                     }

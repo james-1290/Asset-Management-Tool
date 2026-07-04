@@ -7,9 +7,10 @@
 // `useFormatters()` hook, and changing the settings invalidates all queries so
 // the whole app re-renders with the new format.
 //
-// NOTE: date-only fields (purchaseDate, expiryDate, ...) are parsed in local
-// time here, matching the previous `toLocaleDateString` behaviour. The
-// timezone/date-only storage hazard is tracked separately.
+// Date-only values (purchaseDate, expiryDate, ...) arrive from the API as bare
+// "YYYY-MM-DD" strings; those are parsed as *local* calendar dates so they never
+// shift a day across timezones (`new Date("2026-02-20")` would be UTC midnight).
+// Full timestamps (createdAt, ...) keep normal `Date` parsing.
 
 export type DateFormatToken = "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
 
@@ -35,8 +36,16 @@ export function getActiveDateFormat(): string {
   return activeDateFormat;
 }
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
 function toDate(value: string | number | Date | null | undefined): Date | null {
   if (value == null || value === "") return null;
+  // Parse a bare "YYYY-MM-DD" as a local calendar date to avoid a UTC-midnight
+  // day shift; anything else (full timestamps, epoch ms, Date) parses normally.
+  if (typeof value === "string" && DATE_ONLY.test(value)) {
+    const [y, m, d] = value.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
   const d = value instanceof Date ? value : new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
 }

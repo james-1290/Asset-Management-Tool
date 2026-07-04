@@ -6,6 +6,7 @@ import com.assetmanagement.api.model.ApplicationSeatAssignment
 import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.util.withFetch
+import com.assetmanagement.api.util.today
 import com.assetmanagement.api.util.computeStatus
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
@@ -477,7 +478,7 @@ class ApplicationsController(
 
         val oldStatus = app.status
         app.status = ApplicationStatus.Inactive
-        app.deactivatedDate = request.deactivatedDate ?: Instant.now()
+        app.deactivatedDate = request.deactivatedDate ?: today()
         app.updatedAt = Instant.now()
 
         if (!request.notes.isNullOrBlank())
@@ -568,7 +569,7 @@ class ApplicationsController(
         if (app.isArchived)
             return ResponseEntity.badRequest().body(mapOf("error" to "Cannot renew an archived application."))
 
-        if (!request.newExpiryDate.isAfter(Instant.now()))
+        if (!request.newExpiryDate.isAfter(today()))
             return ResponseEntity.badRequest().body(mapOf("error" to "New expiry date must be in the future."))
 
         val changes = mutableListOf(
@@ -857,8 +858,8 @@ class ApplicationsController(
         if (!status.isNullOrBlank()) {
             val parsedStatus = runCatching { ApplicationStatus.valueOf(status) }.getOrNull()
             if (parsedStatus != null) {
-                val now = Instant.now()
-                val pendingCutoff = now.plus(30, java.time.temporal.ChronoUnit.DAYS)
+                val now = today()
+                val pendingCutoff = now.plusDays(30)
 
                 when (parsedStatus) {
                     ApplicationStatus.Expired -> {
@@ -868,7 +869,7 @@ class ApplicationsController(
                                 cb.equal(root.get<ApplicationStatus>("status"), ApplicationStatus.Expired),
                                 cb.and(
                                     cb.equal(root.get<ApplicationStatus>("status"), ApplicationStatus.Active),
-                                    cb.isNotNull(root.get<Instant>("expiryDate")),
+                                    cb.isNotNull(root.get<java.time.LocalDate>("expiryDate")),
                                     cb.lessThan(root.get("expiryDate"), now)
                                 )
                             )
@@ -881,7 +882,7 @@ class ApplicationsController(
                                 cb.equal(root.get<ApplicationStatus>("status"), ApplicationStatus.PendingRenewal),
                                 cb.and(
                                     cb.equal(root.get<ApplicationStatus>("status"), ApplicationStatus.Active),
-                                    cb.isNotNull(root.get<Instant>("expiryDate")),
+                                    cb.isNotNull(root.get<java.time.LocalDate>("expiryDate")),
                                     cb.greaterThanOrEqualTo(root.get("expiryDate"), now),
                                     cb.lessThan(root.get("expiryDate"), pendingCutoff)
                                 )
@@ -893,7 +894,7 @@ class ApplicationsController(
                         predicates.add(cb.equal(root.get<ApplicationStatus>("status"), ApplicationStatus.Active))
                         predicates.add(
                             cb.or(
-                                cb.isNull(root.get<Instant>("expiryDate")),
+                                cb.isNull(root.get<java.time.LocalDate>("expiryDate")),
                                 cb.greaterThanOrEqualTo(root.get("expiryDate"), pendingCutoff)
                             )
                         )
@@ -920,16 +921,16 @@ class ApplicationsController(
 
         // Expiry date range
         if (!expiryFrom.isNullOrBlank()) {
-            val from = try { Instant.parse("${expiryFrom}T00:00:00Z") } catch (_: Exception) {
+            val from = try { java.time.LocalDate.parse(expiryFrom) } catch (_: Exception) {
                 throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid expiryFrom: $expiryFrom")
             }
-            predicates.add(cb.greaterThanOrEqualTo(root.get("expiryDate"), from))
+            predicates.add(cb.greaterThanOrEqualTo(root.get<java.time.LocalDate>("expiryDate"), from))
         }
         if (!expiryTo.isNullOrBlank()) {
-            val to = try { Instant.parse("${expiryTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS) } catch (_: Exception) {
+            val to = try { java.time.LocalDate.parse(expiryTo) } catch (_: Exception) {
                 throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid expiryTo: $expiryTo")
             }
-            predicates.add(cb.lessThan(root.get("expiryDate"), to))
+            predicates.add(cb.lessThanOrEqualTo(root.get<java.time.LocalDate>("expiryDate"), to))
         }
 
         // Licence type filter
@@ -1052,7 +1053,7 @@ class ApplicationsController(
             changes.add(AuditChange(field, oldVal, newVal))
     }
 
-    private fun trackDate(changes: MutableList<AuditChange>, field: String, oldVal: Instant?, newVal: Instant?) {
+    private fun trackDate(changes: MutableList<AuditChange>, field: String, oldVal: java.time.LocalDate?, newVal: java.time.LocalDate?) {
         val oldStr = oldVal?.let { dateOnlyFormat.format(it) }
         val newStr = newVal?.let { dateOnlyFormat.format(it) }
         if (oldStr != newStr)
