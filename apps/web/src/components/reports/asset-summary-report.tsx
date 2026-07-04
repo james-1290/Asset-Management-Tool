@@ -12,15 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-const statusColors: Record<string, string> = {
-  Available: "bg-emerald-500",
-  Deployed: "bg-blue-500",
-  InRepair: "bg-amber-500",
-  InMaintenance: "bg-amber-500",
-  CheckedOut: "bg-purple-500",
-  InStorage: "bg-yellow-500",
-};
+import { STATUS_COLORS } from "@/lib/chart-colors";
 
 export function AssetSummaryReport() {
   const { data, isLoading, dataUpdatedAt } = useAssetSummaryReport();
@@ -135,7 +127,7 @@ export function AssetSummaryReport() {
                 <TableRow key={item.status}>
                   <TableCell className="font-medium">
                     <span className="flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full ${statusColors[item.status] ?? "bg-muted-foreground"}`} />
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_COLORS[item.status] ?? "#9CA3AF" }} />
                       {item.status}
                     </span>
                   </TableCell>

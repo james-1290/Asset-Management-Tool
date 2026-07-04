@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Label } from "rechar
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StatusBreakdownItem } from "@/types/dashboard";
+import { STATUS_COLORS } from "@/lib/chart-colors";
 
 interface StatusBreakdownChartProps {
   data: StatusBreakdownItem[] | undefined;
@@ -109,7 +110,7 @@ export function StatusBreakdownChart({
                     {sorted.map((entry, i) => (
                       <Cell
                         key={entry.status}
-                        fill={DONUT_COLORS[i % DONUT_COLORS.length]}
+                        fill={STATUS_COLORS[entry.status] ?? DONUT_COLORS[i % DONUT_COLORS.length]}
                         stroke="none"
                       />
                     ))}
@@ -155,7 +156,7 @@ export function StatusBreakdownChart({
             <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-4">
               {sorted.map((item, i) => {
                 const pct = total > 0 ? (item.count / total) * 100 : 0;
-                const color = DONUT_COLORS[i % DONUT_COLORS.length];
+                const color = STATUS_COLORS[item.status] ?? DONUT_COLORS[i % DONUT_COLORS.length];
                 return (
                   <div key={item.status}>
                     <div className="flex items-center justify-between mb-1.5">
