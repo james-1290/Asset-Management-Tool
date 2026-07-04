@@ -34,3 +34,10 @@ logs/
 
 # Uploads (attachment storage)
 uploads/
+
+# Test output
+apps/web/test-results/
+apps/web/playwright-report/
+
+# Stray screenshots at repo root
+/*.png

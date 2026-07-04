@@ -83,14 +83,18 @@ class AttachmentsController(
             return ResponseEntity.badRequest().body(mapOf("error" to "File type not allowed"))
         }
 
-        // Content-based MIME type validation using Apache Tika
+        val originalFileName = sanitizeFileName(file.originalFilename ?: "unnamed")
+
+        // Content-based MIME type validation using Apache Tika. The filename hint
+        // lets Tika resolve OOXML/OLE2 containers (docx/xlsx) to their specific
+        // type instead of the generic application/x-tika-ooxml, which would
+        // otherwise reject valid Office documents.
         val tika = Tika()
-        val detectedType = tika.detect(file.inputStream)
+        val detectedType = tika.detect(file.inputStream, originalFileName)
         if (detectedType !in ALLOWED_MIME_TYPES) {
             return ResponseEntity.badRequest().body(mapOf("error" to "File content does not match allowed types"))
         }
 
-        val originalFileName = sanitizeFileName(file.originalFilename ?: "unnamed")
         val extension = originalFileName.substringAfterLast('.', "").lowercase()
         if (extension !in ALLOWED_EXTENSIONS) {
             return ResponseEntity.badRequest().body(mapOf("error" to "File extension not allowed"))
