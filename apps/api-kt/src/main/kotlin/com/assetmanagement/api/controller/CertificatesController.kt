@@ -13,6 +13,7 @@ import com.assetmanagement.api.service.AuditChange
 import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
+import com.assetmanagement.api.service.CustomFieldValueService
 import jakarta.persistence.criteria.Predicate
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
@@ -45,6 +46,7 @@ class CertificatesController(
     private val customFieldDefinitionRepository: CustomFieldDefinitionRepository,
     private val alertHistoryRepository: AlertHistoryRepository,
     private val userNotificationRepository: UserNotificationRepository,
+    private val customFieldValueService: CustomFieldValueService,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
@@ -214,27 +216,8 @@ class CertificatesController(
     }
 
     private fun upsertCustomFieldValues(entityId: UUID, certificateTypeId: UUID, inputs: List<CustomFieldValueInput>?) {
-        if (inputs.isNullOrEmpty()) return
         val validDefs = customFieldDefinitionRepository.findByCertificateTypeIdAndIsArchivedFalse(certificateTypeId)
-        val validDefIds = validDefs.map { it.id }.toSet()
-        val existing = customFieldValueRepository.findByEntityId(entityId).associateBy { it.customFieldDefinitionId }
-
-        inputs.filter { it.fieldDefinitionId in validDefIds }.forEach { input ->
-            val cfv = existing[input.fieldDefinitionId]
-            if (cfv != null) {
-                cfv.value = input.value
-                cfv.updatedAt = Instant.now()
-                customFieldValueRepository.save(cfv)
-            } else {
-                customFieldValueRepository.save(
-                    CustomFieldValue(
-                        customFieldDefinitionId = input.fieldDefinitionId,
-                        entityId = entityId,
-                        value = input.value
-                    )
-                )
-            }
-        }
+        customFieldValueService.upsert(entityId, validDefs, inputs)
     }
 
     private fun trackString(field: String, oldVal: String?, newVal: String?, changes: MutableList<AuditChange>) {

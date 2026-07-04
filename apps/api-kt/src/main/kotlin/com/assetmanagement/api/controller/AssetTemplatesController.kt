@@ -7,6 +7,7 @@ import com.assetmanagement.api.repository.*
 import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
+import com.assetmanagement.api.service.CustomFieldValueService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
@@ -24,6 +25,7 @@ class AssetTemplatesController(
     private val locationRepository: LocationRepository,
     private val customFieldValueRepository: CustomFieldValueRepository,
     private val customFieldDefinitionRepository: CustomFieldDefinitionRepository,
+    private val customFieldValueService: CustomFieldValueService,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
@@ -86,22 +88,11 @@ class AssetTemplatesController(
         assetTemplateRepository.save(template)
 
         // Save custom field values
-        if (!request.customFieldValues.isNullOrEmpty()) {
-            val validDefs = customFieldDefinitionRepository.findByAssetTypeIdAndIsArchivedFalse(request.assetTypeId)
-            val validDefIds = validDefs.map { it.id }.toSet()
-
-            for (cfv in request.customFieldValues) {
-                if (!validDefIds.contains(cfv.fieldDefinitionId)) continue
-
-                customFieldValueRepository.save(
-                    CustomFieldValue(
-                        customFieldDefinitionId = cfv.fieldDefinitionId,
-                        entityId = template.id,
-                        value = cfv.value
-                    )
-                )
-            }
-        }
+        customFieldValueService.upsert(
+            template.id,
+            customFieldDefinitionRepository.findByAssetTypeIdAndIsArchivedFalse(request.assetTypeId),
+            request.customFieldValues,
+        )
 
         auditService.log(
             AuditEntry(
@@ -145,32 +136,11 @@ class AssetTemplatesController(
         template.updatedAt = Instant.now()
 
         // Upsert custom field values
-        if (request.customFieldValues != null) {
-            val existingValues = customFieldValueRepository.findByEntityId(template.id)
-                .associateBy { it.customFieldDefinitionId }
-
-            val validDefs = customFieldDefinitionRepository.findByAssetTypeIdAndIsArchivedFalse(template.assetTypeId)
-            val validDefIds = validDefs.map { it.id }.toSet()
-
-            for (cfv in request.customFieldValues) {
-                if (!validDefIds.contains(cfv.fieldDefinitionId)) continue
-
-                val existing = existingValues[cfv.fieldDefinitionId]
-                if (existing != null) {
-                    existing.value = cfv.value
-                    existing.updatedAt = Instant.now()
-                    customFieldValueRepository.save(existing)
-                } else {
-                    customFieldValueRepository.save(
-                        CustomFieldValue(
-                            customFieldDefinitionId = cfv.fieldDefinitionId,
-                            entityId = template.id,
-                            value = cfv.value
-                        )
-                    )
-                }
-            }
-        }
+        customFieldValueService.upsert(
+            template.id,
+            customFieldDefinitionRepository.findByAssetTypeIdAndIsArchivedFalse(template.assetTypeId),
+            request.customFieldValues,
+        )
 
         assetTemplateRepository.save(template)
 

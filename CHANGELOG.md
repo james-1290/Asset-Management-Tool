@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-04 22:35 — CustomFieldValueService (unify 4× value upsert)
+
+- New `CustomFieldValueService.upsert(...)` replaces the four hand-rolled custom-field *value* upserts in Assets, Certificates, Applications and AssetTemplates controllers (create + update = 8 sites).
+- Per-site differences are preserved via callbacks: `onInvalid` (Assets/Applications *create* throw `400`; others skip) and a `track` change-reporter (Assets/Applications *update* record `Custom: <field>` audit changes, with each keeping its own empty/blank rule). Invalid-def-on-create now rolls back atomically (same `400` body) instead of persisting a partial record.
+- Completes the item-5 refactor (paired with the earlier ArchivableTypeCrud + CustomFieldDefinitionService PR). No DB or API-shape change.
+
 ## 2026-07-04 22:20 — Shared type-CRUD helper + CustomFieldDefinitionService
 
 - Extracted the near-identical Asset/Certificate/Application **type** controllers' shared logic into `ArchivableTypeCrud<E>` (paged search list, get-by-id, custom-field listing, in-use-guarded archive, bulk archive). Each controller keeps its thin request-mapped endpoints (correctly proxied) that delegate to the helper, plus its own create/update.
