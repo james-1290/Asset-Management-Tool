@@ -9,16 +9,16 @@ import java.util.*
 class ApplicationType(
     @Id
     @Column(name = "id", columnDefinition = "CHAR(36)")
-    var id: UUID = UUID.randomUUID(),
+    override var id: UUID = UUID.randomUUID(),
 
     @Column(name = "name", nullable = false)
-    var name: String = "",
+    override var name: String = "",
 
     @Column(name = "description")
     var description: String? = null,
 
     @Column(name = "is_archived", nullable = false)
-    var isArchived: Boolean = false,
+    override var isArchived: Boolean = false,
 
     @org.hibernate.annotations.CreationTimestamp
     @Column(name = "created_at", nullable = false)
@@ -26,11 +26,11 @@ class ApplicationType(
 
     @org.hibernate.annotations.UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    var updatedAt: Instant = Instant.now(),
+    override var updatedAt: Instant = Instant.now(),
 
     @OneToMany(mappedBy = "applicationType")
     var applications: MutableList<Application> = mutableListOf(),
 
     @OneToMany(mappedBy = "applicationType", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var customFieldDefinitions: MutableList<CustomFieldDefinition> = mutableListOf()
-)
+    override var customFieldDefinitions: MutableList<CustomFieldDefinition> = mutableListOf()
+) : ArchivableType
