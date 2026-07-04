@@ -47,7 +47,7 @@ source file). Items marked `[~]` are being worked this session.
 - [ ] Dashboard drag-drop layout fully coded but never mounted (dashboard-preferences.ts, use-dashboard-preferences.ts) — wire up ResponsiveGridLayout or remove
 - [ ] 7 of 17 dashboard widget components orphaned; 9 declared widget IDs never render
 - [x] Removed unused Breadcrumbs component and the never-supplied stat-card trend prop (PR #141)
-- [ ] Chart palette consolidation: STATUS_COLORS is unused while status-breakdown-chart and asset-summary-report hardcode divergent palettes (the latter with wrong status keys) — make STATUS_COLORS the single source
+- [x] Chart palette consolidated on STATUS_COLORS: the dashboard donut and the asset-summary report both colour statuses from it (fixes the report's wrong status keys that rendered grey dots) (PR #145)
 - [x] Removed the non-functional disabled buttons (2FA card, "Preview Daily Report") (PR #141)
 - [ ] `dateFormat` + non-GBP currency settings configurable but ignored app-wide
 
