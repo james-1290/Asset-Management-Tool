@@ -2,31 +2,35 @@
 
 ## Prerequisites
 
-- **Node.js** v20+ (v25 tested)
-- **.NET SDK** 10.0+ (see [decisions](../tasks/decisions.md) re: .NET version)
+- **Node.js** v20+
+- **JDK 21** (the API is Kotlin/Spring Boot; `JAVA_HOME` must point at a JDK 21 install)
 - **Docker** and **Docker Compose**
-- **EF Core tools**: `dotnet tool install --global dotnet-ef`
 
-## 1. Start PostgreSQL
+## 1. Start infrastructure
 
 ```bash
 cd infra
 docker compose up -d
 ```
 
-This starts PostgreSQL on port 5432 with a persisted volume. Default credentials: `postgres` / `postgres`, database `assetmgmt`.
+This starts:
+- **MySQL 8** on port 3306 (database `assetmgmt`, default credentials `root` / `root`), with a persisted volume.
+- **MailHog** on ports 1025 (SMTP) and 8025 (web UI) for catching alert emails in dev.
 
 ## 2. Run the API
 
 ```bash
-cd apps/api/AssetManagement.Api
-dotnet run
+cd apps/api-kt
+./gradlew build
+java -jar build/libs/asset-management-api-1.0.0.jar
 ```
 
-The API starts on `http://localhost:5062` by default. On first run in Development mode, it auto-applies EF Core migrations.
+The API starts on `http://localhost:5115`. On startup it applies any pending
+**Flyway** migrations automatically.
 
-- Scalar API docs: `http://localhost:5062/scalar/v1`
-- OpenAPI spec: `http://localhost:5062/openapi/v1.json`
+- API base: `http://localhost:5115/api/v1`
+- Swagger UI: `http://localhost:5115/swagger-ui.html` (enable with `SWAGGER_ENABLED=true`; off by default)
+- Default admin login (dev only): `admin` / `admin123`
 
 ## 3. Run the Frontend
 
@@ -36,56 +40,51 @@ npm install   # first time only
 npm run dev
 ```
 
-The frontend starts on `http://localhost:5173`. API calls are proxied to `http://localhost:5062` via Vite config.
+The frontend starts on `http://localhost:5173`. API calls (`/api`, `/saml2`,
+`/login/saml2`, `/scim`) are proxied to `http://localhost:5115` via Vite config.
 
-## 4. Run Both (quick start)
+## 4. Run everything (quick start)
 
-Open two terminals:
+Open three terminals:
 
 ```bash
-# Terminal 1: Database
+# Terminal 1: infrastructure
 cd infra && docker compose up -d
 
-# Terminal 2: API
-cd apps/api/AssetManagement.Api && dotnet run
+# Terminal 2: API (requires JDK 21)
+cd apps/api-kt && ./gradlew build && java -jar build/libs/asset-management-api-1.0.0.jar
 
-# Terminal 3: Frontend
+# Terminal 3: frontend
 cd apps/web && npm run dev
 ```
 
-## Environment Files
+## Environment / configuration
 
-Copy `.env.example` files if you need to override defaults:
+- `infra/.env` — MySQL container credentials (copy from `infra/.env.example`).
+- `apps/web/.env` — frontend overrides (copy from `apps/web/.env.example`).
+- The API is configured through `apps/api-kt/src/main/resources/application.yml`,
+  with every secret overridable by an environment variable. For anything other
+  than local dev you must set at least: `SPRING_PROFILES_ACTIVE` (a non-dev
+  profile), `JWT_KEY`, `ADMIN_PASSWORD`, `DB_USERNAME`/`DB_PASSWORD`, and — if
+  SCIM is enabled — `SCIM_BEARER_TOKEN`. On a non-dev profile the app refuses to
+  start on the built-in dev defaults.
 
-```bash
-cp infra/.env.example infra/.env
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
-```
+## Database migrations
 
-## Database Migrations
+Migrations are plain SQL under `apps/api-kt/src/main/resources/db/migration`,
+applied automatically by Flyway on API startup.
 
-Migrations are auto-applied on API startup in Development mode. To manage manually:
+To add one, create the next `V<nnn>__<description>.sql` file (e.g.
+`V015__add_widget_table.sql`) — Flyway runs new versions in order on the next
+boot. Migrations are forward-only; write a new migration to change the schema
+rather than editing an applied one.
 
-```bash
-cd apps/api/AssetManagement.Api
-
-# Create a new migration
-dotnet ef migrations add <MigrationName> --output-dir Data/Migrations
-
-# Apply migrations
-dotnet ef database update
-
-# Roll back
-dotnet ef database update <PreviousMigrationName>
-```
-
-## Building for Production
+## Building for production
 
 ```bash
 # Frontend
-cd apps/web && npm run build
+cd apps/web && npm run build       # outputs to dist/
 
 # Backend
-cd apps/api/AssetManagement.Api && dotnet publish -c Release
+cd apps/api-kt && ./gradlew bootJar # outputs build/libs/asset-management-api-1.0.0.jar
 ```

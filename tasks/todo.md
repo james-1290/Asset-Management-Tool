@@ -51,12 +51,12 @@ source file). Items marked `[~]` are being worked this session.
 - [ ] `dateFormat` + non-GBP currency settings configurable but ignored app-wide
 
 ### E. Production-readiness (for work/Azure move)
-- [ ] Docs still describe the retired .NET/EF/PostgreSQL stack — README DB line already corrected to MySQL (PR #128); still to fix: Claude.md, docs/*.md, tasks/decisions.md
-- [ ] Decommission retired apps/api (.NET) tree (122 files, nothing wired to it); then drop unused Postgres container from docker-compose
+- [x] Docs refreshed for the Kotlin/MySQL stack — README (PR #128), CLAUDE.md (renamed from Claude.md), docs/setup|architecture|database|api.md, and tasks/decisions.md (ADR-012/013) (PR #134)
+- [x] Decommission retired apps/api (.NET) tree + drop unused Postgres container from docker-compose (PR #133)
 - [ ] Add tests — zero backend tests, ~zero frontend; start with auth/token-invalidation, expiry/alert logic, audit emission, Flyway (Testcontainers)
 - [ ] Add CI (build + lint + typecheck + tests on PR)
 - [ ] Azure-readiness: Dockerfiles + IaC; move attachments to Blob Storage (local disk won't survive Container Apps); distributed rate-limit/scheduler; readiness health probe
-- [ ] .gitignore gaps — loose root PNGs, apps/web/test-results/, Gradle build/ and .gradle/
+- [ ] .gitignore gaps — Gradle build/ and .gradle/ now ignored (PR #133); still: loose root PNGs, apps/web/test-results/
 
 ### Features (from review)
 - [x] Feature 1: Renewal workflow — POST /{id}/renew for certificates & licences (PR #130)
