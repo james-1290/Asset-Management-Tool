@@ -38,7 +38,7 @@ source file). Items marked `[~]` are being worked this session.
 - [ ] Extract ExpiryStatusService (status/expiry logic duplicated in 4+ places, can drift)
 - [x] DepreciationCalculator extracted and used in all 4 sites (asset DTO, asset CSV export, depreciation report, dashboard book-value) — the report no longer diverges (was scale-4, now consistent scale-2) (PR #146)
 - [ ] Generic archivable-CRUD base + CustomFieldService (3 Type controllers ~95% identical; custom-field upsert reimplemented 4×)
-- [ ] Shared HistoryTimeline + HistoryDialog components (4 identical copies each, ~600 lines)
+- [x] Shared HistoryTimeline + HistoryDialog: the 4 near-identical timelines and 4 dialogs now render through one shared component each (per-entity event config passed in), ~500 lines of duplication removed (PR #147)
 - [ ] createEntityHooks/createEntityApi factory (5 entity hook/api modules ~90% identical; makes cross-entity invalidation declarative)
 - [ ] Generic TypeFormDialog/TypesToolbar/getTypeColumns (frontend type-management triplication)
 - [ ] Shared CsvExportHelper with chunked/streaming export + row cap (two export mechanisms, OOM risk)
