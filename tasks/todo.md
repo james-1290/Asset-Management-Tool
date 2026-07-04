@@ -40,7 +40,7 @@ source file). Items marked `[~]` are being worked this session.
 - [ ] Generic archivable-CRUD base + CustomFieldService (3 Type controllers ~95% identical; custom-field upsert reimplemented 4×)
 - [x] Shared HistoryTimeline + HistoryDialog: the 4 near-identical timelines and 4 dialogs now render through one shared component each (per-entity event config passed in), ~500 lines of duplication removed (PR #147)
 - [ ] createEntityHooks/createEntityApi factory (5 entity hook/api modules ~90% identical; makes cross-entity invalidation declarative)
-- [ ] Generic TypeFormDialog/TypesToolbar/getTypeColumns (frontend type-management triplication)
+- [x] Generic TypeFormDialog/TypesToolbar/getTypeColumns (frontend type-management triplication) — shared components under components/type-management/ + shared CustomFieldEditor/mapCustomFieldsToForm; 10 per-entity files deleted, ~400 lines removed (PR #150)
 - [ ] Shared CsvExportHelper with chunked/streaming export + row cap (two export mechanisms, OOM risk)
 
 ### D. Dead / half-built code (finish or delete)

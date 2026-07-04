@@ -17,7 +17,11 @@ import {
   FormLabel,
   FormMessage,
 } from "../ui/form";
-import type { AssetTypeFormValues } from "../../lib/schemas/asset-type";
+import type { CustomFieldDefinitionFormValues } from "../../lib/schemas/asset-type";
+
+// The editor only touches the shared `customFields` array, so it works for any
+// entity-type form (asset/certificate/application) whose values include it.
+type FormWithCustomFields = { customFields: CustomFieldDefinitionFormValues[] };
 
 const FIELD_TYPE_OPTIONS = [
   { value: "Text", label: "Text" },
@@ -30,7 +34,7 @@ const FIELD_TYPE_OPTIONS = [
 ] as const;
 
 export function CustomFieldEditor() {
-  const form = useFormContext<AssetTypeFormValues>();
+  const form = useFormContext<FormWithCustomFields>();
   const { fields, append, remove, swap } = useFieldArray({
     control: form.control,
     name: "customFields",
@@ -74,8 +78,8 @@ export function CustomFieldEditor() {
 
       {fields.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          No custom fields defined. Add fields to capture extra data for assets
-          of this type.
+          No custom fields defined. Add fields to capture extra data for this
+          type.
         </p>
       )}
 

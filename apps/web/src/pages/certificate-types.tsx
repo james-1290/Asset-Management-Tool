@@ -10,9 +10,10 @@ import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
 import { ConfirmDialog } from "../components/confirm-dialog";
-import { CertificateTypeFormDialog } from "../components/certificate-types/certificate-type-form-dialog";
-import { CertificateTypesToolbar } from "../components/certificate-types/certificate-types-toolbar";
-import { getCertificateTypeColumns } from "../components/certificate-types/columns";
+import { TypeFormDialog } from "../components/type-management/type-form-dialog";
+import { TypesToolbar } from "../components/type-management/types-toolbar";
+import { getTypeColumns } from "../components/type-management/type-columns";
+import { mapCustomFieldsToForm } from "../components/type-management/custom-fields";
 import {
   usePagedCertificateTypes,
   useCreateCertificateType,
@@ -23,7 +24,7 @@ import {
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { BulkActionBar } from "../components/bulk-action-bar";
 import type { CertificateType } from "../types/certificate-type";
-import type { CertificateTypeFormValues } from "../lib/schemas/certificate-type";
+import { certificateTypeSchema, type CertificateTypeFormValues } from "../lib/schemas/certificate-type";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
@@ -100,7 +101,7 @@ export default function CertificateTypesPage() {
   const columns = useMemo(
     () => [
       getSelectionColumn<CertificateType>(),
-      ...getCertificateTypeColumns({
+      ...getTypeColumns<CertificateType>({
         onEdit: (certificateType) => {
           setEditingCertificateType(certificateType);
           setFormOpen(true);
@@ -352,10 +353,11 @@ export default function CertificateTypesPage() {
         toolbar={(table) => (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <CertificateTypesToolbar
+              <TypesToolbar
                 table={table}
                 search={searchInput}
                 onSearchChange={setSearchInput}
+                placeholder="Search certificate types…"
               />
               <SavedViewSelector
                 entityType="certificate-types"
@@ -383,13 +385,22 @@ export default function CertificateTypesPage() {
         }
       />
 
-      <CertificateTypeFormDialog
+      <TypeFormDialog<CertificateTypeFormValues, CertificateType>
         open={formOpen}
         onOpenChange={(open) => {
           setFormOpen(open);
           if (!open) setEditingCertificateType(null);
         }}
-        certificateType={editingCertificateType}
+        entity={editingCertificateType}
+        entityLabel="Certificate Type"
+        categoryNoun="certificate"
+        namePlaceholder="e.g. SSL/TLS"
+        schema={certificateTypeSchema}
+        buildValues={(t) => ({
+          name: t?.name ?? "",
+          description: t?.description ?? "",
+          customFields: mapCustomFieldsToForm(t?.customFields),
+        })}
         onSubmit={handleFormSubmit}
         loading={createMutation.isPending || updateMutation.isPending}
       />
