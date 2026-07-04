@@ -192,6 +192,31 @@ export default function AssetsPage() {
         onArchive: (asset) => {
           setArchivingAsset(asset);
         },
+        onAssign: (asset, personId) => {
+          updateMutation.mutate(
+            {
+              id: asset.id,
+              data: {
+                name: asset.name,
+                serialNumber: asset.serialNumber ?? "",
+                status: asset.status,
+                assetTypeId: asset.assetTypeId,
+                assetModelId: asset.assetModelId,
+                locationId: asset.locationId ?? "",
+                assignedPersonId: personId,
+                purchaseDate: asset.purchaseDate,
+                purchaseCost: asset.purchaseCost,
+                warrantyExpiryDate: asset.warrantyExpiryDate,
+                depreciationMonths: asset.depreciationMonths,
+                notes: asset.notes,
+              },
+            },
+            {
+              onSuccess: () => toast.success("Asset assigned"),
+              onError: (err) => toast.error(getApiErrorMessage(err)),
+            }
+          );
+        },
         customFieldDefinitions: allCustomFieldDefs,
       }),
     ],

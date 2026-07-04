@@ -11,12 +11,14 @@ import {
 import { AssetStatusBadge } from "./asset-status-badge";
 import { AssetTypeIcon } from "./asset-type-icon";
 import { AvatarPlaceholder } from "../avatar-placeholder";
+import { InlineAssignPicker } from "../inline-assign-picker";
 import type { Asset } from "../../types/asset";
 import type { CustomFieldDefinition } from "../../types/custom-field";
 
 interface ColumnActions {
   onEdit: (asset: Asset) => void;
   onArchive: (asset: Asset) => void;
+  onAssign?: (asset: Asset, personId: string) => void;
   customFieldDefinitions?: CustomFieldDefinition[];
 }
 
@@ -56,6 +58,7 @@ function formatCurrency(amount: number): string {
 export function getAssetColumns({
   onEdit,
   onArchive,
+  onAssign,
   customFieldDefinitions = [],
 }: ColumnActions): ColumnDef<Asset, unknown>[] {
   const baseColumns: ColumnDef<Asset, unknown>[] = [
@@ -104,7 +107,11 @@ export function getAssetColumns({
       cell: ({ row }) => {
         const name = row.original.assignedPersonName;
         if (!name) {
-          return (
+          return onAssign ? (
+            <InlineAssignPicker
+              onSelect={(personId) => onAssign(row.original, personId)}
+            />
+          ) : (
             <span className="text-sm text-muted-foreground italic">Unassigned</span>
           );
         }

@@ -42,7 +42,7 @@ interface DataTableProps<TData, TValue> {
   hideTable?: boolean;
   children?: ReactNode;
   variant?: "default" | "borderless";
-  tableDensity?: "comfortable" | "compact";
+
 }
 
 export function DataTable<TData, TValue>({
@@ -65,7 +65,7 @@ export function DataTable<TData, TValue>({
   paginationControls,
   hideTable,
   children,
-  tableDensity = "comfortable",
+
 }: DataTableProps<TData, TValue>) {
   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialColumnFilters ?? []);
@@ -127,7 +127,7 @@ export function DataTable<TData, TValue>({
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className={tableDensity === "compact" ? "py-1" : undefined}>
+                      <TableCell key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),

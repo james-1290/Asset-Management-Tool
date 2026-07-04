@@ -109,12 +109,10 @@ function statusBadge(days: number): { label: string; className: string } {
   return { label: "Stable", className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800" };
 }
 
-const PAGE_SIZE_COMFORTABLE = 3;
-const PAGE_SIZE_COMPACT = 5;
+const PAGE_SIZE = 5;
 
 export function ExpiringItemsTable() {
   const [category, setCategory] = useState<ExpiryCategory>("certificates");
-  const [viewMode, setViewMode] = useState<"comfortable" | "compact">("comfortable");
   const [page, setPage] = useState(1);
 
   const certs = useCertificateExpiries(90, category === "certificates");
@@ -137,14 +135,14 @@ export function ExpiringItemsTable() {
     }
   }, [category, certs.data, warranties.data, licences.data]);
 
-  const pageSize = viewMode === "comfortable" ? PAGE_SIZE_COMFORTABLE : PAGE_SIZE_COMPACT;
+  const pageSize = PAGE_SIZE;
   const pageCount = Math.max(1, Math.ceil(allItems.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const paginatedItems = allItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const start = allItems.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
 
   const config = CATEGORY_CONFIG[category];
-  const rowPadding = viewMode === "comfortable" ? "py-5" : "py-3";
+  const rowPadding = "py-3";
 
   function handleCategoryChange(newCategory: ExpiryCategory) {
     setCategory(newCategory);
@@ -180,32 +178,6 @@ export function ExpiringItemsTable() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* View mode toggle */}
-            <div className="flex rounded-lg border border-border overflow-hidden">
-              <button
-                type="button"
-                onClick={() => { setViewMode("comfortable"); setPage(1); }}
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                  viewMode === "comfortable"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Comfortable
-              </button>
-              <button
-                type="button"
-                onClick={() => { setViewMode("compact"); setPage(1); }}
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                  viewMode === "compact"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Compact
-              </button>
-            </div>
-
             <Button size="sm" asChild>
               <Link to={config.addHref}>
                 <Plus className="h-4 w-4 mr-1.5" />

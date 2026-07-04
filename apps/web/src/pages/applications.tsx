@@ -68,7 +68,7 @@ export default function ApplicationsPage() {
   const publisherParam = searchParams.get("publisher") ?? "";
 
   const [searchInput, setSearchInput] = useState(searchParam);
-  const [tableDensity, setTableDensity] = useState<"comfortable" | "compact">("comfortable");
+
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
@@ -453,7 +453,7 @@ export default function ApplicationsPage() {
         rowCount={totalCount}
         sorting={sorting}
         onSortingChange={handleSortingChange}
-        tableDensity={tableDensity}
+
         toolbar={() => (
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-4">
@@ -475,33 +475,6 @@ export default function ApplicationsPage() {
                 />
               </div>
               <div className="flex items-center gap-1">
-                <div className="flex items-center rounded-lg border bg-card">
-                  <button
-                    type="button"
-                    onClick={() => setTableDensity("comfortable")}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-l-lg transition-colors",
-                      tableDensity === "comfortable"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Comfortable
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTableDensity("compact")}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-r-lg transition-colors",
-                      tableDensity === "compact"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Compact
-                  </button>
-                </div>
-                <div className="w-px h-5 bg-border mx-1" />
                 <Button
                   variant="ghost"
                   size="icon"
