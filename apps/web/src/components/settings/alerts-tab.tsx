@@ -678,13 +678,25 @@ export function AlertsTab() {
                       const label = next.toDateString() === new Date(now.getTime() + 86400000).toDateString() ? "Tomorrow" : next.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
                       return `${label} ${time}`;
                     }
+                    if (type === "first_day_of_month" || type === "first_business_day") {
+                      const firstRun = (year: number, month: number) => {
+                        const d = new Date(year, month, 1, h, m, 0, 0);
+                        if (type === "first_business_day") {
+                          while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+                        }
+                        return d;
+                      };
+                      let nextRun = firstRun(now.getFullYear(), now.getMonth());
+                      if (nextRun <= now) nextRun = firstRun(now.getFullYear(), now.getMonth() + 1);
+                      return `${nextRun.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} ${time}`;
+                    }
                     const dayMap: Record<string, number> = { SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6 };
                     const targetDay = dayMap[day] ?? 1;
                     const next = new Date(now);
                     next.setHours(h, m, 0, 0);
                     let daysUntil = (targetDay - now.getDay() + 7) % 7;
                     if (daysUntil === 0 && next <= now) daysUntil = 7;
-                    if (type === "biweekly" && daysUntil < 7) daysUntil += 7;
+                    if (type === "every_other_week" && daysUntil < 7) daysUntil += 7;
                     next.setDate(now.getDate() + daysUntil);
                     return `${next.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} ${time}`;
                   })()}</span>

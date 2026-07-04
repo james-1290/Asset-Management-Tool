@@ -10,6 +10,7 @@ import com.assetmanagement.api.repository.*
 import org.slf4j.LoggerFactory
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.util.HtmlUtils
 import java.time.Instant
 import java.time.ZoneId
@@ -45,6 +46,10 @@ class AlertProcessingService(
     private fun getSetting(key: String, default: String = ""): String =
         systemSettingRepository.findByKey(key)?.value ?: default
 
+    // Alert history + notification writes commit atomically so a mid-run failure
+    // can't leave partial dedup state. (The scheduled run is low-frequency, so
+    // holding the transaction across the send is acceptable.)
+    @Transactional
     fun processAlerts(): AlertRunResult {
         val runId = UUID.randomUUID()
         val now = Instant.now()
@@ -68,6 +73,10 @@ class AlertProcessingService(
         val licenceEnabled = getSetting("alerts.licence.enabled", "true") == "true"
 
         val allItems = mutableListOf<ExpiringItem>()
+        // Thresholds are ascending; an item expiring in 5 days matches the 7/14/30/90
+        // buckets alike. Track which entities we've already assigned so each item is
+        // alerted once, at its smallest (tightest) matching threshold.
+        val seen = mutableSetOf<Pair<String, UUID>>()
 
         for (threshold in thresholds) {
             val cutoff = now.plus(threshold.toLong(), ChronoUnit.DAYS)
@@ -82,7 +91,8 @@ class AlertProcessingService(
                     )
                 }
                 assetRepository.findAll(spec).forEach { asset ->
-                    if (!alertHistoryRepository.existsByEntityTypeAndEntityIdAndThresholdDays("warranty", asset.id, threshold)) {
+                    if (seen.add("warranty" to asset.id) &&
+                        !alertHistoryRepository.existsByEntityTypeAndEntityIdAndThresholdDays("warranty", asset.id, threshold)) {
                         val daysUntil = ChronoUnit.DAYS.between(now, asset.warrantyExpiryDate!!)
                         allItems.add(ExpiringItem("warranty", asset.id, asset.name, asset.warrantyExpiryDate!!, threshold, daysUntil))
                     }
@@ -99,7 +109,8 @@ class AlertProcessingService(
                     )
                 }
                 certificateRepository.findAll(spec).forEach { cert ->
-                    if (!alertHistoryRepository.existsByEntityTypeAndEntityIdAndThresholdDays("certificate", cert.id, threshold)) {
+                    if (seen.add("certificate" to cert.id) &&
+                        !alertHistoryRepository.existsByEntityTypeAndEntityIdAndThresholdDays("certificate", cert.id, threshold)) {
                         val daysUntil = ChronoUnit.DAYS.between(now, cert.expiryDate!!)
                         allItems.add(ExpiringItem("certificate", cert.id, cert.name, cert.expiryDate!!, threshold, daysUntil))
                     }
@@ -116,7 +127,8 @@ class AlertProcessingService(
                     )
                 }
                 applicationRepository.findAll(spec).forEach { app ->
-                    if (!alertHistoryRepository.existsByEntityTypeAndEntityIdAndThresholdDays("licence", app.id, threshold)) {
+                    if (seen.add("licence" to app.id) &&
+                        !alertHistoryRepository.existsByEntityTypeAndEntityIdAndThresholdDays("licence", app.id, threshold)) {
                         val daysUntil = ChronoUnit.DAYS.between(now, app.expiryDate!!)
                         allItems.add(ExpiringItem("licence", app.id, app.name, app.expiryDate!!, threshold, daysUntil))
                     }
