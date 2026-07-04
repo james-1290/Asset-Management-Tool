@@ -4,6 +4,7 @@ import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.enums.AssetStatus
 import com.assetmanagement.api.model.enums.CertificateStatus
 import com.assetmanagement.api.model.enums.ApplicationStatus
+import com.assetmanagement.api.util.DepreciationCalculator
 import jakarta.persistence.EntityManager
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -57,15 +58,7 @@ class DashboardController(
             val purchaseDate = row[1] as Instant
             val months = row[2] as? Int
 
-            if (months != null && months > 0) {
-                val monthly = cost.divide(BigDecimal(months), 2, RoundingMode.HALF_UP)
-                val elapsed = ChronoUnit.DAYS.between(purchaseDate, now).toBigDecimal()
-                    .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong().coerceIn(0, months.toLong())
-                val totalDepr = (monthly * BigDecimal(elapsed)).setScale(2, RoundingMode.HALF_UP)
-                totalBookValue += (cost - totalDepr).coerceAtLeast(BigDecimal.ZERO)
-            } else {
-                totalBookValue += cost
-            }
+            totalBookValue += DepreciationCalculator.compute(cost, months, purchaseDate, now).bookValue ?: cost
         }
 
         return ResponseEntity.ok(DashboardSummaryDto(totalAssets, totalValue, totalBookValue.setScale(2, RoundingMode.HALF_UP)))
