@@ -17,6 +17,7 @@ class Role(
     @Column(name = "description")
     var description: String? = null,
 
+    @org.hibernate.annotations.CreationTimestamp
     @Column(name = "created_at", nullable = false)
     var createdAt: Instant = Instant.now(),
 

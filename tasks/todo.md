@@ -27,7 +27,7 @@ source file). Items marked `[~]` are being worked this session.
 ### B. Systemic data-consistency
 - [x] Reports: licence-summary now applies the computed-status correction (Active-but-expired/near → Expired/PendingRenewal), matching the dashboard/list views (PR #139)
 - [x] Duplicate alerts: per-run seen-set assigns each item to its smallest matching threshold (PR #138)
-- [ ] `updatedAt` never auto-managed — add @UpdateTimestamp/@CreationTimestamp via a @MappedSuperclass audit base
+- [x] Timestamps auto-managed: @CreationTimestamp/@UpdateTimestamp added to all entities with created_at/updated_at, so updatedAt advances on every update regardless of the code path (PR #144)
 - [x] Optimistic locking now live: read DTOs expose entityVersion, updates send it, controllers reject a mismatched version with 409 (Asset/Certificate/Application/Person/Location) (PR #143)
 - [ ] Timezone/date-only hazard end-to-end — store date-only fields as DATE/LocalDate; centralise date formatting; fix truncating daysUntilExpiry
 - [x] Unique constraints added (V015, PR #142): custom_field_values(definition,entity), roles/permissions/*_types name, asset_models(type,name); migration disambiguates pre-existing duplicates first. Duplicates now return 409.
