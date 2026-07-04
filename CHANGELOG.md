@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-04 22:20 — Shared type-CRUD helper + CustomFieldDefinitionService
+
+- Extracted the near-identical Asset/Certificate/Application **type** controllers' shared logic into `ArchivableTypeCrud<E>` (paged search list, get-by-id, custom-field listing, in-use-guarded archive, bulk archive). Each controller keeps its thin request-mapped endpoints (correctly proxied) that delegate to the helper, plus its own create/update.
+- New `CustomFieldDefinitionService` centralises the custom-field *definition* create + update-diff (archive-removed / update-matched / add-new) previously duplicated across the 3 controllers; invalid field types now throw `400` atomically (rolling back rather than leaving a partial type).
+- Added a shared `ArchivableType` interface (implemented by the 3 type entities) and an `ArchivableTypeRepository<E>` base repository. No DB or API-shape change (verified all endpoints, custom-field create/update/delete, in-use 409 guard, and invalid-type 400 against the running stack).
+- Note: the separate 4× `CustomFieldValue` upsert duplication (assets/certificates/applications/asset-templates) is a follow-up PR.
+
 ## 2026-07-04 22:00 — createEntityApi / createEntityHooks factories
 
 - Added `lib/api/create-entity-api.ts` (`createEntityApi`) and `hooks/create-entity-hooks.ts` (`createEntityHooks`) to remove the ~90%-identical CRUD boilerplate across the 5 entity modules (assets, certificates, applications, locations, people).

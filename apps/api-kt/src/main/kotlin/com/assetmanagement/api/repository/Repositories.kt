@@ -49,8 +49,12 @@ interface PersonRepository : JpaRepository<Person, UUID>, JpaSpecificationExecut
     fun findByEmailIgnoreCaseAndIsArchivedFalse(email: String): Person?
 }
 
+/** Base for the entity-type repositories consumed by the generic archivable-type controller. */
+@org.springframework.data.repository.NoRepositoryBean
+interface ArchivableTypeRepository<E> : JpaRepository<E, UUID>, JpaSpecificationExecutor<E>
+
 @Repository
-interface AssetTypeRepository : JpaRepository<AssetType, UUID>, JpaSpecificationExecutor<AssetType>
+interface AssetTypeRepository : ArchivableTypeRepository<AssetType>
 
 @Repository
 interface AssetModelRepository : JpaRepository<AssetModel, UUID>, JpaSpecificationExecutor<AssetModel> {
@@ -73,7 +77,7 @@ interface AssetHistoryRepository : JpaRepository<AssetHistory, UUID> {
 }
 
 @Repository
-interface CertificateTypeRepository : JpaRepository<CertificateType, UUID>, JpaSpecificationExecutor<CertificateType>
+interface CertificateTypeRepository : ArchivableTypeRepository<CertificateType>
 
 @Repository
 interface CertificateRepository : JpaRepository<Certificate, UUID>, JpaSpecificationExecutor<Certificate> {
@@ -88,7 +92,7 @@ interface CertificateHistoryRepository : JpaRepository<CertificateHistory, UUID>
 }
 
 @Repository
-interface ApplicationTypeRepository : JpaRepository<ApplicationType, UUID>, JpaSpecificationExecutor<ApplicationType>
+interface ApplicationTypeRepository : ArchivableTypeRepository<ApplicationType>
 
 @Repository
 interface ApplicationRepository : JpaRepository<Application, UUID>, JpaSpecificationExecutor<Application> {

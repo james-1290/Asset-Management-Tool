@@ -1,28 +1,22 @@
 package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
-import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.model.CertificateType
 import com.assetmanagement.api.model.CustomFieldDefinition
 import com.assetmanagement.api.model.enums.CustomFieldType
 import com.assetmanagement.api.model.enums.EntityType
 import com.assetmanagement.api.repository.CertificateRepository
 import com.assetmanagement.api.repository.CertificateTypeRepository
-import com.assetmanagement.api.repository.CustomFieldDefinitionRepository
-import com.assetmanagement.api.repository.CustomFieldValueRepository
 import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
-import jakarta.persistence.criteria.Predicate
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
-import org.springframework.data.jpa.domain.Specification
+import com.assetmanagement.api.service.CustomFieldDefinitionService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
-import org.springframework.web.server.ResponseStatusException
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 import java.net.URI
 import java.time.Instant
 import java.util.*
@@ -33,121 +27,76 @@ import java.util.*
 class CertificateTypesController(
     private val certificateTypeRepository: CertificateTypeRepository,
     private val certificateRepository: CertificateRepository,
-    private val customFieldDefinitionRepository: CustomFieldDefinitionRepository,
-    private val customFieldValueRepository: CustomFieldValueRepository,
+    private val customFieldDefinitionService: CustomFieldDefinitionService,
     private val auditService: AuditService,
-    private val currentUserService: CurrentUserService
+    private val currentUserService: CurrentUserService,
 ) {
+    private val auditEntityType = "CertificateType"
+
+    private val crud = ArchivableTypeCrud(
+        certificateTypeRepository, auditService, currentUserService, auditEntityType, "certificate",
+        toDto = ::toDto,
+        inUseCount = certificateRepository::countByCertificateTypeIdAndIsArchivedFalse,
+    )
+
+    private fun toDto(entity: CertificateType): CertificateTypeDto = CertificateTypeDto(
+        entity.id, entity.name, entity.description, entity.isArchived, entity.createdAt, entity.updatedAt,
+        entity.customFieldDefinitions.filter { !it.isArchived }.sortedBy { it.sortOrder }
+            .map { CustomFieldDefinitionDto(it.id, it.name, it.fieldType.name, it.options, it.isRequired, it.sortOrder) },
+    )
+
+    private fun newDefinition(typeId: UUID) = { ft: CustomFieldType, f: CustomFieldDefinitionInput ->
+        CustomFieldDefinition(entityType = EntityType.Certificate, certificateTypeId = typeId, name = f.name,
+            fieldType = ft, options = f.options, isRequired = f.isRequired, sortOrder = f.sortOrder)
+    }
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int, @RequestParam(defaultValue = "25") pageSize: Int,
         @RequestParam(required = false) search: String?, @RequestParam(defaultValue = "name") sortBy: String,
-        @RequestParam(defaultValue = "asc") sortDir: String
-    ): ResponseEntity<PagedResponse<CertificateTypeDto>> {
-        val p = maxOf(1, page); val ps = pageSize.coerceIn(1, 100)
-        val spec = Specification<CertificateType> { root, _, cb ->
-            val preds = mutableListOf<Predicate>()
-            preds.add(cb.equal(root.get<Boolean>("isArchived"), false))
-            if (!search.isNullOrBlank()) preds.add(cb.like(cb.lower(root.get("name")), "%${SqlUtils.escapeLikePattern(search.lowercase())}%", '\\'))
-            cb.and(*preds.toTypedArray())
-        }
-        val dir = if (sortDir.equals("desc", ignoreCase = true)) Sort.Direction.DESC else Sort.Direction.ASC
-        val sort = Sort.by(dir, when (sortBy.lowercase()) { "createdat" -> "createdAt"; "description" -> "description"; else -> "name" })
-        val result = certificateTypeRepository.findAll(spec, PageRequest.of(p - 1, ps, sort))
-        return ResponseEntity.ok(PagedResponse(result.content.map { it.toDto() }, p, ps, result.totalElements))
-    }
+        @RequestParam(defaultValue = "asc") sortDir: String,
+    ) = crud.getAll(page, pageSize, search, sortBy, sortDir)
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
-    fun getById(@PathVariable id: UUID): ResponseEntity<CertificateTypeDto> {
-        val type = certificateTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
-        return ResponseEntity.ok(type.toDto())
-    }
+    fun getById(@PathVariable id: UUID) = crud.getById(id)
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/customfields")
-    fun getCustomFields(@PathVariable id: UUID): ResponseEntity<Any> {
-        if (!certificateTypeRepository.existsById(id)) return ResponseEntity.notFound().build()
-        val defs = customFieldDefinitionRepository.findByCertificateTypeIdAndIsArchivedFalse(id)
-            .sortedBy { it.sortOrder }.map { CustomFieldDefinitionDto(it.id, it.name, it.fieldType.name, it.options, it.isRequired, it.sortOrder) }
-        return ResponseEntity.ok(defs)
-    }
+    fun getCustomFields(@PathVariable id: UUID) = crud.getCustomFields(id)
+
+    @DeleteMapping("/{id}")
+    @Transactional
+    fun archive(@PathVariable id: UUID) = crud.archive(id)
+
+    @PostMapping("/bulk-archive")
+    @Transactional
+    fun bulkArchive(@RequestBody request: BulkArchiveRequest) = crud.bulkArchive(request)
 
     @PostMapping
     @Transactional
     fun create(@RequestBody request: CreateCertificateTypeRequest): ResponseEntity<Any> {
         val type = CertificateType(name = request.name, description = request.description)
         certificateTypeRepository.save(type)
-        request.customFields?.forEach { field ->
-            val ft = runCatching { CustomFieldType.valueOf(field.fieldType) }.getOrNull()
-                ?: return ResponseEntity.badRequest().body(mapOf("error" to "Invalid field type: ${field.fieldType}"))
-            customFieldDefinitionRepository.save(CustomFieldDefinition(entityType = EntityType.Certificate, certificateTypeId = type.id,
-                name = field.name, fieldType = ft, options = field.options, isRequired = field.isRequired, sortOrder = field.sortOrder))
-        }
-        auditService.log(AuditEntry("Created", "CertificateType", type.id.toString(), type.name,
+        customFieldDefinitionService.createDefinitions(request.customFields, newDefinition(type.id))
+        auditService.log(AuditEntry("Created", auditEntityType, type.id.toString(), type.name,
             "Created certificate type \"${type.name}\"", currentUserService.userId, currentUserService.userName))
-        return ResponseEntity.created(URI("/api/v1/certificatetypes/${type.id}")).body(certificateTypeRepository.findById(type.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }.toDto())
+        return ResponseEntity.created(URI("/api/v1/certificatetypes/${type.id}"))
+            .body(toDto(certificateTypeRepository.findById(type.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }))
     }
 
     @PutMapping("/{id}")
     @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateCertificateTypeRequest): ResponseEntity<Any> {
         val type = certificateTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
-        type.name = request.name; type.description = request.description; type.updatedAt = Instant.now()
-        if (request.customFields != null) {
-            val existing = type.customFieldDefinitions.filter { !it.isArchived }
-            val requestIds = request.customFields.mapNotNull { it.id }.toSet()
-            existing.forEach { def ->
-                if (def.id !in requestIds) {
-                    def.isArchived = true
-                    customFieldValueRepository.deleteAll(customFieldValueRepository.findByCustomFieldDefinitionId(def.id!!))
-                }
-            }
-            request.customFields.forEach { field ->
-                val ft = runCatching { CustomFieldType.valueOf(field.fieldType) }.getOrNull()
-                    ?: return ResponseEntity.badRequest().body(mapOf("error" to "Invalid field type: ${field.fieldType}"))
-                if (field.id != null) {
-                    existing.find { it.id == field.id }?.apply { name = field.name; fieldType = ft; options = field.options; isRequired = field.isRequired; sortOrder = field.sortOrder }
-                } else {
-                    type.customFieldDefinitions.add(CustomFieldDefinition(entityType = EntityType.Certificate, certificateTypeId = type.id,
-                        name = field.name, fieldType = ft, options = field.options, isRequired = field.isRequired, sortOrder = field.sortOrder))
-                }
-            }
-        }
+        type.name = request.name
+        type.description = request.description
+        type.updatedAt = Instant.now()
+        customFieldDefinitionService.syncDefinitions(type.customFieldDefinitions, request.customFields, newDefinition(type.id))
         certificateTypeRepository.save(type)
-        auditService.log(AuditEntry("Updated", "CertificateType", type.id.toString(), type.name,
+        auditService.log(AuditEntry("Updated", auditEntityType, type.id.toString(), type.name,
             "Updated certificate type \"${type.name}\"", currentUserService.userId, currentUserService.userName))
-        return ResponseEntity.ok(certificateTypeRepository.findById(type.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }.toDto())
+        return ResponseEntity.ok(toDto(certificateTypeRepository.findById(type.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }))
     }
-
-    @PostMapping("/bulk-archive")
-    @Transactional
-    fun bulkArchive(@RequestBody request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {
-        var s = 0; var f = 0
-        request.ids.forEach { id -> val t = certificateTypeRepository.findById(id).orElse(null); if (t == null || t.isArchived) { f++; return@forEach }
-            val count = certificateRepository.countByCertificateTypeIdAndIsArchivedFalse(id); if (count > 0) { f++; return@forEach }
-            t.isArchived = true; t.updatedAt = Instant.now(); certificateTypeRepository.save(t)
-            auditService.log(AuditEntry("Archived", "CertificateType", t.id.toString(), t.name, "Bulk archived", currentUserService.userId, currentUserService.userName)); s++ }
-        return ResponseEntity.ok(BulkActionResponse(s, f))
-    }
-
-    @DeleteMapping("/{id}")
-    @Transactional
-    fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
-        val t = certificateTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
-        val certCount = certificateRepository.countByCertificateTypeIdAndIsArchivedFalse(id)
-        if (certCount > 0) {
-            return ResponseEntity.status(409).body(mapOf("error" to "Cannot delete \"${t.name}\" because it is used by $certCount certificate(s). Reassign or delete those certificates first."))
-        }
-        t.isArchived = true; t.updatedAt = Instant.now(); certificateTypeRepository.save(t)
-        auditService.log(AuditEntry("Archived", "CertificateType", t.id.toString(), t.name,
-            "Archived certificate type \"${t.name}\"", currentUserService.userId, currentUserService.userName))
-        return ResponseEntity.noContent().build()
-    }
-
-    private fun CertificateType.toDto() = CertificateTypeDto(id, name, description, isArchived, createdAt, updatedAt,
-        customFieldDefinitions.filter { !it.isArchived }.sortedBy { it.sortOrder }
-            .map { CustomFieldDefinitionDto(it.id, it.name, it.fieldType.name, it.options, it.isRequired, it.sortOrder) })
 }
