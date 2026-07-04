@@ -19,5 +19,13 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // The React Compiler cannot memoize the functions returned by TanStack
+      // Table (useReactTable) or React Hook Form (useForm/watch), so it safely
+      // skips optimizing those components. This rule only reports that skip — it
+      // flags no defect and can't be resolved without dropping those libraries —
+      // so we disable it rather than carry permanent, un-actionable warnings.
+      'react-hooks/incompatible-library': 'off',
+    },
   },
 ])
