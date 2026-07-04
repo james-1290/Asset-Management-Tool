@@ -120,6 +120,42 @@ export function useRenewApplication() {
   });
 }
 
+export function useApplicationSeats(id: string) {
+  return useQuery({
+    queryKey: ["applications", id, "seats"],
+    queryFn: () => applicationsApi.getSeats(id),
+    enabled: !!id,
+  });
+}
+
+export function useAssignSeat() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, personId, notes }: { id: string; personId: string; notes?: string }) =>
+      applicationsApi.assignSeat(id, { personId, notes }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "seats"] });
+      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+    },
+  });
+}
+
+export function useReleaseSeat() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, personId }: { id: string; personId: string }) =>
+      applicationsApi.releaseSeat(id, personId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "seats"] });
+      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+    },
+  });
+}
+
 export function useCheckApplicationDuplicates() {
   return useMutation({
     mutationFn: (data: CheckApplicationDuplicatesRequest) => applicationsApi.checkDuplicates(data),

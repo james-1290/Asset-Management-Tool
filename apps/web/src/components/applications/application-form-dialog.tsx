@@ -358,19 +358,8 @@ export function ApplicationFormDialog({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="usedSeats"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-semibold">Used Seats</FormLabel>
-                      <FormControl>
-                        <Input type="number" min={0} placeholder="0" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Used seats is derived from licence seat assignments (managed on the
+                    application detail page), so it is not an editable field here. */}
                 <div className="lg:col-span-2">
                   <FormField
                     control={form.control}

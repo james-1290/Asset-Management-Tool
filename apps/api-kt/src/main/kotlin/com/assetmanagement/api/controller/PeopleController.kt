@@ -36,6 +36,7 @@ class PeopleController(
     private val certificateRepository: CertificateRepository,
     private val applicationRepository: ApplicationRepository,
     private val personHistoryRepository: PersonHistoryRepository,
+    private val seatAssignmentRepository: ApplicationSeatAssignmentRepository,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
@@ -406,6 +407,21 @@ class PeopleController(
                     }
                 }
             }
+        }
+
+        // Reclaim any licence seats the person held, and refresh the affected
+        // applications' derived used-seat counts.
+        val heldSeats = seatAssignmentRepository.findByPersonId(person.id)
+        if (heldSeats.isNotEmpty()) {
+            val affectedAppIds = heldSeats.map { it.applicationId }.toSet()
+            seatAssignmentRepository.deleteAll(heldSeats)
+            for (appId in affectedAppIds) {
+                val app = applicationRepository.findById(appId).orElse(null) ?: continue
+                app.usedSeats = seatAssignmentRepository.countByApplicationId(appId).toInt()
+                app.updatedAt = Instant.now()
+                applicationRepository.save(app)
+            }
+            results.add("Released ${heldSeats.size} licence seat(s)")
         }
 
         if (request.deactivatePerson) {

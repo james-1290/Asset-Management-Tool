@@ -5,6 +5,7 @@ import type {
   UpdateApplicationRequest,
   DeactivateApplicationRequest,
   ReactivateApplicationRequest,
+  SeatAssignment,
 } from "../../types/application";
 import type { ApplicationHistory } from "../../types/application-history";
 import type { PagedResponse } from "../../types/paged-response";
@@ -66,6 +67,18 @@ export const applicationsApi = {
 
   renew(id: string, data: { newExpiryDate: string; notes?: string }): Promise<Application> {
     return apiClient.post<Application>(`/applications/${id}/renew`, data);
+  },
+
+  getSeats(id: string): Promise<SeatAssignment[]> {
+    return apiClient.get<SeatAssignment[]>(`/applications/${id}/seats`);
+  },
+
+  assignSeat(id: string, data: { personId: string; notes?: string }): Promise<SeatAssignment[]> {
+    return apiClient.post<SeatAssignment[]>(`/applications/${id}/seats`, data);
+  },
+
+  releaseSeat(id: string, personId: string): Promise<void> {
+    return apiClient.delete(`/applications/${id}/seats/${personId}`);
   },
 
   archive(id: string): Promise<void> {

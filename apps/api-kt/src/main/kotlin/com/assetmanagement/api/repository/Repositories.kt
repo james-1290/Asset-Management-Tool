@@ -181,3 +181,16 @@ interface UserAlertRuleRepository : JpaRepository<UserAlertRule, UUID> {
 interface AttachmentRepository : JpaRepository<Attachment, UUID> {
     fun findByEntityTypeAndEntityIdAndIsArchivedFalseOrderByCreatedAtDesc(entityType: String, entityId: UUID): List<Attachment>
 }
+
+@Repository
+interface ApplicationSeatAssignmentRepository : JpaRepository<ApplicationSeatAssignment, UUID> {
+    fun findByApplicationIdOrderByAssignedAtDesc(applicationId: UUID): List<ApplicationSeatAssignment>
+    fun countByApplicationId(applicationId: UUID): Long
+    fun existsByApplicationIdAndPersonId(applicationId: UUID, personId: UUID): Boolean
+    fun findByPersonId(personId: UUID): List<ApplicationSeatAssignment>
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ApplicationSeatAssignment s WHERE s.applicationId = :applicationId AND s.personId = :personId")
+    fun deleteByApplicationIdAndPersonId(@Param("applicationId") applicationId: UUID, @Param("personId") personId: UUID): Int
+}
