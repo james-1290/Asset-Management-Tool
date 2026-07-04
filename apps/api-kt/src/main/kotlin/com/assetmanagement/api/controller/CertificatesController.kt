@@ -2,7 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Certificate
-import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.util.computeStatus
 import com.assetmanagement.api.util.versionConflict
@@ -13,7 +13,6 @@ import com.assetmanagement.api.service.AuditChange
 import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
-import com.opencsv.CSVWriter
 import jakarta.persistence.criteria.Predicate
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
@@ -26,7 +25,6 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
-import java.io.OutputStreamWriter
 import java.net.URI
 import java.time.Instant
 import java.time.ZoneOffset
@@ -340,41 +338,39 @@ class CertificatesController(
         @RequestParam(required = false) ids: String?,
         response: HttpServletResponse
     ) {
-        response.contentType = "text/csv"
-        response.setHeader("Content-Disposition", "attachment; filename=certificates-export.csv")
-
         val certificates = if (!ids.isNullOrBlank()) {
             val idList = ids.split(",").mapNotNull { runCatching { UUID.fromString(it.trim()) }.getOrNull() }
             certificateRepository.findAllById(idList).filter { !it.isArchived }
         } else {
-            certificateRepository.findAll(buildSpec(search, status, typeId, expiryFrom, expiryTo), sortOf(sortBy, sortDir))
+            certificateRepository.findAll(
+                buildSpec(search, status, typeId, expiryFrom, expiryTo),
+                PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir)),
+            ).content
         }
 
-        val writer = CSVWriter(OutputStreamWriter(response.outputStream))
-        writer.writeNext(
+        CsvExport.stream(
+            response,
+            "certificates-export.csv",
             arrayOf(
                 "Name", "CertificateType", "Status", "Issuer", "Subject",
                 "IssuedDate", "ExpiryDate", "AutoRenewal", "Notes", "CreatedAt", "UpdatedAt"
+            ),
+            certificates.asSequence(),
+        ) { c ->
+            arrayOf(
+                c.name,
+                c.certificateType?.name ?: "",
+                c.status.name,
+                c.issuer ?: "",
+                c.subject ?: "",
+                c.issuedDate?.let { dateFormat.format(it) } ?: "",
+                c.expiryDate?.let { dateFormat.format(it) } ?: "",
+                c.autoRenewal.toString(),
+                c.notes ?: "",
+                dateFormat.format(c.createdAt),
+                dateFormat.format(c.updatedAt)
             )
-        )
-        certificates.forEach { c ->
-            writer.writeNext(CsvUtils.sanitizeRow(
-                arrayOf(
-                    c.name,
-                    c.certificateType?.name ?: "",
-                    c.status.name,
-                    c.issuer ?: "",
-                    c.subject ?: "",
-                    c.issuedDate?.let { dateFormat.format(it) } ?: "",
-                    c.expiryDate?.let { dateFormat.format(it) } ?: "",
-                    c.autoRenewal.toString(),
-                    c.notes ?: "",
-                    dateFormat.format(c.createdAt),
-                    dateFormat.format(c.updatedAt)
-                )
-            ))
         }
-        writer.flush()
     }
 
     @PreAuthorize("isAuthenticated()")

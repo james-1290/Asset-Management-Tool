@@ -3,7 +3,7 @@ package com.assetmanagement.api.controller
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Application
 import com.assetmanagement.api.model.ApplicationSeatAssignment
-import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.util.computeStatus
 import com.assetmanagement.api.util.versionConflict
@@ -13,7 +13,6 @@ import com.assetmanagement.api.model.enums.ApplicationStatus
 import com.assetmanagement.api.model.enums.LicenceType
 import com.assetmanagement.api.repository.*
 import com.assetmanagement.api.service.*
-import com.opencsv.CSVWriter
 import jakarta.persistence.criteria.Predicate
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
@@ -26,7 +25,6 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
-import java.io.OutputStreamWriter
 import java.math.BigDecimal
 import java.net.URI
 import java.time.Instant
@@ -119,48 +117,43 @@ class ApplicationsController(
         @RequestParam(required = false) ids: String?,
         response: HttpServletResponse
     ) {
-        response.contentType = "text/csv"
-        response.setHeader("Content-Disposition", "attachment; filename=applications-export.csv")
-
         val applications: Iterable<Application> = if (!ids.isNullOrBlank()) {
             val idList = ids.split(",").mapNotNull { runCatching { UUID.fromString(it.trim()) }.getOrNull() }
             applicationRepository.findAllById(idList).filter { !it.isArchived }
         } else {
             val spec = buildSpec(search, status, includeStatuses, typeId, expiryFrom, expiryTo, licenceType, costMin, costMax)
-            applicationRepository.findAll(spec, sortOf(sortBy, sortDir))
+            applicationRepository.findAll(spec, PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir))).content
         }
 
-        val writer = CSVWriter(OutputStreamWriter(response.outputStream))
-        writer.writeNext(
+        CsvExport.stream(
+            response,
+            "applications-export.csv",
             arrayOf(
                 "Name", "ApplicationType", "Status", "Publisher", "Version",
                 "LicenceKey", "LicenceType", "MaxSeats", "UsedSeats",
                 "ExpiryDate", "PurchaseCost", "AutoRenewal", "Notes",
                 "CreatedAt", "UpdatedAt"
+            ),
+            applications.asSequence(),
+        ) { a ->
+            arrayOf(
+                a.name,
+                a.applicationType?.name ?: "",
+                a.status.name,
+                a.publisher ?: "",
+                a.version ?: "",
+                a.licenceKey ?: "",
+                a.licenceType?.name ?: "",
+                a.maxSeats?.toString() ?: "",
+                a.usedSeats?.toString() ?: "",
+                a.expiryDate?.let { dateOnlyFormat.format(it) } ?: "",
+                a.purchaseCost?.let { String.format("%.2f", it) } ?: "",
+                a.autoRenewal.toString(),
+                a.notes ?: "",
+                dateFormat.format(a.createdAt),
+                dateFormat.format(a.updatedAt)
             )
-        )
-        applications.forEach { a ->
-            writer.writeNext(CsvUtils.sanitizeRow(
-                arrayOf(
-                    a.name,
-                    a.applicationType?.name ?: "",
-                    a.status.name,
-                    a.publisher ?: "",
-                    a.version ?: "",
-                    a.licenceKey ?: "",
-                    a.licenceType?.name ?: "",
-                    a.maxSeats?.toString() ?: "",
-                    a.usedSeats?.toString() ?: "",
-                    a.expiryDate?.let { dateOnlyFormat.format(it) } ?: "",
-                    a.purchaseCost?.let { String.format("%.2f", it) } ?: "",
-                    a.autoRenewal.toString(),
-                    a.notes ?: "",
-                    dateFormat.format(a.createdAt),
-                    dateFormat.format(a.updatedAt)
-                )
-            ))
         }
-        writer.flush()
     }
 
     // ── GET /{id} ── Get by ID ──────────────────────────────────────────

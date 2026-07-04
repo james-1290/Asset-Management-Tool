@@ -2,12 +2,11 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Person
-import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.repository.*
 import com.assetmanagement.api.service.*
-import com.opencsv.CSVWriter
 import jakarta.persistence.criteria.Predicate
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
@@ -20,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
-import java.io.OutputStreamWriter
 import java.net.URI
 import java.time.Instant
 import java.time.ZoneOffset
@@ -84,21 +82,26 @@ class PeopleController(
         @RequestParam(required = false) ids: String?,
         response: HttpServletResponse
     ) {
-        response.contentType = "text/csv"
-        response.setHeader("Content-Disposition", "attachment; filename=people-export.csv")
         val people = if (!ids.isNullOrBlank()) {
             val idList = ids.split(",").mapNotNull { runCatching { UUID.fromString(it.trim()) }.getOrNull() }
             personRepository.findAllById(idList).filter { !it.isArchived }
         } else {
-            personRepository.findAll(buildSpec(search, locationId, department), sortOf(sortBy, sortDir))
+            personRepository.findAll(
+                buildSpec(search, locationId, department),
+                PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir)),
+            ).content
         }
-        val writer = CSVWriter(OutputStreamWriter(response.outputStream))
-        writer.writeNext(arrayOf("FullName", "Email", "Department", "JobTitle", "Location", "CreatedAt", "UpdatedAt"))
-        people.forEach { p ->
-            writer.writeNext(CsvUtils.sanitizeRow(arrayOf(p.fullName, p.email ?: "", p.department ?: "", p.jobTitle ?: "",
-                p.location?.name ?: "", dateFormat.format(p.createdAt), dateFormat.format(p.updatedAt))))
+        CsvExport.stream(
+            response,
+            "people-export.csv",
+            arrayOf("FullName", "Email", "Department", "JobTitle", "Location", "CreatedAt", "UpdatedAt"),
+            people.asSequence(),
+        ) { p ->
+            arrayOf(
+                p.fullName, p.email ?: "", p.department ?: "", p.jobTitle ?: "",
+                p.location?.name ?: "", dateFormat.format(p.createdAt), dateFormat.format(p.updatedAt)
+            )
         }
-        writer.flush()
     }
 
     @PreAuthorize("isAuthenticated()")
