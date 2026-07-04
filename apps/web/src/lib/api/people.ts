@@ -1,4 +1,5 @@
 import { apiClient } from "../api-client";
+import { createEntityApi } from "./create-entity-api";
 import type {
   Person,
   PersonSearchResult,
@@ -12,7 +13,6 @@ import type {
   OffboardRequest,
   OffboardResult,
 } from "../../types/person";
-import type { PagedResponse } from "../../types/paged-response";
 import type { DuplicateCheckResult, CheckPersonDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface PersonQueryParams {
@@ -27,31 +27,7 @@ export interface PersonQueryParams {
 }
 
 export const peopleApi = {
-  getAll(): Promise<Person[]> {
-    return apiClient
-      .get<PagedResponse<Person>>("/people", { pageSize: 1000 })
-      .then((r) => r.items);
-  },
-
-  getPaged(params: PersonQueryParams): Promise<PagedResponse<Person>> {
-    return apiClient.get<PagedResponse<Person>>("/people", params as Record<string, string | number | undefined>);
-  },
-
-  getById(id: string): Promise<Person> {
-    return apiClient.get<Person>(`/people/${id}`);
-  },
-
-  create(data: CreatePersonRequest): Promise<Person> {
-    return apiClient.post<Person>("/people", data);
-  },
-
-  update(id: string, data: UpdatePersonRequest): Promise<Person> {
-    return apiClient.put<Person>(`/people/${id}`, data);
-  },
-
-  archive(id: string): Promise<void> {
-    return apiClient.delete(`/people/${id}`);
-  },
+  ...createEntityApi<Person, CreatePersonRequest, UpdatePersonRequest, PersonQueryParams>("/people"),
 
   bulkArchive(ids: string[]): Promise<{ succeeded: number; failed: number }> {
     return apiClient.post("/people/bulk-archive", { ids });

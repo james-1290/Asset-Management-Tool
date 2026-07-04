@@ -1,4 +1,5 @@
 import { apiClient } from "../api-client";
+import { createEntityApi } from "./create-entity-api";
 import type {
   Asset,
   CreateAssetRequest,
@@ -10,7 +11,6 @@ import type {
   BulkEditAssetsRequest,
 } from "../../types/asset";
 import type { AssetHistory } from "../../types/asset-history";
-import type { PagedResponse } from "../../types/paged-response";
 import type { DuplicateCheckResult, CheckAssetDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface AssetQueryParams {
@@ -36,31 +36,11 @@ export interface AssetQueryParams {
 }
 
 export const assetsApi = {
-  getAll(): Promise<Asset[]> {
-    return apiClient
-      .get<PagedResponse<Asset>>("/assets", { pageSize: 1000 })
-      .then((r) => r.items);
-  },
-
-  getPaged(params: AssetQueryParams): Promise<PagedResponse<Asset>> {
-    return apiClient.get<PagedResponse<Asset>>("/assets", params as Record<string, string | number | undefined>);
-  },
-
-  getById(id: string): Promise<Asset> {
-    return apiClient.get<Asset>(`/assets/${id}`);
-  },
+  ...createEntityApi<Asset, CreateAssetRequest, UpdateAssetRequest, AssetQueryParams>("/assets"),
 
   getHistory(id: string, limit?: number): Promise<AssetHistory[]> {
     const params = limit ? `?limit=${limit}` : "";
     return apiClient.get<AssetHistory[]>(`/assets/${id}/history${params}`);
-  },
-
-  create(data: CreateAssetRequest): Promise<Asset> {
-    return apiClient.post<Asset>("/assets", data);
-  },
-
-  update(id: string, data: UpdateAssetRequest): Promise<Asset> {
-    return apiClient.put<Asset>(`/assets/${id}`, data);
   },
 
   checkout(id: string, data: CheckoutAssetRequest): Promise<Asset> {
@@ -77,10 +57,6 @@ export const assetsApi = {
 
   sell(id: string, data: SellAssetRequest): Promise<Asset> {
     return apiClient.post<Asset>(`/assets/${id}/sell`, data);
-  },
-
-  archive(id: string): Promise<void> {
-    return apiClient.delete(`/assets/${id}`);
   },
 
   bulkArchive(ids: string[]): Promise<{ succeeded: number; failed: number }> {

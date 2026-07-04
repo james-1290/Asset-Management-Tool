@@ -1,44 +1,35 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createEntityHooks, type EntityInvalidation } from "./create-entity-hooks";
 import { locationsApi } from "../lib/api/locations";
 import type { LocationQueryParams } from "../lib/api/locations";
 import type {
+  Location,
   CreateLocationRequest,
   UpdateLocationRequest,
 } from "../types/location";
 import type { CheckLocationDuplicatesRequest } from "../types/duplicate-check";
 
-const locationKeys = {
-  all: ["locations"] as const,
-  paged: (params: LocationQueryParams) => ["locations", "paged", params] as const,
-  detail: (id: string) => ["locations", id] as const,
+// A location rename must refresh entities that embed its denormalised name.
+const locationInvalidation: EntityInvalidation = {
+  root: "locations",
+  crossEntityOnUpdate: ["assets", "certificates", "applications", "people"],
 };
 
-export function useLocations() {
-  return useQuery({
-    queryKey: locationKeys.all,
-    queryFn: locationsApi.getAll,
-  });
-}
+const locationHooks = createEntityHooks<Location, CreateLocationRequest, UpdateLocationRequest, LocationQueryParams>(
+  locationInvalidation,
+  locationsApi,
+);
 
-export function usePagedLocations(params: LocationQueryParams) {
-  return useQuery({
-    queryKey: locationKeys.paged(params),
-    queryFn: () => locationsApi.getPaged(params),
-    placeholderData: keepPreviousData,
-  });
-}
-
-export function useLocation(id: string) {
-  return useQuery({
-    queryKey: locationKeys.detail(id),
-    queryFn: () => locationsApi.getById(id),
-    enabled: !!id,
-  });
-}
+export const useLocations = locationHooks.useAll;
+export const usePagedLocations = locationHooks.usePaged;
+export const useLocation = locationHooks.useDetail;
+export const useCreateLocation = locationHooks.useCreate;
+export const useUpdateLocation = locationHooks.useUpdate;
+export const useArchiveLocation = locationHooks.useArchive;
 
 export function useLocationAssets(id: string) {
   return useQuery({
-    queryKey: [...locationKeys.detail(id), "assets"] as const,
+    queryKey: ["locations", id, "assets"] as const,
     queryFn: () => locationsApi.getAssets(id),
     enabled: !!id,
   });
@@ -46,58 +37,15 @@ export function useLocationAssets(id: string) {
 
 export function useLocationPeople(id: string) {
   return useQuery({
-    queryKey: [...locationKeys.detail(id), "people"] as const,
+    queryKey: ["locations", id, "people"] as const,
     queryFn: () => locationsApi.getPeople(id),
     enabled: !!id,
-  });
-}
-
-export function useCreateLocation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateLocationRequest) => locationsApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: locationKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
-}
-
-export function useUpdateLocation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateLocationRequest }) =>
-      locationsApi.update(id, data),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: locationKeys.all });
-      queryClient.invalidateQueries({ queryKey: locationKeys.detail(variables.id) });
-      // Entities embed a denormalised locationName; refresh them after a rename.
-      queryClient.invalidateQueries({ queryKey: ["assets"] });
-      queryClient.invalidateQueries({ queryKey: ["certificates"] });
-      queryClient.invalidateQueries({ queryKey: ["applications"] });
-      queryClient.invalidateQueries({ queryKey: ["people"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
   });
 }
 
 export function useCheckLocationDuplicates() {
   return useMutation({
     mutationFn: (data: CheckLocationDuplicatesRequest) => locationsApi.checkDuplicates(data),
-  });
-}
-
-export function useArchiveLocation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => locationsApi.archive(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: locationKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
   });
 }
 
@@ -108,7 +56,7 @@ export function useReassignAndArchiveLocation() {
     mutationFn: ({ id, targetLocationId }: { id: string; targetLocationId: string | null }) =>
       locationsApi.reassignAndArchive(id, { targetLocationId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: locationKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["locations"] });
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       queryClient.invalidateQueries({ queryKey: ["certificates"] });
       queryClient.invalidateQueries({ queryKey: ["applications"] });

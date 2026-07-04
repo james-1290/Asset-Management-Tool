@@ -39,7 +39,7 @@ source file). Items marked `[~]` are being worked this session.
 - [x] DepreciationCalculator extracted and used in all 4 sites (asset DTO, asset CSV export, depreciation report, dashboard book-value) — the report no longer diverges (was scale-4, now consistent scale-2) (PR #146)
 - [ ] Generic archivable-CRUD base + CustomFieldService (3 Type controllers ~95% identical; custom-field upsert reimplemented 4×)
 - [x] Shared HistoryTimeline + HistoryDialog: the 4 near-identical timelines and 4 dialogs now render through one shared component each (per-entity event config passed in), ~500 lines of duplication removed (PR #147)
-- [ ] createEntityHooks/createEntityApi factory (5 entity hook/api modules ~90% identical; makes cross-entity invalidation declarative)
+- [x] createEntityHooks/createEntityApi factory (5 entity hook/api modules ~90% identical; makes cross-entity invalidation declarative) — createEntityApi + createEntityHooks with declarative EntityInvalidation config; unit-tested pure entityWriteInvalidations; ~220 lines removed (PR #152)
 - [x] Generic TypeFormDialog/TypesToolbar/getTypeColumns (frontend type-management triplication) — shared components under components/type-management/ + shared CustomFieldEditor/mapCustomFieldsToForm; 10 per-entity files deleted, ~400 lines removed (PR #150)
 - [x] Shared CsvExportHelper with chunked/streaming export + row cap (two export mechanisms, OOM risk) — util/CsvExport.kt (stream + toResponseEntity); 6 entity exports bound their fetch + 100k row cap with truncation notice; Reports/import-template share the helper (PR #151)
 

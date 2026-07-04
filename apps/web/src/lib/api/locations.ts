@@ -1,4 +1,5 @@
 import { apiClient } from "../api-client";
+import { createEntityApi } from "./create-entity-api";
 import type {
   Location,
   LocationAsset,
@@ -7,7 +8,6 @@ import type {
   UpdateLocationRequest,
   ReassignAndArchiveRequest,
 } from "../../types/location";
-import type { PagedResponse } from "../../types/paged-response";
 import type { DuplicateCheckResult, CheckLocationDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface LocationQueryParams {
@@ -19,27 +19,7 @@ export interface LocationQueryParams {
 }
 
 export const locationsApi = {
-  getAll(): Promise<Location[]> {
-    return apiClient
-      .get<PagedResponse<Location>>("/locations", { pageSize: 1000 })
-      .then((r) => r.items);
-  },
-
-  getPaged(params: LocationQueryParams): Promise<PagedResponse<Location>> {
-    return apiClient.get<PagedResponse<Location>>("/locations", params as Record<string, string | number | undefined>);
-  },
-
-  getById(id: string): Promise<Location> {
-    return apiClient.get<Location>(`/locations/${id}`);
-  },
-
-  create(data: CreateLocationRequest): Promise<Location> {
-    return apiClient.post<Location>("/locations", data);
-  },
-
-  update(id: string, data: UpdateLocationRequest): Promise<Location> {
-    return apiClient.put<Location>(`/locations/${id}`, data);
-  },
+  ...createEntityApi<Location, CreateLocationRequest, UpdateLocationRequest, LocationQueryParams>("/locations"),
 
   getAssets(id: string): Promise<LocationAsset[]> {
     return apiClient.get<LocationAsset[]>(`/locations/${id}/assets`);
@@ -47,10 +27,6 @@ export const locationsApi = {
 
   getPeople(id: string): Promise<LocationPerson[]> {
     return apiClient.get<LocationPerson[]>(`/locations/${id}/people`);
-  },
-
-  archive(id: string): Promise<void> {
-    return apiClient.delete(`/locations/${id}`);
   },
 
   exportCsv(params: Omit<LocationQueryParams, "page" | "pageSize">): Promise<void> {

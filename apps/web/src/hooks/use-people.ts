@@ -1,64 +1,45 @@
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  keepPreviousData,
-} from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { createEntityHooks, type EntityInvalidation } from "./create-entity-hooks";
 import { peopleApi } from "../lib/api/people";
 import type { PersonQueryParams } from "../lib/api/people";
 import type {
+  Person,
   CreatePersonRequest,
   UpdatePersonRequest,
   OffboardRequest,
 } from "../types/person";
 import type { CheckPersonDuplicatesRequest } from "../types/duplicate-check";
 
-const personKeys = {
-  all: ["people"] as const,
-  paged: (params: PersonQueryParams) => ["people", "paged", params] as const,
-  detail: (id: string) => ["people", id] as const,
-  search: (q: string) => ["people", "search", q] as const,
-  history: (id: string, limit?: number) => ["people", id, "history", limit] as const,
-  assets: (id: string) => ["people", id, "assets"] as const,
-  summary: (id: string) => ["people", id, "summary"] as const,
-  certificates: (id: string) => ["people", id, "certificates"] as const,
-  applications: (id: string) => ["people", id, "applications"] as const,
+// assignedPersonName is denormalised onto assets/certificates/applications.
+const personInvalidation: EntityInvalidation = {
+  root: "people",
+  crossEntityOnUpdate: ["assets", "certificates", "applications"],
 };
 
-export function usePeople() {
-  return useQuery({
-    queryKey: personKeys.all,
-    queryFn: peopleApi.getAll,
-  });
-}
+const personHooks = createEntityHooks<Person, CreatePersonRequest, UpdatePersonRequest, PersonQueryParams>(
+  personInvalidation,
+  peopleApi,
+);
 
-export function usePagedPeople(params: PersonQueryParams) {
-  return useQuery({
-    queryKey: personKeys.paged(params),
-    queryFn: () => peopleApi.getPaged(params),
-    placeholderData: keepPreviousData,
-  });
-}
+export const usePeople = personHooks.useAll;
+export const usePagedPeople = personHooks.usePaged;
+export const usePerson = personHooks.useDetail;
+export const useCreatePerson = personHooks.useCreate;
+export const useUpdatePerson = personHooks.useUpdate;
+export const useArchivePerson = personHooks.useArchive;
+export const useBulkArchivePeople = personHooks.useBulkArchive;
 
 export function usePeopleSearch(query: string) {
   return useQuery({
-    queryKey: personKeys.search(query),
+    queryKey: ["people", "search", query] as const,
     queryFn: () => peopleApi.search(query),
     placeholderData: keepPreviousData,
   });
 }
 
-export function usePerson(id: string) {
-  return useQuery({
-    queryKey: personKeys.detail(id),
-    queryFn: () => peopleApi.getById(id),
-    enabled: !!id,
-  });
-}
-
 export function usePersonHistory(id: string, limit?: number) {
   return useQuery({
-    queryKey: personKeys.history(id, limit),
+    queryKey: ["people", id, "history", limit] as const,
     queryFn: () => peopleApi.getHistory(id, limit),
     enabled: !!id,
   });
@@ -66,7 +47,7 @@ export function usePersonHistory(id: string, limit?: number) {
 
 export function usePersonAssets(id: string) {
   return useQuery({
-    queryKey: personKeys.assets(id),
+    queryKey: ["people", id, "assets"] as const,
     queryFn: () => peopleApi.getAssignedAssets(id),
     enabled: !!id,
   });
@@ -74,7 +55,7 @@ export function usePersonAssets(id: string) {
 
 export function usePersonSummary(id: string) {
   return useQuery({
-    queryKey: personKeys.summary(id),
+    queryKey: ["people", id, "summary"] as const,
     queryFn: () => peopleApi.getSummary(id),
     enabled: !!id,
   });
@@ -82,7 +63,7 @@ export function usePersonSummary(id: string) {
 
 export function usePersonCertificates(id: string) {
   return useQuery({
-    queryKey: personKeys.certificates(id),
+    queryKey: ["people", id, "certificates"] as const,
     queryFn: () => peopleApi.getCertificates(id),
     enabled: !!id,
   });
@@ -90,69 +71,15 @@ export function usePersonCertificates(id: string) {
 
 export function usePersonApplications(id: string) {
   return useQuery({
-    queryKey: personKeys.applications(id),
+    queryKey: ["people", id, "applications"] as const,
     queryFn: () => peopleApi.getApplications(id),
     enabled: !!id,
-  });
-}
-
-export function useCreatePerson() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreatePersonRequest) => peopleApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: personKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
-}
-
-export function useUpdatePerson() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdatePersonRequest }) =>
-      peopleApi.update(id, data),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: personKeys.all });
-      queryClient.invalidateQueries({ queryKey: personKeys.detail(variables.id) });
-      // assignedPersonName is denormalised onto assets/certificates/applications.
-      queryClient.invalidateQueries({ queryKey: ["assets"] });
-      queryClient.invalidateQueries({ queryKey: ["certificates"] });
-      queryClient.invalidateQueries({ queryKey: ["applications"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
   });
 }
 
 export function useCheckPersonDuplicates() {
   return useMutation({
     mutationFn: (data: CheckPersonDuplicatesRequest) => peopleApi.checkDuplicates(data),
-  });
-}
-
-export function useArchivePerson() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => peopleApi.archive(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: personKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
-}
-
-export function useBulkArchivePeople() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (ids: string[]) => peopleApi.bulkArchive(ids),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: personKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
   });
 }
 
@@ -163,7 +90,7 @@ export function useOffboardPerson() {
     mutationFn: ({ id, request }: { id: string; request: OffboardRequest }) =>
       peopleApi.offboard(id, request),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: personKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["people"] });
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       queryClient.invalidateQueries({ queryKey: ["certificates"] });
       queryClient.invalidateQueries({ queryKey: ["applications"] });
