@@ -1,12 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface TrendInfo {
-  value: string;
-  direction: "up" | "down" | "flat";
-}
 
 interface StatCardProps {
   title: string;
@@ -17,20 +11,7 @@ interface StatCardProps {
   onClick?: () => void;
   variant?: "default" | "attention";
   iconBg?: string;
-  trend?: TrendInfo;
 }
-
-const trendIcons = {
-  up: TrendingUp,
-  down: TrendingDown,
-  flat: Minus,
-};
-
-const trendColors = {
-  up: "text-emerald-600",
-  down: "text-red-500",
-  flat: "text-muted-foreground",
-};
 
 export function StatCard({
   title,
@@ -41,7 +22,6 @@ export function StatCard({
   onClick,
   variant = "default",
   iconBg = "bg-primary/10 text-primary",
-  trend,
 }: StatCardProps) {
   const content = (
     <div
@@ -53,19 +33,10 @@ export function StatCard({
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="flex items-start justify-between mb-4">
+      <div className="mb-4">
         <div className={`flex items-center justify-center h-10 w-10 rounded-lg ${iconBg}`}>
           <Icon className="h-5 w-5" />
         </div>
-        {trend && (
-          <div className={`flex items-center gap-1 text-xs font-medium ${trendColors[trend.direction]}`}>
-            {(() => {
-              const TrendIcon = trendIcons[trend.direction];
-              return <TrendIcon className="h-3.5 w-3.5" />;
-            })()}
-            <span>{trend.value}</span>
-          </div>
-        )}
       </div>
       <p className="text-xs font-medium text-muted-foreground">
         {title}

@@ -44,8 +44,8 @@ source file). Items marked `[~]` are being worked this session.
 - [ ] Shared CsvExportHelper with chunked/streaming export + row cap (two export mechanisms, OOM risk)
 
 ### D. Dead / half-built code (finish or delete)
-- [ ] Dashboard drag-drop layout fully coded but never mounted (dashboard-preferences.ts, use-dashboard-preferences.ts) — wire up ResponsiveGridLayout or remove
-- [ ] 7 of 17 dashboard widget components orphaned; 9 declared widget IDs never render
+- [x] Removed the never-mounted dashboard drag-drop layout code and the react-grid-layout dependency (kept the working widget-visibility toggle) (PR #148)
+- [x] Deleted the 7 orphaned dashboard widget components (PR #148)
 - [x] Removed unused Breadcrumbs component and the never-supplied stat-card trend prop (PR #141)
 - [x] Chart palette consolidated on STATUS_COLORS: the dashboard donut and the asset-summary report both colour statuses from it (fixes the report's wrong status keys that rendered grey dots) (PR #145)
 - [x] Removed the non-functional disabled buttons (2FA card, "Preview Daily Report") (PR #141)

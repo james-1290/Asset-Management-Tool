@@ -5,8 +5,6 @@ import { Toaster } from 'sonner'
 import { AuthProvider } from './contexts/auth-context'
 import { ErrorBoundary } from './components/error-boundary'
 import { queryClient } from './lib/query-client'
-import 'react-grid-layout/css/styles.css'
-import 'react-resizable/css/styles.css'
 import './index.css'
 import App from './App.tsx'
 
