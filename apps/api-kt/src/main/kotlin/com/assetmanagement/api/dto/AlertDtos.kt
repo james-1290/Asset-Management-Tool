@@ -1,6 +1,7 @@
 package com.assetmanagement.api.dto
 
 import java.time.Instant
+import java.time.LocalDate
 import java.util.*
 
 data class AlertRunResult(
@@ -28,7 +29,7 @@ data class AlertHistoryDto(
     val entityId: UUID,
     val entityName: String,
     val thresholdDays: Int,
-    val expiryDate: Instant,
+    val expiryDate: LocalDate,
     val sentAt: Instant,
     val runId: UUID,
     val recipients: String

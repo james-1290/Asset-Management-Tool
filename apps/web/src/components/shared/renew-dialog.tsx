@@ -60,7 +60,7 @@ export function RenewDialog({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (invalid) return;
-    onSubmit(`${newDate}T00:00:00Z`, notes.trim() || null);
+    onSubmit(newDate, notes.trim() || null);
   }
 
   return (

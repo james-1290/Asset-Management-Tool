@@ -734,18 +734,17 @@ class ImportController(
     // Parsing helpers
     // ========================================================================
 
-    private fun parseDate(value: String): Instant? {
+    private fun parseDate(value: String): LocalDate? {
         for (formatter in DATE_FORMATTERS) {
             try {
-                val localDate = LocalDate.parse(value, formatter)
-                return localDate.atStartOfDay(ZoneOffset.UTC).toInstant()
+                return LocalDate.parse(value, formatter)
             } catch (_: DateTimeParseException) {
                 // try next
             }
         }
-        // Try parsing as ISO Instant directly
+        // Tolerate a full ISO instant ("2026-01-01T00:00:00Z") by keeping the date part.
         return try {
-            Instant.parse(value)
+            LocalDate.parse(value.take(10))
         } catch (_: DateTimeParseException) {
             null
         }

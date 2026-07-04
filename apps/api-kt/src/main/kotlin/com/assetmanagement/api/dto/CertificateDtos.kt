@@ -2,6 +2,7 @@ package com.assetmanagement.api.dto
 
 import jakarta.validation.constraints.NotBlank
 import java.time.Instant
+import java.time.LocalDate
 import java.util.*
 
 data class CertificateDto(
@@ -13,8 +14,8 @@ data class CertificateDto(
     val subject: String?,
     val thumbprint: String?,
     val serialNumber: String?,
-    val issuedDate: Instant?,
-    val expiryDate: Instant?,
+    val issuedDate: LocalDate?,
+    val expiryDate: LocalDate?,
     val status: String,
     val autoRenewal: Boolean,
     val notes: String?,
@@ -39,8 +40,8 @@ data class CreateCertificateRequest(
     val subject: String? = null,
     val thumbprint: String? = null,
     val serialNumber: String? = null,
-    val issuedDate: Instant? = null,
-    val expiryDate: Instant? = null,
+    val issuedDate: LocalDate? = null,
+    val expiryDate: LocalDate? = null,
     val status: String? = null,
     val autoRenewal: Boolean = false,
     val notes: String? = null,
@@ -58,8 +59,8 @@ data class UpdateCertificateRequest(
     val subject: String? = null,
     val thumbprint: String? = null,
     val serialNumber: String? = null,
-    val issuedDate: Instant? = null,
-    val expiryDate: Instant? = null,
+    val issuedDate: LocalDate? = null,
+    val expiryDate: LocalDate? = null,
     val status: String? = null,
     val autoRenewal: Boolean = false,
     val notes: String? = null,
@@ -70,7 +71,7 @@ data class UpdateCertificateRequest(
 )
 
 data class RenewCertificateRequest(
-    val newExpiryDate: Instant,
+    val newExpiryDate: LocalDate,
     val notes: String? = null
 )
 

@@ -44,10 +44,10 @@ class Application(
     var usedSeats: Int? = null,
 
     @Column(name = "purchase_date")
-    var purchaseDate: Instant? = null,
+    var purchaseDate: java.time.LocalDate? = null,
 
     @Column(name = "expiry_date")
-    var expiryDate: Instant? = null,
+    var expiryDate: java.time.LocalDate? = null,
 
     @Column(name = "purchase_cost", precision = 18, scale = 2)
     var purchaseCost: BigDecimal? = null,
@@ -60,7 +60,7 @@ class Application(
     var status: ApplicationStatus = ApplicationStatus.Active,
 
     @Column(name = "deactivated_date")
-    var deactivatedDate: Instant? = null,
+    var deactivatedDate: java.time.LocalDate? = null,
 
     @Column(name = "notes", columnDefinition = "TEXT")
     var notes: String? = null,

@@ -48,10 +48,10 @@ class Asset(
     var assignedPerson: Person? = null,
 
     @Column(name = "warranty_expiry_date")
-    var warrantyExpiryDate: Instant? = null,
+    var warrantyExpiryDate: java.time.LocalDate? = null,
 
     @Column(name = "purchase_date")
-    var purchaseDate: Instant? = null,
+    var purchaseDate: java.time.LocalDate? = null,
 
     @Column(name = "purchase_cost", precision = 18, scale = 2)
     var purchaseCost: BigDecimal? = null,
@@ -60,13 +60,13 @@ class Asset(
     var depreciationMonths: Int? = null,
 
     @Column(name = "sold_date")
-    var soldDate: Instant? = null,
+    var soldDate: java.time.LocalDate? = null,
 
     @Column(name = "sold_price", precision = 18, scale = 2)
     var soldPrice: BigDecimal? = null,
 
     @Column(name = "retired_date")
-    var retiredDate: Instant? = null,
+    var retiredDate: java.time.LocalDate? = null,
 
     @Column(name = "notes", columnDefinition = "TEXT")
     var notes: String? = null,

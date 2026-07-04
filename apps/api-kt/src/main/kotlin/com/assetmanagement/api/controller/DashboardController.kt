@@ -1,4 +1,6 @@
 package com.assetmanagement.api.controller
+import com.assetmanagement.api.util.daysUntil
+import com.assetmanagement.api.util.today
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.enums.AssetStatus
@@ -55,10 +57,10 @@ class DashboardController(
         var totalBookValue = BigDecimal.ZERO
         for (row in depreciableAssets) {
             val cost = row[0] as BigDecimal
-            val purchaseDate = row[1] as Instant
+            val purchaseDate = row[1] as java.time.LocalDate
             val months = row[2] as? Int
 
-            totalBookValue += DepreciationCalculator.compute(cost, months, purchaseDate, now).bookValue ?: cost
+            totalBookValue += DepreciationCalculator.compute(cost, months, purchaseDate).bookValue ?: cost
         }
 
         return ResponseEntity.ok(DashboardSummaryDto(totalAssets, totalValue, totalBookValue.setScale(2, RoundingMode.HALF_UP)))
@@ -87,8 +89,8 @@ class DashboardController(
     fun getWarrantyExpiries(
         @RequestParam(defaultValue = "30") days: Int
     ): ResponseEntity<List<WarrantyExpiryItemDto>> {
-        val now = Instant.now()
-        val cutoff = now.plus(days.toLong(), ChronoUnit.DAYS)
+        val now = today()
+        val cutoff = now.plusDays(days.toLong())
 
         @Suppress("UNCHECKED_CAST")
         val results = em.createQuery(
@@ -109,7 +111,7 @@ class DashboardController(
                 name = a.name,
                 assetTypeName = a.assetType?.name ?: "",
                 warrantyExpiryDate = a.warrantyExpiryDate!!,
-                daysUntilExpiry = ChronoUnit.DAYS.between(now, a.warrantyExpiryDate!!).toInt()
+                daysUntilExpiry = daysUntil(a.warrantyExpiryDate!!).toInt()
             )
         }
         return ResponseEntity.ok(items)
@@ -219,7 +221,7 @@ class DashboardController(
         val assets = em.createQuery(
             """SELECT a.purchaseDate FROM com.assetmanagement.api.model.Asset a
                WHERE a.isArchived = false AND a.purchaseDate IS NOT NULL"""
-        ).resultList as List<Instant>
+        ).resultList as List<java.time.LocalDate>
 
         val now = Instant.now()
         var lessThan1 = 0
@@ -228,7 +230,7 @@ class DashboardController(
         var fivePlus = 0
 
         assets.forEach { purchaseDate ->
-            val days = ChronoUnit.DAYS.between(purchaseDate, now)
+            val days = ChronoUnit.DAYS.between(purchaseDate, today())
             when {
                 days < 365 -> lessThan1++
                 days < 365 * 3 -> oneToThree++
@@ -297,8 +299,8 @@ class DashboardController(
     fun getCertificateExpiries(
         @RequestParam(defaultValue = "30") days: Int
     ): ResponseEntity<List<CertificateExpiryItemDto>> {
-        val now = Instant.now()
-        val cutoff = now.plus(days.toLong(), ChronoUnit.DAYS)
+        val now = today()
+        val cutoff = now.plusDays(days.toLong())
 
         @Suppress("UNCHECKED_CAST")
         val results = em.createQuery(
@@ -319,7 +321,7 @@ class DashboardController(
                 name = c.name,
                 certificateTypeName = c.certificateType?.name ?: "",
                 expiryDate = c.expiryDate!!,
-                daysUntilExpiry = ChronoUnit.DAYS.between(now, c.expiryDate!!).toInt(),
+                daysUntilExpiry = daysUntil(c.expiryDate!!).toInt(),
                 status = c.status.name
             )
         }
@@ -329,8 +331,8 @@ class DashboardController(
     // 12. GET /certificate-summary - count by CertificateStatus (with computed statuses)
     @GetMapping("/certificate-summary")
     fun getCertificateSummary(): ResponseEntity<CertificateSummaryDto> {
-        val now = Instant.now()
-        val pendingCutoff = now.plus(30, ChronoUnit.DAYS)
+        val now = today()
+        val pendingCutoff = now.plusDays(30)
 
         @Suppress("UNCHECKED_CAST")
         val results = em.createQuery(
@@ -383,8 +385,8 @@ class DashboardController(
     fun getLicenceExpiries(
         @RequestParam(defaultValue = "30") days: Int
     ): ResponseEntity<List<LicenceExpiryItemDto>> {
-        val now = Instant.now()
-        val cutoff = now.plus(days.toLong(), ChronoUnit.DAYS)
+        val now = today()
+        val cutoff = now.plusDays(days.toLong())
 
         @Suppress("UNCHECKED_CAST")
         val results = em.createQuery(
@@ -405,7 +407,7 @@ class DashboardController(
                 name = app.name,
                 applicationTypeName = app.applicationType?.name ?: "",
                 expiryDate = app.expiryDate!!,
-                daysUntilExpiry = ChronoUnit.DAYS.between(now, app.expiryDate!!).toInt(),
+                daysUntilExpiry = daysUntil(app.expiryDate!!).toInt(),
                 status = app.status.name
             )
         }
@@ -441,11 +443,8 @@ class DashboardController(
         }
 
         // Expiring this month: warranties + certificates + licences
-        val now = Instant.now()
-        val endOfMonth = now.atZone(ZoneOffset.UTC)
-            .withDayOfMonth(1)
-            .plusMonths(1)
-            .toInstant()
+        val now = today()
+        val endOfMonth = now.withDayOfMonth(1).plusMonths(1)
 
         val warrantyExpiringCount = em.createQuery(
             """SELECT COUNT(a) FROM com.assetmanagement.api.model.Asset a
@@ -522,8 +521,8 @@ class DashboardController(
     // 14. GET /application-summary - count by ApplicationStatus (with computed statuses)
     @GetMapping("/application-summary")
     fun getApplicationSummary(): ResponseEntity<ApplicationSummaryDto> {
-        val now = Instant.now()
-        val pendingCutoff = now.plus(30, ChronoUnit.DAYS)
+        val now = today()
+        val pendingCutoff = now.plusDays(30)
 
         @Suppress("UNCHECKED_CAST")
         val results = em.createQuery(

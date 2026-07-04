@@ -5,6 +5,7 @@ import com.assetmanagement.api.model.Certificate
 import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.util.withFetch
+import com.assetmanagement.api.util.today
 import com.assetmanagement.api.util.computeStatus
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
@@ -80,8 +81,8 @@ class CertificatesController(
                     null
                 }
                 if (certStatus != null) {
-                    val now = Instant.now()
-                    val pendingCutoff = now.plus(30, java.time.temporal.ChronoUnit.DAYS)
+                    val now = today()
+                    val pendingCutoff = now.plusDays(30)
 
                     when (certStatus) {
                         CertificateStatus.Expired -> {
@@ -90,7 +91,7 @@ class CertificatesController(
                                     cb.equal(root.get<CertificateStatus>("status"), CertificateStatus.Expired),
                                     cb.and(
                                         cb.equal(root.get<CertificateStatus>("status"), CertificateStatus.Active),
-                                        cb.isNotNull(root.get<Instant>("expiryDate")),
+                                        cb.isNotNull(root.get<java.time.LocalDate>("expiryDate")),
                                         cb.lessThan(root.get("expiryDate"), now)
                                     )
                                 )
@@ -102,7 +103,7 @@ class CertificatesController(
                                     cb.equal(root.get<CertificateStatus>("status"), CertificateStatus.PendingRenewal),
                                     cb.and(
                                         cb.equal(root.get<CertificateStatus>("status"), CertificateStatus.Active),
-                                        cb.isNotNull(root.get<Instant>("expiryDate")),
+                                        cb.isNotNull(root.get<java.time.LocalDate>("expiryDate")),
                                         cb.greaterThanOrEqualTo(root.get("expiryDate"), now),
                                         cb.lessThan(root.get("expiryDate"), pendingCutoff)
                                     )
@@ -113,7 +114,7 @@ class CertificatesController(
                             predicates.add(cb.equal(root.get<CertificateStatus>("status"), CertificateStatus.Active))
                             predicates.add(
                                 cb.or(
-                                    cb.isNull(root.get<Instant>("expiryDate")),
+                                    cb.isNull(root.get<java.time.LocalDate>("expiryDate")),
                                     cb.greaterThanOrEqualTo(root.get("expiryDate"), pendingCutoff)
                                 )
                             )
@@ -130,16 +131,16 @@ class CertificatesController(
             }
 
             if (!expiryFrom.isNullOrBlank()) {
-                val from = try { Instant.parse("${expiryFrom}T00:00:00Z") } catch (_: Exception) {
+                val from = try { java.time.LocalDate.parse(expiryFrom) } catch (_: Exception) {
                     throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid expiryFrom: $expiryFrom")
                 }
-                predicates.add(cb.greaterThanOrEqualTo(root.get("expiryDate"), from))
+                predicates.add(cb.greaterThanOrEqualTo(root.get<java.time.LocalDate>("expiryDate"), from))
             }
             if (!expiryTo.isNullOrBlank()) {
-                val to = try { Instant.parse("${expiryTo}T00:00:00Z").plus(1, java.time.temporal.ChronoUnit.DAYS) } catch (_: Exception) {
+                val to = try { java.time.LocalDate.parse(expiryTo) } catch (_: Exception) {
                     throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid expiryTo: $expiryTo")
                 }
-                predicates.add(cb.lessThan(root.get("expiryDate"), to))
+                predicates.add(cb.lessThanOrEqualTo(root.get<java.time.LocalDate>("expiryDate"), to))
             }
 
             cb.and(*predicates.toTypedArray())
@@ -225,7 +226,7 @@ class CertificatesController(
         if (oldVal != newVal) changes.add(AuditChange(field, oldVal, newVal))
     }
 
-    private fun trackDate(field: String, oldVal: Instant?, newVal: Instant?, changes: MutableList<AuditChange>) {
+    private fun trackDate(field: String, oldVal: java.time.LocalDate?, newVal: java.time.LocalDate?, changes: MutableList<AuditChange>) {
         if (oldVal != newVal) changes.add(AuditChange(field, oldVal?.toString(), newVal?.toString()))
     }
 
@@ -501,7 +502,7 @@ class CertificatesController(
         if (certificate.isArchived) {
             return ResponseEntity.badRequest().body(mapOf("error" to "Cannot renew an archived certificate"))
         }
-        if (!request.newExpiryDate.isAfter(Instant.now())) {
+        if (!request.newExpiryDate.isAfter(today())) {
             return ResponseEntity.badRequest().body(mapOf("error" to "New expiry date must be in the future"))
         }
 

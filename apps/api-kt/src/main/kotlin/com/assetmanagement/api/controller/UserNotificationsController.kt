@@ -1,4 +1,5 @@
 package com.assetmanagement.api.controller
+import java.time.ZoneOffset
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.UserNotification
@@ -91,7 +92,7 @@ class UserNotificationsController(
             "1d" -> now.plus(1, ChronoUnit.DAYS)
             "3d" -> now.plus(3, ChronoUnit.DAYS)
             "1w" -> now.plus(7, ChronoUnit.DAYS)
-            "until_expiry" -> notif.expiryDate
+            "until_expiry" -> notif.expiryDate.atStartOfDay(ZoneOffset.UTC).toInstant()
             else -> return ResponseEntity.badRequest().body(mapOf("error" to "Invalid duration. Use: 1d, 3d, 1w, until_expiry"))
         }
         userNotificationRepository.save(notif)

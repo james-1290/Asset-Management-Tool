@@ -2,6 +2,7 @@ package com.assetmanagement.api.dto
 
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
 import java.util.*
 
 data class DashboardSummaryDto(
@@ -19,7 +20,7 @@ data class WarrantyExpiryItemDto(
     val id: UUID,
     val name: String,
     val assetTypeName: String,
-    val warrantyExpiryDate: Instant,
+    val warrantyExpiryDate: LocalDate,
     val daysUntilExpiry: Int
 )
 
@@ -62,7 +63,7 @@ data class CertificateExpiryItemDto(
     val id: UUID,
     val name: String,
     val certificateTypeName: String,
-    val expiryDate: Instant,
+    val expiryDate: LocalDate,
     val daysUntilExpiry: Int,
     val status: String
 )
@@ -79,7 +80,7 @@ data class LicenceExpiryItemDto(
     val id: UUID,
     val name: String,
     val applicationTypeName: String,
-    val expiryDate: Instant,
+    val expiryDate: LocalDate,
     val daysUntilExpiry: Int,
     val status: String
 )

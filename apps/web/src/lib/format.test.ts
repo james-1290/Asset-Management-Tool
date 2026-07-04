@@ -37,6 +37,14 @@ describe("formatDate", () => {
     expect(formatDate("")).toBe("");
     expect(formatDate("not-a-date", "—")).toBe("—");
   });
+
+  it("parses a bare YYYY-MM-DD as a local date (no timezone day-shift)", () => {
+    // The API returns date-only fields as bare dates; these must format to the
+    // same calendar day regardless of the runner's timezone.
+    expect(formatDate("2026-02-20")).toBe("20/02/2026");
+    setFormatSettings({ dateFormat: "YYYY-MM-DD" });
+    expect(formatDate("2026-02-20")).toBe("2026-02-20");
+  });
 });
 
 describe("formatDateTime", () => {

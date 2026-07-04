@@ -1,4 +1,6 @@
 package com.assetmanagement.api.controller
+import com.assetmanagement.api.util.daysUntil
+import com.assetmanagement.api.util.today
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.enums.AssetStatus
@@ -29,17 +31,18 @@ class ReportsController(
 ) {
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
 
-    /** Parse optional from/to date strings into Instants (start of day UTC). */
-    private fun parseDateRange(from: String?, to: String?): Pair<Instant?, Instant?> {
-        val fromInstant = from?.let {
-            try { LocalDate.parse(it).atStartOfDay(ZoneOffset.UTC).toInstant() }
+    /** Parse optional from/to date strings into date-only bounds; the returned
+     *  `to` is exclusive (parsed date + 1 day) to keep `< :rangeTo` inclusive of the to-day. */
+    private fun parseDateRange(from: String?, to: String?): Pair<LocalDate?, LocalDate?> {
+        val fromDate = from?.let {
+            try { LocalDate.parse(it) }
             catch (_: Exception) { throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid from date: $it") }
         }
-        val toInstant = to?.let {
-            try { LocalDate.parse(it).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() }
+        val toDate = to?.let {
+            try { LocalDate.parse(it).plusDays(1) }
             catch (_: Exception) { throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid to date: $it") }
         }
-        return Pair(fromInstant, toInstant)
+        return Pair(fromDate, toDate)
     }
 
     // ---- Helper for CSV responses ----
@@ -104,11 +107,11 @@ class ReportsController(
     private fun queryAgeBuckets(): List<AssetsByAgeBucketDto> {
         val purchaseDates = em.createQuery(
             "SELECT a.purchaseDate FROM com.assetmanagement.api.model.Asset a WHERE a.isArchived = false AND a.purchaseDate IS NOT NULL"
-        ).resultList as List<Instant>
-        val now = Instant.now()
+        ).resultList as List<java.time.LocalDate>
+        val now = today()
         var lt1 = 0; var oneToThree = 0; var threeToFive = 0; var fivePlus = 0
         purchaseDates.forEach { pd ->
-            val days = ChronoUnit.DAYS.between(pd, now)
+            val days = ChronoUnit.DAYS.between(pd, today())
             when {
                 days < 365 -> lt1++
                 days < 365 * 3 -> oneToThree++
@@ -177,7 +180,7 @@ class ReportsController(
         @RequestParam(required = false) to: String?,
         @RequestParam(required = false) format: String?
     ): ResponseEntity<*> {
-        val now = Instant.now()
+        val now = today()
 
         // If from/to provided, use them; otherwise fall back to days (default 30)
         val (rangeFrom, rangeTo) = if (from != null || to != null) {
@@ -186,7 +189,7 @@ class ReportsController(
             Pair(null, null)
         }
         val effectiveFrom = rangeFrom ?: now
-        val effectiveTo = rangeTo ?: now.plus((days ?: 30).toLong(), ChronoUnit.DAYS)
+        val effectiveTo = rangeTo ?: now.plusDays((days ?: 30).toLong())
 
         val items = mutableListOf<ExpiryItemDto>()
 
@@ -207,7 +210,7 @@ class ReportsController(
                 category = "Warranty",
                 typeName = a.assetType?.name ?: "",
                 expiryDate = a.warrantyExpiryDate!!,
-                daysUntilExpiry = ChronoUnit.DAYS.between(now, a.warrantyExpiryDate!!).toInt(),
+                daysUntilExpiry = daysUntil(a.warrantyExpiryDate!!).toInt(),
                 status = a.status.name
             ))
         }
@@ -229,7 +232,7 @@ class ReportsController(
                 category = "Certificate",
                 typeName = c.certificateType?.name ?: "",
                 expiryDate = c.expiryDate!!,
-                daysUntilExpiry = ChronoUnit.DAYS.between(now, c.expiryDate!!).toInt(),
+                daysUntilExpiry = daysUntil(c.expiryDate!!).toInt(),
                 status = c.status.name
             ))
         }
@@ -251,7 +254,7 @@ class ReportsController(
                 category = "Licence",
                 typeName = app.applicationType?.name ?: "",
                 expiryDate = app.expiryDate!!,
-                daysUntilExpiry = ChronoUnit.DAYS.between(now, app.expiryDate!!).toInt(),
+                daysUntilExpiry = daysUntil(app.expiryDate!!).toInt(),
                 status = app.status.name
             ))
         }
@@ -298,8 +301,8 @@ class ReportsController(
         // Expired/PendingRenewal everywhere else (list views, dashboard). Correct
         // the stored-status tally the same way so report counts don't contradict
         // the rest of the app.
-        val nowForStatus = Instant.now()
-        val pendingCutoff = nowForStatus.plus(30, ChronoUnit.DAYS)
+        val nowForStatus = today()
+        val pendingCutoff = nowForStatus.plusDays(30)
         val computedExpired = em.createQuery(
             """SELECT COUNT(app) FROM com.assetmanagement.api.model.Application app
                WHERE app.isArchived = false AND app.status = :active
@@ -329,7 +332,7 @@ class ReportsController(
             BigDecimal::class.java
         ).singleResult ?: BigDecimal.ZERO
 
-        val now = Instant.now()
+        val now = today()
 
         // If from/to provided, use them for "expiring soon"; otherwise default 30 days
         val (rangeFrom, rangeTo) = if (from != null || to != null) {
@@ -338,7 +341,7 @@ class ReportsController(
             Pair(null, null)
         }
         val effectiveFrom = rangeFrom ?: now
-        val effectiveTo = rangeTo ?: now.plus(30, ChronoUnit.DAYS)
+        val effectiveTo = rangeTo ?: now.plusDays(30)
 
         @Suppress("UNCHECKED_CAST")
         val expiringSoonApps = em.createQuery(
@@ -356,7 +359,7 @@ class ReportsController(
                 name = app.name,
                 applicationTypeName = app.applicationType?.name ?: "",
                 expiryDate = app.expiryDate!!,
-                daysUntilExpiry = ChronoUnit.DAYS.between(now, app.expiryDate!!).toInt(),
+                daysUntilExpiry = daysUntil(app.expiryDate!!).toInt(),
                 status = app.status.name
             )
         }
@@ -471,7 +474,7 @@ class ReportsController(
         @RequestParam(required = false) to: String?,
         @RequestParam(required = false) format: String?
     ): ResponseEntity<*> {
-        val now = Instant.now()
+        val now = today()
         val (rangeFrom, rangeTo) = parseDateRange(from, to)
         val byAge = queryAgeBuckets()
 
@@ -479,7 +482,7 @@ class ReportsController(
         // If from/to provided, filter warranty expiry within that window; otherwise show all past warranty
         @Suppress("UNCHECKED_CAST")
         val pastWarrantyAssets = if (rangeFrom != null || rangeTo != null) {
-            val qFrom = rangeFrom ?: Instant.EPOCH
+            val qFrom = rangeFrom ?: java.time.LocalDate.MIN
             val qTo = rangeTo ?: now
             em.createQuery(
                 """SELECT a FROM com.assetmanagement.api.model.Asset a
@@ -508,14 +511,14 @@ class ReportsController(
                 name = a.name,
                 assetTypeName = a.assetType?.name ?: "",
                 warrantyExpiryDate = a.warrantyExpiryDate!!,
-                daysUntilExpiry = ChronoUnit.DAYS.between(now, a.warrantyExpiryDate!!).toInt()
+                daysUntilExpiry = daysUntil(a.warrantyExpiryDate!!).toInt()
             )
         }
 
         // Oldest assets — if from/to provided, filter by purchase date window
         @Suppress("UNCHECKED_CAST")
         val oldestAssetsList = if (rangeFrom != null || rangeTo != null) {
-            val qFrom = rangeFrom ?: Instant.EPOCH
+            val qFrom = rangeFrom ?: java.time.LocalDate.MIN
             val qTo = rangeTo ?: now
             em.createQuery(
                 """SELECT a FROM com.assetmanagement.api.model.Asset a
@@ -542,7 +545,7 @@ class ReportsController(
                 name = a.name,
                 assetTypeName = a.assetType?.name ?: "",
                 purchaseDate = a.purchaseDate!!,
-                ageDays = ChronoUnit.DAYS.between(a.purchaseDate!!, now).toInt()
+                ageDays = ChronoUnit.DAYS.between(a.purchaseDate!!, today()).toInt()
             )
         }
 
@@ -592,7 +595,7 @@ class ReportsController(
         @RequestParam(required = false) locationId: UUID?,
         @RequestParam(required = false) format: String?
     ): ResponseEntity<*> {
-        val now = Instant.now()
+        val now = today()
 
         // Build dynamic JPQL query with optional filters
         val jpql = StringBuilder(
@@ -625,10 +628,10 @@ class ReportsController(
             val remainingUsefulLifeMonths: Int?
 
             if (depMonths != null && depMonths > 0) {
-                val dep = DepreciationCalculator.compute(cost, depMonths, purchaseDate, now)
+                val dep = DepreciationCalculator.compute(cost, depMonths, purchaseDate)
                 accumulatedDepreciation = dep.total ?: BigDecimal.ZERO
                 currentBookValue = dep.bookValue ?: cost
-                val totalElapsedMonths = BigDecimal(ChronoUnit.DAYS.between(purchaseDate, now))
+                val totalElapsedMonths = BigDecimal(ChronoUnit.DAYS.between(purchaseDate, today()))
                     .divide(BigDecimal("30.44"), 0, RoundingMode.FLOOR).toLong()
                 remainingUsefulLifeMonths = (depMonths - totalElapsedMonths).coerceAtLeast(0).toInt()
             } else {

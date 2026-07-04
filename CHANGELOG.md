@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-04 23:50 — Date-only storage (DATE / LocalDate) + fix truncating daysUntilExpiry
+
+- **DB migration V016**: converts the business date-only columns from `DATETIME` to `DATE` — `assets`(purchase/warranty/sold/retired), `certificates`(issued/expiry), `applications`(purchase/expiry/deactivated), `alert_history`(expiry), `user_notifications`(expiry). True timestamps (created/updated, audit/history, token_invalidated_at) stay `DATETIME`. Existing values truncate to their date part (no day shift); indexes preserved.
+- Backend: those entity fields + their DTOs are now `LocalDate`; filtering, status computation (`computeStatus`), CSV export/import and audit change-tracking all use date-only comparisons. A new `FlexibleLocalDateDeserializer` accepts both `2026-02-20` and legacy `2026-02-20T00:00:00Z` payloads.
+- **Fixed the truncating `daysUntilExpiry`**: replaced ~12 `ChronoUnit.DAYS.between(Instant.now(), expiry)` sites (dashboard, alerts, reports, search) with a date-only `daysUntil(...)`, so counts are exact whole calendar days and timezone-stable (previously off-by-one / would even throw once the column became `LocalDate`).
+- Frontend: `lib/format.ts` now parses bare `YYYY-MM-DD` as a *local* calendar date (no UTC-midnight day shift); date-picker submits send bare dates instead of appending `T00:00:00Z`.
+- Verified end-to-end against the running stack (migration applied, `ddl-validate` passes, no day-shift on existing data, create/update in both formats, inclusive/exclusive expiry filtering, all dashboard/report endpoints, exact daysUntilExpiry) and via the Testcontainers suite (Flyway V016 from clean).
+
 ## 2026-07-04 23:10 — Testcontainers integration tests + more frontend unit tests
 
 - Added a MySQL-Testcontainers integration suite (`api-kt/.../integration`): boots the full Spring context against a throwaway MySQL container, so **Flyway migrates from clean** and `ddl-auto=validate` runs against a real schema every test run. Covers the **auth flow** (login returns a token, protected endpoints reject unauthenticated requests, bad credentials → 401), **token invalidation** (a token issued before `tokenInvalidatedAt` is rejected), and **audit emission** (a write produces a `Created`/`Location` audit row). 5 tests.

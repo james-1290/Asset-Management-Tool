@@ -1,4 +1,5 @@
 package com.assetmanagement.api.controller
+import com.assetmanagement.api.util.daysUntil
 
 import com.assetmanagement.api.dto.SearchCounts
 import com.assetmanagement.api.dto.SearchResponse
@@ -69,7 +70,7 @@ class SearchController(
             val typeName = try { cert.certificateType?.name } catch (_: Exception) { null }
             val subtitle = typeName
             val extra = if (cert.expiryDate != null) {
-                val daysUntil = ChronoUnit.DAYS.between(Instant.now(), cert.expiryDate)
+                val daysUntil = daysUntil(cert.expiryDate!!)
                 if (daysUntil in 0..90) "Expires in $daysUntil days"
                 else if (daysUntil < 0 && daysUntil >= -90) "Expired"
                 else cert.status.name

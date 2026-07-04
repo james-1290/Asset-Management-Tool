@@ -1,12 +1,13 @@
 package com.assetmanagement.api.dto
 
 import java.time.Instant
+import java.time.LocalDate
 import java.util.*
 
 data class NotificationItem(
     val id: UUID,
     val name: String,
-    val expiryDate: Instant
+    val expiryDate: LocalDate
 )
 
 data class NotificationGroup(

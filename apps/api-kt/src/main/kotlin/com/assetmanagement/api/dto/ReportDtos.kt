@@ -2,6 +2,7 @@ package com.assetmanagement.api.dto
 
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
 import java.util.*
 
 data class AssetSummaryReportDto(
@@ -17,7 +18,7 @@ data class ExpiryItemDto(
     val name: String,
     val category: String,
     val typeName: String,
-    val expiryDate: Instant,
+    val expiryDate: LocalDate,
     val daysUntilExpiry: Int,
     val status: String
 )
@@ -66,7 +67,7 @@ data class OldestAssetDto(
     val id: UUID,
     val name: String,
     val assetTypeName: String,
-    val purchaseDate: Instant,
+    val purchaseDate: LocalDate,
     val ageDays: Int
 )
 
@@ -89,7 +90,7 @@ data class DepreciationAssetDto(
     val id: UUID,
     val name: String,
     val assetTypeName: String,
-    val purchaseDate: Instant?,
+    val purchaseDate: LocalDate?,
     val originalCost: BigDecimal,
     val depreciationMethod: String,
     val usefulLifeYears: Int?,

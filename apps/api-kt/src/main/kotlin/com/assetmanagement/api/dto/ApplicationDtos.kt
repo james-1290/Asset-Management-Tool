@@ -3,6 +3,7 @@ package com.assetmanagement.api.dto
 import jakarta.validation.constraints.NotBlank
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
 import java.util.*
 
 data class ApplicationDto(
@@ -16,12 +17,12 @@ data class ApplicationDto(
     val licenceType: String?,
     val maxSeats: Int?,
     val usedSeats: Int?,
-    val purchaseDate: Instant?,
-    val expiryDate: Instant?,
+    val purchaseDate: LocalDate?,
+    val expiryDate: LocalDate?,
     val purchaseCost: BigDecimal?,
     val autoRenewal: Boolean,
     val status: String,
-    val deactivatedDate: Instant?,
+    val deactivatedDate: LocalDate?,
     val notes: String?,
     val assetId: UUID?,
     val assetName: String?,
@@ -46,8 +47,8 @@ data class CreateApplicationRequest(
     val licenceType: String? = null,
     val maxSeats: Int? = null,
     val usedSeats: Int? = null,
-    val purchaseDate: Instant? = null,
-    val expiryDate: Instant? = null,
+    val purchaseDate: LocalDate? = null,
+    val expiryDate: LocalDate? = null,
     val purchaseCost: BigDecimal? = null,
     val autoRenewal: Boolean = false,
     val status: String? = null,
@@ -68,8 +69,8 @@ data class UpdateApplicationRequest(
     val licenceType: String? = null,
     val maxSeats: Int? = null,
     val usedSeats: Int? = null,
-    val purchaseDate: Instant? = null,
-    val expiryDate: Instant? = null,
+    val purchaseDate: LocalDate? = null,
+    val expiryDate: LocalDate? = null,
     val purchaseCost: BigDecimal? = null,
     val autoRenewal: Boolean = false,
     val status: String? = null,
@@ -82,7 +83,7 @@ data class UpdateApplicationRequest(
 
 data class DeactivateApplicationRequest(
     val notes: String? = null,
-    val deactivatedDate: Instant? = null
+    val deactivatedDate: LocalDate? = null
 )
 
 data class ReactivateApplicationRequest(
@@ -90,7 +91,7 @@ data class ReactivateApplicationRequest(
 )
 
 data class RenewApplicationRequest(
-    val newExpiryDate: Instant,
+    val newExpiryDate: LocalDate,
     val notes: String? = null
 )
 

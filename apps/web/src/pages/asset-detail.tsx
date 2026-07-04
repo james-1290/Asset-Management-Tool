@@ -150,13 +150,13 @@ export default function AssetDetailPage() {
           ? values.assignedPersonId
           : null,
       purchaseDate: values.purchaseDate
-        ? `${values.purchaseDate}T00:00:00Z`
+        ? values.purchaseDate
         : null,
       purchaseCost: values.purchaseCost
         ? parseFloat(values.purchaseCost)
         : null,
       warrantyExpiryDate: values.warrantyExpiryDate
-        ? `${values.warrantyExpiryDate}T00:00:00Z`
+        ? values.warrantyExpiryDate
         : null,
       depreciationMonths: values.depreciationMonths
         ? parseInt(values.depreciationMonths, 10)
@@ -199,13 +199,13 @@ export default function AssetDetailPage() {
           ? values.assignedPersonId
           : null,
       purchaseDate: values.purchaseDate
-        ? `${values.purchaseDate}T00:00:00Z`
+        ? values.purchaseDate
         : null,
       purchaseCost: values.purchaseCost
         ? parseFloat(values.purchaseCost)
         : null,
       warrantyExpiryDate: values.warrantyExpiryDate
-        ? `${values.warrantyExpiryDate}T00:00:00Z`
+        ? values.warrantyExpiryDate
         : null,
       depreciationMonths: values.depreciationMonths
         ? parseInt(values.depreciationMonths, 10)

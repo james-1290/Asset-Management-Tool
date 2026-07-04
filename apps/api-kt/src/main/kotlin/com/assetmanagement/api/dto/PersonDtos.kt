@@ -2,6 +2,7 @@ package com.assetmanagement.api.dto
 
 import jakarta.validation.constraints.NotBlank
 import java.time.Instant
+import java.time.LocalDate
 import java.util.*
 
 data class PersonDto(
@@ -76,7 +77,7 @@ data class AssignedCertificateDto(
     val name: String,
     val certificateTypeName: String,
     val status: String,
-    val expiryDate: Instant?
+    val expiryDate: LocalDate?
 )
 
 data class AssignedApplicationDto(
@@ -85,7 +86,7 @@ data class AssignedApplicationDto(
     val applicationTypeName: String,
     val status: String,
     val licenceType: String?,
-    val expiryDate: Instant?
+    val expiryDate: LocalDate?
 )
 
 data class OffboardRequest(
