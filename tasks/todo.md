@@ -21,18 +21,18 @@ source file). Items marked `[~]` are being worked this session.
 - [x] `UserNotificationsController.getAll` didn't clamp pageSize — now coerced (PR #129)
 - [x] `handleResponse` crashed on a 200 with empty body — now handled (PR #129)
 - [x] Inconsistent REST URL naming (`/assettypes` vs `/asset-models`) — kebab-case is now primary with the old concatenated path kept as an alias (PR #132)
-- [ ] Office-doc uploads likely rejected — Tika detects .docx/.xlsx as application/x-tika-ooxml, not whitelisted (AttachmentsController.kt:87-91, AssetModelsController.kt)
-- [ ] Bi-weekly alert schedule ("every_other_week") silently degrades to weekly (AlertSchedulerService + alerts-tab.tsx preview)
+- [x] Office-doc uploads: pass the filename hint to Tika so OOXML/OLE2 containers resolve to docx/xlsx instead of the generic type that was rejected (PR #140)
+- [x] Bi-weekly / month schedules: fixed the "Next Scan" preview (was checking "biweekly" not "every_other_week"; first_day_of_month / first_business_day now compute correctly). Backend biweekly→weekly is a documented Spring-cron limitation (PR #138)
 
 ### B. Systemic data-consistency
-- [ ] Reports GROUP BY stored status but the app shows *computed* status → expired/pending counts wrong; compute in query or persist status via scheduled job
-- [ ] Duplicate alerts — each item matches every threshold bucket; assign to the single smallest matching threshold (AlertProcessingService.kt:72-125)
+- [x] Reports: licence-summary now applies the computed-status correction (Active-but-expired/near → Expired/PendingRenewal), matching the dashboard/list views (PR #139)
+- [x] Duplicate alerts: per-run seen-set assigns each item to its smallest matching threshold (PR #138)
 - [ ] `updatedAt` never auto-managed — add @UpdateTimestamp/@CreationTimestamp via a @MappedSuperclass audit base
 - [ ] Optimistic locking inert — accept a client version/ETag on PUT so the 409 path can fire
 - [ ] Timezone/date-only hazard end-to-end — store date-only fields as DATE/LocalDate; centralise date formatting; fix truncating daysUntilExpiry
 - [ ] Missing unique constraints — custom_field_values(definition,entity), roles.name, *_types.name, asset_models(type,name)
 - [ ] N+1 on list endpoints (DTOs flatten related names off LAZY relations) — use fetch-joins/projections
-- [ ] Alert-run / notification writes need a transaction boundary + idempotent send (AlertProcessingService)
+- [~] Alert-run: processAlerts is now @Transactional so history+notification writes are atomic (PR #138). Full crash-idempotency (claim-before-send, so an email sent then rolled back can't re-send) is a deeper design change, still open.
 
 ### C. Duplication to refactor (highest leverage)
 - [ ] Extract ExpiryStatusService (status/expiry logic duplicated in 4+ places, can drift)
@@ -57,7 +57,7 @@ source file). Items marked `[~]` are being worked this session.
 - [x] Add CI — GitHub Actions runs backend build+test and frontend build(type-check)+test on every PR/push to main (PR #135)
 - [x] Make lint a blocking CI gate — fixed the 6 eslint errors (dashboard Date.now purity; extracted ModelImageCell to fix react-refresh; renew-dialog reset via render-phase pattern; scoped disables for the 3 genuine external-sync effects: object-URL, RHF reset, async image fetch) and removed `continue-on-error` (PR #136). The 6 `incompatible-library` warnings (TanStack/RHF — unavoidable React-Compiler optimization skips, no defect) were then silenced by disabling that one rule in eslint.config.js, so `npm run lint` is fully clean (PR #137).
 - [ ] Azure-readiness: Dockerfiles + IaC; move attachments to Blob Storage (local disk won't survive Container Apps); distributed rate-limit/scheduler; readiness health probe
-- [ ] .gitignore gaps — Gradle build/ and .gradle/ now ignored (PR #133); still: loose root PNGs, apps/web/test-results/
+- [x] .gitignore: Gradle build//.gradle/ (PR #133) + root *.png and apps/web/test-results/ + playwright-report/ (PR #140)
 
 ### Features (from review)
 - [x] Feature 1: Renewal workflow — POST /{id}/renew for certificates & licences (PR #130)
