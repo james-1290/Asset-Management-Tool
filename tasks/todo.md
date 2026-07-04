@@ -53,8 +53,9 @@ source file). Items marked `[~]` are being worked this session.
 ### E. Production-readiness (for work/Azure move)
 - [x] Docs refreshed for the Kotlin/MySQL stack — README (PR #128), CLAUDE.md (renamed from Claude.md), docs/setup|architecture|database|api.md, and tasks/decisions.md (ADR-012/013) (PR #134)
 - [x] Decommission retired apps/api (.NET) tree + drop unused Postgres container from docker-compose (PR #133)
-- [ ] Add tests — zero backend tests, ~zero frontend; start with auth/token-invalidation, expiry/alert logic, audit emission, Flyway (Testcontainers)
-- [ ] Add CI (build + lint + typecheck + tests on PR)
+- [~] Add tests — backend unit tests added for expiry/status, JWT token, password rules, CSV/SQL escaping (22 tests); frontend Vitest + a first unit test (PR #135). Still to add: @SpringBootTest/Testcontainers integration coverage (auth flow, audit emission, Flyway from clean) and more frontend/component tests.
+- [x] Add CI — GitHub Actions runs backend build+test and frontend build(type-check)+test on every PR/push to main (PR #135)
+- [ ] Make lint a blocking CI gate — fix the ~6 pre-existing eslint errors (e.g. Date.now purity in dashboard.tsx) then remove `continue-on-error` from the CI lint step
 - [ ] Azure-readiness: Dockerfiles + IaC; move attachments to Blob Storage (local disk won't survive Container Apps); distributed rate-limit/scheduler; readiness health probe
 - [ ] .gitignore gaps — Gradle build/ and .gradle/ now ignored (PR #133); still: loose root PNGs, apps/web/test-results/
 
