@@ -2,6 +2,68 @@
 
 ## In Progress
 
+## Backlog — Full project review (2026-07-04)
+
+Prioritised backlog from a whole-codebase review (8 parallel area reviews covering every
+source file). Items marked `[~]` are being worked this session.
+
+### A. Correctness bugs (small, high-value)
+- [ ] List-page edits rebuild the full PUT payload from cached (stale) row data → silent lost-update; send only dirty fields or seed dialog from a fresh fetch (assets/certificates/applications/people pages)
+- [~] Renaming a location/type/model/person leaves the old denormalised name in asset/cert/app lists — add cross-entity cache invalidation (use-locations.ts, use-asset-types.ts, use-asset-models.ts, use-people.ts)
+- [~] `—` rendered as literal text in empty asset table cells (assets/columns.tsx:138,153)
+- [~] Applications licence-type filter values don't match the enum the data uses → filter matches nothing (applications-toolbar.tsx:19-28)
+- [~] Malformed query params (bad UUID/number) return HTTP 500 not 400 — add MethodArgumentTypeMismatchException handler (GlobalExceptionHandler.kt)
+- [~] SSO/SAML users get 403 everywhere — `Operator` role never seeded (DatabaseSeeder.kt); JIT users assigned `User` which no controller accepts
+- [~] `SavedViewsController.setDefault` toggles instead of setting → calling twice leaves no default (SavedViewsController.kt:68)
+- [~] Audit-log rows crash on null actorName (audit-logs/columns.tsx:82-91)
+- [~] `ConfirmDialog` loading state is dead — Radix closes dialog before async action resolves (confirm-dialog.tsx:40-42)
+- [~] Notifications mutations (mark-read/dismiss/snooze) fire with no error handling; fetch errors render as "no notifications" (notifications.tsx)
+- [~] `UserNotificationsController.getAll` doesn't clamp pageSize (0/negative → 500, huge → full-table load)
+- [~] `handleResponse` crashes on a 200 with empty body (api-client.ts:47) — changePassword/resetPassword typed void
+- [ ] Office-doc uploads likely rejected — Tika detects .docx/.xlsx as application/x-tika-ooxml, not whitelisted (AttachmentsController.kt:87-91, AssetModelsController.kt)
+- [ ] Bi-weekly alert schedule ("every_other_week") silently degrades to weekly (AlertSchedulerService + alerts-tab.tsx preview)
+
+### B. Systemic data-consistency
+- [ ] Reports GROUP BY stored status but the app shows *computed* status → expired/pending counts wrong; compute in query or persist status via scheduled job
+- [ ] Duplicate alerts — each item matches every threshold bucket; assign to the single smallest matching threshold (AlertProcessingService.kt:72-125)
+- [ ] `updatedAt` never auto-managed — add @UpdateTimestamp/@CreationTimestamp via a @MappedSuperclass audit base
+- [ ] Optimistic locking inert — accept a client version/ETag on PUT so the 409 path can fire
+- [ ] Timezone/date-only hazard end-to-end — store date-only fields as DATE/LocalDate; centralise date formatting; fix truncating daysUntilExpiry
+- [ ] Missing unique constraints — custom_field_values(definition,entity), roles.name, *_types.name, asset_models(type,name)
+- [ ] N+1 on list endpoints (DTOs flatten related names off LAZY relations) — use fetch-joins/projections
+- [ ] Alert-run / notification writes need a transaction boundary + idempotent send (AlertProcessingService)
+
+### C. Duplication to refactor (highest leverage)
+- [ ] Extract ExpiryStatusService (status/expiry logic duplicated in 4+ places, can drift)
+- [ ] Extract DepreciationCalculator (copied 4×, Reports already diverges scale-4 vs scale-2)
+- [ ] Generic archivable-CRUD base + CustomFieldService (3 Type controllers ~95% identical; custom-field upsert reimplemented 4×)
+- [ ] Shared HistoryTimeline + HistoryDialog components (4 identical copies each, ~600 lines)
+- [ ] createEntityHooks/createEntityApi factory (5 entity hook/api modules ~90% identical; makes cross-entity invalidation declarative)
+- [ ] Generic TypeFormDialog/TypesToolbar/getTypeColumns (frontend type-management triplication)
+- [ ] Shared CsvExportHelper with chunked/streaming export + row cap (two export mechanisms, OOM risk)
+
+### D. Dead / half-built code (finish or delete)
+- [ ] Dashboard drag-drop layout fully coded but never mounted (dashboard-preferences.ts, use-dashboard-preferences.ts) — wire up ResponsiveGridLayout or remove
+- [ ] 7 of 17 dashboard widget components orphaned; 9 declared widget IDs never render
+- [ ] Dead code: shared Breadcrumbs component unused; stat-card trend prop never supplied; chart-colors STATUS_COLORS unused (two divergent palettes hardcoded elsewhere)
+- [ ] Disabled buttons shipped: 2FA, "Preview Daily Report"
+- [ ] `dateFormat` + non-GBP currency settings configurable but ignored app-wide
+
+### E. Production-readiness (for work/Azure move)
+- [~] Docs describe retired .NET/EF/PostgreSQL stack — README DB corrected (MySQL); still to fix: Claude.md, docs/*.md, tasks/decisions.md
+- [ ] Decommission retired apps/api (.NET) tree (122 files, nothing wired to it); then drop unused Postgres container from docker-compose
+- [ ] Add tests — zero backend tests, ~zero frontend; start with auth/token-invalidation, expiry/alert logic, audit emission, Flyway (Testcontainers)
+- [ ] Add CI (build + lint + typecheck + tests on PR)
+- [ ] Azure-readiness: Dockerfiles + IaC; move attachments to Blob Storage (local disk won't survive Container Apps); distributed rate-limit/scheduler; readiness health probe
+- [~] .gitignore gaps — loose root PNGs, apps/web/test-results/, Gradle build/ and .gradle/
+
+### Features (from review)
+- [~] Feature 1: Renewal workflow (POST /{id}/renew for certificates/licences/warranties — roll dates forward, log event, clear alert)
+- [~] Feature 2: Licence seat management (application↔people assignment, derived usedSeats, over-allocation block, reclaim on offboard)
+- [ ] Feature 3 (deferred): Self-service account & session mgmt (forgot-password, logout/revoke, token refresh)
+- [ ] Feature 4 (deferred): Barcode/QR asset labels + mobile scan check-in/out
+- [ ] Feature 5 (deferred): Maintenance & service scheduling (service intervals, next-service-due alerts via existing engine)
+
 ## Done
 
 - [x] Code review round 2 (10 fixes): DashboardController auth, date parsing validation, search limit enforcement, @Modifying/@Valid annotations, 14x unsafe .get() replaced, publisher export filter, BulkEditDialog validation, type cast safety, staleTime tuning

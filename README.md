@@ -7,7 +7,7 @@ A local-first, Azure-ready multi-user asset management system for IT/admin teams
 Prerequisites: Docker, JDK 21, and Node.js.
 
 ```bash
-# 1. Start infrastructure (PostgreSQL, MySQL, MailHog)
+# 1. Start infrastructure (MySQL + MailHog)
 cd infra && docker compose up -d && cd ..
 
 # 2. Build and start the API (in a new terminal)
@@ -36,5 +36,5 @@ cd apps/web && npm install && npm run dev
 
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS + shadcn/ui
 - **Backend**: Kotlin + Spring Boot (JDK 21)
-- **Database**: PostgreSQL
+- **Database**: MySQL 8
 - **Infrastructure**: Docker Compose (local), Azure (future)
