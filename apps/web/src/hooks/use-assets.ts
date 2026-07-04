@@ -1,7 +1,9 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createEntityHooks, entityWriteInvalidations, type EntityInvalidation } from "./create-entity-hooks";
 import { assetsApi } from "../lib/api/assets";
 import type { AssetQueryParams } from "../lib/api/assets";
 import type {
+  Asset,
   CreateAssetRequest,
   UpdateAssetRequest,
   CheckoutAssetRequest,
@@ -12,153 +14,56 @@ import type {
 } from "../types/asset";
 import type { CheckAssetDuplicatesRequest } from "../types/duplicate-check";
 
-const assetKeys = {
-  all: ["assets"] as const,
-  paged: (params: AssetQueryParams) => ["assets", "paged", params] as const,
-  detail: (id: string) => ["assets", id] as const,
-  history: (id: string, limit?: number) => ["assets", id, "history", limit] as const,
-};
+const assetInvalidation: EntityInvalidation = { root: "assets", historyOnUpdate: true };
 
-export function useAssets() {
-  return useQuery({
-    queryKey: assetKeys.all,
-    queryFn: assetsApi.getAll,
-  });
-}
+const assetHooks = createEntityHooks<Asset, CreateAssetRequest, UpdateAssetRequest, AssetQueryParams>(
+  assetInvalidation,
+  assetsApi,
+);
 
-export function usePagedAssets(params: AssetQueryParams) {
-  return useQuery({
-    queryKey: assetKeys.paged(params),
-    queryFn: () => assetsApi.getPaged(params),
-    placeholderData: keepPreviousData,
-  });
-}
+export const useAssets = assetHooks.useAll;
+export const usePagedAssets = assetHooks.usePaged;
+export const useAsset = assetHooks.useDetail;
+export const useCreateAsset = assetHooks.useCreate;
+export const useUpdateAsset = assetHooks.useUpdate;
+export const useArchiveAsset = assetHooks.useArchive;
+export const useBulkArchiveAssets = assetHooks.useBulkArchive;
 
-export function useAsset(id: string) {
-  return useQuery({
-    queryKey: assetKeys.detail(id),
-    queryFn: () => assetsApi.getById(id),
-    enabled: !!id,
+// Actions that mutate a single asset invalidate the same keys as an update.
+function useAssetAction<TData>(action: (vars: { id: string; data: TData }) => Promise<Asset>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: action,
+    onSuccess: (_data, variables) => {
+      for (const queryKey of entityWriteInvalidations(assetInvalidation, "update", variables.id)) {
+        queryClient.invalidateQueries({ queryKey });
+      }
+    },
   });
 }
 
 export function useAssetHistory(id: string, limit?: number) {
   return useQuery({
-    queryKey: assetKeys.history(id, limit),
+    queryKey: ["assets", id, "history", limit] as const,
     queryFn: () => assetsApi.getHistory(id, limit),
     enabled: !!id,
   });
 }
 
-export function useCreateAsset() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateAssetRequest) => assetsApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: assetKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
-}
-
-export function useUpdateAsset() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateAssetRequest }) =>
-      assetsApi.update(id, data),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: assetKeys.all });
-      queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
-}
-
 export function useCheckoutAsset() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: CheckoutAssetRequest }) =>
-      assetsApi.checkout(id, data),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: assetKeys.all });
-      queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
+  return useAssetAction<CheckoutAssetRequest>(({ id, data }) => assetsApi.checkout(id, data));
 }
 
 export function useCheckinAsset() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: CheckinAssetRequest }) =>
-      assetsApi.checkin(id, data),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: assetKeys.all });
-      queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
+  return useAssetAction<CheckinAssetRequest>(({ id, data }) => assetsApi.checkin(id, data));
 }
 
 export function useRetireAsset() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: RetireAssetRequest }) =>
-      assetsApi.retire(id, data),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: assetKeys.all });
-      queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
+  return useAssetAction<RetireAssetRequest>(({ id, data }) => assetsApi.retire(id, data));
 }
 
 export function useSellAsset() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: SellAssetRequest }) =>
-      assetsApi.sell(id, data),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: assetKeys.all });
-      queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ["assets", variables.id, "history"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
-}
-
-export function useArchiveAsset() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => assetsApi.archive(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: assetKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
-}
-
-export function useBulkArchiveAssets() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (ids: string[]) => assetsApi.bulkArchive(ids),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: assetKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
+  return useAssetAction<SellAssetRequest>(({ id, data }) => assetsApi.sell(id, data));
 }
 
 export function useCheckAssetDuplicates() {
@@ -174,7 +79,7 @@ export function useBulkStatusAssets() {
     mutationFn: ({ ids, status }: { ids: string[]; status: string }) =>
       assetsApi.bulkStatus(ids, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: assetKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
@@ -184,10 +89,9 @@ export function useBulkEditAssets() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (request: BulkEditAssetsRequest) =>
-      assetsApi.bulkEdit(request),
+    mutationFn: (request: BulkEditAssetsRequest) => assetsApi.bulkEdit(request),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: assetKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });

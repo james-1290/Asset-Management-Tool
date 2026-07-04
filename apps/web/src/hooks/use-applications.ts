@@ -1,7 +1,9 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createEntityHooks, entityWriteInvalidations, type EntityInvalidation } from "./create-entity-hooks";
 import { applicationsApi } from "../lib/api/applications";
 import type { ApplicationQueryParams } from "../lib/api/applications";
 import type {
+  Application,
   CreateApplicationRequest,
   UpdateApplicationRequest,
   DeactivateApplicationRequest,
@@ -9,99 +11,54 @@ import type {
 } from "../types/application";
 import type { CheckApplicationDuplicatesRequest } from "../types/duplicate-check";
 
-const applicationKeys = {
-  all: ["applications"] as const,
-  paged: (params: ApplicationQueryParams) => ["applications", "paged", params] as const,
-  detail: (id: string) => ["applications", id] as const,
-  history: (id: string, limit?: number) => ["applications", id, "history", limit] as const,
-};
+const applicationInvalidation: EntityInvalidation = { root: "applications", historyOnUpdate: true };
 
-export function useApplications() {
-  return useQuery({
-    queryKey: applicationKeys.all,
-    queryFn: applicationsApi.getAll,
-  });
-}
+const applicationHooks = createEntityHooks<
+  Application,
+  CreateApplicationRequest,
+  UpdateApplicationRequest,
+  ApplicationQueryParams
+>(applicationInvalidation, applicationsApi);
 
-export function usePagedApplications(params: ApplicationQueryParams) {
-  return useQuery({
-    queryKey: applicationKeys.paged(params),
-    queryFn: () => applicationsApi.getPaged(params),
-    placeholderData: keepPreviousData,
-  });
-}
+export const useApplications = applicationHooks.useAll;
+export const usePagedApplications = applicationHooks.usePaged;
+export const useApplication = applicationHooks.useDetail;
+export const useCreateApplication = applicationHooks.useCreate;
+export const useUpdateApplication = applicationHooks.useUpdate;
+export const useArchiveApplication = applicationHooks.useArchive;
+export const useBulkArchiveApplications = applicationHooks.useBulkArchive;
 
-export function useApplication(id: string) {
-  return useQuery({
-    queryKey: applicationKeys.detail(id),
-    queryFn: () => applicationsApi.getById(id),
-    enabled: !!id,
+// Single-application actions invalidate the same keys as an update.
+function useApplicationAction<TData>(action: (vars: { id: string; data: TData }) => Promise<Application>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: action,
+    onSuccess: (_data, variables) => {
+      for (const queryKey of entityWriteInvalidations(applicationInvalidation, "update", variables.id)) {
+        queryClient.invalidateQueries({ queryKey });
+      }
+    },
   });
 }
 
 export function useApplicationHistory(id: string, limit?: number) {
   return useQuery({
-    queryKey: applicationKeys.history(id, limit),
+    queryKey: ["applications", id, "history", limit] as const,
     queryFn: () => applicationsApi.getHistory(id, limit),
     enabled: !!id,
   });
 }
 
-export function useCreateApplication() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateApplicationRequest) => applicationsApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
-}
-
-export function useUpdateApplication() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateApplicationRequest }) =>
-      applicationsApi.update(id, data),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
-      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "history"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
-}
-
 export function useDeactivateApplication() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: DeactivateApplicationRequest }) =>
-      applicationsApi.deactivate(id, data),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
-      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "history"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
+  return useApplicationAction<DeactivateApplicationRequest>(({ id, data }) =>
+    applicationsApi.deactivate(id, data),
+  );
 }
 
 export function useReactivateApplication() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ReactivateApplicationRequest }) =>
-      applicationsApi.reactivate(id, data),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
-      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "history"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
+  return useApplicationAction<ReactivateApplicationRequest>(({ id, data }) =>
+    applicationsApi.reactivate(id, data),
+  );
 }
 
 export function useRenewApplication() {
@@ -111,11 +68,11 @@ export function useRenewApplication() {
     mutationFn: ({ id, data }: { id: string; data: { newExpiryDate: string; notes?: string } }) =>
       applicationsApi.renew(id, data),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
-      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "history"] });
+      for (const queryKey of entityWriteInvalidations(applicationInvalidation, "update", variables.id)) {
+        queryClient.invalidateQueries({ queryKey });
+      }
+      // Renewal clears any pending expiry alerts.
       queryClient.invalidateQueries({ queryKey: ["user-notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -128,61 +85,33 @@ export function useApplicationSeats(id: string) {
   });
 }
 
-export function useAssignSeat() {
+function useSeatMutation<TVars extends { id: string }>(action: (vars: TVars) => Promise<unknown>) {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: ({ id, personId, notes }: { id: string; personId: string; notes?: string }) =>
-      applicationsApi.assignSeat(id, { personId, notes }),
+    mutationFn: action,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "seats"] });
-      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["applications", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
     },
   });
 }
 
-export function useReleaseSeat() {
-  const queryClient = useQueryClient();
+export function useAssignSeat() {
+  return useSeatMutation(({ id, personId, notes }: { id: string; personId: string; notes?: string }) =>
+    applicationsApi.assignSeat(id, { personId, notes }),
+  );
+}
 
-  return useMutation({
-    mutationFn: ({ id, personId }: { id: string; personId: string }) =>
-      applicationsApi.releaseSeat(id, personId),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "seats"] });
-      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
-    },
-  });
+export function useReleaseSeat() {
+  return useSeatMutation(({ id, personId }: { id: string; personId: string }) =>
+    applicationsApi.releaseSeat(id, personId),
+  );
 }
 
 export function useCheckApplicationDuplicates() {
   return useMutation({
     mutationFn: (data: CheckApplicationDuplicatesRequest) => applicationsApi.checkDuplicates(data),
-  });
-}
-
-export function useArchiveApplication() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => applicationsApi.archive(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-  });
-}
-
-export function useBulkArchiveApplications() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (ids: string[]) => applicationsApi.bulkArchive(ids),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    },
   });
 }
 
@@ -193,7 +122,7 @@ export function useBulkStatusApplications() {
     mutationFn: ({ ids, status }: { ids: string[]; status: string }) =>
       applicationsApi.bulkStatus(ids, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });

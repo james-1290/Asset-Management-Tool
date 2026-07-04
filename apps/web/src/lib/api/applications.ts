@@ -1,4 +1,5 @@
 import { apiClient } from "../api-client";
+import { createEntityApi } from "./create-entity-api";
 import type {
   Application,
   CreateApplicationRequest,
@@ -8,7 +9,6 @@ import type {
   SeatAssignment,
 } from "../../types/application";
 import type { ApplicationHistory } from "../../types/application-history";
-import type { PagedResponse } from "../../types/paged-response";
 import type { DuplicateCheckResult, CheckApplicationDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface ApplicationQueryParams {
@@ -30,31 +30,11 @@ export interface ApplicationQueryParams {
 }
 
 export const applicationsApi = {
-  getAll(): Promise<Application[]> {
-    return apiClient
-      .get<PagedResponse<Application>>("/applications", { pageSize: 1000 })
-      .then((r) => r.items);
-  },
-
-  getPaged(params: ApplicationQueryParams): Promise<PagedResponse<Application>> {
-    return apiClient.get<PagedResponse<Application>>("/applications", params as Record<string, string | number | undefined>);
-  },
-
-  getById(id: string): Promise<Application> {
-    return apiClient.get<Application>(`/applications/${id}`);
-  },
+  ...createEntityApi<Application, CreateApplicationRequest, UpdateApplicationRequest, ApplicationQueryParams>("/applications"),
 
   getHistory(id: string, limit?: number): Promise<ApplicationHistory[]> {
     const params = limit ? `?limit=${limit}` : "";
     return apiClient.get<ApplicationHistory[]>(`/applications/${id}/history${params}`);
-  },
-
-  create(data: CreateApplicationRequest): Promise<Application> {
-    return apiClient.post<Application>("/applications", data);
-  },
-
-  update(id: string, data: UpdateApplicationRequest): Promise<Application> {
-    return apiClient.put<Application>(`/applications/${id}`, data);
   },
 
   deactivate(id: string, data: DeactivateApplicationRequest): Promise<Application> {
@@ -79,10 +59,6 @@ export const applicationsApi = {
 
   releaseSeat(id: string, personId: string): Promise<void> {
     return apiClient.delete(`/applications/${id}/seats/${personId}`);
-  },
-
-  archive(id: string): Promise<void> {
-    return apiClient.delete(`/applications/${id}`);
   },
 
   bulkArchive(ids: string[]): Promise<{ succeeded: number; failed: number }> {

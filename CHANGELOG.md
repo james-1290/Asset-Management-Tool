@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-04 22:00 — createEntityApi / createEntityHooks factories
+
+- Added `lib/api/create-entity-api.ts` (`createEntityApi`) and `hooks/create-entity-hooks.ts` (`createEntityHooks`) to remove the ~90%-identical CRUD boilerplate across the 5 entity modules (assets, certificates, applications, locations, people).
+- Cross-entity cache invalidation is now **declarative** via an `EntityInvalidation` config (`historyOnUpdate`, `crossEntityOnUpdate`) consumed by a pure, unit-tested `entityWriteInvalidations` function — behaviour is identical to the previous hand-written `onSuccess` blocks (e.g. a location rename still refreshes assets/certificates/applications/people; a person update refreshes assets/certificates/applications).
+- Entity-specific endpoints (checkout/checkin/retire/sell, renew, seat assignment, offboarding, reassign-and-archive, history, duplicates, bulk-status) remain hand-written; action hooks reuse the shared invalidation helper.
+- Added `create-entity-hooks.test.ts` (invalidation matrix). Net ~220 fewer lines. No API/DB change.
+
 ## 2026-07-04 21:40 — Shared CsvExport helper + export row cap (OOM guard)
 
 - New `util/CsvExport.kt` unifies both CSV export mechanisms: `stream(...)` for the entity list exports and `toResponseEntity(...)` for the bounded report/import exports. Consistent `text/csv` + UTF-8 + `Content-Disposition` wiring and formula-injection sanitisation in one place.
