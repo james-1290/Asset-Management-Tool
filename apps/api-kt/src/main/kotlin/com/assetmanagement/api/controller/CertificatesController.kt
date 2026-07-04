@@ -4,6 +4,7 @@ import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Certificate
 import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.SqlUtils
+import com.assetmanagement.api.util.withFetch
 import com.assetmanagement.api.util.computeStatus
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
@@ -297,6 +298,7 @@ class CertificatesController(
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
         val spec = buildSpec(search, status, typeId, expiryFrom, expiryTo)
+            .and(withFetch("certificateType", "asset", "person", "location"))
         val pageReq = PageRequest.of(p - 1, ps, sortOf(sortBy, sortDir))
         val result = certificateRepository.findAll(spec, pageReq)
 
