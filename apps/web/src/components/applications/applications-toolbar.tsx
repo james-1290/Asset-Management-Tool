@@ -6,6 +6,7 @@ import { ColumnToggle } from "../column-toggle";
 import { FilterChip } from "../filter-chip";
 import { ListFilter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getCurrencySymbol } from "@/lib/format";
 import type { Application } from "../../types/application";
 import type { ApplicationType } from "../../types/application-type";
 
@@ -147,7 +148,7 @@ export function ApplicationsToolbar({
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Cost (£)</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Cost ({getCurrencySymbol()})</label>
                 <div className="flex items-center gap-2">
                   <input type="number" value={costMin} onChange={(e) => onCostMinChange(e.target.value)} placeholder="Min" min="0" step="0.01" className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
                   <span className="text-xs text-muted-foreground">to</span>

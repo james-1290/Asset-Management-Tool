@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { STATUS_COLORS } from "@/lib/chart-colors";
+import { formatCurrency, formatDateTime } from "@/lib/format";
 
 export function AssetSummaryReport() {
   const { data, isLoading, dataUpdatedAt } = useAssetSummaryReport();
@@ -45,7 +46,7 @@ export function AssetSummaryReport() {
         <div>
           {dataUpdatedAt > 0 && (
             <p className="text-xs text-muted-foreground">
-              Generated: {new Date(dataUpdatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              Generated: {formatDateTime(dataUpdatedAt)}
             </p>
           )}
         </div>
@@ -81,7 +82,7 @@ export function AssetSummaryReport() {
           </div>
           <p className="text-xs font-medium text-muted-foreground">Total Value</p>
           <p className="text-2xl font-bold tracking-tight mt-1">
-            {new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 2 }).format(data.totalValue)}
+            {formatCurrency(data.totalValue, { minimumFractionDigits: 2 })}
           </p>
         </div>
 

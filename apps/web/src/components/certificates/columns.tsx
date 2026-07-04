@@ -11,6 +11,7 @@ import {
 import { CertificateStatusBadge } from "./certificate-status-badge";
 import { AvatarPlaceholder } from "../avatar-placeholder";
 import type { Certificate } from "../../types/certificate";
+import { formatDate as fmtDate } from "../../lib/format";
 
 interface ColumnActions {
   onEdit: (certificate: Certificate) => void;
@@ -18,12 +19,7 @@ interface ColumnActions {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return fmtDate(iso, "—");
 }
 
 export function getCertificateColumns({

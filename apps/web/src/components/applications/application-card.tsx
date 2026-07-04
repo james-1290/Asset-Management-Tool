@@ -2,6 +2,7 @@ import { Calendar, Pencil, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { ApplicationStatusBadge } from "./application-status-badge";
 import type { Application } from "../../types/application";
+import { formatDate } from "../../lib/format";
 
 const LICENCE_TYPE_LABELS: Record<string, string> = {
   PerSeat: "Per Seat",
@@ -22,7 +23,7 @@ interface ApplicationCardProps {
 
 export function ApplicationCard({ application, onEdit, onArchive }: ApplicationCardProps) {
   const expiryFormatted = application.expiryDate
-    ? new Date(application.expiryDate).toLocaleDateString()
+    ? formatDate(application.expiryDate)
     : null;
 
   return (

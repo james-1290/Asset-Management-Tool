@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DateRangePicker, type DateRange } from "./date-range-picker";
+import { formatDate, formatDateTime } from "@/lib/format";
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -75,7 +76,7 @@ export function ExpiriesReport() {
           />
           {dataUpdatedAt > 0 && (
             <p className="text-xs text-muted-foreground">
-              Generated: {new Date(dataUpdatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              Generated: {formatDateTime(dataUpdatedAt)}
             </p>
           )}
         </div>
@@ -125,7 +126,7 @@ export function ExpiriesReport() {
                   </TableCell>
                   <TableCell>{item.typeName}</TableCell>
                   <TableCell>
-                    {new Date(item.expiryDate).toLocaleDateString()}
+                    {formatDate(item.expiryDate)}
                   </TableCell>
                   <TableCell className="text-right">
                     <span

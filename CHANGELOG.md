@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-07-04 20:55 — Apply org dateFormat & currency settings app-wide
+
+- The System Settings `dateFormat` and `currency` values were configurable but ignored everywhere; they now drive all date and money rendering.
+- New shared, settings-aware formatting helpers in `apps/web/src/lib/format.ts` (`formatDate`, `formatDateTime`, `formatCurrency`, `getCurrencySymbol`, `formatCompactCurrency`), replacing ~40 hardcoded `en-GB`/`GBP`/`£` call sites across pages, columns, cards, reports, charts and form dialogs.
+- Settings are loaded once into a module-level store via `useFormatSettingsSync()` (mounted in the app shell); saving System Settings applies the change and invalidates queries so the whole app reformats immediately.
+- Currency field in System Settings changed from free-text to a Select of valid ISO 4217 codes (an invalid code previously threw a `RangeError` in `Intl.NumberFormat`); label corrected from "Currency Symbol" to "Currency".
+- Added unit tests for the new formatters. No DB or API changes.
+- Note: date-only fields are still parsed in local time (unchanged behaviour); the timezone/date-only storage hazard is tracked separately.
+
 ## 2026-03-02 10:00 — Asset Models feature
 
 - Added new **Asset Models** entity for product-level identity (e.g., "MacBook Pro 14" M3 Max")

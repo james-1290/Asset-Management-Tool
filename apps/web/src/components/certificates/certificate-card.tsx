@@ -2,6 +2,7 @@ import { Calendar, Pencil, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { CertificateStatusBadge } from "./certificate-status-badge";
 import type { Certificate } from "../../types/certificate";
+import { formatDate } from "../../lib/format";
 
 interface CertificateCardProps {
   certificate: Certificate;
@@ -11,7 +12,7 @@ interface CertificateCardProps {
 
 export function CertificateCard({ certificate, onEdit, onArchive }: CertificateCardProps) {
   const expiryFormatted = certificate.expiryDate
-    ? new Date(certificate.expiryDate).toLocaleDateString()
+    ? formatDate(certificate.expiryDate)
     : null;
 
   return (

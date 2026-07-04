@@ -23,6 +23,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Supported currencies. The stored value is an ISO 4217 code used directly by
+// Intl.NumberFormat, so restrict to valid codes (an invalid code throws).
+const CURRENCY_OPTIONS: { code: string; label: string }[] = [
+  { code: "GBP", label: "GBP — £ British Pound" },
+  { code: "USD", label: "USD — $ US Dollar" },
+  { code: "EUR", label: "EUR — € Euro" },
+  { code: "AUD", label: "AUD — $ Australian Dollar" },
+  { code: "CAD", label: "CAD — $ Canadian Dollar" },
+  { code: "CHF", label: "CHF — Swiss Franc" },
+  { code: "JPY", label: "JPY — ¥ Japanese Yen" },
+  { code: "NZD", label: "NZD — $ New Zealand Dollar" },
+  { code: "INR", label: "INR — ₹ Indian Rupee" },
+  { code: "ZAR", label: "ZAR — R South African Rand" },
+];
+
 const systemSchema = z.object({
   orgName: z.string().min(1, "Organisation name is required").max(200),
   currency: z.string().min(1, "Currency is required").max(10),
@@ -96,10 +111,21 @@ export function SystemTab() {
                   name="currency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Currency Symbol</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. GBP, USD, EUR" {...field} />
-                      </FormControl>
+                      <FormLabel>Currency</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {CURRENCY_OPTIONS.map((c) => (
+                            <SelectItem key={c.code} value={c.code}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

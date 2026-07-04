@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DateRangePicker, type DateRange } from "./date-range-picker";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -68,7 +69,7 @@ export function LicenceSummaryReport() {
           />
           {dataUpdatedAt > 0 && (
             <p className="text-xs text-muted-foreground">
-              Generated: {new Date(dataUpdatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              Generated: {formatDateTime(dataUpdatedAt)}
             </p>
           )}
         </div>
@@ -104,7 +105,7 @@ export function LicenceSummaryReport() {
           </div>
           <p className="text-xs font-medium text-muted-foreground">Total Spend</p>
           <p className="text-2xl font-bold tracking-tight mt-1">
-            {new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 2 }).format(data.totalSpend)}
+            {formatCurrency(data.totalSpend, { minimumFractionDigits: 2 })}
           </p>
         </div>
 
@@ -190,7 +191,7 @@ export function LicenceSummaryReport() {
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>{item.applicationTypeName}</TableCell>
                   <TableCell>
-                    {new Date(item.expiryDate).toLocaleDateString()}
+                    {formatDate(item.expiryDate)}
                   </TableCell>
                   <TableCell className="text-right">
                     <span

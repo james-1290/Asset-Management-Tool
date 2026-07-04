@@ -13,6 +13,7 @@ import { AssetTypeIcon } from "./asset-type-icon";
 import { AvatarPlaceholder } from "../avatar-placeholder";
 import type { Asset } from "../../types/asset";
 import type { CustomFieldDefinition } from "../../types/custom-field";
+import { formatDate as fmtDate, formatCurrency as fmtCurrency } from "../../lib/format";
 
 interface ColumnActions {
   onEdit: (asset: Asset) => void;
@@ -29,7 +30,7 @@ function formatCustomFieldValue(
     case "Boolean":
       return value === "true" ? "Yes" : "No";
     case "Date":
-      return new Date(value).toLocaleDateString();
+      return fmtDate(value, "—");
     case "MultiSelect": {
       try {
         const arr = JSON.parse(value);
@@ -45,12 +46,7 @@ function formatCustomFieldValue(
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  return fmtCurrency(amount, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export function getAssetColumns({

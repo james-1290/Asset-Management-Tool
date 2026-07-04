@@ -2,6 +2,7 @@ import { useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { Upload, Download, Trash2, FileText, Image, FileSpreadsheet, File, Eye, Loader2 } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { formatDate as fmtDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -50,11 +51,7 @@ function formatFileSize(bytes: number): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return fmtDate(iso);
 }
 
 export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionProps) {

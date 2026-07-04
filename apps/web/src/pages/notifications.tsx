@@ -32,6 +32,7 @@ import {
   useMarkAllRead,
 } from "@/hooks/use-user-notifications";
 import type { UserNotification } from "@/types/user-notification";
+import { formatDate } from "@/lib/format";
 
 const PAGE_SIZE = 20;
 
@@ -44,15 +45,6 @@ function timeAgo(dateStr: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const day = date.getDate().toString().padStart(2, "0");
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
 }
 
 function entityPath(notification: UserNotification): string {

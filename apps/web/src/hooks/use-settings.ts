@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { settingsApi, alertsApi } from "../lib/api/settings";
+import { setFormatSettings } from "../lib/format";
 import type { SystemSettings, AlertSettings } from "../types/settings";
 
 const settingsKeys = {
@@ -20,10 +22,26 @@ export function useUpdateSystemSettings() {
 
   return useMutation({
     mutationFn: (data: SystemSettings) => settingsApi.updateSystem(data),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Apply the new date/currency format immediately, then refresh every
+      // list/detail so already-rendered values reformat app-wide.
+      setFormatSettings(data);
       queryClient.invalidateQueries({ queryKey: settingsKeys.system });
+      queryClient.invalidateQueries();
     },
   });
+}
+
+/**
+ * Loads the org's system settings and pushes date/currency format into the
+ * shared formatting store. Mount once inside the authenticated shell so all
+ * date/money rendering across the app honours the configured format.
+ */
+export function useFormatSettingsSync() {
+  const { data } = useSystemSettings();
+  useEffect(() => {
+    if (data) setFormatSettings(data);
+  }, [data]);
 }
 
 export function useAlertSettings() {

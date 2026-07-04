@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AvatarPlaceholder } from "@/components/avatar-placeholder";
 import type { AuditLogEntry } from "@/types/audit-log";
+import { formatDate } from "@/lib/format";
 
 interface RecentActivityListProps {
   data: AuditLogEntry[] | undefined;
@@ -21,7 +22,7 @@ function formatRelativeTime(timestamp: string): string {
   const diffDay = Math.floor(diffHr / 24);
   if (diffDay === 1) return "Yesterday";
   if (diffDay < 7) return `${diffDay} days ago`;
-  return new Date(timestamp).toLocaleDateString();
+  return formatDate(timestamp);
 }
 
 const DOT_COLORS: Record<string, string> = {

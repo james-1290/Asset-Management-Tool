@@ -29,21 +29,7 @@ import {
   useInventorySnapshot,
 } from "@/hooks/use-dashboard";
 import type { WidgetId } from "@/lib/dashboard-preferences";
-
-function formatCurrency(value: number): string {
-  if (value >= 1_000_000) {
-    return `£${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (value >= 1_000) {
-    return `£${(value / 1_000).toFixed(0)}K`;
-  }
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+import { formatCompactCurrency as formatCurrency } from "@/lib/format";
 
 interface DashboardPreviewProps {
   isVisible: (id: WidgetId) => boolean;
