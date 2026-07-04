@@ -5,6 +5,7 @@ import com.assetmanagement.api.model.Certificate
 import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.util.computeStatus
+import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.CertificateStatus
 import com.assetmanagement.api.repository.*
@@ -183,6 +184,7 @@ class CertificatesController(
         isArchived = isArchived,
         createdAt = createdAt,
         updatedAt = updatedAt,
+        entityVersion = entityVersion,
         customFieldValues = cfValues
     )
 
@@ -435,6 +437,8 @@ class CertificatesController(
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateCertificateRequest): ResponseEntity<Any> {
         val certificate = certificateRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
+
+        versionConflict(request.entityVersion, certificate.entityVersion)?.let { return it }
 
         val validationError = validateForeignKeys(request)
         if (validationError != null) return ResponseEntity.badRequest().body(mapOf("error" to validationError))

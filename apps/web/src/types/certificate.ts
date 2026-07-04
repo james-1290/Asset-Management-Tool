@@ -29,6 +29,7 @@ export interface Certificate {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+  entityVersion: number;
   customFieldValues: CustomFieldValueDto[];
 }
 
@@ -51,6 +52,7 @@ export interface CreateCertificateRequest {
 }
 
 export interface UpdateCertificateRequest {
+  entityVersion?: number;
   name: string;
   certificateTypeId: string;
   issuer?: string | null;

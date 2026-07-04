@@ -65,7 +65,7 @@ export default function LocationDetailPage() {
     };
 
     updateMutation.mutate(
-      { id: location.id, data },
+      { id: location.id, data: { ...data, entityVersion: location.entityVersion } },
       {
         onSuccess: () => {
           toast.success("Location updated");

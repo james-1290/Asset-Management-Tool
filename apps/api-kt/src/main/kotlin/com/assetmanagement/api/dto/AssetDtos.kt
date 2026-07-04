@@ -33,6 +33,7 @@ data class AssetDto(
     val isArchived: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val entityVersion: Long,
     val customFieldValues: List<CustomFieldValueDto>
 )
 
@@ -65,6 +66,7 @@ data class UpdateAssetRequest(
     val depreciationMonths: Int? = null,
     val notes: String? = null,
     val assetModelId: UUID? = null,
+    val entityVersion: Long? = null,
     val customFieldValues: List<CustomFieldValueInput>? = null
 )
 

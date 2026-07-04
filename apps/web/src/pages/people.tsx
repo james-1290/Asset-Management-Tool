@@ -334,7 +334,7 @@ export default function PeoplePage() {
 
     if (editingPerson) {
       updateMutation.mutate(
-        { id: editingPerson.id, data },
+        { id: editingPerson.id, data: { ...data, entityVersion: editingPerson.entityVersion } },
         {
           onSuccess: () => {
             toast.success("Person updated");

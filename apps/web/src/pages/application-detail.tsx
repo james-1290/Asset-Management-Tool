@@ -174,7 +174,7 @@ export default function ApplicationDetailPage() {
     };
 
     updateMutation.mutate(
-      { id: application.id, data },
+      { id: application.id, data: { ...data, entityVersion: application.entityVersion } },
       {
         onSuccess: () => {
           toast.success("Application updated");

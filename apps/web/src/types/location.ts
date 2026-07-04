@@ -7,6 +7,7 @@ export interface Location {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+  entityVersion: number;
 }
 
 export interface CreateLocationRequest {
@@ -17,6 +18,7 @@ export interface CreateLocationRequest {
 }
 
 export interface UpdateLocationRequest {
+  entityVersion?: number;
   name: string;
   address?: string | null;
   city?: string | null;

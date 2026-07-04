@@ -4,6 +4,7 @@ import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Person
 import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.util.SqlUtils
+import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.repository.*
 import com.assetmanagement.api.service.*
 import com.opencsv.CSVWriter
@@ -164,6 +165,7 @@ class PeopleController(
     @Transactional
     fun update(@PathVariable id: UUID, @Valid @RequestBody request: UpdatePersonRequest): ResponseEntity<Any> {
         val person = personRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+        versionConflict(request.entityVersion, person.entityVersion)?.let { return it }
         if (request.locationId != null) {
             val loc = locationRepository.findById(request.locationId).orElse(null)
             if (loc == null || loc.isArchived) return ResponseEntity.badRequest().body(mapOf("error" to "Invalid location ID."))
@@ -465,5 +467,5 @@ class PeopleController(
         return Sort.by(dir, prop)
     }
 
-    private fun Person.toDto() = PersonDto(id, fullName, email, department, jobTitle, locationId, location?.name, isArchived, createdAt, updatedAt)
+    private fun Person.toDto() = PersonDto(id, fullName, email, department, jobTitle, locationId, location?.name, isArchived, createdAt, updatedAt, entityVersion)
 }

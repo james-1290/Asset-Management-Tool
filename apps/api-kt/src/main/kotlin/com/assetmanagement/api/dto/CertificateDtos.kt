@@ -27,6 +27,7 @@ data class CertificateDto(
     val isArchived: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val entityVersion: Long,
     val customFieldValues: List<CustomFieldValueDto>
 )
 
@@ -50,6 +51,7 @@ data class CreateCertificateRequest(
 )
 
 data class UpdateCertificateRequest(
+    val entityVersion: Long? = null,
     val name: String,
     val certificateTypeId: UUID,
     val issuer: String? = null,

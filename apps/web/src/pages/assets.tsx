@@ -447,7 +447,7 @@ export default function AssetsPage() {
 
     if (editingAsset) {
       updateMutation.mutate(
-        { id: editingAsset.id, data },
+        { id: editingAsset.id, data: { ...data, entityVersion: editingAsset.entityVersion } },
         {
           onSuccess: () => {
             toast.success("Asset updated");
