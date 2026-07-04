@@ -13,6 +13,7 @@ class SystemSetting(
     @Column(name = "value", nullable = false, columnDefinition = "TEXT")
     var value: String = "",
 
+    @org.hibernate.annotations.UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = Instant.now(),
 

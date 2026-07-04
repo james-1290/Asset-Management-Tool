@@ -30,9 +30,11 @@ class AssetModel(
     @Column(name = "is_archived", nullable = false)
     var isArchived: Boolean = false,
 
+    @org.hibernate.annotations.CreationTimestamp
     @Column(name = "created_at", nullable = false)
     var createdAt: Instant = Instant.now(),
 
+    @org.hibernate.annotations.UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = Instant.now()
 )

@@ -53,6 +53,7 @@ class UserNotification(
     @Column(name = "snoozed_until")
     var snoozedUntil: Instant? = null,
 
+    @org.hibernate.annotations.CreationTimestamp
     @Column(name = "created_at", nullable = false)
     var createdAt: Instant = Instant.now()
 )
