@@ -72,6 +72,22 @@ export function useUpdateCertificate() {
   });
 }
 
+export function useRenewCertificate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { newExpiryDate: string; notes?: string } }) =>
+      certificatesApi.renew(id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: certificateKeys.all });
+      queryClient.invalidateQueries({ queryKey: certificateKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["certificates", variables.id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["user-notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
 export function useArchiveCertificate() {
   const queryClient = useQueryClient();
 

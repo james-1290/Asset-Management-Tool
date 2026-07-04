@@ -11,6 +11,7 @@ import {
   Layers,
   StickyNote,
   Maximize2,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
@@ -26,10 +27,12 @@ import {
   useUpdateApplication,
   useDeactivateApplication,
   useReactivateApplication,
+  useRenewApplication,
 } from "../hooks/use-applications";
 import { useApplicationTypes } from "../hooks/use-application-types";
 import { useLocations } from "../hooks/use-locations";
 import { AttachmentsSection } from "../components/shared/attachments-section";
+import { RenewDialog } from "../components/shared/renew-dialog";
 import type { ApplicationFormValues } from "../lib/schemas/application";
 
 function formatDate(iso: string | null): string | null {
@@ -105,10 +108,26 @@ export default function ApplicationDetailPage() {
   const updateMutation = useUpdateApplication();
   const deactivateMutation = useDeactivateApplication();
   const reactivateMutation = useReactivateApplication();
+  const renewMutation = useRenewApplication();
 
   const [formOpen, setFormOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [renewOpen, setRenewOpen] = useState(false);
+
+  function handleRenew(newExpiryDate: string, notes: string | null) {
+    if (!application) return;
+    renewMutation.mutate(
+      { id: application.id, data: { newExpiryDate, notes: notes ?? undefined } },
+      {
+        onSuccess: () => {
+          toast.success("Application renewed");
+          setRenewOpen(false);
+        },
+        onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to renew application"),
+      },
+    );
+  }
 
   const detailsRef = useRef<HTMLDivElement>(null);
   const [detailsHeight, setDetailsHeight] = useState<number | null>(null);
@@ -290,6 +309,12 @@ export default function ApplicationDetailPage() {
               {reactivateMutation.isPending ? "Reactivating..." : "Reactivate"}
             </Button>
           )}
+          {!application.isArchived && (
+            <Button size="sm" variant="outline" onClick={() => setRenewOpen(true)}>
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+              Renew
+            </Button>
+          )}
           <Button size="sm" onClick={() => setFormOpen(true)}>
             <Pencil className="mr-1.5 h-3.5 w-3.5" />
             Edit
@@ -469,6 +494,16 @@ export default function ApplicationDetailPage() {
         applicationName={application.name}
         onSubmit={handleDeactivate}
         loading={deactivateMutation.isPending}
+      />
+
+      <RenewDialog
+        open={renewOpen}
+        onOpenChange={setRenewOpen}
+        entityLabel="Application"
+        entityName={application.name}
+        currentExpiry={application.expiryDate}
+        onSubmit={handleRenew}
+        loading={renewMutation.isPending}
       />
     </div>
   );

@@ -44,6 +44,8 @@ class CertificatesController(
     private val locationRepository: LocationRepository,
     private val customFieldValueRepository: CustomFieldValueRepository,
     private val customFieldDefinitionRepository: CustomFieldDefinitionRepository,
+    private val alertHistoryRepository: AlertHistoryRepository,
+    private val userNotificationRepository: UserNotificationRepository,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
@@ -498,6 +500,51 @@ class CertificatesController(
                 "Updated", "Certificate", certificate.id.toString(), certificate.name,
                 "Updated certificate \"${certificate.name}\"",
                 currentUserService.userId, currentUserService.userName, changes
+            )
+        )
+
+        val saved = certificateRepository.findById(certificate.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }
+        val cfValues = buildCustomFieldValueDtos(saved.id)
+        return ResponseEntity.ok(saved.toDto(cfValues))
+    }
+
+    @PostMapping("/{id}/renew")
+    @Transactional
+    fun renew(@PathVariable id: UUID, @RequestBody request: RenewCertificateRequest): ResponseEntity<Any> {
+        val certificate = certificateRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+        if (certificate.isArchived) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "Cannot renew an archived certificate"))
+        }
+        if (!request.newExpiryDate.isAfter(Instant.now())) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "New expiry date must be in the future"))
+        }
+
+        val changes = mutableListOf(
+            AuditChange("Expiry Date", certificate.expiryDate?.let { dateFormat.format(it) }, dateFormat.format(request.newExpiryDate))
+        )
+        if (certificate.status != CertificateStatus.Active) {
+            changes.add(AuditChange("Status", certificate.status.name, CertificateStatus.Active.name))
+        }
+
+        certificate.expiryDate = request.newExpiryDate
+        certificate.status = CertificateStatus.Active
+        certificate.updatedAt = Instant.now()
+        certificateRepository.save(certificate)
+
+        // Reset expiry alerts so the renewed term starts a fresh alert cycle.
+        // The alert subsystem stores certificates under entityType "certificate".
+        alertHistoryRepository.deleteByEntityTypeAndEntityId("certificate", certificate.id)
+        userNotificationRepository.deleteByEntityTypeAndEntityId("certificate", certificate.id)
+
+        val detail = buildString {
+            append("Renewed certificate \"${certificate.name}\" until ${dateFormat.format(request.newExpiryDate)}")
+            if (!request.notes.isNullOrBlank()) append(" — ${request.notes}")
+        }
+        auditService.log(
+            AuditEntry(
+                "Renewed", "Certificate", certificate.id.toString(), certificate.name,
+                detail, currentUserService.userId, currentUserService.userName, changes
             )
         )
 

@@ -104,6 +104,22 @@ export function useReactivateApplication() {
   });
 }
 
+export function useRenewApplication() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { newExpiryDate: string; notes?: string } }) =>
+      applicationsApi.renew(id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: applicationKeys.all });
+      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["applications", variables.id, "history"] });
+      queryClient.invalidateQueries({ queryKey: ["user-notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
 export function useCheckApplicationDuplicates() {
   return useMutation({
     mutationFn: (data: CheckApplicationDuplicatesRequest) => applicationsApi.checkDuplicates(data),

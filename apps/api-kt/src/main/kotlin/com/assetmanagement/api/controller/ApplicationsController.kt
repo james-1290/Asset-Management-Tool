@@ -44,6 +44,8 @@ class ApplicationsController(
     private val customFieldDefinitionRepository: CustomFieldDefinitionRepository,
     private val customFieldValueRepository: CustomFieldValueRepository,
     private val applicationHistoryRepository: ApplicationHistoryRepository,
+    private val alertHistoryRepository: AlertHistoryRepository,
+    private val userNotificationRepository: UserNotificationRepository,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
@@ -584,6 +586,58 @@ class ApplicationsController(
                 entityId = app.id.toString(),
                 entityName = app.name,
                 details = "Reactivated application \"${app.name}\"",
+                actorId = currentUserService.userId,
+                actorName = currentUserService.userName,
+                changes = changes
+            )
+        )
+
+        val reloaded = applicationRepository.findById(app.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }
+        val cfvs = loadCustomFieldValues(reloaded.id)
+        return ResponseEntity.ok(reloaded.toDto(cfvs))
+    }
+
+    // ── POST /{id}/renew ── Renew a licence, rolling the expiry forward ──
+    @PostMapping("/{id}/renew")
+    @Transactional
+    fun renew(
+        @PathVariable id: UUID,
+        @RequestBody request: RenewApplicationRequest
+    ): ResponseEntity<Any> {
+        val app = applicationRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+
+        if (app.isArchived)
+            return ResponseEntity.badRequest().body(mapOf("error" to "Cannot renew an archived application."))
+
+        if (!request.newExpiryDate.isAfter(Instant.now()))
+            return ResponseEntity.badRequest().body(mapOf("error" to "New expiry date must be in the future."))
+
+        val changes = mutableListOf(
+            AuditChange("Expiry Date", app.expiryDate?.let { dateOnlyFormat.format(it) }, dateOnlyFormat.format(request.newExpiryDate))
+        )
+        if (app.status != ApplicationStatus.Active) {
+            changes.add(AuditChange("Status", app.status.name, ApplicationStatus.Active.name))
+        }
+
+        app.expiryDate = request.newExpiryDate
+        app.status = ApplicationStatus.Active
+        app.updatedAt = Instant.now()
+        if (!request.notes.isNullOrBlank()) app.notes = request.notes
+        applicationRepository.save(app)
+
+        // Reset expiry alerts so the renewed term starts a fresh alert cycle.
+        // The alert subsystem stores applications/licences under entityType "licence".
+        alertHistoryRepository.deleteByEntityTypeAndEntityId("licence", app.id)
+        userNotificationRepository.deleteByEntityTypeAndEntityId("licence", app.id)
+
+        auditService.log(
+            AuditEntry(
+                action = "Renewed",
+                entityType = "Application",
+                entityId = app.id.toString(),
+                entityName = app.name,
+                details = "Renewed application \"${app.name}\" until ${dateOnlyFormat.format(request.newExpiryDate)}",
                 actorId = currentUserService.userId,
                 actorName = currentUserService.userName,
                 changes = changes

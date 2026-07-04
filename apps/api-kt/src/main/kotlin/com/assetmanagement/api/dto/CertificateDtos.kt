@@ -67,6 +67,11 @@ data class UpdateCertificateRequest(
     val customFieldValues: List<CustomFieldValueInput>? = null
 )
 
+data class RenewCertificateRequest(
+    val newExpiryDate: Instant,
+    val notes: String? = null
+)
+
 data class CertificateHistoryChangeDto(
     val fieldName: String,
     val oldValue: String?,
