@@ -7,17 +7,26 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import type { CertificateType } from "../../types/certificate-type";
 
-interface ColumnActions {
-  onEdit: (certificateType: CertificateType) => void;
-  onArchive: (certificateType: CertificateType) => void;
+/** Minimal shape shared by all entity-type rows (asset/certificate/application). */
+export interface TypeRow {
+  id: string;
+  name: string;
+  description: string | null;
+  customFields?: unknown[] | null;
 }
 
-export function getCertificateTypeColumns({
+interface TypeColumnActions<T> {
+  onEdit: (row: T) => void;
+  onArchive: (row: T) => void;
+}
+
+/** Shared columns (name / description / custom-field count / actions) for the
+ *  entity-type management tables. */
+export function getTypeColumns<T extends TypeRow>({
   onEdit,
   onArchive,
-}: ColumnActions): ColumnDef<CertificateType, unknown>[] {
+}: TypeColumnActions<T>): ColumnDef<T, unknown>[] {
   return [
     {
       accessorKey: "name",
@@ -65,7 +74,7 @@ export function getCertificateTypeColumns({
     {
       id: "actions",
       cell: ({ row }) => {
-        const certificateType = row.original;
+        const type = row.original;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -75,12 +84,12 @@ export function getCertificateTypeColumns({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(certificateType)}>
+              <DropdownMenuItem onClick={() => onEdit(type)}>
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
-                onClick={() => onArchive(certificateType)}
+                onClick={() => onArchive(type)}
               >
                 Delete
               </DropdownMenuItem>

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-04 21:25 — Generic type-management components (dedup)
+
+- Replaced the triplicated Asset/Certificate/Application type-management components with shared generics under `apps/web/src/components/type-management/`: `TypeFormDialog`, `TypesToolbar`, `getTypeColumns`, plus the relocated `CustomFieldEditor` and a shared `mapCustomFieldsToForm` helper.
+- The generic `TypeFormDialog` owns the dialog chrome, Name/Description fields, custom-field editor and reset-on-open; entity-specific fields (asset's `defaultDepreciationMonths` + `nameTemplate`) are supplied via render-prop slots.
+- Deleted 10 near-identical per-entity component files; the three type pages now configure the generics. Net ~400 fewer lines. No behaviour, DB or API changes.
+
 ## 2026-07-04 20:55 — Apply org dateFormat & currency settings app-wide
 
 - The System Settings `dateFormat` and `currency` values were configurable but ignored everywhere; they now drive all date and money rendering.

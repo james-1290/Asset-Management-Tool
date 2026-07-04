@@ -10,9 +10,18 @@ import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
 import { ConfirmDialog } from "../components/confirm-dialog";
-import { AssetTypeFormDialog } from "../components/asset-types/asset-type-form-dialog";
-import { AssetTypesToolbar } from "../components/asset-types/asset-types-toolbar";
-import { getAssetTypeColumns } from "../components/asset-types/columns";
+import { TypeFormDialog } from "../components/type-management/type-form-dialog";
+import { TypesToolbar } from "../components/type-management/types-toolbar";
+import { getTypeColumns } from "../components/type-management/type-columns";
+import { mapCustomFieldsToForm } from "../components/type-management/custom-fields";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "../components/ui/form";
+import { Input } from "../components/ui/input";
 import {
   usePagedAssetTypes,
   useCreateAssetType,
@@ -23,7 +32,7 @@ import {
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { BulkActionBar } from "../components/bulk-action-bar";
 import type { AssetType } from "../types/asset-type";
-import type { AssetTypeFormValues } from "../lib/schemas/asset-type";
+import { assetTypeSchema, type AssetTypeFormValues } from "../lib/schemas/asset-type";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
@@ -102,7 +111,7 @@ export default function AssetTypesPage() {
   const columns = useMemo(
     () => [
       getSelectionColumn<AssetType>(),
-      ...getAssetTypeColumns({
+      ...getTypeColumns<AssetType>({
         onEdit: (assetType) => {
           setEditingAssetType(assetType);
           setFormOpen(true);
@@ -358,10 +367,11 @@ export default function AssetTypesPage() {
         toolbar={(table) => (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <AssetTypesToolbar
+              <TypesToolbar
                 table={table}
                 search={searchInput}
                 onSearchChange={setSearchInput}
+                placeholder="Search asset types…"
               />
               <SavedViewSelector
                 entityType="asset-types"
@@ -389,15 +399,64 @@ export default function AssetTypesPage() {
         }
       />
 
-      <AssetTypeFormDialog
+      <TypeFormDialog<AssetTypeFormValues, AssetType>
         open={formOpen}
         onOpenChange={(open) => {
           setFormOpen(open);
           if (!open) setEditingAssetType(null);
         }}
-        assetType={editingAssetType}
+        entity={editingAssetType}
+        entityLabel="Asset Type"
+        categoryNoun="asset"
+        namePlaceholder="e.g. Laptop"
+        schema={assetTypeSchema}
+        buildValues={(t) => ({
+          name: t?.name ?? "",
+          description: t?.description ?? "",
+          defaultDepreciationMonths:
+            t?.defaultDepreciationMonths != null
+              ? String(t.defaultDepreciationMonths)
+              : "",
+          nameTemplate: t?.nameTemplate ?? "",
+          customFields: mapCustomFieldsToForm(t?.customFields),
+        })}
         onSubmit={handleFormSubmit}
         loading={createMutation.isPending || updateMutation.isPending}
+        renderNameAdjacent={(form) => (
+          <FormField
+            control={form.control}
+            name="defaultDepreciationMonths"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-semibold">
+                  Default Depreciation (months)
+                </FormLabel>
+                <FormControl>
+                  <Input type="number" min="1" step="1" placeholder="e.g. 36" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+        renderExtraFields={(form) => (
+          <FormField
+            control={form.control}
+            name="nameTemplate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-semibold">Name Template</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g. COAD-%SERIALNUMBER%" {...field} />
+                </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  Auto-generates asset names. Variables: %SERIALNUMBER%, %ASSETTYPENAME%
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
       />
 
       <ConfirmDialog

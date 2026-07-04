@@ -10,9 +10,10 @@ import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
 import { ConfirmDialog } from "../components/confirm-dialog";
-import { ApplicationTypeFormDialog } from "../components/application-types/application-type-form-dialog";
-import { ApplicationTypesToolbar } from "../components/application-types/application-types-toolbar";
-import { getApplicationTypeColumns } from "../components/application-types/columns";
+import { TypeFormDialog } from "../components/type-management/type-form-dialog";
+import { TypesToolbar } from "../components/type-management/types-toolbar";
+import { getTypeColumns } from "../components/type-management/type-columns";
+import { mapCustomFieldsToForm } from "../components/type-management/custom-fields";
 import {
   usePagedApplicationTypes,
   useCreateApplicationType,
@@ -23,7 +24,7 @@ import {
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { BulkActionBar } from "../components/bulk-action-bar";
 import type { ApplicationType } from "../types/application-type";
-import type { ApplicationTypeFormValues } from "../lib/schemas/application-type";
+import { applicationTypeSchema, type ApplicationTypeFormValues } from "../lib/schemas/application-type";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
@@ -100,7 +101,7 @@ export default function ApplicationTypesPage() {
   const columns = useMemo(
     () => [
       getSelectionColumn<ApplicationType>(),
-      ...getApplicationTypeColumns({
+      ...getTypeColumns<ApplicationType>({
         onEdit: (applicationType) => {
           setEditingApplicationType(applicationType);
           setFormOpen(true);
@@ -352,10 +353,11 @@ export default function ApplicationTypesPage() {
         toolbar={(table) => (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <ApplicationTypesToolbar
+              <TypesToolbar
                 table={table}
                 search={searchInput}
                 onSearchChange={setSearchInput}
+                placeholder="Search application types…"
               />
               <SavedViewSelector
                 entityType="application-types"
@@ -383,13 +385,22 @@ export default function ApplicationTypesPage() {
         }
       />
 
-      <ApplicationTypeFormDialog
+      <TypeFormDialog<ApplicationTypeFormValues, ApplicationType>
         open={formOpen}
         onOpenChange={(open) => {
           setFormOpen(open);
           if (!open) setEditingApplicationType(null);
         }}
-        applicationType={editingApplicationType}
+        entity={editingApplicationType}
+        entityLabel="Application Type"
+        categoryNoun="application"
+        namePlaceholder="e.g. SaaS"
+        schema={applicationTypeSchema}
+        buildValues={(t) => ({
+          name: t?.name ?? "",
+          description: t?.description ?? "",
+          customFields: mapCustomFieldsToForm(t?.customFields),
+        })}
         onSubmit={handleFormSubmit}
         loading={createMutation.isPending || updateMutation.isPending}
       />
