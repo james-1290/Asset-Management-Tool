@@ -64,6 +64,10 @@ export const applicationsApi = {
     return apiClient.post<Application>(`/applications/${id}/reactivate`, data);
   },
 
+  renew(id: string, data: { newExpiryDate: string; notes?: string }): Promise<Application> {
+    return apiClient.post<Application>(`/applications/${id}/renew`, data);
+  },
+
   archive(id: string): Promise<void> {
     return apiClient.delete(`/applications/${id}`);
   },

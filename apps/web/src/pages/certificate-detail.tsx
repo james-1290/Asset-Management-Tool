@@ -11,6 +11,7 @@ import {
   Layers,
   StickyNote,
   Maximize2,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
@@ -23,10 +24,12 @@ import {
   useCertificate,
   useCertificateHistory,
   useUpdateCertificate,
+  useRenewCertificate,
 } from "../hooks/use-certificates";
 import { useCertificateTypes } from "../hooks/use-certificate-types";
 import { useLocations } from "../hooks/use-locations";
 import { AttachmentsSection } from "../components/shared/attachments-section";
+import { RenewDialog } from "../components/shared/renew-dialog";
 import type { CertificateFormValues } from "../lib/schemas/certificate";
 
 function formatDate(iso: string | null): string | null {
@@ -80,9 +83,25 @@ export default function CertificateDetailPage() {
   const { data: certificateTypes } = useCertificateTypes();
   const { data: locations } = useLocations();
   const updateMutation = useUpdateCertificate();
+  const renewMutation = useRenewCertificate();
 
   const [formOpen, setFormOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [renewOpen, setRenewOpen] = useState(false);
+
+  function handleRenew(newExpiryDate: string, notes: string | null) {
+    if (!certificate) return;
+    renewMutation.mutate(
+      { id: certificate.id, data: { newExpiryDate, notes: notes ?? undefined } },
+      {
+        onSuccess: () => {
+          toast.success("Certificate renewed");
+          setRenewOpen(false);
+        },
+        onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to renew certificate"),
+      },
+    );
+  }
 
   const detailsRef = useRef<HTMLDivElement>(null);
   const [detailsHeight, setDetailsHeight] = useState<number | null>(null);
@@ -210,6 +229,10 @@ export default function CertificateDetailPage() {
           <Button size="sm" onClick={() => setFormOpen(true)}>
             <Pencil className="mr-1.5 h-3.5 w-3.5" />
             Edit
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setRenewOpen(true)}>
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            Renew
           </Button>
         </div>
       </DetailCard>
@@ -347,6 +370,16 @@ export default function CertificateDetailPage() {
         certificateName={certificate.name}
         open={historyOpen}
         onOpenChange={setHistoryOpen}
+      />
+
+      <RenewDialog
+        open={renewOpen}
+        onOpenChange={setRenewOpen}
+        entityLabel="Certificate"
+        entityName={certificate.name}
+        currentExpiry={certificate.expiryDate}
+        onSubmit={handleRenew}
+        loading={renewMutation.isPending}
       />
     </div>
   );

@@ -142,6 +142,11 @@ interface SystemSettingRepository : JpaRepository<SystemSetting, String> {
 interface AlertHistoryRepository : JpaRepository<AlertHistory, UUID> {
     fun existsByEntityTypeAndEntityIdAndThresholdDays(entityType: String, entityId: UUID, thresholdDays: Int): Boolean
     fun findAllByOrderBySentAtDesc(pageable: Pageable): Page<AlertHistory>
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM AlertHistory a WHERE a.entityType = :entityType AND a.entityId = :entityId")
+    fun deleteByEntityTypeAndEntityId(@Param("entityType") entityType: String, @Param("entityId") entityId: UUID): Int
 }
 
 @Repository
@@ -159,6 +164,11 @@ interface UserNotificationRepository : JpaRepository<UserNotification, UUID>, Jp
     @Transactional
     @Query("DELETE FROM UserNotification n WHERE n.createdAt < :cutoff")
     fun deleteByCreatedAtBefore(@Param("cutoff") cutoff: Instant): Int
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM UserNotification n WHERE n.entityType = :entityType AND n.entityId = :entityId")
+    fun deleteByEntityTypeAndEntityId(@Param("entityType") entityType: String, @Param("entityId") entityId: UUID): Int
 }
 
 @Repository

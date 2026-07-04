@@ -87,6 +87,11 @@ data class ReactivateApplicationRequest(
     val notes: String? = null
 )
 
+data class RenewApplicationRequest(
+    val newExpiryDate: Instant,
+    val notes: String? = null
+)
+
 data class ApplicationHistoryChangeDto(
     val fieldName: String,
     val oldValue: String?,

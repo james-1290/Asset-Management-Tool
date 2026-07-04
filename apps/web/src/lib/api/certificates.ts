@@ -49,6 +49,10 @@ export const certificatesApi = {
     return apiClient.put<Certificate>(`/certificates/${id}`, data);
   },
 
+  renew(id: string, data: { newExpiryDate: string; notes?: string }): Promise<Certificate> {
+    return apiClient.post<Certificate>(`/certificates/${id}/renew`, data);
+  },
+
   archive(id: string): Promise<void> {
     return apiClient.delete(`/certificates/${id}`);
   },
