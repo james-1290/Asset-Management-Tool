@@ -1,22 +1,4 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: assetmgmt-db
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:5432:5432"
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-assetmgmt}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   mysql:
     image: mysql:8.3
     container_name: assetmgmt-mysql
@@ -43,5 +25,4 @@ services:
       - "127.0.0.1:8025:8025"
 
 volumes:
-  pgdata:
   mysqldata:
