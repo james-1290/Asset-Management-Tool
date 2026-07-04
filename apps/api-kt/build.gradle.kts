@@ -61,6 +61,11 @@ dependencies {
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
+    // Pin a recent Testcontainers (newer docker-java) for Docker Desktop compatibility;
+    // overrides the older version Spring Boot 3.2 would otherwise manage.
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:mysql")
 }
 
 kotlin {
@@ -71,4 +76,8 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // Local-only escape hatch: when DOCKER_API_VERSION is set (e.g. on Docker
+    // Desktop, whose MinAPIVersion can reject docker-java's default negotiation),
+    // pin docker-java's API version. Unset in CI, so default negotiation is used.
+    System.getenv("DOCKER_API_VERSION")?.let { systemProperty("api.version", it) }
 }
