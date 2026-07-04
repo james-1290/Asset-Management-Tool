@@ -1,161 +1,56 @@
-# Database Schema
+# Database
 
-## Overview
+## Engine & tooling
 
-PostgreSQL 16, managed via EF Core migrations. Connection string configured in `appsettings.json`.
+- **Engine**: MySQL 8 (InnoDB, `utf8mb4`). Locally via Docker (`infra/docker-compose.yml`).
+- **Access**: Spring Data JPA / Hibernate (`MySQLDialect`).
+- **Migrations**: Flyway. The SQL files under
+  `apps/api-kt/src/main/resources/db/migration` (`V001…` onward) are the
+  **source of truth** for the schema and are applied automatically on API
+  startup. Hibernate runs with `ddl-auto: validate`, so the entity mappings are
+  checked against the Flyway-managed schema rather than generating it.
+- **UUIDs**: primary keys and foreign keys are `CHAR(36)`.
+- **Timestamps**: `DATETIME(6)`; the JDBC connection pins `serverTimezone=UTC`.
+
+To change the schema, add the next `V<nnn>__<description>.sql` migration — do
+not edit an applied migration (Flyway is forward-only).
 
 ## Tables
 
-### Users
-| Column | Type | Notes |
-|--------|------|-------|
-| Id | UUID | PK |
-| Username | text | Unique |
-| PasswordHash | text | BCrypt hash (placeholder) |
-| Email | text | Unique |
-| DisplayName | text | |
-| IsActive | boolean | Default true |
-| CreatedAt | timestamp | UTC |
-| UpdatedAt | timestamp | UTC |
+Grouped by area (see the migrations for exact columns, indexes, and constraints):
 
-### Roles
-| Column | Type | Notes |
-|--------|------|-------|
-| Id | UUID | PK |
-| Name | text | |
-| Description | text | Nullable |
-| CreatedAt | timestamp | UTC |
+- **Identity & access**: `users`, `roles`, `permissions`, `role_permissions`,
+  `user_roles`
+- **Core inventory**: `assets`, `asset_types`, `asset_models`, `asset_templates`
+- **Certificates**: `certificates`, `certificate_types`
+- **Applications / licences**: `applications`, `application_types`,
+  `application_seat_assignments`
+- **Organisation**: `people`, `locations`
+- **Custom fields**: `custom_field_definitions`, `custom_field_values`
+  (polymorphic — a value's `entity_id` points at the owning asset/certificate/
+  application; the definition's entity type disambiguates)
+- **History & audit**: `audit_logs` (global), plus per-entity timelines
+  `asset_history` / `certificate_history` / `application_history` /
+  `person_history` and their `*_history_changes` field-level change tables
+- **Alerts & notifications**: `alert_history`, `user_notifications`,
+  `user_alert_rules`
+- **Settings & views**: `system_settings`, `saved_views`, `attachments`
 
-### Permissions
-| Column | Type | Notes |
-|--------|------|-------|
-| Id | UUID | PK |
-| Name | text | |
-| Description | text | Nullable |
+## Conventions
 
-### UserRoles (join table)
-| Column | Type | Notes |
-|--------|------|-------|
-| UserId | UUID | FK → Users, composite PK |
-| RoleId | UUID | FK → Roles, composite PK |
+- **Soft delete**: deletable entities carry an `is_archived` flag; DELETE
+  endpoints set it to true and reads exclude archived rows by default. Restore
+  is supported.
+- **Optimistic locking**: core entities carry a `@Version` column
+  (`version` / `entity_version`).
+- **Derived counters**: an application's `used_seats` is derived from
+  `application_seat_assignments` and maintained on assign/release.
+- **Enums** are stored as readable strings.
 
-### RolePermissions (join table)
-| Column | Type | Notes |
-|--------|------|-------|
-| RoleId | UUID | FK → Roles, composite PK |
-| PermissionId | UUID | FK → Permissions, composite PK |
+## Migration history (high level)
 
-### Locations
-| Column | Type | Notes |
-|--------|------|-------|
-| Id | UUID | PK |
-| Name | text | |
-| Address | text | Nullable |
-| City | text | Nullable |
-| Country | text | Nullable |
-| IsArchived | boolean | Soft delete |
-| CreatedAt | timestamp | UTC |
-| UpdatedAt | timestamp | UTC |
-
-### People
-| Column | Type | Notes |
-|--------|------|-------|
-| Id | UUID | PK |
-| FullName | text | Required |
-| Email | text | Nullable |
-| Department | text | Nullable |
-| JobTitle | text | Nullable |
-| LocationId | UUID | FK → Locations, nullable, SET NULL on delete |
-| IsArchived | boolean | Soft delete |
-| CreatedAt | timestamp | UTC |
-| UpdatedAt | timestamp | UTC |
-
-### AssetTypes
-| Column | Type | Notes |
-|--------|------|-------|
-| Id | UUID | PK |
-| Name | text | e.g. Laptop, Monitor |
-| Description | text | Nullable |
-| IsArchived | boolean | Soft delete |
-| CreatedAt | timestamp | UTC |
-| UpdatedAt | timestamp | UTC |
-
-### Assets
-| Column | Type | Notes |
-|--------|------|-------|
-| Id | UUID | PK |
-| Name | text | |
-| AssetTag | text | Unique |
-| SerialNumber | text | Nullable |
-| Status | text | Enum: Available, Assigned, CheckedOut, InMaintenance, Retired, Sold, Archived |
-| AssetTypeId | UUID | FK → AssetTypes |
-| LocationId | UUID | FK → Locations, nullable, SET NULL on delete |
-| AssignedUserId | UUID | FK → Users, nullable, SET NULL on delete |
-| WarrantyExpiryDate | timestamp | Nullable |
-| PurchaseDate | timestamp | Nullable |
-| PurchaseCost | decimal(18,2) | Nullable |
-| DepreciationMonths | int | Nullable |
-| SoldDate | timestamp | Nullable |
-| SoldPrice | decimal(18,2) | Nullable |
-| Notes | text | Nullable |
-| IsArchived | boolean | Soft delete |
-| CreatedAt | timestamp | UTC |
-| UpdatedAt | timestamp | UTC |
-
-### AssetHistory
-| Column | Type | Notes |
-|--------|------|-------|
-| Id | UUID | PK |
-| AssetId | UUID | FK → Assets, indexed |
-| EventType | text | Enum: Created, Assigned, Unassigned, CheckedIn, CheckedOut, Edited, Retired, Sold, Archived, Restored |
-| PerformedByUserId | UUID | FK → Users, nullable |
-| Details | text | JSON/text, nullable |
-| Timestamp | timestamp | UTC |
-
-### AuditLogs
-| Column | Type | Notes |
-|--------|------|-------|
-| Id | UUID | PK |
-| ActorId | UUID | Nullable |
-| ActorName | text | |
-| Action | text | |
-| EntityType | text | |
-| EntityId | text | |
-| Source | text | Enum: UI, API |
-| Details | text | JSON, nullable |
-| Timestamp | timestamp | UTC, indexed |
-
-Index on `(EntityType, EntityId)` for entity-scoped queries.
-
-### CustomFieldDefinitions
-| Column | Type | Notes |
-|--------|------|-------|
-| Id | UUID | PK |
-| EntityType | text | Enum: Asset, Certificate, Application |
-| AssetTypeId | UUID | FK → AssetTypes, nullable (for type-specific fields) |
-| Name | text | |
-| FieldType | text | Enum: Text, Number, Date, Boolean, SingleSelect, MultiSelect, Url |
-| Options | text | JSON array for select types, nullable |
-| IsRequired | boolean | |
-| SortOrder | int | |
-| IsArchived | boolean | |
-| CreatedAt | timestamp | UTC |
-
-### CustomFieldValues
-| Column | Type | Notes |
-|--------|------|-------|
-| Id | UUID | PK |
-| CustomFieldDefinitionId | UUID | FK → CustomFieldDefinitions |
-| EntityId | UUID | Polymorphic reference |
-| Value | text | Nullable |
-| CreatedAt | timestamp | UTC |
-| UpdatedAt | timestamp | UTC |
-
-Index on `(CustomFieldDefinitionId, EntityId)`.
-
-## Migrations
-
-Migrations live in `apps/api/AssetManagement.Api/Data/Migrations/`.
-
-- Auto-applied on startup in Development mode
-- Manual commands: see [setup.md](./setup.md)
+`V001` initial schema → subsequent migrations add alert history, SAML/SCIM
+columns, depreciation defaults, asset templates, FK/performance indexes,
+notifications & alert rules, attachments, optimistic-lock columns, asset
+models, token-invalidation, and application seat assignments. See the
+`db/migration` directory for the authoritative, ordered list.

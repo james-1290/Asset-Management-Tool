@@ -1,5 +1,12 @@
 # Architecture Decision Records
 
+> **Note (2026-07-04):** ADR-001 through ADR-011 were written for the original
+> ASP.NET Core + EF Core + PostgreSQL stack. The backend has since been rewritten
+> in Kotlin/Spring Boot on MySQL — see **ADR-012** and **ADR-013**, which
+> supersede the framework/ORM/database-specific decisions below (ADR-001, 003,
+> 005, 007 in particular). The conceptual decisions (soft delete, polymorphic
+> custom fields, centralised audit logging, flattened DTOs) carried over.
+
 ## ADR-001: .NET 10 instead of .NET 8
 
 **Date**: 2026-02-06
@@ -126,3 +133,44 @@
 **Decision**: Create a `Person` model with its own `People` DB table and `/api/v1/people` API route. This avoids collision with the existing auth `Users` table and `GET /api/v1/users` endpoint. The sidebar label is "People" with a `Users` lucide icon.
 
 **Follow-up**: Migrate asset assignment from `User` → `Person` in a future task. The current `AssignedUserId` FK on Assets will be replaced with `AssignedPersonId`.
+
+---
+
+## ADR-012: Backend rewritten in Kotlin / Spring Boot
+
+**Date**: 2026-07-04 (records a change made earlier; see git history / CHANGELOG)
+**Status**: Accepted — supersedes the .NET-specific parts of ADR-001, ADR-005
+
+**Context**: The original backend was ASP.NET Core + EF Core. The project moved
+to a Kotlin/Spring Boot backend (`apps/api-kt`), which is now the only backend.
+The retired `.NET` tree (`apps/api`) has been removed.
+
+**Decision**: Kotlin on Spring Boot (JDK 21), built with Gradle to a runnable
+fat JAR, using Spring Data JPA/Hibernate and **Flyway** for migrations (SQL under
+`src/main/resources/db/migration`) instead of EF Core migrations. Auth is
+stateless JWT with SAML SSO + SCIM. The API keeps the same `/api/v1` contract
+and product behaviour.
+
+**Consequences**: Local dev needs JDK 21 (not the .NET SDK); migrations are
+hand-written SQL applied by Flyway on startup; API docs are springdoc/Swagger
+(`/swagger-ui.html`) rather than Scalar. The API runs on port 5115.
+
+---
+
+## ADR-013: MySQL instead of PostgreSQL
+
+**Date**: 2026-07-04 (records a change made earlier)
+**Status**: Accepted — supersedes ADR-003's PostgreSQL specifics
+
+**Context**: The original stack targeted PostgreSQL; the Kotlin backend runs on
+MySQL 8. The unused Postgres container has been removed from docker-compose.
+
+**Decision**: Use MySQL 8 (InnoDB, `utf8mb4`, `CHAR(36)` UUID keys, `DATETIME(6)`
+with the JDBC connection pinned to UTC). Enums are still stored as readable
+strings (ADR-003's intent carries over).
+
+**Consequence**: The stated Azure target should be **Azure Database for MySQL**
+(not PostgreSQL). Postgres-only techniques (e.g. partial unique indexes,
+`citext`) are not available; where needed, enforce equivalents in application
+logic or via MySQL-compatible constraints. See `tasks/todo.md` for open
+data-model items (unique constraints, auto-managed `updatedAt`, etc.).

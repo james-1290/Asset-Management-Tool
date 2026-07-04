@@ -7,7 +7,7 @@ After ANY backend changes (new endpoints, migrations, model changes, controller 
 ## Always Leave Services Running
 
 After completing any work, ALWAYS ensure the following services are running before finishing:
-1. **Docker infrastructure**: `cd infra && docker compose up -d` (MySQL, PostgreSQL, MailHog)
+1. **Docker infrastructure**: `cd infra && docker compose up -d` (MySQL, MailHog)
 2. **API server**: Build the JAR then run it: `cd apps/api-kt && JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home" java -jar build/libs/asset-management-api-1.0.0.jar`
 3. **Verify**: Confirm login works with `curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5115/api/v1/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"admin123"}'` — should return 200
 
@@ -15,7 +15,7 @@ Never leave the user with a stopped API or database. If you killed a process for
 
 ## Database Migrations
 
-When adding or modifying database models/columns, ALWAYS create and apply the EF migration before testing. Never skip this step. After migration, verify the table/column exists. If adding a new column to existing records, implement a backfill strategy.
+When adding or modifying database models/columns, ALWAYS add a new Flyway migration (`apps/api-kt/src/main/resources/db/migration/V<nnn>__<description>.sql`) before testing — migrations are forward-only, so never edit an applied one. Flyway applies pending migrations on API startup; after restarting, verify the table/column exists. If adding a new column to existing records, implement a backfill strategy in the migration. Hibernate runs with `ddl-auto: validate`, so entity mappings must match the migrated schema.
 
 ## Workflow: Always Implement, Don't Just Plan
 
@@ -42,10 +42,10 @@ Primary users: IT/admin staff. UX must be consistent and simple.
 
 - Frontend: React + TypeScript + shadcn/ui + Tailwind
 - Table/view layer: TanStack Table (or equivalent)
-- Backend: ASP.NET Core Web API (.NET 8)
-- DB: PostgreSQL
-- Local hosting: Docker Compose
-- Future hosting: Azure (Container Apps + Azure Database for PostgreSQL + Blob Storage)
+- Backend: Kotlin + Spring Boot (JDK 21), Gradle build, `apps/api-kt`
+- DB: MySQL 8 (Spring Data JPA / Hibernate; Flyway migrations)
+- Local hosting: Docker Compose (MySQL + MailHog)
+- Future hosting: Azure (Container Apps + Azure Database for MySQL + Blob Storage)
 
 ## Non-goals for now
 
@@ -125,7 +125,7 @@ Claude should follow an explore → plan → implement → verify loop.
   - run lint/format
   - exercise the feature (API call + UI path)
 - Prefer automated verification over manual claims.
-- **After any backend code change**: restart the API server (`dotnet run`) and verify new/changed endpoints respond correctly with `curl` before declaring done. The API does NOT hot-reload new endpoints.
+- **After any backend code change**: rebuild and restart the API (`cd apps/api-kt && ./gradlew bootJar && java -jar build/libs/asset-management-api-1.0.0.jar`, JDK 21) and verify new/changed endpoints respond correctly with `curl` before declaring done. The running JAR does NOT hot-reload code changes.
 
 ## Claude input (encouraged, bounded)
 
@@ -229,11 +229,12 @@ Claude should follow an explore → plan → implement → verify loop.
 - `cd apps/web && npm install && npm run dev`
 - Build: `cd apps/web && npm run build`
 
-## Backend
+## Backend (requires JDK 21)
 
-- `cd apps/api/AssetManagement.Api && dotnet run`
-- Build: `cd apps/api/AssetManagement.Api && dotnet build`
+- Build: `cd apps/api-kt && ./gradlew bootJar`
+- Run: `cd apps/api-kt && java -jar build/libs/asset-management-api-1.0.0.jar` (port 5115)
+- Compile-check only: `./gradlew compileKotlin`
 
 ## Tests
 
-- <add command>
+- <none yet — see the testing item in tasks/todo.md>
