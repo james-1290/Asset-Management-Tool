@@ -55,7 +55,7 @@ source file). Items marked `[~]` are being worked this session.
 - [x] Decommission retired apps/api (.NET) tree + drop unused Postgres container from docker-compose (PR #133)
 - [~] Add tests — backend unit tests added for expiry/status, JWT token, password rules, CSV/SQL escaping (22 tests); frontend Vitest + a first unit test (PR #135). Still to add: @SpringBootTest/Testcontainers integration coverage (auth flow, audit emission, Flyway from clean) and more frontend/component tests.
 - [x] Add CI — GitHub Actions runs backend build+test and frontend build(type-check)+test on every PR/push to main (PR #135)
-- [ ] Make lint a blocking CI gate — fix the ~6 pre-existing eslint errors (e.g. Date.now purity in dashboard.tsx) then remove `continue-on-error` from the CI lint step
+- [x] Make lint a blocking CI gate — fixed the 6 eslint errors (dashboard Date.now purity; extracted ModelImageCell to fix react-refresh; renew-dialog reset via render-phase pattern; scoped disables for the 3 genuine external-sync effects: object-URL, RHF reset, async image fetch) and removed `continue-on-error` (PR #136). The 6 remaining `incompatible-library` warnings (TanStack/RHF) are non-blocking.
 - [ ] Azure-readiness: Dockerfiles + IaC; move attachments to Blob Storage (local disk won't survive Container Apps); distributed rate-limit/scheduler; readiness health probe
 - [ ] .gitignore gaps — Gradle build/ and .gradle/ now ignored (PR #133); still: loose root PNGs, apps/web/test-results/
 

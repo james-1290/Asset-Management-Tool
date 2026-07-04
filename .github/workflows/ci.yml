@@ -44,8 +44,5 @@ jobs:
         run: npm run build
       - name: Unit tests
         run: npm run test
-      # Lint is currently non-blocking: the codebase has pre-existing violations
-      # (see tasks/todo.md). Fix those, then drop `continue-on-error` to make it a gate.
-      - name: Lint (non-blocking)
+      - name: Lint
         run: npm run lint
-        continue-on-error: true

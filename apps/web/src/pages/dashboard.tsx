@@ -46,6 +46,14 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+// Today and today+30d as YYYY-MM-DD. Kept at module scope so the impure Date
+// reads happen outside React's render phase.
+function computeDateRange(): { today: string; in30: string } {
+  const today = new Date().toISOString().slice(0, 10);
+  const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  return { today, in30 };
+}
+
 export default function DashboardPage() {
   const { isVisible } = useDashboardPreferences();
 
@@ -78,12 +86,8 @@ export default function DashboardPage() {
     certificateExpiries.isLoading ||
     licenceExpiries.isLoading;
 
-  // Compute date range once per mount (avoid impure Date.now() during render)
-  const { today, in30 } = useMemo(() => {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const in30Str = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-    return { today: todayStr, in30: in30Str };
-  }, []);
+  // Computed once per mount; the impure Date reads live in computeDateRange (module scope).
+  const { today, in30 } = useMemo(() => computeDateRange(), []);
 
   // Build expiring soon link based on which type has the most items
   const expiringSoonHref = (() => {
