@@ -92,6 +92,20 @@ data class RenewApplicationRequest(
     val notes: String? = null
 )
 
+data class SeatAssignmentDto(
+    val id: UUID,
+    val personId: UUID,
+    val personName: String,
+    val assignedAt: Instant,
+    val assignedByName: String?,
+    val notes: String?
+)
+
+data class AssignSeatRequest(
+    val personId: UUID,
+    val notes: String? = null
+)
+
 data class ApplicationHistoryChangeDto(
     val fieldName: String,
     val oldValue: String?,

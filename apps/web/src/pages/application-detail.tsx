@@ -33,6 +33,7 @@ import { useApplicationTypes } from "../hooks/use-application-types";
 import { useLocations } from "../hooks/use-locations";
 import { AttachmentsSection } from "../components/shared/attachments-section";
 import { RenewDialog } from "../components/shared/renew-dialog";
+import { ApplicationSeatsSection } from "../components/applications/application-seats-section";
 import type { ApplicationFormValues } from "../lib/schemas/application";
 
 function formatDate(iso: string | null): string | null {
@@ -410,6 +411,13 @@ export default function ApplicationDetailPage() {
               </div>
             </DetailCard>
           )}
+
+          {/* Licence seats */}
+          <ApplicationSeatsSection
+            applicationId={application.id}
+            maxSeats={application.maxSeats}
+            isArchived={application.isArchived}
+          />
 
           {/* Custom fields */}
           {application.customFieldValues && application.customFieldValues.length > 0 && (

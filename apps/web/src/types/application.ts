@@ -17,6 +17,15 @@ export type LicenceType =
   | "Subscription"
   | "Perpetual";
 
+export interface SeatAssignment {
+  id: string;
+  personId: string;
+  personName: string;
+  assignedAt: string;
+  assignedByName: string | null;
+  notes: string | null;
+}
+
 export interface Application {
   id: string;
   name: string;

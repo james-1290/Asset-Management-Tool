@@ -2,6 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Application
+import com.assetmanagement.api.model.ApplicationSeatAssignment
 import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.util.computeStatus
@@ -46,6 +47,7 @@ class ApplicationsController(
     private val applicationHistoryRepository: ApplicationHistoryRepository,
     private val alertHistoryRepository: AlertHistoryRepository,
     private val userNotificationRepository: UserNotificationRepository,
+    private val seatAssignmentRepository: ApplicationSeatAssignmentRepository,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
@@ -227,7 +229,7 @@ class ApplicationsController(
             licenceKey = request.licenceKey,
             licenceType = licenceType,
             maxSeats = request.maxSeats,
-            usedSeats = request.usedSeats,
+            usedSeats = 0, // derived from seat assignments; managed by the /seats endpoints
             purchaseDate = request.purchaseDate,
             expiryDate = request.expiryDate,
             purchaseCost = request.purchaseCost,
@@ -364,7 +366,7 @@ class ApplicationsController(
         trackDate(changes, "Expiry Date", app.expiryDate, request.expiryDate)
         trackBool(changes, "Auto Renewal", app.autoRenewal, request.autoRenewal)
         trackInt(changes, "Max Seats", app.maxSeats, request.maxSeats)
-        trackInt(changes, "Used Seats", app.usedSeats, request.usedSeats)
+        // usedSeats is derived from seat assignments — not editable via update
         trackDecimal(changes, "Purchase Cost", app.purchaseCost, request.purchaseCost)
 
         if (request.assetId != app.assetId) {
@@ -402,7 +404,7 @@ class ApplicationsController(
         app.licenceKey = request.licenceKey
         if (licenceTypeChanged) app.licenceType = newLicenceType
         app.maxSeats = request.maxSeats
-        app.usedSeats = request.usedSeats
+        // usedSeats is derived from seat assignments; not overwritten here
         app.purchaseDate = request.purchaseDate
         app.expiryDate = request.expiryDate
         app.purchaseCost = request.purchaseCost
@@ -647,6 +649,99 @@ class ApplicationsController(
         val reloaded = applicationRepository.findById(app.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }
         val cfvs = loadCustomFieldValues(reloaded.id)
         return ResponseEntity.ok(reloaded.toDto(cfvs))
+    }
+
+    // ── Seat management ─────────────────────────────────────────────────
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/seats")
+    fun listSeats(@PathVariable id: UUID): ResponseEntity<Any> {
+        if (!applicationRepository.existsById(id)) return ResponseEntity.notFound().build()
+        val seats = seatAssignmentRepository.findByApplicationIdOrderByAssignedAtDesc(id).map {
+            SeatAssignmentDto(
+                id = it.id,
+                personId = it.personId,
+                personName = it.person?.fullName ?: "Unknown",
+                assignedAt = it.assignedAt,
+                assignedByName = it.assignedByName,
+                notes = it.notes
+            )
+        }
+        return ResponseEntity.ok(seats)
+    }
+
+    @PostMapping("/{id}/seats")
+    @Transactional
+    fun assignSeat(@PathVariable id: UUID, @RequestBody request: AssignSeatRequest): ResponseEntity<Any> {
+        val app = applicationRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+        if (app.isArchived)
+            return ResponseEntity.badRequest().body(mapOf("error" to "Cannot assign seats on an archived application."))
+
+        val person = personRepository.findById(request.personId).orElse(null)
+            ?: return ResponseEntity.badRequest().body(mapOf("error" to "Person not found."))
+
+        if (seatAssignmentRepository.existsByApplicationIdAndPersonId(id, request.personId))
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(mapOf("error" to "${person.fullName} already holds a seat for this application."))
+
+        val used = seatAssignmentRepository.countByApplicationId(id)
+        val max = app.maxSeats
+        if (max != null && used >= max)
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(mapOf("error" to "All $max seats are in use. Increase the seat count or release a seat first."))
+
+        seatAssignmentRepository.save(
+            ApplicationSeatAssignment(
+                applicationId = id,
+                personId = request.personId,
+                assignedAt = Instant.now(),
+                assignedById = currentUserService.userId,
+                assignedByName = currentUserService.userName,
+                notes = request.notes
+            )
+        )
+        syncUsedSeats(app)
+
+        auditService.log(
+            AuditEntry(
+                action = "Updated", entityType = "Application", entityId = app.id.toString(), entityName = app.name,
+                details = "Assigned a licence seat to \"${person.fullName}\"",
+                actorId = currentUserService.userId, actorName = currentUserService.userName
+            )
+        )
+
+        return listSeats(id)
+    }
+
+    @DeleteMapping("/{id}/seats/{personId}")
+    @Transactional
+    fun releaseSeat(@PathVariable id: UUID, @PathVariable personId: UUID): ResponseEntity<Any> {
+        val app = applicationRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+
+        val removed = seatAssignmentRepository.deleteByApplicationIdAndPersonId(id, personId)
+        if (removed == 0) return ResponseEntity.notFound().build()
+
+        syncUsedSeats(app)
+
+        val personName = personRepository.findById(personId).orElse(null)?.fullName ?: "a person"
+        auditService.log(
+            AuditEntry(
+                action = "Updated", entityType = "Application", entityId = app.id.toString(), entityName = app.name,
+                details = "Released the licence seat held by \"$personName\"",
+                actorId = currentUserService.userId, actorName = currentUserService.userName
+            )
+        )
+
+        return ResponseEntity.noContent().build()
+    }
+
+    /** Recompute and persist the derived used-seat count for an application. */
+    private fun syncUsedSeats(app: Application) {
+        app.usedSeats = seatAssignmentRepository.countByApplicationId(app.id).toInt()
+        app.updatedAt = Instant.now()
+        applicationRepository.save(app)
     }
 
     // ── POST /bulk-archive ── Bulk archive ──────────────────────────────
