@@ -47,6 +47,7 @@ class ApplicationsController(
     private val alertHistoryRepository: AlertHistoryRepository,
     private val userNotificationRepository: UserNotificationRepository,
     private val seatAssignmentRepository: ApplicationSeatAssignmentRepository,
+    private val customFieldValueService: CustomFieldValueService,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
@@ -237,27 +238,12 @@ class ApplicationsController(
         applicationRepository.save(app)
 
         // Save custom field values
-        if (!request.customFieldValues.isNullOrEmpty()) {
-            val validDefIds = customFieldDefinitionRepository
-                .findByApplicationTypeIdAndIsArchivedFalse(request.applicationTypeId)
-                .map { it.id }
-                .toSet()
-
-            for (cfv in request.customFieldValues) {
-                if (!validDefIds.contains(cfv.fieldDefinitionId))
-                    return ResponseEntity.badRequest().body(
-                        mapOf("error" to "Custom field definition ${cfv.fieldDefinitionId} not found for this application type.")
-                    )
-
-                customFieldValueRepository.save(
-                    CustomFieldValue(
-                        customFieldDefinitionId = cfv.fieldDefinitionId,
-                        entityId = app.id,
-                        value = cfv.value
-                    )
-                )
-            }
-        }
+        customFieldValueService.upsert(
+            app.id,
+            customFieldDefinitionRepository.findByApplicationTypeIdAndIsArchivedFalse(request.applicationTypeId),
+            request.customFieldValues,
+            onInvalid = { throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Custom field definition $it not found for this application type.") },
+        )
 
         auditService.log(
             AuditEntry(
@@ -413,40 +399,12 @@ class ApplicationsController(
         app.updatedAt = Instant.now()
 
         // Upsert custom field values
-        if (request.customFieldValues != null) {
-            val existingByDefId = existingCfvs.associateBy { it.customFieldDefinitionId }
-
-            val validDefIds = customFieldDefinitionRepository
-                .findByApplicationTypeIdAndIsArchivedFalse(request.applicationTypeId)
-                .map { it.id }
-                .toSet()
-
-            for (cfv in request.customFieldValues) {
-                if (!validDefIds.contains(cfv.fieldDefinitionId)) continue
-
-                val existing = existingByDefId[cfv.fieldDefinitionId]
-                if (existing != null) {
-                    if (existing.value != cfv.value) {
-                        val defName = existing.customFieldDefinition?.name ?: "Unknown"
-                        changes.add(AuditChange("Custom: $defName", existing.value, cfv.value))
-                        existing.value = cfv.value
-                        existing.updatedAt = Instant.now()
-                        customFieldValueRepository.save(existing)
-                    }
-                } else {
-                    customFieldValueRepository.save(
-                        CustomFieldValue(
-                            customFieldDefinitionId = cfv.fieldDefinitionId,
-                            entityId = app.id,
-                            value = cfv.value
-                        )
-                    )
-                    val defName = customFieldDefinitionRepository.findById(cfv.fieldDefinitionId).orElse(null)?.name ?: "Unknown"
-                    if (!cfv.value.isNullOrBlank()) {
-                        changes.add(AuditChange("Custom: $defName", null, cfv.value))
-                    }
-                }
-            }
+        customFieldValueService.upsert(
+            app.id,
+            customFieldDefinitionRepository.findByApplicationTypeIdAndIsArchivedFalse(request.applicationTypeId),
+            request.customFieldValues,
+        ) { name, old, new, isNew ->
+            if (!isNew || !new.isNullOrBlank()) changes.add(AuditChange("Custom: $name", old, new))
         }
 
         applicationRepository.save(app)

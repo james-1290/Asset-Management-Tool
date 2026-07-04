@@ -13,6 +13,9 @@ import com.assetmanagement.api.service.AuditChange
 import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
+import com.assetmanagement.api.service.CustomFieldValueService
+import org.springframework.http.HttpStatus
+import org.springframework.web.server.ResponseStatusException
 import jakarta.persistence.criteria.Predicate
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
@@ -44,6 +47,7 @@ class AssetsController(
     private val assetHistoryRepository: AssetHistoryRepository,
     private val customFieldValueRepository: CustomFieldValueRepository,
     private val customFieldDefinitionRepository: CustomFieldDefinitionRepository,
+    private val customFieldValueService: CustomFieldValueService,
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
@@ -257,25 +261,12 @@ class AssetsController(
         assetRepository.save(asset)
 
         // Create custom field values
-        if (!request.customFieldValues.isNullOrEmpty()) {
-            val validDefs = customFieldDefinitionRepository.findByAssetTypeIdAndIsArchivedFalse(request.assetTypeId)
-            val validDefIds = validDefs.map { it.id }.toSet()
-
-            for (cfv in request.customFieldValues) {
-                if (!validDefIds.contains(cfv.fieldDefinitionId))
-                    return ResponseEntity.badRequest().body(
-                        mapOf("error" to "Custom field definition ${cfv.fieldDefinitionId} not found for this asset type.")
-                    )
-
-                customFieldValueRepository.save(
-                    CustomFieldValue(
-                        customFieldDefinitionId = cfv.fieldDefinitionId,
-                        entityId = asset.id,
-                        value = cfv.value
-                    )
-                )
-            }
-        }
+        customFieldValueService.upsert(
+            asset.id,
+            customFieldDefinitionRepository.findByAssetTypeIdAndIsArchivedFalse(request.assetTypeId),
+            request.customFieldValues,
+            onInvalid = { throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Custom field definition $it not found for this asset type.") },
+        )
 
         auditService.log(
             AuditEntry(
@@ -424,40 +415,12 @@ class AssetsController(
         asset.updatedAt = Instant.now()
 
         // Upsert custom field values
-        if (request.customFieldValues != null) {
-            val existingValues = customFieldValueRepository.findByEntityId(asset.id)
-                .associateBy { it.customFieldDefinitionId }
-
-            val validDefs = customFieldDefinitionRepository.findByAssetTypeIdAndIsArchivedFalse(request.assetTypeId)
-            val validDefIds = validDefs.map { it.id }.toSet()
-            val defNamesById = validDefs.associate { it.id to it.name }
-
-            for (cfv in request.customFieldValues) {
-                if (!validDefIds.contains(cfv.fieldDefinitionId))
-                    continue
-
-                val existing = existingValues[cfv.fieldDefinitionId]
-                if (existing != null) {
-                    if (existing.value != cfv.value) {
-                        val defName = defNamesById[cfv.fieldDefinitionId] ?: "Unknown"
-                        changes.add(AuditChange("Custom: $defName", existing.value, cfv.value))
-                        existing.value = cfv.value
-                        existing.updatedAt = Instant.now()
-                        customFieldValueRepository.save(existing)
-                    }
-                } else {
-                    customFieldValueRepository.save(
-                        CustomFieldValue(
-                            customFieldDefinitionId = cfv.fieldDefinitionId,
-                            entityId = asset.id,
-                            value = cfv.value
-                        )
-                    )
-                    val defName = defNamesById[cfv.fieldDefinitionId] ?: "Unknown"
-                    if (!cfv.value.isNullOrEmpty())
-                        changes.add(AuditChange("Custom: $defName", null, cfv.value))
-                }
-            }
+        customFieldValueService.upsert(
+            asset.id,
+            customFieldDefinitionRepository.findByAssetTypeIdAndIsArchivedFalse(request.assetTypeId),
+            request.customFieldValues,
+        ) { name, old, new, isNew ->
+            if (!isNew || !new.isNullOrEmpty()) changes.add(AuditChange("Custom: $name", old, new))
         }
 
         assetRepository.save(asset)
