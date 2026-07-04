@@ -8,6 +8,7 @@ import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
 import com.assetmanagement.api.service.StorageService
 import jakarta.persistence.criteria.Predicate
+import org.apache.tika.Tika
 import org.springframework.core.io.InputStreamResource
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -243,9 +244,18 @@ class AssetModelsController(
             return ResponseEntity.badRequest().body(mapOf("error" to "Image must be under 2MB"))
         }
 
-        val mimeType = file.contentType ?: "application/octet-stream"
-        val ext = ALLOWED_IMAGE_TYPES[mimeType]
-            ?: return ResponseEntity.badRequest().body(mapOf("error" to "Only JPEG, PNG, and GIF images are allowed"))
+        val declaredType = file.contentType ?: "application/octet-stream"
+        if (declaredType !in ALLOWED_IMAGE_TYPES) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "Only JPEG, PNG, and GIF images are allowed"))
+        }
+
+        // Content-based validation: verify the actual file bytes match an allowed image
+        // type rather than trusting the client-supplied Content-Type header. The stored
+        // extension is derived from the detected type, so mismatched bytes cannot be
+        // served back under an image MIME type.
+        val detectedType = Tika().detect(file.inputStream)
+        val ext = ALLOWED_IMAGE_TYPES[detectedType]
+            ?: return ResponseEntity.badRequest().body(mapOf("error" to "File content does not match an allowed image type"))
 
         // Delete old image if exists
         if (!model.imageUrl.isNullOrBlank()) {
