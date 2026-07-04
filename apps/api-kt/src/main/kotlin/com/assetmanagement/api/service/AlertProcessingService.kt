@@ -10,6 +10,7 @@ import com.assetmanagement.api.repository.*
 import org.slf4j.LoggerFactory
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
+import org.springframework.web.util.HtmlUtils
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -348,12 +349,13 @@ class AlertProcessingService(
         certificateItems: List<ExpiringItem>,
         licenceItems: List<ExpiringItem>
     ): String {
+        val safeOrgName = HtmlUtils.htmlEscape(orgName)
         val sb = StringBuilder()
         sb.append("""
             <html>
             <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 20px; color: #333;">
             <h1 style="color: #1a1a1a; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px;">
-                $orgName — Expiry Alerts
+                $safeOrgName — Expiry Alerts
             </h1>
         """.trimIndent())
 
@@ -370,7 +372,7 @@ class AlertProcessingService(
         sb.append("""
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin-top: 24px;">
             <p style="color: #6b7280; font-size: 12px;">
-                This is an automated alert from $orgName.
+                This is an automated alert from $safeOrgName.
                 You can configure alert settings in Settings &gt; Alerts.
             </p>
             </body>
@@ -404,7 +406,7 @@ class AlertProcessingService(
             }
             sb.append("""
                 <tr>
-                    <td style="padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">${item.entityName}</td>
+                    <td style="padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">${HtmlUtils.htmlEscape(item.entityName)}</td>
                     <td style="padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">${dateFormatter.format(item.expiryDate)}</td>
                     <td style="padding: 8px 12px; border-bottom: 1px solid #e5e7eb;">
                         <span style="color: $urgencyColor; font-weight: 600;">${item.daysUntilExpiry} days</span>
