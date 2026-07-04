@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-04 23:10 — Testcontainers integration tests + more frontend unit tests
+
+- Added a MySQL-Testcontainers integration suite (`api-kt/.../integration`): boots the full Spring context against a throwaway MySQL container, so **Flyway migrates from clean** and `ddl-auto=validate` runs against a real schema every test run. Covers the **auth flow** (login returns a token, protected endpoints reject unauthenticated requests, bad credentials → 401), **token invalidation** (a token issued before `tokenInvalidatedAt` is rejected), and **audit emission** (a write produces a `Created`/`Location` audit row). 5 tests.
+- Added Testcontainers deps (pinned via BOM 1.20.4) and a CI-safe, local-only `api.version` escape hatch in the test task (only applied when `DOCKER_API_VERSION` is set — needed on Docker Desktop, whose MinAPIVersion rejects docker-java's default negotiation; unset in CI).
+- Frontend: added 11 unit tests (asset/location zod schema validation, chart-colour palette) — 35 total.
+
 ## 2026-07-04 22:50 — Fix N+1 on paged list endpoints (fetch-joins)
 
 - The Assets/Certificates/Applications/People paged list endpoints fired one extra SELECT per row for each denormalised name read off a LAZY `@ManyToOne` (assetType/location/assignedPerson/assetModel, certificateType/asset/person/location, etc.).
