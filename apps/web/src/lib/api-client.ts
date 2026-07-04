@@ -45,7 +45,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
   }
 
   if (response.status === 204) return undefined as T;
-  return response.json();
+  // Some 200/201 responses have an empty body (endpoints typed Promise<void>).
+  // Calling response.json() on those throws; read text and only parse if present.
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 export const apiClient = {

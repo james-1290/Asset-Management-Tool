@@ -38,6 +38,8 @@ export function useUpdateAssetModel() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: assetModelKeys.all });
       queryClient.invalidateQueries({ queryKey: assetModelKeys.detail(variables.id) });
+      // assetModelName and assetModelImageUrl are denormalised onto assets.
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
     },
   });
 }

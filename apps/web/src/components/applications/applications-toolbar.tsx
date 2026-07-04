@@ -17,14 +17,14 @@ const STATUS_OPTIONS = [
 ] as const;
 
 const LICENCE_TYPE_OPTIONS = [
+  { value: "PerSeat", label: "Per Seat" },
+  { value: "Site", label: "Site Licence" },
+  { value: "Volume", label: "Volume Licence" },
   { value: "Subscription", label: "Subscription" },
   { value: "Perpetual", label: "Perpetual" },
   { value: "OpenSource", label: "Open Source" },
   { value: "Freeware", label: "Freeware" },
-  { value: "SiteLicence", label: "Site Licence" },
-  { value: "VolumeLicence", label: "Volume Licence" },
   { value: "Trial", label: "Trial" },
-  { value: "Other", label: "Other" },
 ];
 
 interface ApplicationsToolbarProps {

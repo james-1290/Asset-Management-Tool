@@ -24,7 +24,7 @@ function formatCustomFieldValue(
   value: string | null | undefined,
   fieldType: string
 ): string {
-  if (!value) return "\u2014";
+  if (!value) return "—";
   switch (fieldType) {
     case "Boolean":
       return value === "true" ? "Yes" : "No";
@@ -135,7 +135,7 @@ export function getAssetColumns({
       ),
       cell: ({ row }) => {
         const cost = row.original.purchaseCost;
-        if (cost == null) return <span className="text-muted-foreground">\u2014</span>;
+        if (cost == null) return <span className="text-muted-foreground">—</span>;
         const bookValue = row.original.bookValue ?? cost;
         return (
           <div>
@@ -150,7 +150,7 @@ export function getAssetColumns({
     {
       accessorKey: "locationName",
       header: "Location",
-      cell: ({ row }) => row.getValue("locationName") || <span className="text-muted-foreground">\u2014</span>,
+      cell: ({ row }) => row.getValue("locationName") || <span className="text-muted-foreground">—</span>,
     },
   ];
 

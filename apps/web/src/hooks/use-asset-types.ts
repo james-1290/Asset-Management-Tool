@@ -47,6 +47,9 @@ export function useUpdateAssetType() {
       assetTypesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assetTypeKeys.all });
+      // assetTypeName is denormalised onto assets and asset-models.
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["asset-models"] });
     },
   });
 }
