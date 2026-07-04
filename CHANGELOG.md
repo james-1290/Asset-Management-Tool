@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-04 21:40 — Shared CsvExport helper + export row cap (OOM guard)
+
+- New `util/CsvExport.kt` unifies both CSV export mechanisms: `stream(...)` for the entity list exports and `toResponseEntity(...)` for the bounded report/import exports. Consistent `text/csv` + UTF-8 + `Content-Disposition` wiring and formula-injection sanitisation in one place.
+- Entity exports (assets, certificates, applications, locations, people, audit-logs) now bound their fetch with `PageRequest.of(0, MAX_ROWS + 1, sort)` and cap output at 100,000 rows, appending a visible truncation notice + logging a warning when exceeded — guarding against OOM on large/unfiltered exports (previously `findAll(spec)` loaded the entire table into memory).
+- ReportsController and the import-template download now delegate to the shared helper (removes duplicated `ByteArrayOutputStream`/`CSVWriter` wiring).
+- Added `CsvExportTest` (cap, truncation notice, sanitisation, headers). No DB or API-shape changes; export responses are unchanged for normal-sized data.
+
 ## 2026-07-04 21:25 — Generic type-management components (dedup)
 
 - Replaced the triplicated Asset/Certificate/Application type-management components with shared generics under `apps/web/src/components/type-management/`: `TypeFormDialog`, `TypesToolbar`, `getTypeColumns`, plus the relocated `CustomFieldEditor` and a shared `mapCustomFieldsToForm` helper.

@@ -2,17 +2,15 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.enums.AssetStatus
+import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.util.DepreciationCalculator
 import com.assetmanagement.api.model.enums.ApplicationStatus
 import com.assetmanagement.api.model.enums.CertificateStatus
 import com.opencsv.CSVWriter
 import jakarta.persistence.EntityManager
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.io.ByteArrayOutputStream
-import java.io.OutputStreamWriter
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -45,17 +43,10 @@ class ReportsController(
     }
 
     // ---- Helper for CSV responses ----
-    private fun csvResponse(filename: String, block: (CSVWriter) -> Unit): ResponseEntity<ByteArray> {
-        val baos = ByteArrayOutputStream()
-        val writer = CSVWriter(OutputStreamWriter(baos))
-        block(writer)
-        writer.flush()
-        writer.close()
-        return ResponseEntity.ok()
-            .header("Content-Disposition", "attachment; filename=$filename")
-            .contentType(MediaType.parseMediaType("text/csv"))
-            .body(baos.toByteArray())
-    }
+    // Reports are bounded aggregate/summary exports, so they use the shared
+    // buffered helper (no row cap needed) for consistent wiring & sanitisation.
+    private fun csvResponse(filename: String, block: (CSVWriter) -> Unit): ResponseEntity<ByteArray> =
+        CsvExport.toResponseEntity(filename, block)
 
     // ---- Shared query helpers (avoid duplication with DashboardController) ----
 

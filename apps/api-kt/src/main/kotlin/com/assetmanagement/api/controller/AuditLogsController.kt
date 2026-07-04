@@ -2,11 +2,10 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.AuditLogDto
 import com.assetmanagement.api.dto.PagedResponse
-import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.model.AuditLog
 import com.assetmanagement.api.repository.AuditLogRepository
-import com.opencsv.CSVWriter
 import jakarta.persistence.criteria.Predicate
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.data.domain.PageRequest
@@ -15,7 +14,6 @@ import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
-import java.io.OutputStreamWriter
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
@@ -52,16 +50,21 @@ class AuditLogsController(
         @RequestParam(required = false) dateFrom: String?, @RequestParam(required = false) dateTo: String?,
         response: HttpServletResponse
     ) {
-        response.contentType = "text/csv"
-        response.setHeader("Content-Disposition", "attachment; filename=audit-log-export.csv")
-        val logs = auditLogRepository.findAll(buildSpec(entityType, action, search, dateFrom, dateTo), sortOf(sortBy, sortDir))
-        val writer = CSVWriter(OutputStreamWriter(response.outputStream))
-        writer.writeNext(arrayOf("Timestamp", "ActorName", "Action", "EntityType", "EntityName", "Details", "Source"))
-        logs.forEach { l ->
-            writer.writeNext(CsvUtils.sanitizeRow(arrayOf(dateFormat.format(l.timestamp), l.actorName, l.action, l.entityType,
-                l.entityName ?: "", l.details ?: "", l.source.name)))
+        val logs = auditLogRepository.findAll(
+            buildSpec(entityType, action, search, dateFrom, dateTo),
+            PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir)),
+        ).content
+        CsvExport.stream(
+            response,
+            "audit-log-export.csv",
+            arrayOf("Timestamp", "ActorName", "Action", "EntityType", "EntityName", "Details", "Source"),
+            logs.asSequence(),
+        ) { l ->
+            arrayOf(
+                dateFormat.format(l.timestamp), l.actorName, l.action, l.entityType,
+                l.entityName ?: "", l.details ?: "", l.source.name
+            )
         }
-        writer.flush()
     }
 
     private fun buildSpec(entityType: String?, action: String?, search: String?, dateFrom: String? = null, dateTo: String? = null): Specification<AuditLog> = Specification { root, _, cb ->

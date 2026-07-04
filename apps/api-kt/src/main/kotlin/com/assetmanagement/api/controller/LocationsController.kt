@@ -2,7 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Location
-import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.repository.ApplicationRepository
@@ -14,7 +14,6 @@ import com.assetmanagement.api.service.AuditChange
 import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
-import com.opencsv.CSVWriter
 import jakarta.persistence.criteria.Predicate
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.data.domain.PageRequest
@@ -25,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional
 import jakarta.validation.Valid
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
-import java.io.OutputStreamWriter
 import java.net.URI
 import java.time.Instant
 import java.time.ZoneOffset
@@ -94,17 +92,22 @@ class LocationsController(
         @RequestParam(defaultValue = "asc") sortDir: String,
         response: HttpServletResponse
     ) {
-        response.contentType = "text/csv"
-        response.setHeader("Content-Disposition", "attachment; filename=locations-export.csv")
         val spec = buildSpec(search)
-        val locations = locationRepository.findAll(spec, sortOf(sortBy, sortDir))
-        val writer = CSVWriter(OutputStreamWriter(response.outputStream))
-        writer.writeNext(arrayOf("Name", "Address", "City", "Country", "CreatedAt", "UpdatedAt"))
-        locations.forEach { l ->
-            writer.writeNext(CsvUtils.sanitizeRow(arrayOf(l.name, l.address ?: "", l.city ?: "", l.country ?: "",
-                dateFormat.format(l.createdAt), dateFormat.format(l.updatedAt))))
+        val locations = locationRepository.findAll(
+            spec,
+            PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir)),
+        ).content
+        CsvExport.stream(
+            response,
+            "locations-export.csv",
+            arrayOf("Name", "Address", "City", "Country", "CreatedAt", "UpdatedAt"),
+            locations.asSequence(),
+        ) { l ->
+            arrayOf(
+                l.name, l.address ?: "", l.city ?: "", l.country ?: "",
+                dateFormat.format(l.createdAt), dateFormat.format(l.updatedAt)
+            )
         }
-        writer.flush()
     }
 
     @PreAuthorize("isAuthenticated()")

@@ -8,16 +8,14 @@ import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
 import com.opencsv.CSVReaderBuilder
-import com.opencsv.CSVWriter
+import com.assetmanagement.api.util.CsvExport
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
-import java.io.ByteArrayOutputStream
 import java.io.InputStreamReader
-import java.io.OutputStreamWriter
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -88,16 +86,9 @@ class ImportController(
             else -> return ResponseEntity.badRequest().body(mapOf("error" to "Invalid entity type"))
         }
 
-        val baos = ByteArrayOutputStream()
-        val writer = CSVWriter(OutputStreamWriter(baos))
-        writer.writeNext(headers)
-        writer.flush()
-        writer.close()
-
-        return ResponseEntity.ok()
-            .header("Content-Disposition", "attachment; filename=${entityType}-template.csv")
-            .contentType(MediaType.parseMediaType("text/csv"))
-            .body(baos.toByteArray())
+        return CsvExport.toResponseEntity("${entityType}-template.csv") { writer ->
+            writer.writeNext(headers)
+        }
     }
 
     // ========================================================================

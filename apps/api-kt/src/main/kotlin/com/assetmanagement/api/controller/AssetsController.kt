@@ -2,7 +2,7 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.Asset
-import com.assetmanagement.api.util.CsvUtils
+import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.DepreciationCalculator
 import com.assetmanagement.api.util.SqlUtils
 import com.assetmanagement.api.util.versionConflict
@@ -13,7 +13,6 @@ import com.assetmanagement.api.service.AuditChange
 import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
-import com.opencsv.CSVWriter
 import jakarta.persistence.criteria.Predicate
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
@@ -22,7 +21,6 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.io.OutputStreamWriter
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.net.URI
@@ -129,9 +127,6 @@ class AssetsController(
         @RequestParam(required = false) ids: String?,
         response: HttpServletResponse
     ) {
-        response.contentType = "text/csv"
-        response.setHeader("Content-Disposition", "attachment; filename=assets-export.csv")
-
         val assets: List<Asset> = if (!ids.isNullOrBlank()) {
             val idList = ids.split(",").mapNotNull { s ->
                 try { UUID.fromString(s.trim()) } catch (_: Exception) { null }
@@ -151,22 +146,23 @@ class AssetsController(
             val spec = buildFilteredSpec(search, status, includeStatuses, typeId,
                 locationId, assignedPersonId, purchaseDateFrom, purchaseDateTo,
                 warrantyExpiryFrom, warrantyExpiryTo, costMin, costMax, unassigned, createdAfter)
-            assetRepository.findAll(spec, sortOf(sortBy, sortDir))
+            assetRepository.findAll(spec, PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir))).content
         }
 
-        val writer = CSVWriter(OutputStreamWriter(response.outputStream))
-        writer.writeNext(arrayOf(
-            "Name", "Status", "AssetType", "Location", "AssignedTo",
-            "SerialNumber", "PurchaseDate", "PurchaseCost", "WarrantyExpiryDate",
-            "DepreciationMonths", "BookValue", "TotalDepreciation",
-            "Notes", "CreatedAt", "UpdatedAt"
-        ))
         val now = Instant.now()
-        assets.forEach { a ->
+        CsvExport.stream(
+            response,
+            "assets-export.csv",
+            arrayOf(
+                "Name", "Status", "AssetType", "Location", "AssignedTo",
+                "SerialNumber", "PurchaseDate", "PurchaseCost", "WarrantyExpiryDate",
+                "DepreciationMonths", "BookValue", "TotalDepreciation",
+                "Notes", "CreatedAt", "UpdatedAt"
+            ),
+            assets.asSequence(),
+        ) { a ->
             val dep = DepreciationCalculator.compute(a.purchaseCost, a.depreciationMonths, a.purchaseDate, now)
-            val csvBookValue = dep.bookValue?.let { String.format("%.2f", it) } ?: ""
-            val csvTotalDepr = dep.total?.let { String.format("%.2f", it) } ?: ""
-            writer.writeNext(CsvUtils.sanitizeRow(arrayOf(
+            arrayOf(
                 a.name,
                 a.status.name,
                 a.assetType?.name ?: "",
@@ -177,14 +173,13 @@ class AssetsController(
                 a.purchaseCost?.let { String.format("%.2f", it) } ?: "",
                 a.warrantyExpiryDate?.let { dateOnlyFormat.format(it) } ?: "",
                 a.depreciationMonths?.toString() ?: "",
-                csvBookValue,
-                csvTotalDepr,
+                dep.bookValue?.let { String.format("%.2f", it) } ?: "",
+                dep.total?.let { String.format("%.2f", it) } ?: "",
                 a.notes ?: "",
                 dateFormat.format(a.createdAt),
                 dateFormat.format(a.updatedAt)
-            )))
+            )
         }
-        writer.flush()
     }
 
     // ──────────────────────────────────────────────────────────────────────────

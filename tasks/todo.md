@@ -41,7 +41,7 @@ source file). Items marked `[~]` are being worked this session.
 - [x] Shared HistoryTimeline + HistoryDialog: the 4 near-identical timelines and 4 dialogs now render through one shared component each (per-entity event config passed in), ~500 lines of duplication removed (PR #147)
 - [ ] createEntityHooks/createEntityApi factory (5 entity hook/api modules ~90% identical; makes cross-entity invalidation declarative)
 - [x] Generic TypeFormDialog/TypesToolbar/getTypeColumns (frontend type-management triplication) — shared components under components/type-management/ + shared CustomFieldEditor/mapCustomFieldsToForm; 10 per-entity files deleted, ~400 lines removed (PR #150)
-- [ ] Shared CsvExportHelper with chunked/streaming export + row cap (two export mechanisms, OOM risk)
+- [x] Shared CsvExportHelper with chunked/streaming export + row cap (two export mechanisms, OOM risk) — util/CsvExport.kt (stream + toResponseEntity); 6 entity exports bound their fetch + 100k row cap with truncation notice; Reports/import-template share the helper (PR #151)
 
 ### D. Dead / half-built code (finish or delete)
 - [x] Removed the never-mounted dashboard drag-drop layout code and the react-grid-layout dependency (kept the working widget-visibility toggle) (PR #148)
