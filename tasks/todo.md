@@ -9,17 +9,18 @@ source file). Items marked `[~]` are being worked this session.
 
 ### A. Correctness bugs (small, high-value)
 - [ ] List-page edits rebuild the full PUT payload from cached (stale) row data → silent lost-update; send only dirty fields or seed dialog from a fresh fetch (assets/certificates/applications/people pages)
-- [~] Renaming a location/type/model/person leaves the old denormalised name in asset/cert/app lists — add cross-entity cache invalidation (use-locations.ts, use-asset-types.ts, use-asset-models.ts, use-people.ts)
-- [~] `—` rendered as literal text in empty asset table cells (assets/columns.tsx:138,153)
-- [~] Applications licence-type filter values don't match the enum the data uses → filter matches nothing (applications-toolbar.tsx:19-28)
-- [~] Malformed query params (bad UUID/number) return HTTP 500 not 400 — add MethodArgumentTypeMismatchException handler (GlobalExceptionHandler.kt)
-- [~] SSO/SAML users get 403 everywhere — `Operator` role never seeded (DatabaseSeeder.kt); JIT users assigned `User` which no controller accepts
-- [~] `SavedViewsController.setDefault` toggles instead of setting → calling twice leaves no default (SavedViewsController.kt:68)
-- [~] Audit-log rows crash on null actorName (audit-logs/columns.tsx:82-91)
-- [~] `ConfirmDialog` loading state is dead — Radix closes dialog before async action resolves (confirm-dialog.tsx:40-42)
-- [~] Notifications mutations (mark-read/dismiss/snooze) fire with no error handling; fetch errors render as "no notifications" (notifications.tsx)
-- [~] `UserNotificationsController.getAll` doesn't clamp pageSize (0/negative → 500, huge → full-table load)
-- [~] `handleResponse` crashes on a 200 with empty body (api-client.ts:47) — changePassword/resetPassword typed void
+- [x] Renaming a location/type/model/person leaves the old denormalised name in asset/cert/app lists — added cross-entity cache invalidation (PR #129)
+- [x] `—` rendered as literal text in empty asset table cells (PR #129)
+- [x] Applications licence-type filter values don't match the enum → filter matched nothing (PR #129)
+- [x] Malformed query params (bad UUID/number) returned HTTP 500 not 400 — MethodArgumentTypeMismatch handler added (PR #129)
+- [x] SSO/SAML users get 403 everywhere — `Operator` role now seeded (PR #129)
+- [x] `SavedViewsController.setDefault` toggled instead of setting — now sets true (PR #129)
+- [x] Audit-log rows crash on null actorName — guarded ("System") (PR #129)
+- [x] `ConfirmDialog` loading state was dead — keeps dialog open while pending when the caller drives `loading` (PR #132)
+- [x] Notifications mutations had no error handling; fetch errors rendered as "no notifications" — added error toasts + error state (PR #132)
+- [x] `UserNotificationsController.getAll` didn't clamp pageSize — now coerced (PR #129)
+- [x] `handleResponse` crashed on a 200 with empty body — now handled (PR #129)
+- [x] Inconsistent REST URL naming (`/assettypes` vs `/asset-models`) — kebab-case is now primary with the old concatenated path kept as an alias (PR #132)
 - [ ] Office-doc uploads likely rejected — Tika detects .docx/.xlsx as application/x-tika-ooxml, not whitelisted (AttachmentsController.kt:87-91, AssetModelsController.kt)
 - [ ] Bi-weekly alert schedule ("every_other_week") silently degrades to weekly (AlertSchedulerService + alerts-tab.tsx preview)
 
@@ -50,16 +51,16 @@ source file). Items marked `[~]` are being worked this session.
 - [ ] `dateFormat` + non-GBP currency settings configurable but ignored app-wide
 
 ### E. Production-readiness (for work/Azure move)
-- [~] Docs describe retired .NET/EF/PostgreSQL stack — README DB corrected (MySQL); still to fix: Claude.md, docs/*.md, tasks/decisions.md
+- [ ] Docs still describe the retired .NET/EF/PostgreSQL stack — README DB line already corrected to MySQL (PR #128); still to fix: Claude.md, docs/*.md, tasks/decisions.md
 - [ ] Decommission retired apps/api (.NET) tree (122 files, nothing wired to it); then drop unused Postgres container from docker-compose
 - [ ] Add tests — zero backend tests, ~zero frontend; start with auth/token-invalidation, expiry/alert logic, audit emission, Flyway (Testcontainers)
 - [ ] Add CI (build + lint + typecheck + tests on PR)
 - [ ] Azure-readiness: Dockerfiles + IaC; move attachments to Blob Storage (local disk won't survive Container Apps); distributed rate-limit/scheduler; readiness health probe
-- [~] .gitignore gaps — loose root PNGs, apps/web/test-results/, Gradle build/ and .gradle/
+- [ ] .gitignore gaps — loose root PNGs, apps/web/test-results/, Gradle build/ and .gradle/
 
 ### Features (from review)
-- [~] Feature 1: Renewal workflow (POST /{id}/renew for certificates/licences/warranties — roll dates forward, log event, clear alert)
-- [~] Feature 2: Licence seat management (application↔people assignment, derived usedSeats, over-allocation block, reclaim on offboard)
+- [x] Feature 1: Renewal workflow — POST /{id}/renew for certificates & licences (PR #130)
+- [x] Feature 2: Licence seat management — application↔people assignment, derived usedSeats, over-allocation block, offboard reclaim (PR #131)
 - [ ] Feature 3 (deferred): Self-service account & session mgmt (forgot-password, logout/revoke, token refresh)
 - [ ] Feature 4 (deferred): Barcode/QR asset labels + mobile scan check-in/out
 - [ ] Feature 5 (deferred): Maintenance & service scheduling (service intervals, next-service-due alerts via existing engine)

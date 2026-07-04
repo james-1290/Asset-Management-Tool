@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   Bell,
   CheckCheck,
@@ -233,7 +234,7 @@ function NotificationList({
   showStatus?: boolean;
 }) {
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useUserNotifications({ page, pageSize: PAGE_SIZE, status });
+  const { data, isLoading, isError } = useUserNotifications({ page, pageSize: PAGE_SIZE, status });
   const markRead = useMarkRead();
   const dismiss = useDismissNotification();
   const snooze = useSnoozeNotification();
@@ -245,6 +246,15 @@ function NotificationList({
     return (
       <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
         Loading notifications...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+        <Bell className="h-10 w-10 mb-3 opacity-40" />
+        <p className="text-sm">Couldn't load notifications. Please try again.</p>
       </div>
     );
   }
@@ -266,9 +276,15 @@ function NotificationList({
           notification={notification}
           showActions={showActions}
           showStatus={showStatus ?? false}
-          onMarkRead={(id) => markRead.mutate(id)}
-          onDismiss={(id) => dismiss.mutate(id)}
-          onSnooze={(id, duration) => snooze.mutate({ id, duration })}
+          onMarkRead={(id) =>
+            markRead.mutate(id, { onError: () => toast.error("Failed to mark as read") })
+          }
+          onDismiss={(id) =>
+            dismiss.mutate(id, { onError: () => toast.error("Failed to dismiss notification") })
+          }
+          onSnooze={(id, duration) =>
+            snooze.mutate({ id, duration }, { onError: () => toast.error("Failed to snooze notification") })
+          }
         />
       ))}
 
@@ -315,7 +331,12 @@ export default function NotificationsPage() {
             variant="outline"
             size="sm"
             className="gap-1.5"
-            onClick={() => markAllRead.mutate()}
+            onClick={() =>
+              markAllRead.mutate(undefined, {
+                onSuccess: () => toast.success("All notifications marked as read"),
+                onError: () => toast.error("Failed to mark all as read"),
+              })
+            }
             disabled={markAllRead.isPending}
           >
             <CheckCheck className="h-4 w-4" />

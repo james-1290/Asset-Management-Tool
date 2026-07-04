@@ -20,7 +20,7 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 @RestController
-@RequestMapping("/api/v1/auditlogs")
+@RequestMapping(value = ["/api/v1/audit-logs", "/api/v1/auditlogs"]) // legacy concatenated path kept as an alias
 @PreAuthorize("hasRole('Admin')")
 class AuditLogsController(
     private val auditLogRepository: AuditLogRepository

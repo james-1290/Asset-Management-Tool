@@ -37,7 +37,17 @@ export function ConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={loading}>
+          <AlertDialogAction
+            onClick={(e) => {
+              // When the caller drives a pending state, keep the dialog open so the
+              // loading label shows and the async result can be awaited; the parent
+              // closes it on success. Callers that don't pass `loading` keep the
+              // default auto-close behaviour.
+              if (loading !== undefined) e.preventDefault();
+              onConfirm();
+            }}
+            disabled={loading}
+          >
             {loading ? "Please wait…" : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>

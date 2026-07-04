@@ -28,7 +28,7 @@ import java.time.Instant
 import java.util.*
 
 @RestController
-@RequestMapping("/api/v1/applicationtypes")
+@RequestMapping(value = ["/api/v1/application-types", "/api/v1/applicationtypes"]) // legacy concatenated path kept as an alias
 @PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class ApplicationTypesController(
     private val applicationTypeRepository: ApplicationTypeRepository,
