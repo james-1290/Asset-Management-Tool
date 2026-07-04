@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DateRangePicker, type DateRange } from "./date-range-picker";
+import { formatDate, formatDateTime } from "@/lib/format";
 
 export function AssetLifecycleReport() {
   const year = new Date().getFullYear();
@@ -52,7 +53,7 @@ export function AssetLifecycleReport() {
           />
           {dataUpdatedAt > 0 && (
             <p className="text-xs text-muted-foreground">
-              Generated: {new Date(dataUpdatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              Generated: {formatDateTime(dataUpdatedAt)}
             </p>
           )}
         </div>
@@ -117,7 +118,7 @@ export function AssetLifecycleReport() {
                   <TableCell className="font-medium">{asset.name}</TableCell>
                   <TableCell>{asset.assetTypeName}</TableCell>
                   <TableCell>
-                    {new Date(asset.purchaseDate).toLocaleDateString()}
+                    {formatDate(asset.purchaseDate)}
                   </TableCell>
                   <TableCell className="text-right">{asset.ageDays}</TableCell>
                 </TableRow>
@@ -155,7 +156,7 @@ export function AssetLifecycleReport() {
                   <TableCell className="font-medium">{asset.name}</TableCell>
                   <TableCell>{asset.assetTypeName}</TableCell>
                   <TableCell>
-                    {new Date(asset.warrantyExpiryDate).toLocaleDateString()}
+                    {formatDate(asset.warrantyExpiryDate)}
                   </TableCell>
                   <TableCell className="text-right text-destructive font-medium">
                     {Math.abs(asset.daysUntilExpiry)}

@@ -10,20 +10,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CHART_PALETTE } from "@/lib/chart-colors";
+import { formatCurrency, getCurrencySymbol } from "@/lib/format";
 import type { ValueByLocation } from "@/types/dashboard";
 
 interface ValueByLocationChartProps {
   data: ValueByLocation[] | undefined;
   isLoading: boolean;
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }
 
 const tooltipStyle = {
@@ -61,14 +53,14 @@ export function ValueByLocationChart({ data, isLoading }: ValueByLocationChartPr
                 tick={{ fill: "var(--color-muted-foreground)" }}
               />
               <YAxis
-                tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
+                tickFormatter={(v: number) => `${getCurrencySymbol()}${(v / 1000).toFixed(0)}k`}
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: "var(--color-muted-foreground)" }}
               />
               <Tooltip
-                formatter={(value) => [formatCurrency(value as number), "Value"]}
+                formatter={(value) => [formatCurrency(value as number, { minimumFractionDigits: 0, maximumFractionDigits: 0 }), "Value"]}
                 cursor={{ fill: "var(--color-muted)", opacity: 0.4 }}
                 contentStyle={tooltipStyle}
               />

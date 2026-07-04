@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Checkbox } from "../ui/checkbox";
 import { ListFilter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getCurrencySymbol } from "@/lib/format";
 import { FilterChip } from "../filter-chip";
 import type { AssetType } from "../../types/asset-type";
 import type { Location } from "../../types/location";
@@ -189,7 +190,7 @@ export function AssetsToolbar({
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Cost (£)</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Cost ({getCurrencySymbol()})</label>
               <div className="flex items-center gap-2">
                 <input type="number" value={costMin} onChange={(e) => onCostMinChange(e.target.value)} placeholder="Min" min="0" step="0.01" className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
                 <span className="text-xs text-muted-foreground">to</span>

@@ -22,13 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatCurrency as fmtCurrency, formatDate, formatDateTime } from "@/lib/format";
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: 2,
-  }).format(value);
+  return fmtCurrency(value, { minimumFractionDigits: 2 });
 }
 
 export function DepreciationReport() {
@@ -183,7 +180,7 @@ export function DepreciationReport() {
       {/* Timestamp */}
       {dataUpdatedAt > 0 && (
         <p className="text-xs text-muted-foreground">
-          Generated: {new Date(dataUpdatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+          Generated: {formatDateTime(dataUpdatedAt)}
         </p>
       )}
 
@@ -266,7 +263,7 @@ export function DepreciationReport() {
                         </TableCell>
                         <TableCell>
                           {asset.purchaseDate
-                            ? new Date(asset.purchaseDate).toLocaleDateString()
+                            ? formatDate(asset.purchaseDate)
                             : "-"}
                         </TableCell>
                         <TableCell className="text-right">

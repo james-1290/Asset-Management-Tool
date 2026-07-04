@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 import type { AuditLogEntry } from "../../types/audit-log";
+import { formatDate as fmtDate } from "../../lib/format";
 
 const actionBadgeClasses: Record<string, string> = {
   Created: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
@@ -31,11 +32,7 @@ function getInitials(name: string): string {
 
 function formatTimestamp(iso: string): { date: string; time: string } {
   const d = new Date(iso);
-  const date = d.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  const date = fmtDate(d);
   const time = d.toLocaleTimeString("en-GB", {
     hour: "2-digit",
     minute: "2-digit",

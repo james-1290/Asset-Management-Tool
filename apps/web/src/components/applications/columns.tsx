@@ -11,6 +11,7 @@ import {
 import { ApplicationStatusBadge } from "./application-status-badge";
 import { AvatarPlaceholder } from "../avatar-placeholder";
 import type { Application } from "../../types/application";
+import { formatDate as fmtDate } from "../../lib/format";
 
 interface ColumnActions {
   onEdit: (application: Application) => void;
@@ -19,12 +20,7 @@ interface ColumnActions {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return fmtDate(iso, "—");
 }
 
 /** Returns "expired" | "expiring" | "normal" based on the expiry date */

@@ -6,11 +6,13 @@ import { CommandSearch } from "@/components/command-search"
 import { NotificationsBell } from "@/components/notifications-bell"
 import { UserMenu } from "@/components/user-menu"
 import { useAuth } from "@/contexts/auth-context"
+import { useFormatSettingsSync } from "@/hooks/use-settings"
 import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
 
 export function Layout() {
   const { user } = useAuth()
+  useFormatSettingsSync()
 
   return (
     <SidebarProvider>

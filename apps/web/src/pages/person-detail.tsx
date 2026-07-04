@@ -33,14 +33,11 @@ import {
 import { useLocations } from "../hooks/use-locations";
 import type { PersonFormValues } from "../lib/schemas/person";
 import type { AssetStatus } from "../types/asset";
+import { formatDate as fmtDate } from "../lib/format";
 
 function formatDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return fmtDate(iso);
 }
 
 function StatusBadge({ status }: { status: string }) {

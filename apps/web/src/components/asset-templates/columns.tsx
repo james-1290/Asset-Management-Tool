@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import type { AssetTemplate } from "../../types/asset-template";
+import { formatCurrency as fmtCurrency } from "../../lib/format";
 
 interface ColumnActions {
   onEdit: (template: AssetTemplate) => void;
@@ -15,11 +16,7 @@ interface ColumnActions {
 }
 
 function formatCurrency(value: number | null): string {
-  if (value == null) return "—";
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-  }).format(value);
+  return fmtCurrency(value, { fallback: "—" });
 }
 
 export function getAssetTemplateColumns({

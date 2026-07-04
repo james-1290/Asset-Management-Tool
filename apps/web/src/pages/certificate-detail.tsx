@@ -31,14 +31,11 @@ import { useLocations } from "../hooks/use-locations";
 import { AttachmentsSection } from "../components/shared/attachments-section";
 import { RenewDialog } from "../components/shared/renew-dialog";
 import type { CertificateFormValues } from "../lib/schemas/certificate";
+import { formatDate as fmtDate } from "../lib/format";
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return fmtDate(iso);
 }
 
 function formatCustomFieldValue(value: string | null, fieldType: string): string | null {
@@ -47,7 +44,7 @@ function formatCustomFieldValue(value: string | null, fieldType: string): string
     case "Boolean":
       return value === "true" ? "Yes" : "No";
     case "Date":
-      return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+      return fmtDate(value);
     case "MultiSelect": {
       try {
         const arr = JSON.parse(value);

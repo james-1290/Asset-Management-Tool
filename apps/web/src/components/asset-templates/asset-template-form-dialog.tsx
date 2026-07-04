@@ -33,6 +33,7 @@ import { useCustomFieldDefinitions } from "../../hooks/use-asset-types";
 import type { AssetTemplate } from "../../types/asset-template";
 import type { AssetType } from "../../types/asset-type";
 import type { Location } from "../../types/location";
+import { getCurrencySymbol } from "../../lib/format";
 
 const templateSchema = z.object({
   assetTypeId: z.string().min(1, "Asset type is required"),
@@ -190,7 +191,7 @@ export function AssetTemplateFormDialog({
                       <FormControl>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                            £
+                            {getCurrencySymbol()}
                           </span>
                           <Input
                             className="pl-7"

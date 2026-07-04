@@ -46,14 +46,11 @@ import { AttachmentsSection } from "../components/shared/attachments-section";
 import { AssetTypeIcon } from "../components/assets/asset-type-icon";
 import { AvatarPlaceholder } from "../components/avatar-placeholder";
 import type { AssetFormValues } from "../lib/schemas/asset";
+import { formatDate as fmtDate, formatCurrency as fmtCurrency } from "../lib/format";
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return fmtDate(iso);
 }
 
 function formatCustomFieldValue(value: string | null, fieldType: string): string | null {
@@ -62,7 +59,7 @@ function formatCustomFieldValue(value: string | null, fieldType: string): string
     case "Boolean":
       return value === "true" ? "Yes" : "No";
     case "Date":
-      return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+      return fmtDate(value);
     case "MultiSelect": {
       try {
         const arr = JSON.parse(value);
@@ -77,10 +74,7 @@ function formatCustomFieldValue(value: string | null, fieldType: string): string
 
 function formatCurrency(value: number | null): string | null {
   if (value == null) return null;
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-  }).format(value);
+  return fmtCurrency(value);
 }
 
 function isExpiringSoon(iso: string | null): boolean {

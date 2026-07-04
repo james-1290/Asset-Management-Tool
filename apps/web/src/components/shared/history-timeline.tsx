@@ -1,4 +1,5 @@
 import { Skeleton } from "../ui/skeleton";
+import { formatDateTime } from "../../lib/format";
 
 export type HistoryEventConfig = Record<string, { color: string; label: string }>;
 
@@ -18,13 +19,7 @@ export interface HistoryEntry {
 }
 
 function formatTimestamp(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(iso));
+  return formatDateTime(iso);
 }
 
 function truncate(value: string, max = 30): string {

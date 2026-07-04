@@ -30,6 +30,7 @@ import {
 import { Button } from "../ui/button";
 import { CustomFieldsSection } from "../assets/custom-fields-section";
 import { applicationSchema, type ApplicationFormValues } from "../../lib/schemas/application";
+import { getCurrencySymbol } from "../../lib/format";
 import { useApplicationCustomFieldDefinitions } from "../../hooks/use-application-types";
 import type { Application } from "../../types/application";
 import type { ApplicationType } from "../../types/application-type";
@@ -369,7 +370,7 @@ export function ApplicationFormDialog({
                         <FormLabel className="font-semibold">Purchase Cost</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">£</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{getCurrencySymbol()}</span>
                             <Input
                               type="number"
                               min={0}

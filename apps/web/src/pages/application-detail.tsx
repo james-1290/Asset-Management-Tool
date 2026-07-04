@@ -35,23 +35,16 @@ import { AttachmentsSection } from "../components/shared/attachments-section";
 import { RenewDialog } from "../components/shared/renew-dialog";
 import { ApplicationSeatsSection } from "../components/applications/application-seats-section";
 import type { ApplicationFormValues } from "../lib/schemas/application";
+import { formatDate as fmtDate, formatCurrency as fmtCurrency } from "../lib/format";
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return fmtDate(iso);
 }
 
 function formatCurrency(value: number | null): string | null {
   if (value == null) return null;
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: 2,
-  }).format(value);
+  return fmtCurrency(value, { minimumFractionDigits: 2 });
 }
 
 function formatCustomFieldValue(value: string | null, fieldType: string): string | null {
@@ -60,7 +53,7 @@ function formatCustomFieldValue(value: string | null, fieldType: string): string
     case "Boolean":
       return value === "true" ? "Yes" : "No";
     case "Date":
-      return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+      return fmtDate(value);
     case "MultiSelect": {
       try {
         const arr = JSON.parse(value);

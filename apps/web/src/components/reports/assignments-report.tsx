@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatDateTime } from "@/lib/format";
 
 export function AssignmentsReport() {
   const { data, isLoading, dataUpdatedAt } = useAssignmentsReport();
@@ -40,7 +41,7 @@ export function AssignmentsReport() {
         <div>
           {dataUpdatedAt > 0 && (
             <p className="text-xs text-muted-foreground">
-              Generated: {new Date(dataUpdatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              Generated: {formatDateTime(dataUpdatedAt)}
             </p>
           )}
         </div>

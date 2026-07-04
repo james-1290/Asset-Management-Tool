@@ -28,14 +28,11 @@ import {
 } from "../hooks/use-locations";
 import type { LocationFormValues } from "../lib/schemas/location";
 import type { AssetStatus } from "../types/asset";
+import { formatDate as fmtDate } from "../lib/format";
 
 function formatDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return fmtDate(iso);
 }
 
 export default function LocationDetailPage() {

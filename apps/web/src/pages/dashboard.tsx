@@ -30,21 +30,8 @@ import {
   useInventorySnapshot,
 } from "@/hooks/use-dashboard";
 import { useDashboardPreferences } from "@/hooks/use-dashboard-preferences";
+import { formatCompactCurrency as formatCurrency } from "@/lib/format";
 
-function formatCurrency(value: number): string {
-  if (value >= 1_000_000) {
-    return `£${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (value >= 1_000) {
-    return `£${(value / 1_000).toFixed(0)}K`;
-  }
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 // Today and today+30d as YYYY-MM-DD. Kept at module scope so the impure Date
 // reads happen outside React's render phase.

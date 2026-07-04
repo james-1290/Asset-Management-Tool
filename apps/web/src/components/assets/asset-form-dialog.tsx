@@ -32,6 +32,7 @@ import { PersonCombobox } from "../person-combobox";
 import { CustomFieldsSection } from "./custom-fields-section";
 import { AssetModelFormDialog } from "../asset-models/asset-model-form-dialog";
 import { assetSchema, type AssetFormValues } from "../../lib/schemas/asset";
+import { getCurrencySymbol } from "../../lib/format";
 import { useCustomFieldDefinitions } from "../../hooks/use-asset-types";
 import { useAssetTemplates } from "../../hooks/use-asset-templates";
 import { useAssetModels } from "../../hooks/use-asset-models";
@@ -516,7 +517,7 @@ export function AssetFormDialog({
                         <FormLabel className="font-semibold">Purchase Cost</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">£</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{getCurrencySymbol()}</span>
                             <Input
                               className="pl-7"
                               type="number"

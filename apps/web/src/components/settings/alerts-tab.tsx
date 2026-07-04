@@ -23,6 +23,7 @@ import {
   useSendAlertsNow,
   useAlertHistory,
 } from "@/hooks/use-settings";
+import { formatDate as fmtDate, formatDateTime } from "@/lib/format";
 import {
   Form,
   FormControl,
@@ -222,21 +223,11 @@ export function AlertsTab() {
   }
 
   function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatDateTime(dateStr);
   }
 
   function formatShortDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+    return fmtDate(dateStr);
   }
 
   if (isLoading) {

@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { UserDetail } from "@/types/settings";
 import { Badge } from "@/components/ui/badge";
+import { formatDate } from "@/lib/format";
 
 export const userColumns: ColumnDef<UserDetail>[] = [
   {
@@ -39,6 +40,6 @@ export const userColumns: ColumnDef<UserDetail>[] = [
   {
     accessorKey: "createdAt",
     header: "Created",
-    cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
+    cell: ({ row }) => formatDate(row.original.createdAt),
   },
 ];

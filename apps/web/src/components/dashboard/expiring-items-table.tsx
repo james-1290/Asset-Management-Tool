@@ -16,6 +16,7 @@ import {
   useLicenceExpiries,
 } from "@/hooks/use-dashboard";
 import type { CertificateExpiryItem, WarrantyExpiryItem, LicenceExpiryItem } from "@/types/dashboard";
+import { formatDate } from "@/lib/format";
 
 type ExpiryCategory = "certificates" | "warranties" | "licences";
 
@@ -88,11 +89,6 @@ function normalizeLicences(items: LicenceExpiryItem[]): NormalizedItem[] {
     status: item.status,
     href: `/applications/${item.id}`,
   }));
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-GB", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function expiryLabel(days: number): { text: string; color: string } {
