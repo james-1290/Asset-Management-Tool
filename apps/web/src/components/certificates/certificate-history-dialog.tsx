@@ -1,9 +1,4 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
+import { HistoryDialog } from "../shared/history-dialog";
 import { CertificateHistoryTimeline } from "./certificate-history-timeline";
 import { useCertificateHistory } from "../../hooks/use-certificates";
 
@@ -21,17 +16,9 @@ export function CertificateHistoryDialog({
   onOpenChange,
 }: CertificateHistoryDialogProps) {
   const { data: history, isLoading } = useCertificateHistory(certificateId);
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>History &mdash; {certificateName}</DialogTitle>
-        </DialogHeader>
-        <div className="overflow-y-auto flex-1 pr-2">
-          <CertificateHistoryTimeline history={history} isLoading={isLoading} />
-        </div>
-      </DialogContent>
-    </Dialog>
+    <HistoryDialog open={open} onOpenChange={onOpenChange} title={certificateName}>
+      <CertificateHistoryTimeline history={history} isLoading={isLoading} />
+    </HistoryDialog>
   );
 }
