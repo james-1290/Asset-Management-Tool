@@ -301,10 +301,35 @@ class ReportsController(
         val statusMap = statusResults.associate { row ->
             (row[0] as ApplicationStatus).name to (row[1] as Long).toInt()
         }
+
+        // Applications stored as Active but past/near expiry are displayed as
+        // Expired/PendingRenewal everywhere else (list views, dashboard). Correct
+        // the stored-status tally the same way so report counts don't contradict
+        // the rest of the app.
+        val nowForStatus = Instant.now()
+        val pendingCutoff = nowForStatus.plus(30, ChronoUnit.DAYS)
+        val computedExpired = em.createQuery(
+            """SELECT COUNT(app) FROM com.assetmanagement.api.model.Application app
+               WHERE app.isArchived = false AND app.status = :active
+               AND app.expiryDate IS NOT NULL AND app.expiryDate < :now""",
+            java.lang.Long::class.java
+        ).setParameter("active", ApplicationStatus.Active)
+         .setParameter("now", nowForStatus)
+         .singleResult.toInt()
+        val computedPending = em.createQuery(
+            """SELECT COUNT(app) FROM com.assetmanagement.api.model.Application app
+               WHERE app.isArchived = false AND app.status = :active
+               AND app.expiryDate IS NOT NULL AND app.expiryDate >= :now AND app.expiryDate < :cutoff""",
+            java.lang.Long::class.java
+        ).setParameter("active", ApplicationStatus.Active)
+         .setParameter("now", nowForStatus)
+         .setParameter("cutoff", pendingCutoff)
+         .singleResult.toInt()
+
         val total = statusMap.values.sum()
-        val active = statusMap["Active"] ?: 0
-        val expired = statusMap["Expired"] ?: 0
-        val pendingRenewal = statusMap["PendingRenewal"] ?: 0
+        val active = (statusMap["Active"] ?: 0) - computedExpired - computedPending
+        val expired = (statusMap["Expired"] ?: 0) + computedExpired
+        val pendingRenewal = (statusMap["PendingRenewal"] ?: 0) + computedPending
         val suspended = statusMap["Suspended"] ?: 0
 
         val totalSpend = em.createQuery(
