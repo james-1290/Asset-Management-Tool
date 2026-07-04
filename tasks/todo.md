@@ -30,7 +30,7 @@ source file). Items marked `[~]` are being worked this session.
 - [ ] `updatedAt` never auto-managed — add @UpdateTimestamp/@CreationTimestamp via a @MappedSuperclass audit base
 - [ ] Optimistic locking inert — accept a client version/ETag on PUT so the 409 path can fire
 - [ ] Timezone/date-only hazard end-to-end — store date-only fields as DATE/LocalDate; centralise date formatting; fix truncating daysUntilExpiry
-- [ ] Missing unique constraints — custom_field_values(definition,entity), roles.name, *_types.name, asset_models(type,name)
+- [x] Unique constraints added (V015, PR #142): custom_field_values(definition,entity), roles/permissions/*_types name, asset_models(type,name); migration disambiguates pre-existing duplicates first. Duplicates now return 409.
 - [ ] N+1 on list endpoints (DTOs flatten related names off LAZY relations) — use fetch-joins/projections
 - [~] Alert-run: processAlerts is now @Transactional so history+notification writes are atomic (PR #138). Full crash-idempotency (claim-before-send, so an email sent then rolled back can't re-send) is a deeper design change, still open.
 
@@ -46,8 +46,9 @@ source file). Items marked `[~]` are being worked this session.
 ### D. Dead / half-built code (finish or delete)
 - [ ] Dashboard drag-drop layout fully coded but never mounted (dashboard-preferences.ts, use-dashboard-preferences.ts) — wire up ResponsiveGridLayout or remove
 - [ ] 7 of 17 dashboard widget components orphaned; 9 declared widget IDs never render
-- [ ] Dead code: shared Breadcrumbs component unused; stat-card trend prop never supplied; chart-colors STATUS_COLORS unused (two divergent palettes hardcoded elsewhere)
-- [ ] Disabled buttons shipped: 2FA, "Preview Daily Report"
+- [x] Removed unused Breadcrumbs component and the never-supplied stat-card trend prop (PR #141)
+- [ ] Chart palette consolidation: STATUS_COLORS is unused while status-breakdown-chart and asset-summary-report hardcode divergent palettes (the latter with wrong status keys) — make STATUS_COLORS the single source
+- [x] Removed the non-functional disabled buttons (2FA card, "Preview Daily Report") (PR #141)
 - [ ] `dateFormat` + non-GBP currency settings configurable but ignored app-wide
 
 ### E. Production-readiness (for work/Azure move)
