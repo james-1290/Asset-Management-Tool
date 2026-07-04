@@ -6,6 +6,9 @@ export function useAssetModelImage(assetModelId: string | null | undefined, imag
   const [src, setSrc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Async image fetch: the effect synchronises component state with the network
+  // request + the module-level blob cache, so setState inside it is intentional.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!assetModelId || !imageUrl) {
       setSrc(null);
@@ -36,6 +39,7 @@ export function useAssetModelImage(assetModelId: string | null | undefined, imag
       .catch(() => setSrc(null))
       .finally(() => setIsLoading(false));
   }, [assetModelId, imageUrl]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return { src, isLoading };
 }

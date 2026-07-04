@@ -164,6 +164,10 @@ function ImagePicker({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
+  // Object-URL lifecycle: create a preview URL when the file changes and revoke
+  // it on cleanup. This is a genuine browser-API sync, so setState in the effect
+  // is intentional and correct.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!pendingFile) {
       setPreview(null);
@@ -173,6 +177,7 @@ function ImagePicker({
     setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [pendingFile]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function handleSelect(file: File) {
     if (file.size > 2 * 1024 * 1024) {
@@ -260,6 +265,10 @@ export function AssetModelFormDialog({
     },
   });
 
+  // Reset the react-hook-form + pending file when the dialog opens. RHF's
+  // form.reset must run in an effect (not during render), so the accompanying
+  // setState here is intentional.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open) {
       setPendingImageFile(null);
@@ -270,6 +279,7 @@ export function AssetModelFormDialog({
       });
     }
   }, [open, model, form, defaultAssetTypeId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const loading = externalLoading || createMutation.isPending || updateMutation.isPending;
 

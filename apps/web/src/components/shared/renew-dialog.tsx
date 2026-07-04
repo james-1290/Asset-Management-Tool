@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -42,14 +42,18 @@ export function RenewDialog({
 }: RenewDialogProps) {
   const [newDate, setNewDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [wasOpen, setWasOpen] = useState(false);
   const todayStr = new Date().toISOString().split("T")[0];
 
-  useEffect(() => {
-    if (open) {
-      setNewDate(defaultNewExpiry(currentExpiry));
-      setNotes("");
-    }
-  }, [open, currentExpiry]);
+  // Reset the form each time the dialog transitions to open. This is React's
+  // "adjust state during render when a prop changes" pattern — no effect needed.
+  if (open && !wasOpen) {
+    setWasOpen(true);
+    setNewDate(defaultNewExpiry(currentExpiry));
+    setNotes("");
+  } else if (!open && wasOpen) {
+    setWasOpen(false);
+  }
 
   const invalid = !newDate || newDate <= todayStr;
 
