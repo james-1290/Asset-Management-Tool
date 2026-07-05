@@ -209,12 +209,21 @@ class AlertProcessingService(
             return
         }
 
+        // Load existing notification keys for these items once, instead of an
+        // existsBy query per (user × item) pair.
+        val itemIds = allItems.map { it.entityId }.toSet()
+        val existingKeys: Set<List<Any>> = if (itemIds.isEmpty()) {
+            emptySet()
+        } else {
+            userNotificationRepository.findByEntityIdIn(itemIds)
+                .map { listOf(it.entityType, it.entityId, it.userId, it.thresholdDays) }
+                .toSet()
+        }
+
         var created = 0
         for (user in activeUsers) {
             for (item in allItems) {
-                val exists = userNotificationRepository.existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(
-                    item.entityType, item.entityId, user.id, item.thresholdDays
-                )
+                val exists = listOf(item.entityType, item.entityId, user.id, item.thresholdDays) in existingKeys
                 if (!exists) {
                     val expiryLabel = if (item.daysUntilExpiry <= 0) "expired" else "expiring in ${item.daysUntilExpiry} days"
                     userNotificationRepository.save(UserNotification(

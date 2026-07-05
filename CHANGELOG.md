@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-05 20:50 — Backend performance (third-sweep)
+
+- Set `hibernate.default_batch_fetch_size: 100` so a page of rows resolves its to-one relations in a few `IN(...)` batches instead of one query per row (mitigates N+1 on CSV exports and sub-resource lists that don't fetch-join). Full 60-endpoint read sweep still clean, 0 lazy errors.
+- `SlackService` `RestTemplate` now has 5s connect / 10s read timeouts — a dead webhook host can no longer hang the alert-scheduler thread and hold the `@Transactional` alert run open indefinitely.
+- `AlertProcessingService.createGlobalNotifications` now loads existing notification keys once (`findByEntityIdIn`) and checks membership in memory, instead of an `existsBy` query per (user × item) pair.
+
 ## 2026-07-05 20:30 — Frontend correctness batch (third-sweep)
 
 - **Double-submit**: the create/edit `FormDialog` `loading` prop omitted `checkDuplicatesMutation.isPending`, leaving the submit button enabled during the duplicate-check round-trip → a second click created a duplicate. Added it on certificates/applications/people/locations.
