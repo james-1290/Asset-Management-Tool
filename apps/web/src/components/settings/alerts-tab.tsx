@@ -411,7 +411,7 @@ export function AlertsTab() {
                                   className="bg-muted/50"
                                   type="number"
                                   {...field}
-                                  onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                  onChange={(e) => { const n = e.target.valueAsNumber; field.onChange(Number.isNaN(n) ? undefined : n); }}
                                 />
                               </FormControl>
                             )}

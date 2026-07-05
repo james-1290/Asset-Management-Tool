@@ -35,7 +35,13 @@ export function AssetSummaryReport() {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="py-12 text-center text-sm text-muted-foreground">
+        Unable to load report data. Please try again.
+      </div>
+    );
+  }
 
   const totalCount = data.byStatus.reduce((sum, s) => sum + s.count, 0);
 

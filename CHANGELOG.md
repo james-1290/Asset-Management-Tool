@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-05 22:15 — Frontend UX polish (third-sweep)
+
+- **Reports**: the six report components returned `null` (blank page) when the query errored/returned nothing — now show an "Unable to load report data" message.
+- **Number inputs**: clearing the SMTP port / default-page-size fields set the value to `NaN` (React warning + bad payload); now maps `NaN` to `undefined`.
+- **Password**: the profile change-password placeholder said "Min. 8 characters" while the schema enforces 6 — aligned to 6.
+
 ## 2026-07-05 21:55 — Frontend polish batch (third-sweep)
 
 - **Global search**: `CommandDialog` left cmdk's client-side `shouldFilter` on, so results matched server-side on serial numbers/subtitles (fields not in the item's `value` string) were silently hidden. Now threads `shouldFilter={false}` (results are already server-filtered), and moves the sr-only `DialogTitle` inside `DialogContent` so the dialog has an accessible name.

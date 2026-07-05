@@ -164,7 +164,7 @@ export function SystemTab() {
                           min={10}
                           max={100}
                           {...field}
-                          onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                          onChange={(e) => { const n = e.target.valueAsNumber; field.onChange(Number.isNaN(n) ? undefined : n); }}
                         />
                       </FormControl>
                       <FormMessage />

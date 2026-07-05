@@ -40,7 +40,13 @@ export function AssetLifecycleReport() {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="py-12 text-center text-sm text-muted-foreground">
+        Unable to load report data. Please try again.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
