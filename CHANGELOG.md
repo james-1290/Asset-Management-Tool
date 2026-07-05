@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-05 22:40 — Backend polish (third-sweep tail)
+
+- **Profile validation**: `UpdateProfileRequest`/`ChangePasswordRequest` gained bean-validation constraints (`@NotBlank`/`@Email`/`@Size`) and the endpoints now use `@Valid` — a malformed email is rejected with 400 (verified) instead of being silently accepted.
+- **SCIM createUser**: distinguishes a duplicate (409) from malformed input (400) instead of mapping every failure to 409.
+- **Custom-field cascade**: `Asset`/`AssetTemplate` `customFieldValues` `@OneToMany` now `orphanRemoval = true`, so removing an element deletes the row rather than issuing a NOT-NULL-violating `UPDATE ... SET entity_id = NULL`.
+
 ## 2026-07-05 22:15 — Frontend UX polish (third-sweep)
 
 - **Reports**: the six report components returned `null` (blank page) when the query errored/returned nothing — now show an "Unable to load report data" message.

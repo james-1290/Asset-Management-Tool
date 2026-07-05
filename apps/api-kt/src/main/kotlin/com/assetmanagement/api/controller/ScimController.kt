@@ -109,9 +109,15 @@ class ScimController(
         return try {
             val created = scimService.createUser(scimUser, baseUrl())
             ResponseEntity.status(HttpStatus.CREATED).contentType(SCIM_JSON).body(created)
-        } catch (e: Exception) {
+        } catch (e: IllegalStateException) {
+            // Duplicate resource.
             ResponseEntity.status(HttpStatus.CONFLICT).contentType(SCIM_JSON).body(
                 ScimError(status = "409", detail = e.message ?: "User already exists")
+            )
+        } catch (e: Exception) {
+            // Malformed/invalid input.
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(SCIM_JSON).body(
+                ScimError(status = "400", detail = e.message ?: "Invalid user payload")
             )
         }
     }

@@ -49,7 +49,7 @@ class AssetTemplate(
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = Instant.now(),
 
-    @OneToMany(cascade = [CascadeType.ALL])
+    @OneToMany(cascade = [CascadeType.ALL], orphanRemoval = true)
     @JoinColumn(name = "entity_id")
     var customFieldValues: MutableList<CustomFieldValue> = mutableListOf()
 )

@@ -9,6 +9,7 @@ import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
 import com.assetmanagement.api.util.PasswordValidator
+import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.transaction.annotation.Transactional
@@ -26,7 +27,7 @@ class ProfileController(
 
     @PutMapping
     @Transactional
-    fun updateProfile(@RequestBody request: UpdateProfileRequest): ResponseEntity<Any> {
+    fun updateProfile(@Valid @RequestBody request: UpdateProfileRequest): ResponseEntity<Any> {
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
         val user = userRepository.findById(userId).orElse(null)
             ?: return ResponseEntity.status(401).build()
@@ -57,7 +58,7 @@ class ProfileController(
 
     @PutMapping("/password")
     @Transactional
-    fun changePassword(@RequestBody request: ChangePasswordRequest): ResponseEntity<Any> {
+    fun changePassword(@Valid @RequestBody request: ChangePasswordRequest): ResponseEntity<Any> {
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
         val user = userRepository.findById(userId).orElse(null)
             ?: return ResponseEntity.status(401).build()
