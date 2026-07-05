@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import type { SortingState, VisibilityState } from "@tanstack/react-table";
+import type { VisibilityState } from "@tanstack/react-table";
+import { useListPage } from "../hooks/use-list-page";
 import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
@@ -26,60 +26,32 @@ const SORT_FIELD_MAP: Record<string, string> = {
 };
 
 export default function AuditLogPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const page = Number(searchParams.get("page")) || 1;
-  const pageSize = Number(searchParams.get("pageSize")) || 50;
-  const searchParam = searchParams.get("search") ?? "";
+  const {
+    searchParams,
+    setSearchParams,
+    page,
+    pageSize,
+    searchParam,
+    sortByParam,
+    sortDirParam,
+    searchInput,
+    setSearchInput,
+    sorting,
+    handleSortingChange,
+    handlePageChange,
+    handlePageSizeChange,
+    handleFilterChange,
+  } = useListPage({ sortFieldMap: SORT_FIELD_MAP, defaultSortBy: "timestamp", defaultSortDir: "desc", defaultPageSize: 50 });
   const entityTypeParam = searchParams.get("entityType") ?? "";
   const actionParam = searchParams.get("action") ?? "";
-  const sortByParam = searchParams.get("sortBy") ?? "timestamp";
-  const sortDirParam = searchParams.get("sortDir") ?? "desc";
   const dateFromParam = searchParams.get("dateFrom") ?? "";
   const dateToParam = searchParams.get("dateTo") ?? "";
-
-  const [searchInput, setSearchInput] = useState(searchParam);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Saved views
   const { data: savedViews = [] } = useSavedViews("audit-log");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const defaultViewApplied = useRef(false);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setSearchParams((prev) => {
-        if (searchInput) {
-          prev.set("search", searchInput);
-        } else {
-          prev.delete("search");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [searchInput, setSearchParams]);
-
-  useEffect(() => {
-    setSearchInput(searchParam);
-  }, [searchParam]);
-
-  const handleFilterChange = useCallback(
-    (key: string, value: string) => {
-      setSearchParams((prev) => {
-        if (value) prev.set(key, value);
-        else prev.delete(key);
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
 
   const queryParams = useMemo(
     () => ({
@@ -97,11 +69,6 @@ export default function AuditLogPage() {
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedAuditLogs(queryParams);
-
-  const sorting: SortingState = useMemo(
-    () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
-    [sortByParam, sortDirParam],
-  );
 
   const applyView = useCallback((view: SavedView) => {
     try {
@@ -127,7 +94,7 @@ export default function AuditLogPage() {
         return prev;
       });
     } catch { /* invalid config */ }
-  }, [setSearchParams]);
+  }, [setSearchParams, setSearchInput]);
 
   // Apply default saved view on first load
   useEffect(() => {
@@ -166,50 +133,6 @@ export default function AuditLogPage() {
       ...(dateToParam ? { dateTo: dateToParam } : {}),
     },
   }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize, dateFromParam, dateToParam]);
-
-  const handleSortingChange = useCallback(
-    (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
-      const newSorting =
-        typeof updaterOrValue === "function"
-          ? updaterOrValue(sorting)
-          : updaterOrValue;
-      setSearchParams((prev) => {
-        if (newSorting.length > 0) {
-          const col = newSorting[0];
-          const backendField = SORT_FIELD_MAP[col.id] ?? col.id;
-          prev.set("sortBy", backendField);
-          prev.set("sortDir", col.desc ? "desc" : "asc");
-        } else {
-          prev.delete("sortBy");
-          prev.delete("sortDir");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [sorting, setSearchParams],
-  );
-
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      setSearchParams((prev) => {
-        prev.set("page", String(newPage));
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handlePageSizeChange = useCallback(
-    (newPageSize: number) => {
-      setSearchParams((prev) => {
-        prev.set("pageSize", String(newPageSize));
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
 
   const handleEntityTypeChange = useCallback(
     (value: string) => {

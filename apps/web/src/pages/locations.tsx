@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { useListPage } from "../hooks/use-list-page";
 import { locationsApi } from "../lib/api/locations";
 import { ApiError, getApiErrorMessage } from "../lib/api-client";
 import { ExportButton } from "../components/export-button";
-import type { SortingState, VisibilityState } from "@tanstack/react-table";
+import type { VisibilityState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
@@ -40,38 +40,20 @@ const SORT_FIELD_MAP: Record<string, string> = {
 };
 
 export default function LocationsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const page = Number(searchParams.get("page")) || 1;
-  const pageSize = Number(searchParams.get("pageSize")) || 25;
-  const searchParam = searchParams.get("search") ?? "";
-  const sortByParam = searchParams.get("sortBy") ?? "name";
-  const sortDirParam = searchParams.get("sortDir") ?? "asc";
-
-  const [searchInput, setSearchInput] = useState(searchParam);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setSearchParams((prev) => {
-        if (searchInput) {
-          prev.set("search", searchInput);
-        } else {
-          prev.delete("search");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [searchInput, setSearchParams]);
-
-  useEffect(() => {
-    setSearchInput(searchParam);
-  }, [searchParam]);
+  const {
+    setSearchParams,
+    page,
+    pageSize,
+    searchParam,
+    sortByParam,
+    sortDirParam,
+    searchInput,
+    setSearchInput,
+    sorting,
+    handleSortingChange,
+    handlePageChange,
+    handlePageSizeChange,
+  } = useListPage({ sortFieldMap: SORT_FIELD_MAP, defaultSortBy: "name" });
 
   const queryParams = useMemo(
     () => ({
@@ -124,11 +106,6 @@ export default function LocationsPage() {
     [],
   );
 
-  const sorting: SortingState = useMemo(
-    () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
-    [sortByParam, sortDirParam],
-  );
-
   const applyView = useCallback((view: SavedView) => {
     try {
       const config: ViewConfiguration = JSON.parse(view.configuration);
@@ -144,7 +121,7 @@ export default function LocationsPage() {
         return prev;
       });
     } catch { /* invalid config */ }
-  }, [setSearchParams]);
+  }, [setSearchParams, setSearchInput]);
 
   // Apply default saved view on first load
   useEffect(() => {
@@ -174,50 +151,6 @@ export default function LocationsPage() {
     search: searchParam || undefined,
     pageSize,
   }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize]);
-
-  const handleSortingChange = useCallback(
-    (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
-      const newSorting =
-        typeof updaterOrValue === "function"
-          ? updaterOrValue(sorting)
-          : updaterOrValue;
-      setSearchParams((prev) => {
-        if (newSorting.length > 0) {
-          const col = newSorting[0];
-          const backendField = SORT_FIELD_MAP[col.id] ?? col.id;
-          prev.set("sortBy", backendField);
-          prev.set("sortDir", col.desc ? "desc" : "asc");
-        } else {
-          prev.delete("sortBy");
-          prev.delete("sortDir");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [sorting, setSearchParams],
-  );
-
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      setSearchParams((prev) => {
-        prev.set("page", String(newPage));
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handlePageSizeChange = useCallback(
-    (newPageSize: number) => {
-      setSearchParams((prev) => {
-        prev.set("pageSize", String(newPageSize));
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
 
   const [exporting, setExporting] = useState(false);
   async function handleExport() {
