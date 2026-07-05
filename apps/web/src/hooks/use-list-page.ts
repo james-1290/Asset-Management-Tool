@@ -9,6 +9,8 @@ interface UseListPageOptions {
   defaultSortBy: string;
   /** Sort direction when the URL has no `sortDir`. */
   defaultSortDir?: "asc" | "desc";
+  /** Page size when the URL has no `pageSize`. */
+  defaultPageSize?: number;
 }
 
 /**
@@ -20,11 +22,11 @@ interface UseListPageOptions {
  * `searchParams`/`setSearchParams` are returned so pages can read/write their
  * own filter params (via `handleFilterChange` or directly).
  */
-export function useListPage({ sortFieldMap, defaultSortBy, defaultSortDir = "asc" }: UseListPageOptions) {
+export function useListPage({ sortFieldMap, defaultSortBy, defaultSortDir = "asc", defaultPageSize = 25 }: UseListPageOptions) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const page = Number(searchParams.get("page")) || 1;
-  const pageSize = Number(searchParams.get("pageSize")) || 25;
+  const pageSize = Number(searchParams.get("pageSize")) || defaultPageSize;
   const searchParam = searchParams.get("search") ?? "";
   const sortByParam = searchParams.get("sortBy") ?? defaultSortBy;
   const sortDirParam = searchParams.get("sortDir") ?? defaultSortDir;

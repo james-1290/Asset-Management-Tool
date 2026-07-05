@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-05 23:45 — Adopt useListPage on remaining list pages (third-sweep tail)
+
+- Migrated the five secondary list pages (asset-types, certificate-types, application-types, locations, audit-log) onto the shared `useListPage` hook, matching the four primary pages — removing the duplicated URL-param plumbing (search debounce, sorting memo, page/sort/pageSize handlers, row selection) from each. Added a `defaultPageSize` option to the hook so audit-log keeps its 50-row default. Pure plumbing extraction — query keys, saved views, filters, and default sorts (incl. audit-log's timestamp-desc) preserved. Build + lint + 38 unit + 7 e2e green.
+
 ## 2026-07-05 23:20 — Leak/race & a11y polish (third-sweep tail)
 
 - **`useAssetModelImage`**: added a cancellation guard so a superseded/unmounted fetch can't `setState` late or leak an object URL, and de-dupes concurrent object URLs for the same key (revokes the extra).

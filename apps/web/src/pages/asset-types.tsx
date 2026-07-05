@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "../lib/api-client";
 import { Plus, Trash2 } from "lucide-react";
-import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
+import type { VisibilityState } from "@tanstack/react-table";
+import { useListPage } from "../hooks/use-list-page";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
@@ -44,38 +44,23 @@ const SORT_FIELD_MAP: Record<string, string> = {
 };
 
 export default function AssetTypesPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const page = Number(searchParams.get("page")) || 1;
-  const pageSize = Number(searchParams.get("pageSize")) || 25;
-  const searchParam = searchParams.get("search") ?? "";
-  const sortByParam = searchParams.get("sortBy") ?? "name";
-  const sortDirParam = searchParams.get("sortDir") ?? "asc";
-
-  const [searchInput, setSearchInput] = useState(searchParam);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setSearchParams((prev) => {
-        if (searchInput) {
-          prev.set("search", searchInput);
-        } else {
-          prev.delete("search");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [searchInput, setSearchParams]);
-
-  useEffect(() => {
-    setSearchInput(searchParam);
-  }, [searchParam]);
+  const {
+    setSearchParams,
+    page,
+    pageSize,
+    searchParam,
+    sortByParam,
+    sortDirParam,
+    searchInput,
+    setSearchInput,
+    sorting,
+    handleSortingChange,
+    handlePageChange,
+    handlePageSizeChange,
+    rowSelection,
+    setRowSelection,
+    selectedIds,
+  } = useListPage({ sortFieldMap: SORT_FIELD_MAP, defaultSortBy: "name" });
 
   const queryParams = useMemo(
     () => ({
@@ -99,7 +84,6 @@ export default function AssetTypesPage() {
   const [archivingAssetType, setArchivingAssetType] = useState<AssetType | null>(
     null,
   );
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   // Saved views
@@ -124,8 +108,6 @@ export default function AssetTypesPage() {
     [],
   );
 
-  const selectedIds = Object.keys(rowSelection);
-
   function handleBulkArchive() {
     bulkArchiveMutation.mutate(selectedIds, {
       onSuccess: (result) => {
@@ -139,11 +121,6 @@ export default function AssetTypesPage() {
       },
     });
   }
-
-  const sorting: SortingState = useMemo(
-    () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
-    [sortByParam, sortDirParam],
-  );
 
   const applyView = useCallback((view: SavedView) => {
     try {
@@ -160,15 +137,18 @@ export default function AssetTypesPage() {
         return prev;
       });
     } catch { /* invalid config */ }
-  }, [setSearchParams]);
+  }, [setSearchParams, setSearchInput]);
 
-  // Apply default saved view on first load
+  // Apply default saved view on first load. Applying the default view setStates
+  // synchronously here, which is the intended one-shot sync.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (defaultViewApplied.current || savedViews.length === 0) return;
     defaultViewApplied.current = true;
     const defaultView = savedViews.find((v) => v.isDefault);
     if (defaultView) applyView(defaultView);
   }, [savedViews, applyView]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function handleResetToDefault() {
     setColumnVisibility({});
@@ -191,50 +171,6 @@ export default function AssetTypesPage() {
     search: searchParam || undefined,
     pageSize,
   }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize]);
-
-  const handleSortingChange = useCallback(
-    (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
-      const newSorting =
-        typeof updaterOrValue === "function"
-          ? updaterOrValue(sorting)
-          : updaterOrValue;
-      setSearchParams((prev) => {
-        if (newSorting.length > 0) {
-          const col = newSorting[0];
-          const backendField = SORT_FIELD_MAP[col.id] ?? col.id;
-          prev.set("sortBy", backendField);
-          prev.set("sortDir", col.desc ? "desc" : "asc");
-        } else {
-          prev.delete("sortBy");
-          prev.delete("sortDir");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [sorting, setSearchParams],
-  );
-
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      setSearchParams((prev) => {
-        prev.set("page", String(newPage));
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handlePageSizeChange = useCallback(
-    (newPageSize: number) => {
-      setSearchParams((prev) => {
-        prev.set("pageSize", String(newPageSize));
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
 
   function handleFormSubmit(values: AssetTypeFormValues) {
     const customFields = (values.customFields ?? []).map((cf, i) => ({
