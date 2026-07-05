@@ -114,6 +114,7 @@ class PeopleController(
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/history")
+    @Transactional(readOnly = true)
     fun getHistory(@PathVariable id: UUID, @RequestParam(required = false) limit: Int?): ResponseEntity<Any> {
         if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()
         val pageable = PageRequest.of(0, limit ?: 50)

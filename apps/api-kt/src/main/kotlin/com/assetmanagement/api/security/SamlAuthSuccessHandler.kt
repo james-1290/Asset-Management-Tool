@@ -63,7 +63,10 @@ class SamlAuthSuccessHandler(
             return
         }
 
-        val roles = user.userRoles.mapNotNull { it.role?.name }
+        // Reload with roles fetch-joined: with OSIV disabled the lazy userRoles
+        // collection isn't available outside a session/transaction.
+        val roles = userRepository.findWithRolesById(user.id)
+            ?.userRoles?.mapNotNull { it.role?.name } ?: emptyList()
         val jwt = tokenService.generateToken(user, roles)
 
         val encodedToken = URLEncoder.encode(jwt, StandardCharsets.UTF_8)

@@ -8,6 +8,12 @@ spring:
     password: ${DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
+    # Disable Open Session In View: the Hibernate session is bound to the
+    # transaction, not the HTTP request. Read endpoints that build DTOs from
+    # lazy relations run within @Transactional(readOnly = true); DTOs are plain
+    # data by the time serialization runs. This releases DB connections earlier
+    # and surfaces lazy-load mistakes instead of masking them.
+    open-in-view: false
     hibernate:
       ddl-auto: validate
     show-sql: false

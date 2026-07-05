@@ -52,6 +52,7 @@ class ApplicationTypesController(
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
+    @Transactional(readOnly = true)
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int, @RequestParam(defaultValue = "25") pageSize: Int,
         @RequestParam(required = false) search: String?, @RequestParam(defaultValue = "name") sortBy: String,
@@ -60,10 +61,12 @@ class ApplicationTypesController(
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     fun getById(@PathVariable id: UUID) = crud.getById(id)
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/customfields")
+    @Transactional(readOnly = true)
     fun getCustomFields(@PathVariable id: UUID) = crud.getCustomFields(id)
 
     @DeleteMapping("/{id}")
