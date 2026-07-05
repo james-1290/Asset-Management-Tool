@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { Upload, Download, Trash2, FileText, Image, FileSpreadsheet, File, Eye, Loader2 } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/api-client";
@@ -60,6 +60,14 @@ export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionP
   const [previewTarget, setPreviewTarget] = useState<Attachment | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Revoke the preview blob URL if the component unmounts while it's open
+  // (closing the dialog already revokes it).
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const { data: attachments, isLoading } = useAttachments(entityType, entityId);
   const uploadMutation = useUploadAttachment(entityType, entityId);
@@ -183,6 +191,7 @@ export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionP
                           className="h-8 w-8"
                           onClick={() => handlePreview(attachment)}
                           title="Preview"
+                          aria-label="Preview attachment"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -193,6 +202,7 @@ export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionP
                         className="h-8 w-8"
                         onClick={() => handleDownload(attachment)}
                         title="Download"
+                        aria-label="Download attachment"
                       >
                         <Download className="h-4 w-4" />
                       </Button>
@@ -202,6 +212,7 @@ export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionP
                         className="h-8 w-8 text-destructive"
                         onClick={() => setDeleteTarget(attachment)}
                         title="Delete"
+                        aria-label="Delete attachment"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

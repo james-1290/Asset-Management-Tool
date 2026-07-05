@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { UserMinus, ArrowRightLeft, Search } from "lucide-react";
 import {
@@ -123,22 +123,27 @@ export function OffboardDialog({
     );
   }, []);
 
-  const handlePersonSearch = useCallback(async (itemKey: string, query: string) => {
+  const searchTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const handlePersonSearch = useCallback((itemKey: string, query: string) => {
     setSearchQueries((prev) => ({ ...prev, [itemKey]: query }));
+    if (searchTimers.current[itemKey]) clearTimeout(searchTimers.current[itemKey]);
     if (query.length < 2) {
       setSearchResults((prev) => ({ ...prev, [itemKey]: [] }));
       return;
     }
-    try {
-      const results = await peopleApi.search(query, 5);
-      // Filter out the person being offboarded
-      setSearchResults((prev) => ({
-        ...prev,
-        [itemKey]: results.filter((r) => r.id !== personId),
-      }));
-    } catch {
-      // Silently fail search
-    }
+    // Debounce so we don't fire a request on every keystroke; the trailing call
+    // is the only one that hits the API, which also avoids out-of-order results.
+    searchTimers.current[itemKey] = setTimeout(async () => {
+      try {
+        const results = await peopleApi.search(query, 5);
+        setSearchResults((prev) => ({
+          ...prev,
+          [itemKey]: results.filter((r) => r.id !== personId),
+        }));
+      } catch {
+        // Silently fail search
+      }
+    }, 250);
   }, [personId]);
 
   function handleConfirm() {
