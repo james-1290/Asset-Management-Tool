@@ -406,7 +406,7 @@ class ReportsController(
     ): ResponseEntity<*> {
         @Suppress("UNCHECKED_CAST")
         val people = em.createQuery(
-            """SELECT p FROM com.assetmanagement.api.model.Person p
+            """SELECT DISTINCT p FROM com.assetmanagement.api.model.Person p
                LEFT JOIN FETCH p.assignedAssets
                WHERE p.isArchived = false"""
         ).resultList as List<com.assetmanagement.api.model.Person>
