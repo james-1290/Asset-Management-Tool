@@ -289,7 +289,7 @@ export function ProfileTab() {
                       <FormItem>
                         <FormLabel>New Password</FormLabel>
                         <FormControl>
-                          <PasswordInput placeholder="Min. 8 characters" {...field} />
+                          <PasswordInput placeholder="Min. 6 characters" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
