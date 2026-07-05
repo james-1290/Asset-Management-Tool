@@ -92,7 +92,9 @@ class Asset(
     @OneToMany(mappedBy = "asset", cascade = [CascadeType.ALL])
     var history: MutableList<AssetHistory> = mutableListOf(),
 
-    @OneToMany(cascade = [CascadeType.ALL])
+    // orphanRemoval so removing an element deletes the row rather than a
+    // NOT-NULL-violating `UPDATE ... SET entity_id = NULL`.
+    @OneToMany(cascade = [CascadeType.ALL], orphanRemoval = true)
     @JoinColumn(name = "entity_id")
     var customFieldValues: MutableList<CustomFieldValue> = mutableListOf(),
 
