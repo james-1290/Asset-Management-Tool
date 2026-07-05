@@ -211,7 +211,14 @@ export function AlertsTab() {
       h.entityType, h.entityName, String(h.thresholdDays),
       h.expiryDate, h.sentAt, h.recipients,
     ]);
-    const csv = [headers, ...rows].map((r) => r.map((v) => `"${(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    // Neutralise CSV formula injection: a cell starting with = + - @ (or tab/CR)
+    // is executed as a formula by Excel/Sheets. Prefix with a single quote.
+    const csvCell = (v: string | number | null | undefined) => {
+      let s = String(v ?? "");
+      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+    const csv = [headers, ...rows].map((r) => r.map(csvCell).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
