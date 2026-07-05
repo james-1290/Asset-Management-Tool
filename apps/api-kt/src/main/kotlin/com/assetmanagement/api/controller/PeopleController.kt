@@ -321,10 +321,17 @@ class PeopleController(
             when (action.entityType) {
                 "Asset" -> {
                     val asset = assetRepository.findById(action.entityId).orElse(null) ?: continue
+                    // Only act on items actually assigned to the person being offboarded.
+                    if (asset.assignedPersonId != person.id) continue
                     when (action.action) {
                         "free" -> {
                             asset.assignedPersonId = null
-                            asset.status = com.assetmanagement.api.model.enums.AssetStatus.Available
+                            // Don't clobber terminal states (Retired/Sold/InMaintenance);
+                            // only an assigned/checked-out asset returns to Available.
+                            if (asset.status == com.assetmanagement.api.model.enums.AssetStatus.Assigned ||
+                                asset.status == com.assetmanagement.api.model.enums.AssetStatus.CheckedOut) {
+                                asset.status = com.assetmanagement.api.model.enums.AssetStatus.Available
+                            }
                             asset.updatedAt = Instant.now()
                             assetRepository.save(asset)
                             auditService.log(AuditEntry("CheckedIn", "Asset", asset.id.toString(), asset.name,
@@ -338,6 +345,7 @@ class PeopleController(
                         "transfer" -> {
                             val targetId = action.transferToPersonId ?: continue
                             val targetPerson = personRepository.findById(targetId).orElse(null) ?: continue
+                            if (targetPerson.isArchived) continue
                             // Check in from source
                             asset.assignedPersonId = targetId
                             asset.status = com.assetmanagement.api.model.enums.AssetStatus.CheckedOut
@@ -363,6 +371,7 @@ class PeopleController(
                 }
                 "Certificate" -> {
                     val cert = certificateRepository.findById(action.entityId).orElse(null) ?: continue
+                    if (cert.personId != person.id) continue
                     when (action.action) {
                         "free" -> {
                             cert.personId = null
@@ -376,6 +385,7 @@ class PeopleController(
                         "transfer" -> {
                             val targetId = action.transferToPersonId ?: continue
                             val targetPerson = personRepository.findById(targetId).orElse(null) ?: continue
+                            if (targetPerson.isArchived) continue
                             cert.personId = targetId
                             cert.updatedAt = Instant.now()
                             certificateRepository.save(cert)
@@ -389,6 +399,7 @@ class PeopleController(
                 }
                 "Application" -> {
                     val app = applicationRepository.findById(action.entityId).orElse(null) ?: continue
+                    if (app.personId != person.id) continue
                     when (action.action) {
                         "free" -> {
                             app.personId = null
@@ -402,6 +413,7 @@ class PeopleController(
                         "transfer" -> {
                             val targetId = action.transferToPersonId ?: continue
                             val targetPerson = personRepository.findById(targetId).orElse(null) ?: continue
+                            if (targetPerson.isArchived) continue
                             app.personId = targetId
                             app.updatedAt = Instant.now()
                             applicationRepository.save(app)

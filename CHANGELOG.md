@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-05 19:05 — Fix: assignments report double-count + offboard integrity (third-sweep)
+
+- **Reports `/assignments`**: the query `JOIN FETCH`ed `assignedAssets` without `DISTINCT`, so a person with N assets appeared N times and `totalAssigned` was inflated. Added `SELECT DISTINCT`. Verified: a person with 3 assets now appears once with count 3 (no duplicate rows).
+- **People `/offboard`**: (1) each action now verifies the asset/certificate/application is actually assigned to the person being offboarded (previously any client-supplied entity id was reassigned/freed — verified fixed: offboarding a non-owner leaves the item untouched); (2) transfers reject archived target people; (3) freeing an asset no longer clobbers terminal states (`Retired`/`Sold`/`InMaintenance`) — only `Assigned`/`CheckedOut` return to `Available`.
+
 ## 2026-07-05 18:45 — Fix: Assets bulk actions were unreachable (third-sweep)
 
 - The Assets list wired a `BulkActionBar` + row selection + `getRowId` but its columns never included a selection checkbox (unlike every other list page), so `selectedCount` was always 0 and Edit/Archive/status bulk actions could never be triggered. Prepended `getSelectionColumn<Asset>()` to the columns. Added an e2e test asserting selecting rows reveals the bulk bar.
