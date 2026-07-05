@@ -15,7 +15,7 @@ export function PersonHistoryDialog({
   open,
   onOpenChange,
 }: PersonHistoryDialogProps) {
-  const { data: history, isLoading } = usePersonHistory(personId);
+  const { data: history, isLoading } = usePersonHistory(personId, undefined, open);
   return (
     <HistoryDialog open={open} onOpenChange={onOpenChange} title={personName}>
       <PersonHistoryTimeline history={history} isLoading={isLoading} />

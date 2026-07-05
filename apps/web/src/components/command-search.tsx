@@ -129,6 +129,7 @@ export function CommandSearch() {
       </div>
 
       <CommandDialog
+        shouldFilter={false}
         open={open}
         onOpenChange={(val) => {
           setOpen(val);

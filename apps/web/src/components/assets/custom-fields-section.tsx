@@ -200,7 +200,8 @@ export function CustomFieldsSection({ definitions }: CustomFieldsSectionProps) {
                     const selected: string[] = field.value
                       ? (() => {
                           try {
-                            return JSON.parse(field.value);
+                            const parsed = JSON.parse(field.value);
+                            return Array.isArray(parsed) ? parsed : [];
                           } catch {
                             return [];
                           }

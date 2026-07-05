@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-05 21:55 — Frontend polish batch (third-sweep)
+
+- **Global search**: `CommandDialog` left cmdk's client-side `shouldFilter` on, so results matched server-side on serial numbers/subtitles (fields not in the item's `value` string) were silently hidden. Now threads `shouldFilter={false}` (results are already server-filtered), and moves the sr-only `DialogTitle` inside `DialogContent` so the dialog has an accessible name.
+- **Multi-select custom field**: guard `JSON.parse` result with `Array.isArray` so a non-array stored value can't throw at render.
+- **Person history**: the dialog's history query now runs only when the dialog is open (`enabled: open`) instead of on detail-page load.
+- **Recent activity**: fixed "1 mins ago" / "1 hours ago" pluralization.
+
 ## 2026-07-05 21:35 — Infra, CI & test hardening (third-sweep)
 
 - **Tests**: added a Testcontainers integration test for the two behaviours CLAUDE.md mandates but that were untested — a non-admin (Operator) is forbidden (403) from admin-only endpoints, and a stale `entityVersion` update is rejected (409).
