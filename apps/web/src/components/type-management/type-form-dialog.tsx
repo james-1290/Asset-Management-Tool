@@ -9,15 +9,6 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "../ui/dialog";
-import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -25,7 +16,7 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
-import { Button } from "../ui/button";
+import { FormDialog } from "../form-dialog";
 import { CustomFieldEditor } from "./custom-field-editor";
 import type { CustomFieldDefinitionFormValues } from "../../lib/schemas/asset-type";
 
@@ -126,72 +117,46 @@ export function TypeFormDialog<TValues extends BaseTypeFormValues, TEntity>({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl p-0 gap-0 max-h-[90vh] flex flex-col">
-        <DialogHeader className="px-8 py-6 border-b">
-          <DialogTitle className="text-2xl font-bold">
-            {isEditing ? `Edit ${entityLabel}` : `Add ${entityLabel}`}
-          </DialogTitle>
-          <DialogDescription>
-            Define a new {categoryNoun} category with custom fields.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col flex-1 overflow-hidden"
-          >
-            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-8">
-              {nameAdjacent ? (
-                <div className="grid grid-cols-2 gap-6">
-                  {nameField}
-                  {nameAdjacent}
-                </div>
-              ) : (
-                nameField
-              )}
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isEditing ? `Edit ${entityLabel}` : `Add ${entityLabel}`}
+      description={`Define a new ${categoryNoun} category with custom fields.`}
+      form={form}
+      onSubmit={onSubmit}
+      loading={loading}
+      isEditing={isEditing}
+      submitLabel={isEditing ? "Save Changes" : `Add ${entityLabel}`}
+      size="2xl"
+    >
+      {nameAdjacent ? (
+        <div className="grid grid-cols-2 gap-6">
+          {nameField}
+          {nameAdjacent}
+        </div>
+      ) : (
+        nameField
+      )}
 
-              <FormField
-                control={baseControl}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-semibold">Description</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Optional description" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <FormField
+        control={baseControl}
+        name="description"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-semibold">Description</FormLabel>
+            <FormControl>
+              <Input placeholder="Optional description" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-              {renderExtraFields?.(form)}
+      {renderExtraFields?.(form)}
 
-              <hr className="border-border" />
+      <hr className="border-border" />
 
-              <CustomFieldEditor />
-            </div>
-
-            <DialogFooter className="px-8 py-6 border-t bg-muted/50 flex justify-end gap-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="font-semibold shadow-lg"
-              >
-                {loading ? "Saving..." : isEditing ? "Save Changes" : `Add ${entityLabel}`}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+      <CustomFieldEditor />
+    </FormDialog>
   );
 }

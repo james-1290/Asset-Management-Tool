@@ -2,15 +2,6 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "../ui/dialog";
-import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -27,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Button } from "../ui/button";
+import { FormDialog } from "../form-dialog";
 import { CustomFieldsSection } from "../assets/custom-fields-section";
 import { applicationSchema, type ApplicationFormValues } from "../../lib/schemas/application";
 import { getCurrencySymbol } from "../../lib/format";
@@ -161,26 +152,20 @@ export function ApplicationFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl p-0 gap-0 max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <DialogHeader className="px-8 py-6 border-b">
-          <DialogTitle className="text-2xl font-bold">
-            {isEditing ? "Edit Application" : "Add New Application"}
-          </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground mt-1">
-            {isEditing ? "Update the application details." : "Fill in the details to register a new software asset."}
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Scrollable form body */}
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleFormSubmit)}
-            className="flex flex-col flex-1 overflow-hidden"
-          >
-            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-8">
-              {/* Section: General Information */}
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isEditing ? "Edit Application" : "Add New Application"}
+      description={isEditing ? "Update the application details." : "Fill in the details to register a new software asset."}
+      form={form}
+      onSubmit={handleFormSubmit}
+      loading={loading}
+      isEditing={isEditing}
+      submitLabel={isEditing ? "Save Changes" : "Add Application"}
+      disableSubmitWhenPristine
+      size="4xl"
+    >
+      {/* Section: General Information */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2">
                   <FormField
@@ -464,34 +449,6 @@ export function ApplicationFormDialog({
                   <CustomFieldsSection definitions={customFieldDefs} />
                 </>
               )}
-            </div>
-
-            {/* Footer */}
-            <DialogFooter className="px-8 py-6 border-t bg-muted/50 flex justify-end gap-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-                className="font-semibold"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading || (isEditing && !form.formState.isDirty)}
-                className="font-semibold shadow-lg"
-              >
-                {loading
-                  ? "Saving..."
-                  : isEditing
-                    ? "Save Changes"
-                    : "Add Application"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+    </FormDialog>
   );
 }
