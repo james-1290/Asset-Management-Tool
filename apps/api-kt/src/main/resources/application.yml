@@ -21,6 +21,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+        # Batch lazy/secondary to-one loads so a page of rows resolves its
+        # relations in a few IN(...) queries instead of one-per-row (N+1) on
+        # exports and sub-resource lists that don't fetch-join.
+        default_batch_fetch_size: 100
         type:
           preferred_uuid_jdbc_type: CHAR
   flyway:

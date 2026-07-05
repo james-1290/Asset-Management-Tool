@@ -6,6 +6,7 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.web.client.RestTemplate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -15,7 +16,14 @@ class SlackService(
     private val systemSettingRepository: SystemSettingRepository
 ) {
     private val log = LoggerFactory.getLogger(SlackService::class.java)
-    private val restTemplate = RestTemplate()
+    // Bounded timeouts so a dead/slow webhook host can't hang the alert-scheduler
+    // thread (and hold the @Transactional alert run open) indefinitely.
+    private val restTemplate = RestTemplate(
+        SimpleClientHttpRequestFactory().apply {
+            setConnectTimeout(5_000)
+            setReadTimeout(10_000)
+        }
+    )
     private val dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy").withZone(ZoneId.systemDefault())
 
     private fun getWebhookUrl(): String =

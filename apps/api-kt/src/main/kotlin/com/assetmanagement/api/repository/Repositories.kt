@@ -170,6 +170,7 @@ interface AssetTemplateRepository : JpaRepository<AssetTemplate, UUID> {
 interface UserNotificationRepository : JpaRepository<UserNotification, UUID>, JpaSpecificationExecutor<UserNotification> {
     fun countByUserIdAndIsReadFalseAndIsDismissedFalse(userId: UUID): Long
     fun existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(entityType: String, entityId: UUID, userId: UUID, thresholdDays: Int): Boolean
+    fun findByEntityIdIn(entityIds: Collection<UUID>): List<UserNotification>
 
     @Modifying
     @Transactional
