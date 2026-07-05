@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-05 18:45 — Fix: Assets bulk actions were unreachable (third-sweep)
+
+- The Assets list wired a `BulkActionBar` + row selection + `getRowId` but its columns never included a selection checkbox (unlike every other list page), so `selectedCount` was always 0 and Edit/Archive/status bulk actions could never be triggered. Prepended `getSelectionColumn<Asset>()` to the columns. Added an e2e test asserting selecting rows reveals the bulk bar.
+
+
 ## 2026-07-05 18:30 — Disable Open Session In View (second-sweep tier 3)
 
 - Set `spring.jpa.open-in-view: false`. OSIV was masking lazy-load access after the transaction and holding DB connections through view render. The Hibernate session is now bound to the transaction; DB connections release earlier and lazy-load mistakes surface instead of being hidden.

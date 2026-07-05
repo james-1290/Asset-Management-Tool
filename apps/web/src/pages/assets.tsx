@@ -16,6 +16,7 @@ import { AssetFormDialog } from "../components/assets/asset-form-dialog";
 import { BulkEditDialog } from "../components/assets/bulk-edit-dialog";
 import { AssetsToolbar } from "../components/assets/assets-toolbar";
 import { getAssetColumns } from "../components/assets/columns";
+import { getSelectionColumn } from "../components/data-table-selection-column";
 import { GroupedGridView } from "../components/grouped-grid-view";
 import { AssetCard } from "../components/assets/asset-card";
 import {
@@ -169,6 +170,7 @@ export default function AssetsPage() {
 
   const columns = useMemo(
     () => [
+      getSelectionColumn<Asset>(),
       ...getAssetColumns({
         onEdit: (asset) => {
           setEditingAsset(asset);
