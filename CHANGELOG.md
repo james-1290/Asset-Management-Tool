@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-05 16:00 — Shared StatusBadge + centralised formatters (second-sweep tier 2)
+
+- Added a generic `ui/status-badge.tsx` (`StatusBadge`) rendering via shadcn `Badge`; the asset/certificate/application badges are now thin config wrappers over it. This also fixes the asset badge's visual inconsistency (it previously rendered a hand-rolled `<span>` instead of the shared `Badge`).
+- Moved `formatCustomFieldValue` (was duplicated in 4 files) and the date-wrapper helpers into `lib/format` as `formatCustomFieldValue`, `formatDateOrNull`, and `formatDateOrDash`; the 5 `OrNull` and 2 `OrDash` local wrappers now import them. Behaviour preserved. Build + 35 tests + lint green.
+
 ## 2026-07-05 15:45 — Fold type modules into entity factory (second-sweep tier 2)
 
 - Rewrote the asset-types / certificate-types / application-types API + hook modules on top of the existing `createEntityApi` / `createEntityHooks` factories (matching the pattern already used by assets/certificates/applications). Removed ~180 lines of hand-rolled CRUD duplication. Query keys and invalidation behaviour are byte-for-byte preserved (`related: []`; asset-types keeps its `assets`/`asset-models` cross-invalidation on update); the `bulkArchive` and `getCustomFields` extras stay module-local. Build + tests + lint green.

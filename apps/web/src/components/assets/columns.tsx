@@ -13,36 +13,12 @@ import { AssetTypeIcon } from "./asset-type-icon";
 import { AvatarPlaceholder } from "../avatar-placeholder";
 import type { Asset } from "../../types/asset";
 import type { CustomFieldDefinition } from "../../types/custom-field";
-import { formatDate as fmtDate, formatCurrency as fmtCurrency } from "../../lib/format";
+import { formatCustomFieldValue, formatCurrency as fmtCurrency } from "../../lib/format";
 
 interface ColumnActions {
   onEdit: (asset: Asset) => void;
   onArchive: (asset: Asset) => void;
   customFieldDefinitions?: CustomFieldDefinition[];
-}
-
-function formatCustomFieldValue(
-  value: string | null | undefined,
-  fieldType: string
-): string {
-  if (!value) return "—";
-  switch (fieldType) {
-    case "Boolean":
-      return value === "true" ? "Yes" : "No";
-    case "Date":
-      return fmtDate(value, "—");
-    case "MultiSelect": {
-      try {
-        const arr = JSON.parse(value);
-        if (Array.isArray(arr)) return arr.join(", ");
-      } catch {
-        // fall through
-      }
-      return value;
-    }
-    default:
-      return value;
-  }
 }
 
 function formatCurrency(amount: number): string {
@@ -164,7 +140,7 @@ export function getAssetColumns({
       },
       cell: ({ getValue }: { getValue: () => unknown }) => {
         const value = getValue() as string | null;
-        return formatCustomFieldValue(value, def.fieldType);
+        return formatCustomFieldValue(value, def.fieldType) ?? "—";
       },
     })
   );

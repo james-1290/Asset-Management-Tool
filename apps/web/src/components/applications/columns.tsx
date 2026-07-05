@@ -11,16 +11,12 @@ import {
 import { ApplicationStatusBadge } from "./application-status-badge";
 import { AvatarPlaceholder } from "../avatar-placeholder";
 import type { Application } from "../../types/application";
-import { formatDate as fmtDate } from "../../lib/format";
+import { formatDateOrDash as formatDate } from "../../lib/format";
 
 interface ColumnActions {
   onEdit: (application: Application) => void;
   onArchive: (application: Application) => void;
   onDeactivate?: (application: Application) => void;
-}
-
-function formatDate(iso: string | null): string {
-  return fmtDate(iso, "—");
 }
 
 /** Returns "expired" | "expiring" | "normal" based on the expiry date */

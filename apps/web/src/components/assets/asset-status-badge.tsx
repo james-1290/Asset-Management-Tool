@@ -1,6 +1,7 @@
+import { StatusBadge, type StatusStyle } from "../ui/status-badge";
 import type { AssetStatus } from "../../types/asset";
 
-const statusConfig: Record<AssetStatus, { label: string; className: string }> = {
+const statusConfig: Record<AssetStatus, StatusStyle> = {
   Available: {
     label: "Available",
     className: "bg-green-50 text-green-700 dark:bg-green-900/10 dark:text-green-400",
@@ -31,15 +32,6 @@ const statusConfig: Record<AssetStatus, { label: string; className: string }> = 
   },
 };
 
-interface AssetStatusBadgeProps {
-  status: AssetStatus;
-}
-
-export function AssetStatusBadge({ status }: AssetStatusBadgeProps) {
-  const config = statusConfig[status] ?? statusConfig.Available;
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${config.className}`}>
-      {config.label}
-    </span>
-  );
+export function AssetStatusBadge({ status }: { status: AssetStatus }) {
+  return <StatusBadge status={status} config={statusConfig} fallback="Available" />;
 }

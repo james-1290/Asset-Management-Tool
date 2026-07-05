@@ -28,12 +28,7 @@ import {
 } from "../hooks/use-locations";
 import type { LocationFormValues } from "../lib/schemas/location";
 import type { AssetStatus } from "../types/asset";
-import { formatDate as fmtDate } from "../lib/format";
-
-function formatDate(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  return fmtDate(iso);
-}
+import { formatDateOrNull as formatDate } from "../lib/format";
 
 export default function LocationDetailPage() {
   const { id } = useParams<{ id: string }>();
