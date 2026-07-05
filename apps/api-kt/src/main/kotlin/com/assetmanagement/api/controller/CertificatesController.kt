@@ -53,6 +53,9 @@ class CertificatesController(
     private val currentUserService: CurrentUserService
 ) {
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
+    // Date-only fields (issued/expiry) are LocalDate — formatting them with the
+    // timestamp pattern above throws UnsupportedTemporalTypeException(HourOfDay).
+    private val dateOnlyFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -349,8 +352,8 @@ class CertificatesController(
                 c.status.name,
                 c.issuer ?: "",
                 c.subject ?: "",
-                c.issuedDate?.let { dateFormat.format(it) } ?: "",
-                c.expiryDate?.let { dateFormat.format(it) } ?: "",
+                c.issuedDate?.let { dateOnlyFormat.format(it) } ?: "",
+                c.expiryDate?.let { dateOnlyFormat.format(it) } ?: "",
                 c.autoRenewal.toString(),
                 c.notes ?: "",
                 dateFormat.format(c.createdAt),
@@ -507,7 +510,7 @@ class CertificatesController(
         }
 
         val changes = mutableListOf(
-            AuditChange("Expiry Date", certificate.expiryDate?.let { dateFormat.format(it) }, dateFormat.format(request.newExpiryDate))
+            AuditChange("Expiry Date", certificate.expiryDate?.let { dateOnlyFormat.format(it) }, dateOnlyFormat.format(request.newExpiryDate))
         )
         if (certificate.status != CertificateStatus.Active) {
             changes.add(AuditChange("Status", certificate.status.name, CertificateStatus.Active.name))
@@ -524,7 +527,7 @@ class CertificatesController(
         userNotificationRepository.deleteByEntityTypeAndEntityId("certificate", certificate.id)
 
         val detail = buildString {
-            append("Renewed certificate \"${certificate.name}\" until ${dateFormat.format(request.newExpiryDate)}")
+            append("Renewed certificate \"${certificate.name}\" until ${dateOnlyFormat.format(request.newExpiryDate)}")
             if (!request.notes.isNullOrBlank()) append(" — ${request.notes}")
         }
         auditService.log(

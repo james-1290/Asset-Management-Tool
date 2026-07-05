@@ -10,8 +10,6 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.MySQLContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
 
 /**
@@ -20,7 +18,6 @@ import org.testcontainers.utility.DockerImageName
  * `ddl-auto: validate` runs against a real schema on every test run.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 abstract class AbstractIntegrationTest {
 
     @Autowired
@@ -54,12 +51,17 @@ abstract class AbstractIntegrationTest {
     }
 
     companion object {
-        @Container
+        // Singleton container shared across ALL integration test classes: started
+        // once and never stopped (the JVM reaps it at exit). A JUnit-managed
+        // `@Container` static field is stopped after the first test class, which
+        // would leave the *cached* Spring context (reused by later classes with the
+        // same config) pointing at a dead database — causing hangs/read-timeouts.
         @JvmStatic
         val mysql: MySQLContainer<Nothing> =
             MySQLContainer<Nothing>(DockerImageName.parse("mysql:8.0")).apply {
                 withDatabaseName("assetmgmt")
                 withUrlParam("serverTimezone", "UTC")
+                start()
             }
 
         @DynamicPropertySource

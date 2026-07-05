@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-05 14:35 — Fix: certificate export & renew 500 (LocalDate formatted with a time pattern)
+
+- `CertificatesController` was formatting its now-`LocalDate` `issuedDate`/`expiryDate`/`newExpiryDate` with the `yyyy-MM-dd HH:mm:ss` timestamp formatter, throwing `UnsupportedTemporalTypeException: HourOfDay`. This broke the **certificate CSV export** (emitted a header-only, truncated file) and the **certificate renew** endpoint (500). A regression from the date-only migration; Assets/Applications were unaffected (they use a date-only formatter). Fixed by adding a `dateOnlyFormat` for those fields.
+- Added `CertificateDateIntegrationTest` covering export + renew for a dated certificate.
+- Fixed a test-infra flake: switched `AbstractIntegrationTest` to a **singleton** MySQL container (started once, never stopped) instead of a JUnit `@Container` (which is stopped after the first test class, leaving the reused Spring context pointed at a dead DB — a hang/read-timeout once a second integration class exists).
+
 ## 2026-07-05 13:40 — Remove dead disabled buttons (2FA card, Preview Daily Report)
 
 - Removed the non-functional `disabled` "Configure 2FA" card (Profile tab) and "Preview Daily Report" button (Alerts tab), plus their now-unused icon imports. 2FA is an explicit non-goal, and both were dead half-built UI. (The backlog listed this as done under PR #141, but the removal had never actually landed on `main` — this reconciles the code with the todo.)
