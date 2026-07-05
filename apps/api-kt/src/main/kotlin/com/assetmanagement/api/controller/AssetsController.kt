@@ -481,6 +481,7 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/history")
+    @Transactional(readOnly = true)
     fun getHistory(
         @PathVariable id: UUID,
         @RequestParam(required = false) limit: Int?

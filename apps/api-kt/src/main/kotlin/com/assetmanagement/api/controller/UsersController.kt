@@ -37,6 +37,7 @@ class UsersController(
 
     @GetMapping
     @PreAuthorize("hasRole('Admin')")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun getAll(@RequestParam(defaultValue = "false") includeInactive: Boolean): ResponseEntity<List<UserDetailDto>> {
         val users = userRepository.findAll()
             .filter { if (includeInactive) true else it.isActive }
@@ -47,6 +48,7 @@ class UsersController(
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('Admin')")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun getById(@PathVariable id: UUID): ResponseEntity<UserDetailDto> {
         val user = userRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(toDetailDto(user))

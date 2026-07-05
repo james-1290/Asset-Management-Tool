@@ -45,7 +45,7 @@ class AuthController(
             return ResponseEntity.status(429).body(mapOf("error" to "Too many login attempts. Try again in ${remaining / 60 + 1} minutes."))
         }
 
-        val user = userRepository.findByUsername(request.username)
+        val user = userRepository.findWithRolesByUsername(request.username)
         if (user == null) {
             auditService.log(AuditEntry("LoginFailed", "User", "", request.username,
                 "Failed login attempt — user not found", null, request.username))
@@ -100,7 +100,7 @@ class AuthController(
         val userId = currentUserService.userId
             ?: return ResponseEntity.status(401).build()
 
-        val user = userRepository.findById(userId).orElse(null)
+        val user = userRepository.findWithRolesById(userId)
             ?: return ResponseEntity.status(401).build()
 
         if (!user.isActive) return ResponseEntity.status(401).build()

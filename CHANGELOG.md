@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-05 18:30 — Disable Open Session In View (second-sweep tier 3)
+
+- Set `spring.jpa.open-in-view: false`. OSIV was masking lazy-load access after the transaction and holding DB connections through view render. The Hibernate session is now bound to the transaction; DB connections release earlier and lazy-load mistakes surface instead of being hidden.
+- Fixed every read path that relied on OSIV to touch a lazy relation:
+  - Auth: login + `/me` now load the user via `findWithRolesByUsername` / `findWithRolesById` (fetch-join); the SAML success handler reloads roles the same way. The `JwtAuthenticationFilter` already fetch-joined roles.
+  - `@Transactional(readOnly = true)` on `UsersController` list/getById, the three type controllers' `getAll`/`getById`/`getCustomFields` (read `customFieldDefinitions`), and the four `getHistory` endpoints (read `History.changes`).
+- Verified: full read-endpoint sweep of 60 GETs returns 200 with **zero** `LazyInitializationException`; a create→update→archive write round-trip works; backend test suite + frontend Playwright e2e green. No DB migration.
+
 ## 2026-07-05 17:40 — Shared FormDialog for panel form dialogs (second-sweep tier 3)
 
 - Added a shared `components/form-dialog.tsx` (`FormDialog`) that owns the "panel" create/edit dialog chrome (full-height dialog, bordered header + description, scrollable body, styled Cancel/submit footer). Migrated the six dialogs that used that chrome onto it: certificate, application, asset, asset-template, asset-model, and the generic type-form-dialog. Each keeps its own react-hook-form instance, schema, reset-on-open effect and fields; only the layout is shared. ~180 lines of duplicated chrome removed.
