@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Archive, RefreshCw, Pencil } from "lucide-react";
 import { assetsApi } from "../lib/api/assets";
 import { getApiErrorMessage } from "../lib/api-client";
 import { ExportButton } from "../components/export-button";
-import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
+import type { VisibilityState } from "@tanstack/react-table";
+import { useListPage } from "../hooks/use-list-page";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
@@ -54,15 +54,28 @@ const SORT_FIELD_MAP: Record<string, string> = {
 };
 
 export default function AssetsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    searchParams,
+    setSearchParams,
+    page,
+    pageSize,
+    searchParam,
+    sortByParam,
+    sortDirParam,
+    searchInput,
+    setSearchInput,
+    sorting,
+    handleSortingChange,
+    handlePageChange,
+    handlePageSizeChange,
+    handleFilterChange,
+    rowSelection,
+    setRowSelection,
+    selectedIds,
+  } = useListPage({ sortFieldMap: SORT_FIELD_MAP, defaultSortBy: "name" });
 
   // Read URL params
-  const page = Number(searchParams.get("page")) || 1;
-  const pageSize = Number(searchParams.get("pageSize")) || 25;
-  const searchParam = searchParams.get("search") ?? "";
   const statusParam = searchParams.get("status") ?? "";
-  const sortByParam = searchParams.get("sortBy") ?? "name";
-  const sortDirParam = searchParams.get("sortDir") ?? "asc";
   const includeRetired = searchParams.get("includeRetired") === "true";
   const includeSold = searchParams.get("includeSold") === "true";
   const typeIdParam = searchParams.get("typeId") ?? "";
@@ -77,33 +90,6 @@ export default function AssetsPage() {
   const costMaxParam = searchParams.get("costMax") ?? "";
   const unassignedParam = searchParams.get("unassigned") ?? "";
   const createdAfterParam = searchParams.get("createdAfter") ?? "";
-
-  // Debounced search: local input state synced to URL after 300ms
-  const [searchInput, setSearchInput] = useState(searchParam);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setSearchParams((prev) => {
-        if (searchInput) {
-          prev.set("search", searchInput);
-        } else {
-          prev.delete("search");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [searchInput, setSearchParams]);
-
-  // Sync searchInput when URL search param changes externally (e.g. browser back)
-  useEffect(() => {
-    setSearchInput(searchParam);
-  }, [searchParam]);
 
   // Build includeStatuses from checkbox flags
   const includeStatuses = useMemo(() => {
@@ -157,7 +143,6 @@ export default function AssetsPage() {
     duplicates: DuplicateCheckResult[];
     onConfirm: () => void;
   } | null>(null);
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
 
@@ -249,7 +234,7 @@ export default function AssetsPage() {
         return prev;
       });
     } catch { /* invalid config */ }
-  }, [setSearchParams, defaultColumnVisibility]);
+  }, [setSearchParams, setSearchInput, defaultColumnVisibility]);
 
   // Apply user's default saved view on first load
   useEffect(() => {
@@ -259,56 +244,6 @@ export default function AssetsPage() {
     if (defaultView) applyView(defaultView);
   }, [savedViews, applyView]);
 
-
-  // Sorting: derive TanStack SortingState from URL
-  const sorting: SortingState = useMemo(
-    () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
-    [sortByParam, sortDirParam],
-  );
-
-  const handleSortingChange = useCallback(
-    (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
-      const newSorting =
-        typeof updaterOrValue === "function"
-          ? updaterOrValue(sorting)
-          : updaterOrValue;
-      setSearchParams((prev) => {
-        if (newSorting.length > 0) {
-          const col = newSorting[0];
-          const backendField = SORT_FIELD_MAP[col.id] ?? col.id;
-          prev.set("sortBy", backendField);
-          prev.set("sortDir", col.desc ? "desc" : "asc");
-        } else {
-          prev.delete("sortBy");
-          prev.delete("sortDir");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [sorting, setSearchParams],
-  );
-
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      setSearchParams((prev) => {
-        prev.set("page", String(newPage));
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handlePageSizeChange = useCallback(
-    (newPageSize: number) => {
-      setSearchParams((prev) => {
-        prev.set("pageSize", String(newPageSize));
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
 
   const handleStatusChange = useCallback(
     (value: string) => {
@@ -354,18 +289,6 @@ export default function AssetsPage() {
       setSearchParams((prev) => {
         if (value) prev.set("typeId", value);
         else prev.delete("typeId");
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handleFilterChange = useCallback(
-    (key: string, value: string) => {
-      setSearchParams((prev) => {
-        if (value) prev.set(key, value);
-        else prev.delete(key);
         prev.set("page", "1");
         return prev;
       });
@@ -505,7 +428,6 @@ export default function AssetsPage() {
     });
   }
 
-  const selectedIds = Object.keys(rowSelection);
   const selectedCount = selectedIds.length;
 
   function handleBulkArchive() {

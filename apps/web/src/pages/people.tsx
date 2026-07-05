@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { peopleApi } from "../lib/api/people";
 import { getApiErrorMessage } from "../lib/api-client";
 import { ExportButton } from "../components/export-button";
-import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
+import type { VisibilityState } from "@tanstack/react-table";
+import { useListPage } from "../hooks/use-list-page";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
@@ -47,52 +47,28 @@ const SORT_FIELD_MAP: Record<string, string> = {
 };
 
 export default function PeoplePage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    searchParams,
+    setSearchParams,
+    page,
+    pageSize,
+    searchParam,
+    sortByParam,
+    sortDirParam,
+    searchInput,
+    setSearchInput,
+    sorting,
+    handleSortingChange,
+    handlePageChange,
+    handlePageSizeChange,
+    handleFilterChange,
+    rowSelection,
+    setRowSelection,
+    selectedIds,
+  } = useListPage({ sortFieldMap: SORT_FIELD_MAP, defaultSortBy: "fullname" });
 
-  const page = Number(searchParams.get("page")) || 1;
-  const pageSize = Number(searchParams.get("pageSize")) || 25;
-  const searchParam = searchParams.get("search") ?? "";
-  const sortByParam = searchParams.get("sortBy") ?? "fullname";
-  const sortDirParam = searchParams.get("sortDir") ?? "asc";
   const locationIdParam = searchParams.get("locationId") ?? "";
   const departmentParam = searchParams.get("department") ?? "";
-
-  const [searchInput, setSearchInput] = useState(searchParam);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setSearchParams((prev) => {
-        if (searchInput) {
-          prev.set("search", searchInput);
-        } else {
-          prev.delete("search");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [searchInput, setSearchParams]);
-
-  useEffect(() => {
-    setSearchInput(searchParam);
-  }, [searchParam]);
-
-  const handleFilterChange = useCallback(
-    (key: string, value: string) => {
-      setSearchParams((prev) => {
-        if (value) prev.set(key, value);
-        else prev.delete(key);
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
 
   const queryParams = useMemo(
     () => ({
@@ -129,7 +105,6 @@ export default function PeoplePage() {
     duplicates: DuplicateCheckResult[];
     onConfirm: () => void;
   } | null>(null);
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   // Saved views
@@ -154,8 +129,6 @@ export default function PeoplePage() {
     [],
   );
 
-  const selectedIds = Object.keys(rowSelection);
-
   function handleBulkArchive() {
     bulkArchiveMutation.mutate(selectedIds, {
       onSuccess: (result) => {
@@ -169,11 +142,6 @@ export default function PeoplePage() {
       },
     });
   }
-
-  const sorting: SortingState = useMemo(
-    () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
-    [sortByParam, sortDirParam],
-  );
 
   const applyView = useCallback((view: SavedView) => {
     try {
@@ -199,7 +167,7 @@ export default function PeoplePage() {
         return prev;
       });
     } catch { /* invalid config */ }
-  }, [setSearchParams]);
+  }, [setSearchParams, setSearchInput]);
 
   // Apply default saved view on first load
   useEffect(() => {
@@ -236,50 +204,6 @@ export default function PeoplePage() {
       ...(departmentParam ? { department: departmentParam } : {}),
     },
   }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize, locationIdParam, departmentParam]);
-
-  const handleSortingChange = useCallback(
-    (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
-      const newSorting =
-        typeof updaterOrValue === "function"
-          ? updaterOrValue(sorting)
-          : updaterOrValue;
-      setSearchParams((prev) => {
-        if (newSorting.length > 0) {
-          const col = newSorting[0];
-          const backendField = SORT_FIELD_MAP[col.id] ?? col.id;
-          prev.set("sortBy", backendField);
-          prev.set("sortDir", col.desc ? "desc" : "asc");
-        } else {
-          prev.delete("sortBy");
-          prev.delete("sortDir");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [sorting, setSearchParams],
-  );
-
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      setSearchParams((prev) => {
-        prev.set("page", String(newPage));
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handlePageSizeChange = useCallback(
-    (newPageSize: number) => {
-      setSearchParams((prev) => {
-        prev.set("pageSize", String(newPageSize));
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
 
   const activeFilters = useMemo(() => {
     const filters: ActiveFilter[] = [];

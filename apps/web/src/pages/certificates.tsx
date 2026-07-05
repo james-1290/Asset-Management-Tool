@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Archive, RefreshCw } from "lucide-react";
-import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
+import type { VisibilityState } from "@tanstack/react-table";
+import { useListPage } from "../hooks/use-list-page";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { PageHeader } from "../components/page-header";
@@ -50,43 +50,31 @@ const SORT_FIELD_MAP: Record<string, string> = {
 };
 
 export default function CertificatesPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    searchParams,
+    setSearchParams,
+    page,
+    pageSize,
+    searchParam,
+    sortByParam,
+    sortDirParam,
+    searchInput,
+    setSearchInput,
+    sorting,
+    handleSortingChange,
+    handlePageChange,
+    handlePageSizeChange,
+    handleFilterChange,
+    rowSelection,
+    setRowSelection,
+    selectedIds,
+  } = useListPage({ sortFieldMap: SORT_FIELD_MAP, defaultSortBy: "name" });
 
-  const page = Number(searchParams.get("page")) || 1;
-  const pageSize = Number(searchParams.get("pageSize")) || 25;
-  const searchParam = searchParams.get("search") ?? "";
   const statusParam = searchParams.get("status") ?? "";
-  const sortByParam = searchParams.get("sortBy") ?? "name";
-  const sortDirParam = searchParams.get("sortDir") ?? "asc";
   const typeIdParam = searchParams.get("typeId") ?? "";
   const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
   const expiryFromParam = searchParams.get("expiryFrom") ?? "";
   const expiryToParam = searchParams.get("expiryTo") ?? "";
-
-  const [searchInput, setSearchInput] = useState(searchParam);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setSearchParams((prev) => {
-        if (searchInput) {
-          prev.set("search", searchInput);
-        } else {
-          prev.delete("search");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [searchInput, setSearchParams]);
-
-  useEffect(() => {
-    setSearchInput(searchParam);
-  }, [searchParam]);
 
   const handleStatusFilterChange = useCallback(
     (value: string) => {
@@ -126,18 +114,6 @@ export default function CertificatesPage() {
     [setSearchParams],
   );
 
-  const handleFilterChange = useCallback(
-    (key: string, value: string) => {
-      setSearchParams((prev) => {
-        if (value) prev.set(key, value);
-        else prev.delete(key);
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
   const queryParams = useMemo(
     () => ({
       page,
@@ -170,7 +146,6 @@ export default function CertificatesPage() {
     duplicates: DuplicateCheckResult[];
     onConfirm: () => void;
   } | null>(null);
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   // Saved views
@@ -193,11 +168,6 @@ export default function CertificatesPage() {
       }),
     ],
     [],
-  );
-
-  const sorting: SortingState = useMemo(
-    () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
-    [sortByParam, sortDirParam],
   );
 
   const applyView = useCallback((view: SavedView) => {
@@ -230,7 +200,7 @@ export default function CertificatesPage() {
         return prev;
       });
     } catch { /* invalid config */ }
-  }, [setSearchParams]);
+  }, [setSearchParams, setSearchInput]);
 
   // Apply default saved view on first load
   useEffect(() => {
@@ -273,50 +243,6 @@ export default function CertificatesPage() {
       ...(expiryToParam ? { expiryTo: expiryToParam } : {}),
     },
   }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, expiryFromParam, expiryToParam]);
-
-  const handleSortingChange = useCallback(
-    (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
-      const newSorting =
-        typeof updaterOrValue === "function"
-          ? updaterOrValue(sorting)
-          : updaterOrValue;
-      setSearchParams((prev) => {
-        if (newSorting.length > 0) {
-          const col = newSorting[0];
-          const backendField = SORT_FIELD_MAP[col.id] ?? col.id;
-          prev.set("sortBy", backendField);
-          prev.set("sortDir", col.desc ? "desc" : "asc");
-        } else {
-          prev.delete("sortBy");
-          prev.delete("sortDir");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [sorting, setSearchParams],
-  );
-
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      setSearchParams((prev) => {
-        prev.set("page", String(newPage));
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handlePageSizeChange = useCallback(
-    (newPageSize: number) => {
-      setSearchParams((prev) => {
-        prev.set("pageSize", String(newPageSize));
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
 
   const activeFilters = useMemo(() => {
     const filters: ActiveFilter[] = [];
@@ -442,7 +368,6 @@ export default function CertificatesPage() {
     });
   }
 
-  const selectedIds = Object.keys(rowSelection);
   const selectedCount = selectedIds.length;
 
   function handleBulkArchive() {
