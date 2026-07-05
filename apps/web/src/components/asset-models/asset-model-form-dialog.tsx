@@ -6,15 +6,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ImagePlus, Trash2, X } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "../ui/dialog";
-import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -22,6 +13,7 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
+import { FormDialog } from "../form-dialog";
 import {
   Select,
   SelectContent,
@@ -320,114 +312,86 @@ export function AssetModelFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 gap-0 max-h-[90vh] flex flex-col">
-        <DialogHeader className="px-8 py-6 border-b">
-          <DialogTitle className="text-2xl font-bold">
-            {isEditing ? "Edit Model" : "Add Model"}
-          </DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? "Update the asset model details."
-              : "Create a new asset model."}
-          </DialogDescription>
-        </DialogHeader>
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isEditing ? "Edit Model" : "Add Model"}
+      description={isEditing ? "Update the asset model details." : "Create a new asset model."}
+      form={form}
+      onSubmit={handleFormSubmit}
+      loading={loading}
+      isEditing={isEditing}
+      submitLabel={isEditing ? "Save Changes" : "Add Model"}
+      size="lg"
+      bodyClassName="space-y-6"
+    >
+      <FormField
+        control={form.control}
+        name="assetTypeId"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-semibold">Asset Type *</FormLabel>
+            <Select
+              onValueChange={field.onChange}
+              value={field.value}
+              disabled={isEditing || !!defaultAssetTypeId}
+            >
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {assetTypes.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleFormSubmit)}
-            className="flex flex-col flex-1 overflow-hidden"
-          >
-            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
-              <FormField
-                control={form.control}
-                name="assetTypeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-semibold">Asset Type *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isEditing || !!defaultAssetTypeId}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {assetTypes.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>
-                            {t.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <FormField
+        control={form.control}
+        name="name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-semibold">Model Name *</FormLabel>
+            <FormControl>
+              <Input placeholder="e.g. Latitude 5540" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-semibold">Model Name *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Latitude 5540" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <FormField
+        control={form.control}
+        name="manufacturer"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-semibold">Manufacturer</FormLabel>
+            <FormControl>
+              <Input placeholder="e.g. Dell" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-              <FormField
-                control={form.control}
-                name="manufacturer"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-semibold">Manufacturer</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Dell" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <hr className="border-border" />
 
-              <hr className="border-border" />
-
-              {isEditing && model ? (
-                <ExistingImageSection model={model} />
-              ) : (
-                <ImagePicker
-                  pendingFile={pendingImageFile}
-                  onFileChange={setPendingImageFile}
-                />
-              )}
-            </div>
-
-            <DialogFooter className="px-8 py-6 border-t bg-muted/50 flex justify-end gap-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading} className="font-semibold shadow-lg">
-                {loading
-                  ? "Saving..."
-                  : isEditing
-                    ? "Save Changes"
-                    : "Add Model"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+      {isEditing && model ? (
+        <ExistingImageSection model={model} />
+      ) : (
+        <ImagePicker
+          pendingFile={pendingImageFile}
+          onFileChange={setPendingImageFile}
+        />
+      )}
+    </FormDialog>
   );
 }

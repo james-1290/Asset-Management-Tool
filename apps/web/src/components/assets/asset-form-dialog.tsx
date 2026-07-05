@@ -3,21 +3,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "../ui/dialog";
-import {
-  Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "../ui/form";
+import { FormDialog } from "../form-dialog";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import {
@@ -257,20 +249,20 @@ export function AssetFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl p-0 gap-0 max-h-[90vh] flex flex-col">
-        <DialogHeader className="px-8 py-6 border-b">
-          <DialogTitle className="text-2xl font-bold">
-            {isEditing ? "Edit Asset" : "Add Asset"}
-          </DialogTitle>
-          <DialogDescription>
-            Fill in the details to register a new asset.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-1 overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-8">
-
+    <>
+      <FormDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        title={isEditing ? "Edit Asset" : "Add Asset"}
+        description="Fill in the details to register a new asset."
+        form={form}
+        onSubmit={handleFormSubmit}
+        loading={loading}
+        isEditing={isEditing}
+        submitLabel={isEditing ? "Save Changes" : "Add Asset"}
+        disableSubmitWhenPristine
+        size="4xl"
+      >
               {/* Section 1 - General Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">General Information</h3>
@@ -599,24 +591,7 @@ export function AssetFormDialog({
                 )}
               />
 
-            </div>
-
-            <DialogFooter className="px-8 py-6 border-t bg-muted/50 flex justify-end gap-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading || (isEditing && !form.formState.isDirty)} className="font-semibold shadow-lg">
-                {loading ? "Saving..." : isEditing ? "Save Changes" : "Add Asset"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
+      </FormDialog>
 
       <AssetModelFormDialog
         open={showCreateModel}
@@ -627,6 +602,6 @@ export function AssetFormDialog({
           form.setValue("assetModelId", created.id, { shouldDirty: true });
         }}
       />
-    </Dialog>
+    </>
   );
 }

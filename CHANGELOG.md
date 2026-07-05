@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-05 17:40 — Shared FormDialog for panel form dialogs (second-sweep tier 3)
+
+- Added a shared `components/form-dialog.tsx` (`FormDialog`) that owns the "panel" create/edit dialog chrome (full-height dialog, bordered header + description, scrollable body, styled Cancel/submit footer). Migrated the six dialogs that used that chrome onto it: certificate, application, asset, asset-template, asset-model, and the generic type-form-dialog. Each keeps its own react-hook-form instance, schema, reset-on-open effect and fields; only the layout is shared. ~180 lines of duplicated chrome removed.
+- Verified end-to-end with Playwright: added `e2e/form-dialogs.spec.ts` (create dialogs on certificates/applications/asset-types/asset-templates render through the shell and close), and the pre-existing asset + asset-model e2e specs still pass. Build + unit tests + lint green.
+- Left as-is (documented): the two simple dialogs (location, person) use a smaller, different chrome and aren't part of the panel family; `user-form-dialog` is a genuine outlier (separate create/edit dialogs). Forcing them onto the panel shell would change their appearance without real dedup.
+
 ## 2026-07-05 17:05 — Shared useListPage hook for list pages (second-sweep tier 3)
 
 - Extracted the identical URL-param list plumbing shared by the assets/certificates/applications/people pages into a `useListPage` hook: server-side page/pageSize/search/sort state kept in the query string, the debounced-search + URL-sync effects, the `sorting` memo, and the sort/page/pageSize/filter handlers + row-selection state. Each page now calls the hook instead of re-declaring ~50 lines of the same boilerplate. Verbatim extraction — behaviour unchanged; build + tests + lint green.
