@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toLocalISODate } from "../../lib/format";
 import {
   Dialog,
   DialogContent,
@@ -29,13 +30,13 @@ export function DeactivateApplicationDialog({
 }: DeactivateApplicationDialogProps) {
   const [notes, setNotes] = useState("");
   const [deactivatedDate, setDeactivatedDate] = useState(
-    () => new Date().toISOString().split("T")[0],
+    () => toLocalISODate(),
   );
 
   function handleOpenChange(next: boolean) {
     if (!next) {
       setNotes("");
-      setDeactivatedDate(new Date().toISOString().split("T")[0]);
+      setDeactivatedDate(toLocalISODate());
     }
     onOpenChange(next);
   }

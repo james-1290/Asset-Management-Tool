@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CalendarDays } from "lucide-react";
+import { toLocalISODate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -19,13 +20,14 @@ interface Preset {
 }
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalISODate();
 }
 
 function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr);
+  const [y, m, dd] = dateStr.split("-").map(Number);
+  const d = new Date(y, m - 1, dd);
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return toLocalISODate(d);
 }
 
 function buildPresets(): Preset[] {

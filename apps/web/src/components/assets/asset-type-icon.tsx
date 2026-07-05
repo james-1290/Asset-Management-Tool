@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Monitor,
   Laptop,
@@ -59,15 +60,21 @@ interface AssetTypeIconProps {
 
 export function AssetTypeIcon({ typeName, className, assetModelId, assetModelImageUrl }: AssetTypeIconProps) {
   const { src } = useAssetModelImage(assetModelId, assetModelImageUrl);
+  const [imgError, setImgError] = useState(false);
   const match = matchType(typeName);
   const Icon = match?.icon ?? Monitor;
   const bg = match?.bg ?? "bg-slate-50 dark:bg-slate-800";
   const fg = match?.fg ?? "text-slate-600 dark:text-slate-400";
 
-  if (src) {
+  if (src && !imgError) {
     return (
       <div className={cn("h-10 w-10 shrink-0 overflow-hidden rounded-lg", className)}>
-        <img src={src} alt={typeName} className="h-full w-full object-cover" />
+        <img
+          src={src}
+          alt={typeName}
+          className="h-full w-full object-cover"
+          onError={() => setImgError(true)}
+        />
       </div>
     );
   }

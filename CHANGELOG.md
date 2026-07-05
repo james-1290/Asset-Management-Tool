@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-05 23:00 — Frontend polish tail (third-sweep)
+
+- **Report date pickers**: `todayISO`/`addDays` used `toISOString()` (UTC), so the Next-30/90 presets and default ranges could be a day off in positive-offset timezones. Added a shared `toLocalISODate` helper and switched the date-range-picker + expiries/licence-summary reports to it.
+- **Deactivate & renew dialogs**: default dates (deactivated-on, +1-year renewal, min-date) now use local-calendar dates instead of UTC.
+- **Model image**: `<img>` now has an `onError` fallback to the type icon (a stale/expired blob URL no longer shows a broken image).
+- **Checkout dialog**: removed dead `personName` state that was always undefined.
+
 ## 2026-07-05 22:40 — Backend polish (third-sweep tail)
 
 - **Profile validation**: `UpdateProfileRequest`/`ChangePasswordRequest` gained bean-validation constraints (`@NotBlank`/`@Email`/`@Size`) and the endpoints now use `@Valid` — a malformed email is rejected with 400 (verified) instead of being silently accepted.

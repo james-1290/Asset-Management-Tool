@@ -11,14 +11,20 @@ import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
+import { toLocalISODate } from "../../lib/format";
 
 function defaultNewExpiry(currentExpiry: string | null): string {
-  const base = currentExpiry ? new Date(currentExpiry) : new Date();
-  const d = isNaN(base.getTime()) ? new Date() : base;
-  const year = d.getFullYear() + 1;
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  // Parse a date-only string as a local calendar date (not UTC) so the +1-year
+  // suggestion doesn't shift a day in non-UTC timezones.
+  let d: Date;
+  if (currentExpiry && /^\d{4}-\d{2}-\d{2}$/.test(currentExpiry)) {
+    const [y, m, day] = currentExpiry.split("-").map(Number);
+    d = new Date(y, m - 1, day);
+  } else {
+    d = new Date();
+  }
+  d.setFullYear(d.getFullYear() + 1);
+  return toLocalISODate(d);
 }
 
 interface RenewDialogProps {
@@ -43,7 +49,7 @@ export function RenewDialog({
   const [newDate, setNewDate] = useState("");
   const [notes, setNotes] = useState("");
   const [wasOpen, setWasOpen] = useState(false);
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = toLocalISODate();
 
   // Reset the form each time the dialog transitions to open. This is React's
   // "adjust state during render when a prop changes" pattern — no effect needed.
