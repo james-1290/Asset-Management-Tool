@@ -3,9 +3,9 @@
 // The org-level `dateFormat` and `currency` settings (System Settings tab) are
 // read once at app start into this module-level store, so that plain functions
 // (TanStack Table cell renderers, report generators, etc.) can format
-// consistently without needing React context. Reactive consumers can use the
-// `useFormatters()` hook, and changing the settings invalidates all queries so
-// the whole app re-renders with the new format.
+// consistently without needing React context. Changing the settings calls
+// `setFormatSettings` and invalidates all queries, so the whole app re-renders
+// with the new format.
 //
 // Date-only values (purchaseDate, expiryDate, ...) arrive from the API as bare
 // "YYYY-MM-DD" strings; those are parsed as *local* calendar dates so they never

@@ -38,9 +38,7 @@ No page-specific theme logic. All components inherit theme from CSS variables.
 
 ## Data Tables
 
-Every list page must use the shared `DataTable` component (`src/components/data-table.tsx`), built on TanStack Table.
-
-Future features (not yet implemented):
+Every list page must use the shared `DataTable` component (`src/components/data-table.tsx`), built on TanStack Table. It provides:
 - Server-side pagination, sorting, filtering
 - Column show/hide toggle
 - Saved views per user

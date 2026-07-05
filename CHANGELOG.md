@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-05 15:35 — Config, deps & docs cleanup (second-sweep tier 1)
+
+- Removed the unused `next-themes` dependency (no imports anywhere) and a stray empty `apps/api-kt/apps/` directory.
+- Fixed doc drift: CLAUDE.md coding standard (`TS + C#` → `TS + Kotlin`); `docs/ux-guidelines.md` DataTable "future features (not yet implemented)" list (all five are implemented — reworded to "it provides"); `lib/format.ts` header comment referencing a non-existent `useFormatters()` hook (now describes the real `setFormatSettings` mechanism). README Swagger URL verified correct — no change.
+
 ## 2026-07-05 15:20 — Frontend dead-code cleanup (second-sweep tier 1)
 
 - Removed a fully-dead dashboard data chain (4 unused hooks, 4 API client methods, 4 types) and two unreachable dashboard widget ids (`recentlyAdded`, `unassignedAssets`) that weren't toggleable or default-visible.

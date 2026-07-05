@@ -213,7 +213,7 @@ Claude should follow an explore → plan → implement → verify loop.
 
 - Prefer readability over cleverness.
 - Small PR-style commits; don’t mix unrelated changes.
-- Strong typing everywhere (TS + C#).
+- Strong typing everywhere (TS + Kotlin).
 - Add tests for core logic (especially permissions, audit logging, custom fields, expiry calculations).
 
 ---
