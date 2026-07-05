@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-07-05 20:30 — Frontend correctness batch (third-sweep)
+
+- **Double-submit**: the create/edit `FormDialog` `loading` prop omitted `checkDuplicatesMutation.isPending`, leaving the submit button enabled during the duplicate-check round-trip → a second click created a duplicate. Added it on certificates/applications/people/locations.
+- **`getAll` truncation**: entity `getAll` (dropdowns/filters) requested `pageSize:1000` but the backend caps at 100, silently dropping items beyond 100. Now pages through the full set (both `createEntityApi` and `asset-models`).
+- **Value-by-location chart**: Y-axis always rendered "k" units, so values < 1000 all showed "£0k". Now only abbreviates at ≥ 1000.
+- **Custom-field editor**: `sortOrder` for a new field used `fields.length`, colliding after a mid-list removal. Now derives from `max(existing)+1`.
+- **Application detail**: seat-usage bar was hidden when `usedSeats === 0` (truthy check); now shows a 0% bar.
+- **Settings**: a non-admin reaching an admin-only tab by URL now falls back to Profile instead of a blank body.
+- **Notifications**: clamp the page after mutations reduce the count so the user isn't stranded on an empty page.
+
 ## 2026-07-05 20:10 — Backend correctness batch (third-sweep)
 
 - **getHistory `limit<=0` → 500**: `PageRequest.of(0, limit)` threw on non-positive limits (Certificates/Applications/People). Now `coerceIn(1, 500)`. Verified: `?limit=0`/`-5` return 200.

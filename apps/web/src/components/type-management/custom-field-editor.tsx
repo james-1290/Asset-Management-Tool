@@ -41,13 +41,17 @@ export function CustomFieldEditor() {
   });
 
   function handleAdd() {
+    // Derive from the current max so removing a middle field then adding one
+    // can't produce a duplicate sortOrder (fields.length would collide).
+    const existing = form.getValues("customFields") ?? [];
+    const nextSort = existing.reduce((max, f) => Math.max(max, f.sortOrder ?? 0), -1) + 1;
     append({
       id: "",
       name: "",
       fieldType: "Text",
       options: "",
       isRequired: false,
-      sortOrder: fields.length,
+      sortOrder: nextSort,
     });
   }
 

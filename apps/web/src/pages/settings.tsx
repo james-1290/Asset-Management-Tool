@@ -24,8 +24,11 @@ export default function SettingsPage() {
   const { isAdmin } = useAuth();
 
   const rawTab = searchParams.get("tab");
+  const resolvedTab = rawTab && TABS.some((t) => t.id === rawTab) ? (rawTab as TabId) : "profile";
+  // An admin-only tab reached by URL as a non-admin falls back to profile
+  // instead of rendering a blank body under an inactive tab strip.
   const tab: TabId =
-    rawTab && TABS.some((t) => t.id === rawTab) ? (rawTab as TabId) : "profile";
+    TABS.find((t) => t.id === resolvedTab)?.adminOnly && !isAdmin ? "profile" : resolvedTab;
 
   function handleTabChange(value: string) {
     setSearchParams({ tab: value }, { replace: true });

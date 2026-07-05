@@ -560,7 +560,7 @@ export default function CertificatesPage() {
         certificateTypes={certificateTypes ?? []}
         locations={locations ?? []}
         onSubmit={handleFormSubmit}
-        loading={createMutation.isPending || updateMutation.isPending}
+        loading={createMutation.isPending || updateMutation.isPending || checkDuplicatesMutation.isPending}
       />
 
       <ConfirmDialog

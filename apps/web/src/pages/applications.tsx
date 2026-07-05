@@ -502,7 +502,7 @@ export default function ApplicationsPage() {
         applicationTypes={applicationTypes ?? []}
         locations={locations ?? []}
         onSubmit={handleFormSubmit}
-        loading={createMutation.isPending || updateMutation.isPending}
+        loading={createMutation.isPending || updateMutation.isPending || checkDuplicatesMutation.isPending}
       />
 
       <ConfirmDialog

@@ -221,7 +221,7 @@ export default function ApplicationDetailPage() {
 
   // Seat usage bar
   const seatPercent =
-    application.maxSeats && application.usedSeats
+    application.maxSeats != null && application.maxSeats > 0 && application.usedSeats != null
       ? Math.min(100, Math.round((application.usedSeats / application.maxSeats) * 100))
       : null;
 
