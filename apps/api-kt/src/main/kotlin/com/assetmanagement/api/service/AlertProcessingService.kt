@@ -17,7 +17,6 @@ import org.springframework.web.util.HtmlUtils
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 import java.util.*
 
 data class ExpiringItem(
@@ -237,7 +236,6 @@ class AlertProcessingService(
     }
 
     fun processPersonalAlerts() {
-        val now = Instant.now()
         val today = today()
         val activeRules = userAlertRuleRepository.findByIsActiveTrue()
         if (activeRules.isEmpty()) {

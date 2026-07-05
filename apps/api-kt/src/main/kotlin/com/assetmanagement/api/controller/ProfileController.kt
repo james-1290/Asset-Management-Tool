@@ -63,7 +63,7 @@ class ProfileController(
             ?: return ResponseEntity.status(401).build()
         if (!user.isActive) return ResponseEntity.status(401).build()
 
-        if (user.authProvider != null && user.authProvider != "LOCAL")
+        if (user.authProvider != "LOCAL")
             return ResponseEntity.badRequest().body(mapOf("error" to "Password change is not available for SSO users."))
 
         if (!passwordEncoder.matches(request.currentPassword, user.passwordHash))

@@ -122,7 +122,7 @@ class LocationsController(
     @GetMapping("/{id}/assets")
     fun getAssets(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!locationRepository.existsById(id)) return ResponseEntity.notFound().build()
-        val spec = Specification<com.assetmanagement.api.model.Asset> { root, query, cb ->
+        val spec = Specification<com.assetmanagement.api.model.Asset> { root, _, cb ->
             cb.and(
                 cb.equal(root.get<UUID>("locationId"), id),
                 cb.equal(root.get<Boolean>("isArchived"), false)

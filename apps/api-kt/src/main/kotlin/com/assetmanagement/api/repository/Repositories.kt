@@ -58,8 +58,6 @@ interface AssetTypeRepository : ArchivableTypeRepository<AssetType>
 
 @Repository
 interface AssetModelRepository : JpaRepository<AssetModel, UUID>, JpaSpecificationExecutor<AssetModel> {
-    fun findByAssetTypeIdAndIsArchivedFalse(assetTypeId: UUID): List<AssetModel>
-    fun findByIsArchivedFalse(): List<AssetModel>
     fun countByAssetTypeIdAndIsArchivedFalse(assetTypeId: UUID): Long
 }
 

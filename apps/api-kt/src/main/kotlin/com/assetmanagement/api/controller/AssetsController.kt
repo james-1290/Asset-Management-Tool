@@ -27,7 +27,6 @@ import org.springframework.data.jpa.domain.Specification
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.math.BigDecimal
-import java.math.RoundingMode
 import java.net.URI
 import java.time.Instant
 import java.time.ZoneOffset
@@ -400,7 +399,7 @@ class AssetsController(
         // Clean up old custom field values if asset type is changing
         val assetTypeChanging = request.assetTypeId != asset.assetTypeId
         if (assetTypeChanging) {
-            customFieldValueRepository.deleteByEntityId(asset.id!!)
+            customFieldValueRepository.deleteByEntityId(asset.id)
         }
 
         // Apply changes

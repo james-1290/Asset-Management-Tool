@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-05 15:05 — Backend dead-code cleanup (second-sweep tier 1)
+
+- Removed compiler-flagged dead code: 5 unused vars (`now`/`existingCfvs`), 5 unused imports, an unnecessary `!!`, two always-true `authProvider != null` checks (the column is non-null), an unused Specification `query` param, and two unused `AssetModelRepository` query methods. No behaviour change; full test suite green.
+
 ## 2026-07-05 14:35 — Fix: certificate export & renew 500 (LocalDate formatted with a time pattern)
 
 - `CertificatesController` was formatting its now-`LocalDate` `issuedDate`/`expiryDate`/`newExpiryDate` with the `yyyy-MM-dd HH:mm:ss` timestamp formatter, throwing `UnsupportedTemporalTypeException: HourOfDay`. This broke the **certificate CSV export** (emitted a header-only, truncated file) and the **certificate renew** endpoint (500). A regression from the date-only migration; Assets/Applications were unaffected (they use a date-only formatter). Fixed by adding a `dateOnlyFormat` for those fields.

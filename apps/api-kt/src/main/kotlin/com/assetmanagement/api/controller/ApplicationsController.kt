@@ -10,7 +10,6 @@ import com.assetmanagement.api.util.today
 import com.assetmanagement.api.util.computeStatus
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
-import com.assetmanagement.api.model.enums.ApplicationHistoryEventType
 import com.assetmanagement.api.model.enums.ApplicationStatus
 import com.assetmanagement.api.model.enums.LicenceType
 import com.assetmanagement.api.repository.*
@@ -276,8 +275,6 @@ class ApplicationsController(
             ?: return ResponseEntity.notFound().build()
 
         versionConflict(request.entityVersion, app.entityVersion)?.let { return it }
-
-        val existingCfvs = loadCustomFieldValues(app.id)
 
         // Validate application type
         val appType = applicationTypeRepository.findById(request.applicationTypeId).orElse(null)
