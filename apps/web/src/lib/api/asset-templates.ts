@@ -11,10 +11,6 @@ export const assetTemplatesApi = {
     return apiClient.get<AssetTemplate[]>("/asset-templates", params as Record<string, string> | undefined);
   },
 
-  getById(id: string): Promise<AssetTemplate> {
-    return apiClient.get<AssetTemplate>(`/asset-templates/${id}`);
-  },
-
   create(data: CreateAssetTemplateRequest): Promise<AssetTemplate> {
     return apiClient.post<AssetTemplate>("/asset-templates", data);
   },

@@ -18,14 +18,6 @@ export function useAssetTemplates(assetTypeId?: string) {
   });
 }
 
-export function useAssetTemplate(id: string) {
-  return useQuery({
-    queryKey: assetTemplateKeys.detail(id),
-    queryFn: () => assetTemplatesApi.getById(id),
-    enabled: !!id,
-  });
-}
-
 export function useCreateAssetTemplate() {
   const queryClient = useQueryClient();
 

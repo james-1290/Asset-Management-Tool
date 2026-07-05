@@ -28,10 +28,6 @@ export const assetModelsApi = {
     return apiClient.get<PagedResponse<AssetModel>>("/asset-models", params as Record<string, string | number | undefined>);
   },
 
-  getById(id: string): Promise<AssetModel> {
-    return apiClient.get<AssetModel>(`/asset-models/${id}`);
-  },
-
   create(data: CreateAssetModelRequest): Promise<AssetModel> {
     return apiClient.post<AssetModel>("/asset-models", data);
   },

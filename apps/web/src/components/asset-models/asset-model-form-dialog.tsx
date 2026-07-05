@@ -52,8 +52,6 @@ interface AssetModelFormDialogProps {
   defaultAssetTypeId?: string;
   /** Called after a model is successfully created or updated */
   onSaved?: (model: AssetModel) => void;
-  /** @deprecated Use onSaved instead. Legacy callback for form submission. */
-  onSubmit?: (values: ModelFormValues) => void;
   loading?: boolean;
 }
 
@@ -246,7 +244,6 @@ export function AssetModelFormDialog({
   model,
   assetTypes,
   onSaved,
-  onSubmit,
   loading: externalLoading,
   defaultAssetTypeId,
 }: AssetModelFormDialogProps) {
@@ -284,12 +281,6 @@ export function AssetModelFormDialog({
   const loading = externalLoading || createMutation.isPending || updateMutation.isPending;
 
   async function handleFormSubmit(values: ModelFormValues) {
-    // Legacy path: if parent provided onSubmit, delegate to it
-    if (onSubmit) {
-      onSubmit(values);
-      return;
-    }
-
     try {
       if (isEditing && model) {
         const updated = await updateMutation.mutateAsync({

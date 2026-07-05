@@ -11,17 +11,12 @@ const dashboardKeys = {
   checkedOut: ["dashboard", "checked-out"] as const,
   recentActivity: (limit: number) =>
     ["dashboard", "recent-activity", limit] as const,
-  recentlyAdded: (limit: number) =>
-    ["dashboard", "recently-added", limit] as const,
   assetsByAge: ["dashboard", "assets-by-age"] as const,
-  unassigned: ["dashboard", "unassigned"] as const,
   valueByLocation: ["dashboard", "value-by-location"] as const,
   certificateExpiries: (days: number) =>
     ["dashboard", "certificate-expiries", days] as const,
-  certificateSummary: ["dashboard", "certificate-summary"] as const,
   licenceExpiries: (days: number) =>
     ["dashboard", "licence-expiries", days] as const,
-  applicationSummary: ["dashboard", "application-summary"] as const,
   inventorySnapshot: ["dashboard", "inventory-snapshot"] as const,
 };
 
@@ -94,31 +89,10 @@ export function useRecentActivity(
   });
 }
 
-export function useRecentlyAdded(
-  days: number = 7,
-  enabled: boolean = true
-) {
-  return useQuery({
-    queryKey: dashboardKeys.recentlyAdded(days),
-    queryFn: () => dashboardApi.getRecentlyAdded(days),
-    staleTime: 60_000,
-    enabled,
-  });
-}
-
 export function useAssetsByAge(enabled: boolean = true) {
   return useQuery({
     queryKey: dashboardKeys.assetsByAge,
     queryFn: dashboardApi.getAssetsByAge,
-    staleTime: 60_000,
-    enabled,
-  });
-}
-
-export function useUnassignedAssets(enabled: boolean = true) {
-  return useQuery({
-    queryKey: dashboardKeys.unassigned,
-    queryFn: dashboardApi.getUnassigned,
     staleTime: 60_000,
     enabled,
   });
@@ -145,15 +119,6 @@ export function useCertificateExpiries(
   });
 }
 
-export function useCertificateSummary(enabled: boolean = true) {
-  return useQuery({
-    queryKey: dashboardKeys.certificateSummary,
-    queryFn: dashboardApi.getCertificateSummary,
-    staleTime: 60_000,
-    enabled,
-  });
-}
-
 export function useLicenceExpiries(
   days: number = 30,
   enabled: boolean = true
@@ -161,15 +126,6 @@ export function useLicenceExpiries(
   return useQuery({
     queryKey: dashboardKeys.licenceExpiries(days),
     queryFn: () => dashboardApi.getLicenceExpiries(days),
-    staleTime: 60_000,
-    enabled,
-  });
-}
-
-export function useApplicationSummary(enabled: boolean = true) {
-  return useQuery({
-    queryKey: dashboardKeys.applicationSummary,
-    queryFn: dashboardApi.getApplicationSummary,
     staleTime: 60_000,
     enabled,
   });

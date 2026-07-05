@@ -29,22 +29,9 @@ export interface CheckedOutAsset {
   updatedAt: string;
 }
 
-export interface RecentlyAddedAsset {
-  id: string;
-  name: string;
-  assetTypeName: string;
-  createdAt: string;
-}
-
 export interface AssetsByAgeBucket {
   bucket: string;
   count: number;
-}
-
-export interface UnassignedAsset {
-  id: string;
-  name: string;
-  assetTypeName: string;
 }
 
 export interface ValueByLocation {
@@ -61,14 +48,6 @@ export interface CertificateExpiryItem {
   status: string;
 }
 
-export interface CertificateSummary {
-  totalCertificates: number;
-  active: number;
-  expired: number;
-  pendingRenewal: number;
-  revoked: number;
-}
-
 export interface LicenceExpiryItem {
   id: string;
   name: string;
@@ -76,14 +55,6 @@ export interface LicenceExpiryItem {
   expiryDate: string;
   daysUntilExpiry: number;
   status: string;
-}
-
-export interface ApplicationSummary {
-  totalApplications: number;
-  active: number;
-  expired: number;
-  pendingRenewal: number;
-  suspended: number;
 }
 
 export interface InventorySnapshotItem {
