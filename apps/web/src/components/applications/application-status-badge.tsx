@@ -1,7 +1,7 @@
-import { Badge } from "../ui/badge";
+import { StatusBadge, type StatusStyle } from "../ui/status-badge";
 import type { ApplicationStatus } from "../../types/application";
 
-const statusConfig: Record<ApplicationStatus, { label: string; className: string }> = {
+const statusConfig: Record<ApplicationStatus, StatusStyle> = {
   Active: {
     label: "Active",
     className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
@@ -24,15 +24,6 @@ const statusConfig: Record<ApplicationStatus, { label: string; className: string
   },
 };
 
-interface ApplicationStatusBadgeProps {
-  status: ApplicationStatus;
-}
-
-export function ApplicationStatusBadge({ status }: ApplicationStatusBadgeProps) {
-  const config = statusConfig[status] ?? statusConfig.Active;
-  return (
-    <Badge variant="outline" className={config.className}>
-      {config.label}
-    </Badge>
-  );
+export function ApplicationStatusBadge({ status }: { status: ApplicationStatus }) {
+  return <StatusBadge status={status} config={statusConfig} fallback="Active" />;
 }

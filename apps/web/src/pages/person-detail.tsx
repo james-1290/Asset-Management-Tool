@@ -33,12 +33,7 @@ import {
 import { useLocations } from "../hooks/use-locations";
 import type { PersonFormValues } from "../lib/schemas/person";
 import type { AssetStatus } from "../types/asset";
-import { formatDate as fmtDate } from "../lib/format";
-
-function formatDate(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  return fmtDate(iso);
-}
+import { formatDateOrNull as formatDate } from "../lib/format";
 
 function StatusBadge({ status }: { status: string }) {
   const variant = status === "Active" ? "default"

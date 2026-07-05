@@ -35,35 +35,15 @@ import { AttachmentsSection } from "../components/shared/attachments-section";
 import { RenewDialog } from "../components/shared/renew-dialog";
 import { ApplicationSeatsSection } from "../components/applications/application-seats-section";
 import type { ApplicationFormValues } from "../lib/schemas/application";
-import { formatDate as fmtDate, formatCurrency as fmtCurrency } from "../lib/format";
-
-function formatDate(iso: string | null): string | null {
-  if (!iso) return null;
-  return fmtDate(iso);
-}
+import {
+  formatDateOrNull as formatDate,
+  formatCustomFieldValue,
+  formatCurrency as fmtCurrency,
+} from "../lib/format";
 
 function formatCurrency(value: number | null): string | null {
   if (value == null) return null;
   return fmtCurrency(value, { minimumFractionDigits: 2 });
-}
-
-function formatCustomFieldValue(value: string | null, fieldType: string): string | null {
-  if (!value) return null;
-  switch (fieldType) {
-    case "Boolean":
-      return value === "true" ? "Yes" : "No";
-    case "Date":
-      return fmtDate(value);
-    case "MultiSelect": {
-      try {
-        const arr = JSON.parse(value);
-        if (Array.isArray(arr)) return arr.join(", ");
-      } catch { /* fall through */ }
-      return value;
-    }
-    default:
-      return value;
-  }
 }
 
 function isExpiringSoon(iso: string | null): boolean {

@@ -31,31 +31,7 @@ import { useLocations } from "../hooks/use-locations";
 import { AttachmentsSection } from "../components/shared/attachments-section";
 import { RenewDialog } from "../components/shared/renew-dialog";
 import type { CertificateFormValues } from "../lib/schemas/certificate";
-import { formatDate as fmtDate } from "../lib/format";
-
-function formatDate(iso: string | null): string | null {
-  if (!iso) return null;
-  return fmtDate(iso);
-}
-
-function formatCustomFieldValue(value: string | null, fieldType: string): string | null {
-  if (!value) return null;
-  switch (fieldType) {
-    case "Boolean":
-      return value === "true" ? "Yes" : "No";
-    case "Date":
-      return fmtDate(value);
-    case "MultiSelect": {
-      try {
-        const arr = JSON.parse(value);
-        if (Array.isArray(arr)) return arr.join(", ");
-      } catch { /* fall through */ }
-      return value;
-    }
-    default:
-      return value;
-  }
-}
+import { formatDateOrNull as formatDate, formatCustomFieldValue } from "../lib/format";
 
 function isExpiringSoon(iso: string | null): boolean {
   if (!iso) return false;

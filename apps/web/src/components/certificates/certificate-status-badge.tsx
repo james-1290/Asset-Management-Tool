@@ -1,7 +1,7 @@
-import { Badge } from "../ui/badge";
+import { StatusBadge, type StatusStyle } from "../ui/status-badge";
 import type { CertificateStatus } from "../../types/certificate";
 
-const statusConfig: Record<CertificateStatus, { label: string; className: string }> = {
+const statusConfig: Record<CertificateStatus, StatusStyle> = {
   Active: {
     label: "Active",
     className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
@@ -20,15 +20,6 @@ const statusConfig: Record<CertificateStatus, { label: string; className: string
   },
 };
 
-interface CertificateStatusBadgeProps {
-  status: CertificateStatus;
-}
-
-export function CertificateStatusBadge({ status }: CertificateStatusBadgeProps) {
-  const config = statusConfig[status] ?? statusConfig.Active;
-  return (
-    <Badge variant="outline" className={config.className}>
-      {config.label}
-    </Badge>
-  );
+export function CertificateStatusBadge({ status }: { status: CertificateStatus }) {
+  return <StatusBadge status={status} config={statusConfig} fallback="Active" />;
 }

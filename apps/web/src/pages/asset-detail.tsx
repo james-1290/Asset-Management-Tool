@@ -46,31 +46,11 @@ import { AttachmentsSection } from "../components/shared/attachments-section";
 import { AssetTypeIcon } from "../components/assets/asset-type-icon";
 import { AvatarPlaceholder } from "../components/avatar-placeholder";
 import type { AssetFormValues } from "../lib/schemas/asset";
-import { formatDate as fmtDate, formatCurrency as fmtCurrency } from "../lib/format";
-
-function formatDate(iso: string | null): string | null {
-  if (!iso) return null;
-  return fmtDate(iso);
-}
-
-function formatCustomFieldValue(value: string | null, fieldType: string): string | null {
-  if (!value) return null;
-  switch (fieldType) {
-    case "Boolean":
-      return value === "true" ? "Yes" : "No";
-    case "Date":
-      return fmtDate(value);
-    case "MultiSelect": {
-      try {
-        const arr = JSON.parse(value);
-        if (Array.isArray(arr)) return arr.join(", ");
-      } catch { /* fall through */ }
-      return value;
-    }
-    default:
-      return value;
-  }
-}
+import {
+  formatDateOrNull as formatDate,
+  formatCustomFieldValue,
+  formatCurrency as fmtCurrency,
+} from "../lib/format";
 
 function formatCurrency(value: number | null): string | null {
   if (value == null) return null;

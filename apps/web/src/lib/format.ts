@@ -63,6 +63,22 @@ export function formatDate(
   }
 }
 
+/** Like `formatDate` but returns `null` (not "") for empty/invalid input — for
+ *  detail views that render a `null` placeholder. */
+export function formatDateOrNull(
+  value: string | number | Date | null | undefined,
+): string | null {
+  return toDate(value) ? formatDate(value) : null;
+}
+
+/** Like `formatDate` but returns an em-dash for empty/invalid input — for table
+ *  cells that always show a value. */
+export function formatDateOrDash(
+  value: string | number | Date | null | undefined,
+): string {
+  return formatDate(value, "—");
+}
+
 /** Format a timestamp as configured date + 24h time (e.g. "04/07/2026, 14:30"). */
 export function formatDateTime(
   value: string | number | Date | null | undefined,
@@ -120,4 +136,33 @@ export function formatCompactCurrency(value: number): string {
   if (value >= 1_000_000) return `${sym}${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 1_000) return `${sym}${(value / 1_000).toFixed(0)}K`;
   return formatCurrency(value, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+/**
+ * Render a custom-field value for display according to its field type
+ * (Boolean → Yes/No, Date → configured format, MultiSelect → comma-joined).
+ * Returns `null` for empty input; callers add their own placeholder (`?? "—"`).
+ */
+export function formatCustomFieldValue(
+  value: string | null | undefined,
+  fieldType: string,
+): string | null {
+  if (!value) return null;
+  switch (fieldType) {
+    case "Boolean":
+      return value === "true" ? "Yes" : "No";
+    case "Date":
+      return formatDate(value);
+    case "MultiSelect": {
+      try {
+        const arr = JSON.parse(value);
+        if (Array.isArray(arr)) return arr.join(", ");
+      } catch {
+        /* not JSON — fall through to raw value */
+      }
+      return value;
+    }
+    default:
+      return value;
+  }
 }
