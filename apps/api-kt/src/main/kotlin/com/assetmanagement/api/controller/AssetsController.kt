@@ -412,7 +412,7 @@ class AssetsController(
         asset.purchaseDate = request.purchaseDate
         asset.purchaseCost = request.purchaseCost
         asset.warrantyExpiryDate = request.warrantyExpiryDate
-        asset.depreciationMonths = request.depreciationMonths ?: asset.depreciationMonths
+        asset.depreciationMonths = request.depreciationMonths
         asset.notes = request.notes
         if (newStatus != null) asset.status = newStatus
         asset.updatedAt = Instant.now()
@@ -854,6 +854,13 @@ class AssetsController(
         val newStatus = try { AssetStatus.valueOf(request.status) } catch (_: Exception) {
             return ResponseEntity.badRequest().body(mapOf("error" to "Invalid status: ${request.status}"))
         }
+        // Retired/Sold/Archived require their dedicated flows (dates, sold price,
+        // assignment cleanup); bulk-status can't set those consistently.
+        if (newStatus in setOf(AssetStatus.Retired, AssetStatus.Sold, AssetStatus.Archived)) {
+            return ResponseEntity.badRequest().body(
+                mapOf("error" to "Use the retire, sell, or archive action to move assets to ${newStatus.name}")
+            )
+        }
 
         val entities = assetRepository.findAllById(request.ids)
         val entityMap = entities.associateBy { it.id }
@@ -876,6 +883,8 @@ class AssetsController(
 
             val oldStatus = asset.status
             asset.status = newStatus
+            // Available means unassigned — don't leave a dangling assignee.
+            if (newStatus == AssetStatus.Available) asset.assignedPersonId = null
             asset.updatedAt = Instant.now()
             toSave.add(asset)
             auditData.add(Triple(asset, oldStatus, newStatus))

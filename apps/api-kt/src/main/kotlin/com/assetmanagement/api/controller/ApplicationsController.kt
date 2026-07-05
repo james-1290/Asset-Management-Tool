@@ -271,7 +271,7 @@ class ApplicationsController(
 
     @PutMapping("/{id}")
     @Transactional
-    fun update(@PathVariable id: UUID, @RequestBody request: UpdateApplicationRequest): ResponseEntity<Any> {
+    fun update(@PathVariable id: UUID, @Valid @RequestBody request: UpdateApplicationRequest): ResponseEntity<Any> {
         val app = applicationRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
 
@@ -440,7 +440,7 @@ class ApplicationsController(
     ): ResponseEntity<Any> {
         if (!applicationRepository.existsById(id)) return ResponseEntity.notFound().build()
 
-        val pageable = PageRequest.of(0, limit ?: 50)
+        val pageable = PageRequest.of(0, (limit ?: 50).coerceIn(1, 500))
         val history = applicationHistoryRepository
             .findByApplicationIdOrderByTimestampDesc(id, pageable)
             .map { h ->
@@ -713,7 +713,8 @@ class ApplicationsController(
 
         for (appId in request.ids) {
             val app = entityMap[appId]
-            if (app == null || app.isArchived || app.personId != null) {
+            if (app == null || app.isArchived || app.personId != null ||
+                seatAssignmentRepository.countByApplicationId(app.id) > 0) {
                 failed++
                 continue
             }
@@ -800,6 +801,11 @@ class ApplicationsController(
         if (app.personId != null)
             return ResponseEntity.badRequest().body(
                 mapOf("error" to "Cannot delete an application that is assigned to someone. Unassign them first.")
+            )
+
+        if (seatAssignmentRepository.countByApplicationId(app.id) > 0)
+            return ResponseEntity.badRequest().body(
+                mapOf("error" to "Cannot delete an application with active licence seats. Release all seats first.")
             )
 
         app.isArchived = true

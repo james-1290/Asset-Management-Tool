@@ -95,6 +95,24 @@ class UsersController(
         if (userRepository.findByEmail(request.email)?.let { it.id != id } == true)
             return ResponseEntity.status(409).body(mapOf("error" to "Email is already in use."))
 
+        // Guard against locking the whole org out of admin: the last active Admin
+        // can't be deactivated or demoted.
+        val adminRole = roleRepository.findByName("Admin")
+        if (adminRole != null) {
+            val targetIsActiveAdmin = user.isActive &&
+                userRoleRepository.findByUserId(user.id).any { it.roleId == adminRole.id }
+            val willRemainAdmin = request.isActive && request.role == "Admin"
+            if (targetIsActiveAdmin && !willRemainAdmin) {
+                val activeAdminCount = userRepository.findByIsActiveTrue().count { u ->
+                    userRoleRepository.findByUserId(u.id).any { it.roleId == adminRole.id }
+                }
+                if (activeAdminCount <= 1)
+                    return ResponseEntity.badRequest().body(
+                        mapOf("error" to "Cannot deactivate or change the role of the last active administrator.")
+                    )
+            }
+        }
+
         val changes = mutableListOf<AuditChange>()
         if (user.displayName != request.displayName) changes.add(AuditChange("DisplayName", user.displayName, request.displayName))
         if (user.email != request.email) changes.add(AuditChange("Email", user.email, request.email))
