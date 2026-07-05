@@ -35,7 +35,7 @@ source file). Items marked `[~]` are being worked this session.
 - [~] Alert-run: processAlerts is now @Transactional so history+notification writes are atomic (PR #138). Full crash-idempotency (claim-before-send, so an email sent then rolled back can't re-send) is a deeper design change, still open.
 
 ### C. Duplication to refactor (highest leverage)
-- [ ] Extract ExpiryStatusService (status/expiry logic duplicated in 4+ places, can drift)
+- [x] Status/expiry logic dedup (was "Extract ExpiryStatusService") — in-memory `computeStatus` already shared; the query-side counterpart was duplicated in cert/app `buildSpec` and is now the shared `computedStatusPredicates` in `util/StatusComputation.kt` (PR #166). The Dashboard/Reports aggregate differences are intentional (different metrics), not drift.
 - [x] DepreciationCalculator extracted and used in all 4 sites (asset DTO, asset CSV export, depreciation report, dashboard book-value) — the report no longer diverges (was scale-4, now consistent scale-2) (PR #146)
 - [x] Generic archivable-CRUD base + CustomFieldService (3 Type controllers ~95% identical; custom-field upsert reimplemented 4×) — ArchivableTypeCrud + CustomFieldDefinitionService (PR #153) and CustomFieldValueService unifying the 4× value upsert (PR #154)
 - [x] Shared HistoryTimeline + HistoryDialog: the 4 near-identical timelines and 4 dialogs now render through one shared component each (per-entity event config passed in), ~500 lines of duplication removed (PR #147)
@@ -66,6 +66,28 @@ source file). Items marked `[~]` are being worked this session.
 - [ ] Feature 3 (deferred): Self-service account & session mgmt (forgot-password, logout/revoke, token refresh)
 - [ ] Feature 4 (deferred): Barcode/QR asset labels + mobile scan check-in/out
 - [ ] Feature 5 (deferred): Maintenance & service scheduling (service intervals, next-service-due alerts via existing engine)
+
+## Second sweep — cleanup & optimization (2026-07-05) ✅ COMPLETE
+
+A second whole-codebase pass (4 parallel reviewers + compiler warnings) after the review backlog above, to catch stale/dead code, unoptimized code, and best-practice gaps. One real bug found + fixed first (cert export/renew 500 from a LocalDate formatted with a time pattern — PR #160, + regression test + singleton Testcontainer). Then 10 focused PRs across three tiers, each branch→CI-green→merge:
+
+### Tier 1 — dead code & drift
+- [x] Backend dead code: 5 unused vars, 5 unused imports, unnecessary `!!`, always-true `authProvider` checks, 2 unused repo methods (PR #161)
+- [x] Frontend dead code: dead dashboard hook/api/type chain + 2 unreachable widget ids, 4 orphan components, unused re-exports/format helpers/`BAR_CHART_COLOR`, deprecated `onSubmit` path (PR #162)
+- [x] Config/deps/docs: removed unused `next-themes` + stray `apps/api-kt/apps/` dir; fixed CLAUDE.md (`C#`→Kotlin), ux-guidelines "not yet implemented" list, `format.ts` header comment (PR #163)
+
+### Tier 2 — dedup
+- [x] Folded asset/certificate/application-type modules onto `createEntityApi`/`createEntityHooks` (query keys byte-preserved) (PR #164)
+- [x] Shared generic `StatusBadge` (fixed the asset badge rendering a raw `<span>`) + centralised `formatCustomFieldValue`/`formatDateOrNull`/`formatDateOrDash` into `lib/format` (PR #165)
+- [x] Shared `computedStatusPredicates` for the cert/app computed-status filter (PR #166). Note: deliberately did NOT merge Dashboard/Reports asset aggregates into an AssetStatsService — they're different metrics (Dashboard excludes Retired/Sold = current value; Reports includes all = all-time value), not duplication.
+
+### Tier 3
+- [x] CSV-import N+1: batch-load name→entity lookup maps once per request (10k-row asset import ~30k queries → 3) (PR #167)
+- [x] `useListPage` hook for the assets/certificates/applications/people list plumbing. No `ListPageShell` — the four render trees diverge too much to share safely (PR #168)
+- [x] Shared `FormDialog` for the 6 "panel" create/edit dialogs (certificate, application, asset, asset-template, asset-model, type); verified end-to-end with Playwright. Left location/person (simpler chrome) + user-form (outlier) as-is (PR #169)
+- [x] Disabled Open Session In View (`spring.jpa.open-in-view: false`) + fetch-join/`@Transactional(readOnly)` fixes across auth, type, history and users endpoints; verified via 60-endpoint read sweep (0 LazyInitializationException) + write round-trip + backend tests + Playwright e2e (PR #170)
+
+Left as-is (agreed): the two unreachable features (grouped/card view, Assets saved-views UI gap).
 
 ## Done
 
