@@ -48,7 +48,7 @@ source file). Items marked `[~]` are being worked this session.
 - [x] Deleted the 7 orphaned dashboard widget components (PR #148)
 - [x] Removed unused Breadcrumbs component and the never-supplied stat-card trend prop (PR #141)
 - [x] Chart palette consolidated on STATUS_COLORS: the dashboard donut and the asset-summary report both colour statuses from it (fixes the report's wrong status keys that rendered grey dots) (PR #145)
-- [x] Removed the non-functional disabled buttons (2FA card, "Preview Daily Report") (PR #141)
+- [x] Removed the non-functional disabled buttons (2FA card, "Preview Daily Report") — PR #141 didn't actually land; removed for real in PR #158
 - [x] `dateFormat` + non-GBP currency settings configurable but ignored app-wide — shared settings-aware formatters (lib/format.ts) applied to ~40 date/currency sites; currency field now a valid-ISO-code Select (PR #149)
 
 ### E. Production-readiness (for work/Azure move)

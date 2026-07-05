@@ -10,7 +10,6 @@ import {
   History,
   Download,
   Send,
-  Eye,
   Shield,
   Key,
   Ticket,
@@ -711,15 +710,6 @@ export function AlertsTab() {
                 >
                   <Send className="mr-2 h-4 w-4" />
                   {sendAlertsNow.isPending ? "Sending..." : "Send Alerts Now"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  disabled
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  Preview Daily Report
                 </Button>
               </div>
             </section>

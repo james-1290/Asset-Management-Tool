@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Monitor, Sun, Moon, Eye, EyeOff, Shield } from "lucide-react";
+import { Monitor, Sun, Moon, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useUpdateProfile } from "@/hooks/use-profile";
 import { useChangePassword } from "@/hooks/use-profile";
@@ -321,21 +321,6 @@ export function ProfileTab() {
         </section>
       )}
 
-      {/* Two-Factor Authentication Card */}
-      <section className="bg-card rounded-xl border overflow-hidden shadow-sm opacity-80">
-        <div className="p-6 flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold">Two-Factor Authentication</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Add an extra layer of security to your account.
-            </p>
-          </div>
-          <Button variant="outline" disabled>
-            <Shield className="mr-2 h-4 w-4" />
-            Configure 2FA
-          </Button>
-        </div>
-      </section>
     </div>
   );
 }
