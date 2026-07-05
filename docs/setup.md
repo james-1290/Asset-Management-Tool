@@ -79,6 +79,33 @@ To add one, create the next `V<nnn>__<description>.sql` file (e.g.
 boot. Migrations are forward-only; write a new migration to change the schema
 rather than editing an applied one.
 
+## Running tests
+
+```bash
+# Frontend — Vitest unit tests + ESLint
+cd apps/web && npm run test && npm run lint
+
+# Backend — unit + integration tests (also runs as part of `./gradlew build`)
+cd apps/api-kt && ./gradlew test
+```
+
+The backend integration tests (`…/api/integration`) spin up a throwaway MySQL
+container via **Testcontainers**, so Docker must be running. Flyway migrates the
+container from clean each run, so these also verify migrations + Hibernate's
+`ddl-auto: validate` against a real schema.
+
+**Docker Desktop note:** Docker Desktop sets a `MinAPIVersion` that can be higher
+than the API version docker-java negotiates by default, making Testcontainers
+fail with a `Status 400` "Could not find a valid Docker environment". If you hit
+that, pin the API version for the test run:
+
+```bash
+DOCKER_API_VERSION=1.44 ./gradlew test
+```
+
+The test task forwards `DOCKER_API_VERSION` to docker-java when set; it is unset
+in CI (standard Linux dockerd), where default negotiation works.
+
 ## Building for production
 
 ```bash
