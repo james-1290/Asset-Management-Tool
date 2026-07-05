@@ -1,81 +1,33 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { createEntityHooks } from "./create-entity-hooks";
 import { applicationTypesApi } from "../lib/api/application-types";
 import type { ApplicationTypeQueryParams } from "../lib/api/application-types";
 import type {
+  ApplicationType,
   CreateApplicationTypeRequest,
   UpdateApplicationTypeRequest,
 } from "../types/application-type";
 
-const applicationTypeKeys = {
-  all: ["applicationTypes"] as const,
-  paged: (params: ApplicationTypeQueryParams) => ["applicationTypes", "paged", params] as const,
-  detail: (id: string) => ["applicationTypes", id] as const,
-  customFields: (id: string) => ["applicationTypes", id, "customFields"] as const,
-};
+const applicationTypeHooks = createEntityHooks<
+  ApplicationType,
+  CreateApplicationTypeRequest,
+  UpdateApplicationTypeRequest,
+  ApplicationTypeQueryParams
+>(
+  { root: "applicationTypes", related: [] },
+  applicationTypesApi,
+);
 
-export function useApplicationTypes() {
-  return useQuery({
-    queryKey: applicationTypeKeys.all,
-    queryFn: applicationTypesApi.getAll,
-  });
-}
-
-export function usePagedApplicationTypes(params: ApplicationTypeQueryParams) {
-  return useQuery({
-    queryKey: applicationTypeKeys.paged(params),
-    queryFn: () => applicationTypesApi.getPaged(params),
-    placeholderData: keepPreviousData,
-  });
-}
-
-export function useCreateApplicationType() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateApplicationTypeRequest) => applicationTypesApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: applicationTypeKeys.all });
-    },
-  });
-}
-
-export function useUpdateApplicationType() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateApplicationTypeRequest }) =>
-      applicationTypesApi.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: applicationTypeKeys.all });
-    },
-  });
-}
-
-export function useArchiveApplicationType() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => applicationTypesApi.archive(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: applicationTypeKeys.all });
-    },
-  });
-}
-
-export function useBulkArchiveApplicationTypes() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (ids: string[]) => applicationTypesApi.bulkArchive(ids),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: applicationTypeKeys.all });
-    },
-  });
-}
+export const useApplicationTypes = applicationTypeHooks.useAll;
+export const usePagedApplicationTypes = applicationTypeHooks.usePaged;
+export const useCreateApplicationType = applicationTypeHooks.useCreate;
+export const useUpdateApplicationType = applicationTypeHooks.useUpdate;
+export const useArchiveApplicationType = applicationTypeHooks.useArchive;
+export const useBulkArchiveApplicationTypes = applicationTypeHooks.useBulkArchive;
 
 export function useApplicationCustomFieldDefinitions(applicationTypeId: string | undefined) {
   return useQuery({
-    queryKey: applicationTypeKeys.customFields(applicationTypeId ?? ""),
+    queryKey: [...applicationTypeHooks.keys.detail(applicationTypeId ?? ""), "customFields"],
     queryFn: () => applicationTypesApi.getCustomFields(applicationTypeId!),
     enabled: !!applicationTypeId,
   });

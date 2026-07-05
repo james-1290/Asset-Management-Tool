@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-05 15:45 — Fold type modules into entity factory (second-sweep tier 2)
+
+- Rewrote the asset-types / certificate-types / application-types API + hook modules on top of the existing `createEntityApi` / `createEntityHooks` factories (matching the pattern already used by assets/certificates/applications). Removed ~180 lines of hand-rolled CRUD duplication. Query keys and invalidation behaviour are byte-for-byte preserved (`related: []`; asset-types keeps its `assets`/`asset-models` cross-invalidation on update); the `bulkArchive` and `getCustomFields` extras stay module-local. Build + tests + lint green.
+
 ## 2026-07-05 15:35 — Config, deps & docs cleanup (second-sweep tier 1)
 
 - Removed the unused `next-themes` dependency (no imports anywhere) and a stray empty `apps/api-kt/apps/` directory.
