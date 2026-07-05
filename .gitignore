@@ -41,3 +41,9 @@ apps/web/playwright-report/
 
 # Stray screenshots at repo root
 /*.png
+
+# SAML signing keys (never commit private keys)
+apps/api-kt/src/main/resources/saml/*.pem
+
+# Playwright ad-hoc screenshots
+apps/web/e2e/screenshots/

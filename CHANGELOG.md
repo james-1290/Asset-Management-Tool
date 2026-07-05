@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-05 21:35 — Infra, CI & test hardening (third-sweep)
+
+- **Tests**: added a Testcontainers integration test for the two behaviours CLAUDE.md mandates but that were untested — a non-admin (Operator) is forbidden (403) from admin-only endpoints, and a stale `entityVersion` update is rejected (409).
+- **CI** (`ci.yml`): added `concurrency` (cancel superseded runs), per-job `timeout-minutes`, and a non-blocking `npm audit --audit-level=high` step.
+- **Config drift**: `apps/web/.env.example` API port `5062` → `5115`; pinned MailHog to `v1.0.1`; aligned the Testcontainers MySQL image with dev (`8.0` → `8.3`).
+- **Repo hygiene**: removed the two committed Playwright screenshots + the ad-hoc `page.screenshot` calls that regenerated them; `.gitignore` now excludes `saml/*.pem` and `e2e/screenshots/`.
+- **Docs**: CLAUDE.md "Tests: <none yet>" replaced with the real backend/frontend/e2e commands. Full test suite green.
+
 ## 2026-07-05 21:10 — Fix: timezone off-by-one in expiry logic (third-sweep)
 
 - Date-only values (`YYYY-MM-DD`) were compared with `new Date(iso)` (UTC midnight) against a local `now`, so expiry highlighting/urgency could be off by a day near midnight in non-UTC timezones. Added timezone-safe `daysUntilDate` / `isExpired` / `isExpiringSoon` to `lib/format` (built on the existing local-calendar parser) with unit tests, and replaced the duplicated per-file logic in asset/certificate/application detail pages, the notifications urgency, and the applications table's expiry urgency. 38 unit tests + 7 e2e green.

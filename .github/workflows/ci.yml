@@ -6,10 +6,16 @@ on:
   push:
     branches: [main]
 
+# Cancel superseded runs for the same ref (e.g. rapid PR pushes).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
     name: Backend (Kotlin) — build & test
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: apps/api-kt
@@ -28,6 +34,7 @@ jobs:
   frontend:
     name: Frontend (React) — build & test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: apps/web
@@ -40,6 +47,8 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Audit dependencies (high severity)
+        run: npm audit --audit-level=high || true
       - name: Build (type-check + bundle)
         run: npm run build
       - name: Unit tests

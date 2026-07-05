@@ -30,6 +30,9 @@ abstract class AbstractIntegrationTest {
     protected fun getWithToken(path: String, token: String?) =
         rest.exchange(path, HttpMethod.GET, HttpEntity<Void>(authHeaders(token)), String::class.java)
 
+    protected fun putJson(path: String, body: String, token: String? = null) =
+        rest.exchange(path, HttpMethod.PUT, jsonEntity(body, token), String::class.java)
+
     protected fun jsonEntity(body: String, token: String? = null): HttpEntity<String> {
         val headers = authHeaders(token)
         headers.contentType = MediaType.APPLICATION_JSON
@@ -43,8 +46,11 @@ abstract class AbstractIntegrationTest {
     }
 
     /** Log in as admin/admin123 and return the JWT. */
-    protected fun loginAsAdmin(): String {
-        val resp = postJson("/api/v1/auth/login", """{"username":"admin","password":"admin123"}""")
+    protected fun loginAsAdmin(): String = login("admin", "admin123")
+
+    /** Log in as an arbitrary user and return the JWT. */
+    protected fun login(username: String, password: String): String {
+        val resp = postJson("/api/v1/auth/login", """{"username":"$username","password":"$password"}""")
         val body = resp.body ?: error("no login body")
         return Regex("\"token\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
             ?: error("no token in login response: $body")
@@ -58,7 +64,7 @@ abstract class AbstractIntegrationTest {
         // same config) pointing at a dead database — causing hangs/read-timeouts.
         @JvmStatic
         val mysql: MySQLContainer<Nothing> =
-            MySQLContainer<Nothing>(DockerImageName.parse("mysql:8.0")).apply {
+            MySQLContainer<Nothing>(DockerImageName.parse("mysql:8.3")).apply {
                 withDatabaseName("assetmgmt")
                 withUrlParam("serverTimezone", "UTC")
                 start()
