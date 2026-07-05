@@ -112,7 +112,9 @@ class AttachmentsController(
                 fileName = storedFileName,
                 originalFileName = originalFileName,
                 fileSize = file.size,
-                mimeType = mimeType,
+                // Persist the content-detected type (authoritative), not the
+                // client-declared header, so the served Content-Type matches the bytes.
+                mimeType = detectedType,
                 storageKey = storageKey,
                 uploadedById = currentUserService.userId,
                 uploadedByName = currentUserService.userName

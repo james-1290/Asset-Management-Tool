@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-05 19:30 — Backend security hardening (third-sweep)
+
+- **Slack**: SSRF webhook allow-list now requires an exact host (`hooks.slack.com` or a `.slack.com` subdomain) + HTTPS — a suffix check previously matched `evilslack.com`. `orgName` (a user-set setting) is now JSON-escaped in the payload, and `escapeJson` also handles `\r`/`\t`.
+- **Login rate limiter**: `recordFailedAttempt` now uses an atomic `compute` (concurrent failed logins could previously lose increments and slip under the lockout threshold); the attempts map is size-bounded with stale-entry pruning.
+- **Global rate-limit filter**: `X-Forwarded-For` is only trusted when `security.trust-forwarded-for=true` (behind a real proxy) — otherwise it keys on `remoteAddr`, so the header can't be spoofed/rotated to evade limits; the per-IP map is size-bounded.
+- **Attachments**: store/serve the Tika content-detected MIME type instead of the client-declared header, so `Content-Type` matches the actual bytes. Verified: login + rate-limit headers intact after restart; full test suite green.
+
 ## 2026-07-05 19:05 — Fix: assignments report double-count + offboard integrity (third-sweep)
 
 - **Reports `/assignments`**: the query `JOIN FETCH`ed `assignedAssets` without `DISTINCT`, so a person with N assets appeared N times and `totalAssigned` was inflated. Added `SELECT DISTINCT`. Verified: a person with 3 assets now appears once with count 3 (no duplicate rows).

@@ -3,6 +3,7 @@ package com.assetmanagement.api.security
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
@@ -12,11 +13,17 @@ import java.util.concurrent.atomic.AtomicInteger
 
 @Component
 @Order(1)
-class RateLimitFilter : OncePerRequestFilter() {
+class RateLimitFilter(
+    // Only trust X-Forwarded-For when the app sits behind a proxy that sets it;
+    // otherwise a client can spoof/rotate the header to evade the limiter.
+    @Value("\${security.trust-forwarded-for:false}") private val trustForwardedFor: Boolean
+) : OncePerRequestFilter() {
 
     companion object {
         private const val MAX_REQUESTS_PER_MINUTE = 120
         private const val WINDOW_SECONDS = 60L
+        // Cap the map so a spray of distinct client IPs can't grow it without bound.
+        private const val MAX_TRACKED_KEYS = 50_000
     }
 
     private data class RequestWindow(val count: AtomicInteger, val windowStart: Instant)
@@ -34,8 +41,12 @@ class RateLimitFilter : OncePerRequestFilter() {
             return
         }
 
-        val clientIp = request.getHeader("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim() ?: request.remoteAddr
+        val clientIp = clientIp(request)
         val now = Instant.now()
+
+        if (requestCounts.size > MAX_TRACKED_KEYS) {
+            requestCounts.entries.removeIf { now.epochSecond - it.value.windowStart.epochSecond >= WINDOW_SECONDS }
+        }
 
         val window = requestCounts.compute(clientIp) { _, existing ->
             if (existing == null || now.epochSecond - existing.windowStart.epochSecond >= WINDOW_SECONDS) {
@@ -58,4 +69,11 @@ class RateLimitFilter : OncePerRequestFilter() {
 
         filterChain.doFilter(request, response)
     }
+
+    private fun clientIp(request: HttpServletRequest): String =
+        if (trustForwardedFor) {
+            request.getHeader("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim()?.ifBlank { null } ?: request.remoteAddr
+        } else {
+            request.remoteAddr
+        }
 }

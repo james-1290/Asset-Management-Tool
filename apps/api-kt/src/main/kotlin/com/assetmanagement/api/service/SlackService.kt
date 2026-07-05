@@ -89,7 +89,7 @@ class SlackService(
                     "type": "header",
                     "text": {
                         "type": "plain_text",
-                        "text": "$orgName — Expiry Alerts ($totalRemaining items)",
+                        "text": "${escapeJson(orgName)} — Expiry Alerts ($totalRemaining items)",
                         "emoji": true
                     }
                 }
@@ -112,7 +112,7 @@ class SlackService(
                     "elements": [
                         {
                             "type": "mrkdwn",
-                            "text": "Sent by $orgName alert system. Configure in Settings > Alerts."
+                            "text": "Sent by ${escapeJson(orgName)} alert system. Configure in Settings > Alerts."
                         }
                     ]
                 }
@@ -134,7 +134,7 @@ class SlackService(
                 "type": "header",
                 "text": {
                     "type": "plain_text",
-                    "text": "$orgName — $title (${items.size} items)",
+                    "text": "${escapeJson(orgName)} — $title (${items.size} items)",
                     "emoji": true
                 }
             }
@@ -148,7 +148,7 @@ class SlackService(
                 "elements": [
                     {
                         "type": "mrkdwn",
-                        "text": "Sent by $orgName alert system. Configure in Settings > Alerts."
+                        "text": "Sent by ${escapeJson(orgName)} alert system. Configure in Settings > Alerts."
                     }
                 ]
             }
@@ -186,8 +186,14 @@ class SlackService(
         val url = try { java.net.URI(webhookUrl) } catch (e: Exception) {
             throw IllegalArgumentException("Invalid webhook URL")
         }
-        if (url.host?.endsWith("hooks.slack.com") != true && url.host?.endsWith("slack.com") != true) {
+        // Exact host match (a suffix check like endsWith("slack.com") would allow
+        // evilslack.com / notslack.com). Slack incoming webhooks are always hooks.slack.com.
+        val host = url.host?.lowercase()
+        if (host != "hooks.slack.com" && host?.endsWith(".slack.com") != true) {
             throw IllegalArgumentException("Webhook URL must be a Slack domain (hooks.slack.com)")
+        }
+        if (!"https".equals(url.scheme, ignoreCase = true)) {
+            throw IllegalArgumentException("Webhook URL must use HTTPS")
         }
 
         val headers = HttpHeaders()
@@ -204,4 +210,6 @@ class SlackService(
         text.replace("\\", "\\\\")
             .replace("\"", "\\\"")
             .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
 }
