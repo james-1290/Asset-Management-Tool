@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-05 16:40 — CSV import N+1 fix (second-sweep tier 3)
+
+- `ImportController` previously issued a `findXByName` DB query per row per referenced entity (an asset row did 3), in both `validate` and `execute` — an N+1 that scaled with row count. Now each request builds the needed name→entity lookup maps once (`buildLookups`) and resolves references in-memory. A 10k-row asset import drops from up to ~30k lookup queries to 3. Behaviour verified identical via runtime validate+execute (case-insensitive match resolves, unknown names still error). Clean compile + full test suite green.
+
 ## 2026-07-05 16:20 — Shared computed-status query predicate (second-sweep tier 2)
 
 - Extracted the duplicated computed-status filter (stored Active → Expired past expiry, or PendingRenewal within 30 days) from `CertificatesController.buildSpec` and `ApplicationsController.buildSpec` into a single generic `computedStatusPredicates(...)` in `util/StatusComputation.kt` — the Criteria-query counterpart of `computeStatus`. Both controllers now call it; ~80 lines of duplication removed. Behaviour verified identical via runtime status filtering (certs Active 5 + Expired 4 + PendingRenewal 1 = 10; apps 4+4+3+raw = 12). Clean compile, full test suite green.

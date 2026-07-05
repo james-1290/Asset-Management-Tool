@@ -119,6 +119,11 @@ class ImportController(
             return ResponseEntity.badRequest().body(mapOf("error" to "CSV exceeds maximum of $MAX_IMPORT_ROWS rows"))
         }
 
+        // Load the name→entity lookup maps once for the whole file rather than
+        // issuing a query per row per referenced entity (an N+1 that scaled with
+        // row count × referenced-entity count).
+        val lookups = buildLookups(entityType)
+
         val rows = dataRows.mapIndexed { index, row ->
             val data = mutableMapOf<String, String?>()
             headers.forEachIndexed { colIndex, header ->
@@ -127,10 +132,10 @@ class ImportController(
 
             val errors = when (entityType) {
                 "locations" -> validateLocation(data)
-                "people" -> validatePerson(data)
-                "assets" -> validateAsset(data)
-                "certificates" -> validateCertificate(data)
-                "applications" -> validateApplication(data)
+                "people" -> validatePerson(data, lookups)
+                "assets" -> validateAsset(data, lookups)
+                "certificates" -> validateCertificate(data, lookups)
+                "applications" -> validateApplication(data, lookups)
                 else -> listOf("Unknown entity type")
             }
 
@@ -190,6 +195,9 @@ class ImportController(
         var failed = 0
         val errors = mutableListOf<String>()
 
+        // Load the name→entity lookup maps once (see validate() for the N+1 note).
+        val lookups = buildLookups(entityType)
+
         dataRows.forEachIndexed { index, row ->
             val rowNum = index + 2
             val data = mutableMapOf<String, String?>()
@@ -199,10 +207,10 @@ class ImportController(
 
             val validationErrors = when (entityType) {
                 "locations" -> validateLocation(data)
-                "people" -> validatePerson(data)
-                "assets" -> validateAsset(data)
-                "certificates" -> validateCertificate(data)
-                "applications" -> validateApplication(data)
+                "people" -> validatePerson(data, lookups)
+                "assets" -> validateAsset(data, lookups)
+                "certificates" -> validateCertificate(data, lookups)
+                "applications" -> validateApplication(data, lookups)
                 else -> listOf("Unknown entity type")
             }
 
@@ -215,10 +223,10 @@ class ImportController(
             try {
                 when (entityType) {
                     "locations" -> importLocation(data)
-                    "people" -> importPerson(data)
-                    "assets" -> importAsset(data)
-                    "certificates" -> importCertificate(data)
-                    "applications" -> importApplication(data)
+                    "people" -> importPerson(data, lookups)
+                    "assets" -> importAsset(data, lookups)
+                    "certificates" -> importCertificate(data, lookups)
+                    "applications" -> importApplication(data, lookups)
                 }
                 imported++
             } catch (e: Exception) {
@@ -253,7 +261,7 @@ class ImportController(
         return errors
     }
 
-    private fun validatePerson(data: Map<String, String?>): List<String> {
+    private fun validatePerson(data: Map<String, String?>, lookups: Lookups): List<String> {
         val errors = mutableListOf<String>()
         val fullName = data["FullName"]
         if (fullName.isNullOrBlank()) errors.add("FullName is required")
@@ -272,14 +280,13 @@ class ImportController(
 
         val locationName = data["Location"]
         if (!locationName.isNullOrBlank()) {
-            val location = findLocationByName(locationName)
-            if (location == null) errors.add("Location '$locationName' not found")
+            if (lookups.location(locationName) == null) errors.add("Location '$locationName' not found")
         }
 
         return errors
     }
 
-    private fun validateAsset(data: Map<String, String?>): List<String> {
+    private fun validateAsset(data: Map<String, String?>, lookups: Lookups): List<String> {
         val errors = mutableListOf<String>()
 
         val name = data["Name"]
@@ -289,8 +296,7 @@ class ImportController(
         val assetTypeName = data["AssetType"]
         if (assetTypeName.isNullOrBlank()) errors.add("AssetType is required")
         else {
-            val assetType = findAssetTypeByName(assetTypeName)
-            if (assetType == null) errors.add("AssetType '$assetTypeName' not found")
+            if (lookups.assetType(assetTypeName) == null) errors.add("AssetType '$assetTypeName' not found")
         }
 
         val statusStr = data["Status"]
@@ -305,12 +311,12 @@ class ImportController(
 
         val locationName = data["Location"]
         if (!locationName.isNullOrBlank()) {
-            if (findLocationByName(locationName) == null) errors.add("Location '$locationName' not found")
+            if (lookups.location(locationName) == null) errors.add("Location '$locationName' not found")
         }
 
         val assignedTo = data["AssignedTo"]
         if (!assignedTo.isNullOrBlank()) {
-            if (findPersonByName(assignedTo) == null) errors.add("Person '$assignedTo' not found")
+            if (lookups.person(assignedTo) == null) errors.add("Person '$assignedTo' not found")
         }
 
         val purchaseDate = data["PurchaseDate"]
@@ -344,7 +350,7 @@ class ImportController(
         return errors
     }
 
-    private fun validateCertificate(data: Map<String, String?>): List<String> {
+    private fun validateCertificate(data: Map<String, String?>, lookups: Lookups): List<String> {
         val errors = mutableListOf<String>()
 
         val name = data["Name"]
@@ -354,7 +360,7 @@ class ImportController(
         val certTypeName = data["CertificateType"]
         if (certTypeName.isNullOrBlank()) errors.add("CertificateType is required")
         else {
-            if (findCertificateTypeByName(certTypeName) == null) errors.add("CertificateType '$certTypeName' not found")
+            if (lookups.certType(certTypeName) == null) errors.add("CertificateType '$certTypeName' not found")
         }
 
         val statusStr = data["Status"]
@@ -385,7 +391,7 @@ class ImportController(
         return errors
     }
 
-    private fun validateApplication(data: Map<String, String?>): List<String> {
+    private fun validateApplication(data: Map<String, String?>, lookups: Lookups): List<String> {
         val errors = mutableListOf<String>()
 
         val name = data["Name"]
@@ -395,7 +401,7 @@ class ImportController(
         val appTypeName = data["ApplicationType"]
         if (appTypeName.isNullOrBlank()) errors.add("ApplicationType is required")
         else {
-            if (findApplicationTypeByName(appTypeName) == null) errors.add("ApplicationType '$appTypeName' not found")
+            if (lookups.appType(appTypeName) == null) errors.add("ApplicationType '$appTypeName' not found")
         }
 
         val statusStr = data["Status"]
@@ -487,9 +493,9 @@ class ImportController(
         ))
     }
 
-    private fun importPerson(data: Map<String, String?>) {
+    private fun importPerson(data: Map<String, String?>, lookups: Lookups) {
         val locationName = data["Location"]
-        val location = if (!locationName.isNullOrBlank()) findLocationByName(locationName) else null
+        val location = if (!locationName.isNullOrBlank()) lookups.location(locationName) else null
 
         val fullName = data["FullName"] ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Missing required field: FullName")
         val person = Person(
@@ -512,13 +518,13 @@ class ImportController(
         ))
     }
 
-    private fun importAsset(data: Map<String, String?>) {
+    private fun importAsset(data: Map<String, String?>, lookups: Lookups) {
         val assetTypeName = data["AssetType"] ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Missing required field: AssetType")
-        val assetType = findAssetTypeByName(assetTypeName) ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "AssetType '$assetTypeName' not found")
+        val assetType = lookups.assetType(assetTypeName) ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "AssetType '$assetTypeName' not found")
         val locationName = data["Location"]
-        val location = if (!locationName.isNullOrBlank()) findLocationByName(locationName) else null
+        val location = if (!locationName.isNullOrBlank()) lookups.location(locationName) else null
         val assignedToName = data["AssignedTo"]
-        val person = if (!assignedToName.isNullOrBlank()) findPersonByName(assignedToName) else null
+        val person = if (!assignedToName.isNullOrBlank()) lookups.person(assignedToName) else null
 
         val statusStr = data["Status"]
         val status = if (!statusStr.isNullOrBlank()) {
@@ -554,9 +560,9 @@ class ImportController(
         ))
     }
 
-    private fun importCertificate(data: Map<String, String?>) {
+    private fun importCertificate(data: Map<String, String?>, lookups: Lookups) {
         val certTypeName = data["CertificateType"] ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Missing required field: CertificateType")
-        val certType = findCertificateTypeByName(certTypeName) ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "CertificateType '$certTypeName' not found")
+        val certType = lookups.certType(certTypeName) ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "CertificateType '$certTypeName' not found")
 
         val statusStr = data["Status"]
         val status = if (!statusStr.isNullOrBlank()) {
@@ -592,9 +598,9 @@ class ImportController(
         ))
     }
 
-    private fun importApplication(data: Map<String, String?>) {
+    private fun importApplication(data: Map<String, String?>, lookups: Lookups) {
         val appTypeName = data["ApplicationType"] ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Missing required field: ApplicationType")
-        val appType = findApplicationTypeByName(appTypeName) ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "ApplicationType '$appTypeName' not found")
+        val appType = lookups.appType(appTypeName) ?: throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "ApplicationType '$appTypeName' not found")
 
         val statusStr = data["Status"]
         val status = if (!statusStr.isNullOrBlank()) {
@@ -639,58 +645,57 @@ class ImportController(
     }
 
     // ========================================================================
-    // Lookup helpers
+    // Lookup maps
     // ========================================================================
 
-    private fun findLocationByName(name: String): Location? {
-        val spec = org.springframework.data.jpa.domain.Specification<Location> { root, _, cb ->
-            cb.and(
-                cb.equal(cb.lower(root.get("name")), name.lowercase()),
-                cb.equal(root.get<Boolean>("isArchived"), false)
-            )
-        }
-        return locationRepository.findAll(spec).firstOrNull()
+    /**
+     * Name→entity maps for the references an import may need, loaded once per
+     * request. Lookups are case-insensitive (keys lowercased); on the rare
+     * duplicate name the last row loaded wins, matching the previous
+     * `findAll(...).firstOrNull()`'s unordered "any match".
+     */
+    private class Lookups(
+        private val locations: Map<String, Location> = emptyMap(),
+        private val people: Map<String, Person> = emptyMap(),
+        private val assetTypes: Map<String, AssetType> = emptyMap(),
+        private val certTypes: Map<String, CertificateType> = emptyMap(),
+        private val appTypes: Map<String, ApplicationType> = emptyMap(),
+    ) {
+        fun location(name: String?): Location? = name?.let { locations[it.lowercase()] }
+        fun person(name: String?): Person? = name?.let { people[it.lowercase()] }
+        fun assetType(name: String?): AssetType? = name?.let { assetTypes[it.lowercase()] }
+        fun certType(name: String?): CertificateType? = name?.let { certTypes[it.lowercase()] }
+        fun appType(name: String?): ApplicationType? = name?.let { appTypes[it.lowercase()] }
     }
 
-    private fun findPersonByName(name: String): Person? {
-        val spec = org.springframework.data.jpa.domain.Specification<Person> { root, _, cb ->
-            cb.and(
-                cb.equal(cb.lower(root.get("fullName")), name.lowercase()),
-                cb.equal(root.get<Boolean>("isArchived"), false)
-            )
-        }
-        return personRepository.findAll(spec).firstOrNull()
+    /** Loads only the lookup maps the given entity type actually references. */
+    private fun buildLookups(entityType: String): Lookups = when (entityType) {
+        "people" -> Lookups(locations = locationMap())
+        "assets" -> Lookups(locations = locationMap(), people = personMap(), assetTypes = assetTypeMap())
+        "certificates" -> Lookups(certTypes = certTypeMap())
+        "applications" -> Lookups(appTypes = appTypeMap())
+        else -> Lookups()
     }
 
-    private fun findAssetTypeByName(name: String): AssetType? {
-        val spec = org.springframework.data.jpa.domain.Specification<AssetType> { root, _, cb ->
-            cb.and(
-                cb.equal(cb.lower(root.get("name")), name.lowercase()),
-                cb.equal(root.get<Boolean>("isArchived"), false)
-            )
+    private fun <T> nonArchivedSpec(): org.springframework.data.jpa.domain.Specification<T> =
+        org.springframework.data.jpa.domain.Specification { root, _, cb ->
+            cb.equal(root.get<Boolean>("isArchived"), false)
         }
-        return assetTypeRepository.findAll(spec).firstOrNull()
-    }
 
-    private fun findCertificateTypeByName(name: String): CertificateType? {
-        val spec = org.springframework.data.jpa.domain.Specification<CertificateType> { root, _, cb ->
-            cb.and(
-                cb.equal(cb.lower(root.get("name")), name.lowercase()),
-                cb.equal(root.get<Boolean>("isArchived"), false)
-            )
-        }
-        return certificateTypeRepository.findAll(spec).firstOrNull()
-    }
+    private fun locationMap(): Map<String, Location> =
+        locationRepository.findAll(nonArchivedSpec<Location>()).associateBy { it.name.lowercase() }
 
-    private fun findApplicationTypeByName(name: String): ApplicationType? {
-        val spec = org.springframework.data.jpa.domain.Specification<ApplicationType> { root, _, cb ->
-            cb.and(
-                cb.equal(cb.lower(root.get("name")), name.lowercase()),
-                cb.equal(root.get<Boolean>("isArchived"), false)
-            )
-        }
-        return applicationTypeRepository.findAll(spec).firstOrNull()
-    }
+    private fun personMap(): Map<String, Person> =
+        personRepository.findAll(nonArchivedSpec<Person>()).associateBy { it.fullName.lowercase() }
+
+    private fun assetTypeMap(): Map<String, AssetType> =
+        assetTypeRepository.findAll(nonArchivedSpec<AssetType>()).associateBy { it.name.lowercase() }
+
+    private fun certTypeMap(): Map<String, CertificateType> =
+        certificateTypeRepository.findAll(nonArchivedSpec<CertificateType>()).associateBy { it.name.lowercase() }
+
+    private fun appTypeMap(): Map<String, ApplicationType> =
+        applicationTypeRepository.findAll(nonArchivedSpec<ApplicationType>()).associateBy { it.name.lowercase() }
 
     // ========================================================================
     // Status normalization helpers
