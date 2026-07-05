@@ -31,20 +31,12 @@ import { useLocations } from "../hooks/use-locations";
 import { AttachmentsSection } from "../components/shared/attachments-section";
 import { RenewDialog } from "../components/shared/renew-dialog";
 import type { CertificateFormValues } from "../lib/schemas/certificate";
-import { formatDateOrNull as formatDate, formatCustomFieldValue } from "../lib/format";
-
-function isExpiringSoon(iso: string | null): boolean {
-  if (!iso) return false;
-  const expiry = new Date(iso);
-  const now = new Date();
-  const daysUntil = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-  return daysUntil <= 90 && daysUntil >= 0;
-}
-
-function isExpired(iso: string | null): boolean {
-  if (!iso) return false;
-  return new Date(iso) < new Date();
-}
+import {
+  formatDateOrNull as formatDate,
+  formatCustomFieldValue,
+  isExpiringSoon,
+  isExpired,
+} from "../lib/format";
 
 const HISTORY_PREVIEW_LIMIT = 5;
 

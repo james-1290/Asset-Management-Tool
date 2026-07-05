@@ -50,24 +50,13 @@ import {
   formatDateOrNull as formatDate,
   formatCustomFieldValue,
   formatCurrency as fmtCurrency,
+  isExpiringSoon,
+  isExpired,
 } from "../lib/format";
 
 function formatCurrency(value: number | null): string | null {
   if (value == null) return null;
   return fmtCurrency(value);
-}
-
-function isExpiringSoon(iso: string | null): boolean {
-  if (!iso) return false;
-  const expiry = new Date(iso);
-  const now = new Date();
-  const daysUntil = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-  return daysUntil <= 90 && daysUntil >= 0;
-}
-
-function isExpired(iso: string | null): boolean {
-  if (!iso) return false;
-  return new Date(iso) < new Date();
 }
 
 /* ── Main page ────────────────────────────────────────── */

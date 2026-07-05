@@ -11,7 +11,7 @@ import {
 import { ApplicationStatusBadge } from "./application-status-badge";
 import { AvatarPlaceholder } from "../avatar-placeholder";
 import type { Application } from "../../types/application";
-import { formatDateOrDash as formatDate } from "../../lib/format";
+import { formatDateOrDash as formatDate, daysUntilDate } from "../../lib/format";
 
 interface ColumnActions {
   onEdit: (application: Application) => void;
@@ -21,12 +21,10 @@ interface ColumnActions {
 
 /** Returns "expired" | "expiring" | "normal" based on the expiry date */
 function getExpiryUrgency(iso: string | null): "expired" | "expiring" | "normal" {
-  if (!iso) return "normal";
-  const now = Date.now();
-  const expiry = new Date(iso).getTime();
-  if (expiry < now) return "expired";
-  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-  if (expiry - now < thirtyDays) return "expiring";
+  const days = daysUntilDate(iso);
+  if (days === null) return "normal";
+  if (days < 0) return "expired";
+  if (days < 30) return "expiring";
   return "normal";
 }
 
