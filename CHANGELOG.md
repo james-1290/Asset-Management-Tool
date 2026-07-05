@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-05 16:20 — Shared computed-status query predicate (second-sweep tier 2)
+
+- Extracted the duplicated computed-status filter (stored Active → Expired past expiry, or PendingRenewal within 30 days) from `CertificatesController.buildSpec` and `ApplicationsController.buildSpec` into a single generic `computedStatusPredicates(...)` in `util/StatusComputation.kt` — the Criteria-query counterpart of `computeStatus`. Both controllers now call it; ~80 lines of duplication removed. Behaviour verified identical via runtime status filtering (certs Active 5 + Expired 4 + PendingRenewal 1 = 10; apps 4+4+3+raw = 12). Clean compile, full test suite green.
+- Scoping note: the plan's "AssetStatsService" aggregate consolidation was intentionally **not** done — the Dashboard vs Reports asset aggregates are different metrics (Dashboard excludes Retired/Sold for current-portfolio value; Reports includes all for all-time value), so folding them would change report output rather than dedup.
+
 ## 2026-07-05 16:00 — Shared StatusBadge + centralised formatters (second-sweep tier 2)
 
 - Added a generic `ui/status-badge.tsx` (`StatusBadge`) rendering via shadcn `Badge`; the asset/certificate/application badges are now thin config wrappers over it. This also fixes the asset badge's visual inconsistency (it previously rendered a hand-rolled `<span>` instead of the shared `Badge`).
