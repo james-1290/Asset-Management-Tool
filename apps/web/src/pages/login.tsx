@@ -149,10 +149,22 @@ export default function LoginPage() {
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  const url = ssoConfig.ssoUrl!
-                  // Only allow relative URLs or same-origin URLs to prevent open redirect
-                  if (url.startsWith("/") || url.startsWith(window.location.origin)) {
-                    window.location.href = url
+                  const raw = ssoConfig.ssoUrl!
+                  // Prevent open redirect. Resolve against the current origin and
+                  // require the result to stay same-origin. Reject protocol-relative
+                  // ("//evil.com") and backslash tricks that startsWith("/") would miss.
+                  let safe = false
+                  try {
+                    const resolved = new URL(raw, window.location.origin)
+                    safe =
+                      resolved.origin === window.location.origin &&
+                      !raw.startsWith("//") &&
+                      !raw.startsWith("\\")
+                  } catch {
+                    safe = false
+                  }
+                  if (safe) {
+                    window.location.href = raw
                   } else {
                     setError("Invalid SSO configuration. Please contact your administrator.")
                   }

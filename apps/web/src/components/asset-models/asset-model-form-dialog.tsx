@@ -61,6 +61,10 @@ function ExistingImageSection({ model }: { model: AssetModel }) {
       toast.error("Image must be under 2MB");
       return;
     }
+    if (!["image/jpeg", "image/png", "image/gif"].includes(file.type)) {
+      toast.error("Only JPG, PNG, or GIF images are allowed");
+      return;
+    }
     setUploading(true);
     try {
       await assetModelsApi.uploadImage(model.id, file);

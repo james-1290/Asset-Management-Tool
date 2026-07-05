@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-05 19:45 — Frontend security hardening (third-sweep)
+
+- **Login SSO redirect**: the open-redirect guard (`startsWith("/") || startsWith(origin)`) allowed protocol-relative `//evil.com`. Now resolves the URL against the current origin and requires it to stay same-origin, rejecting `//` and `\` prefixes.
+- **Alert-history CSV export**: neutralise CSV formula injection — cells beginning with `= + - @` (or tab/CR) are prefixed with `'` before quoting (the user-controlled `entityName` could otherwise execute in Excel/Sheets).
+- **Asset-model edit-mode image upload**: now validates MIME type (JPG/PNG/GIF) like the create-mode picker, instead of only checking size.
+- **Attachment PDF preview**: `<iframe>` for user-uploaded files now `sandbox="allow-same-origin"` (no scripts). Build + lint + 35 unit + 7 e2e green.
+
 ## 2026-07-05 19:30 — Backend security hardening (third-sweep)
 
 - **Slack**: SSRF webhook allow-list now requires an exact host (`hooks.slack.com` or a `.slack.com` subdomain) + HTTPS — a suffix check previously matched `evilslack.com`. `orgName` (a user-set setting) is now JSON-escaped in the payload, and `escapeJson` also handles `\r`/`\t`.

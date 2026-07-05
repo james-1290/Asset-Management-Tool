@@ -236,6 +236,9 @@ export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionP
                 <iframe
                   src={previewUrl}
                   title={previewTarget.originalFileName}
+                  // Sandbox the preview of user-uploaded files: no scripts, but
+                  // allow-same-origin so the blob: URL renders.
+                  sandbox="allow-same-origin"
                   className="w-full h-[70vh] rounded border-0"
                 />
               )
