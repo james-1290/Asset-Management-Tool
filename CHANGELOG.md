@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-05 17:05 — Shared useListPage hook for list pages (second-sweep tier 3)
+
+- Extracted the identical URL-param list plumbing shared by the assets/certificates/applications/people pages into a `useListPage` hook: server-side page/pageSize/search/sort state kept in the query string, the debounced-search + URL-sync effects, the `sorting` memo, and the sort/page/pageSize/filter handlers + row-selection state. Each page now calls the hook instead of re-declaring ~50 lines of the same boilerplate. Verbatim extraction — behaviour unchanged; build + tests + lint green.
+- Scoping note: deliberately did **not** build a shared `ListPageShell` JSX component. The four pages' render trees diverge substantially (applications has no saved views and a hand-rolled toolbar/density/deactivate flow; assets has custom-field column machinery and no selection column; people lacks status/type/viewMode/bulk-status), so a shell covering all four would need so many slots it would add regression risk to the app's most-used pages for little benefit.
+
 ## 2026-07-05 16:40 — CSV import N+1 fix (second-sweep tier 3)
 
 - `ImportController` previously issued a `findXByName` DB query per row per referenced entity (an asset row did 3), in both `validate` and `execute` — an N+1 that scaled with row count. Now each request builds the needed name→entity lookup maps once (`buildLookups`) and resolves references in-memory. A 10k-row asset import drops from up to ~30k lookup queries to 3. Behaviour verified identical via runtime validate+execute (case-insensitive match resolves, unknown names still error). Clean compile + full test suite green.

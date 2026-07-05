@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Archive, RefreshCw, Search, Download } from "lucide-react";
-import type { SortingState, VisibilityState, RowSelectionState } from "@tanstack/react-table";
+import type { VisibilityState } from "@tanstack/react-table";
+import { useListPage } from "../hooks/use-list-page";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Skeleton } from "../components/ui/skeleton";
@@ -49,14 +49,26 @@ const SORT_FIELD_MAP: Record<string, string> = {
 };
 
 export default function ApplicationsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    searchParams,
+    page,
+    pageSize,
+    searchParam,
+    sortByParam,
+    sortDirParam,
+    searchInput,
+    setSearchInput,
+    sorting,
+    handleSortingChange,
+    handlePageChange,
+    handlePageSizeChange,
+    handleFilterChange,
+    rowSelection,
+    setRowSelection,
+    selectedIds,
+  } = useListPage({ sortFieldMap: SORT_FIELD_MAP, defaultSortBy: "name" });
 
-  const page = Number(searchParams.get("page")) || 1;
-  const pageSize = Number(searchParams.get("pageSize")) || 25;
-  const searchParam = searchParams.get("search") ?? "";
   const statusParam = searchParams.get("status") ?? "";
-  const sortByParam = searchParams.get("sortBy") ?? "name";
-  const sortDirParam = searchParams.get("sortDir") ?? "asc";
   const includeInactive = searchParams.get("includeInactive") === "true";
   const typeIdParam = searchParams.get("typeId") ?? "";
   const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
@@ -67,31 +79,7 @@ export default function ApplicationsPage() {
   const costMaxParam = searchParams.get("costMax") ?? "";
   const publisherParam = searchParams.get("publisher") ?? "";
 
-  const [searchInput, setSearchInput] = useState(searchParam);
   const [tableDensity, setTableDensity] = useState<"comfortable" | "compact">("comfortable");
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setSearchParams((prev) => {
-        if (searchInput) {
-          prev.set("search", searchInput);
-        } else {
-          prev.delete("search");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [searchInput, setSearchParams]);
-
-  useEffect(() => {
-    setSearchInput(searchParam);
-  }, [searchParam]);
 
   const includeStatuses = useMemo(() => {
     return includeInactive ? "Inactive" : undefined;
@@ -138,18 +126,6 @@ export default function ApplicationsPage() {
     return Array.from(publishers).sort().map((p) => ({ value: p, label: p }));
   }, [pagedResult?.items]);
 
-  const handlePublisherChange = useCallback(
-    (value: string) => {
-      setSearchParams((prev) => {
-        if (value) prev.set("publisher", value);
-        else prev.delete("publisher");
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
   const [formOpen, setFormOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState<Application | null>(null);
   const [archivingApplication, setArchivingApplication] = useState<Application | null>(null);
@@ -158,7 +134,6 @@ export default function ApplicationsPage() {
     duplicates: DuplicateCheckResult[];
     onConfirm: () => void;
   } | null>(null);
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -180,56 +155,6 @@ export default function ApplicationsPage() {
       }),
     ],
     [],
-  );
-
-  const sorting: SortingState = useMemo(
-    () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
-    [sortByParam, sortDirParam],
-  );
-
-
-  const handleSortingChange = useCallback(
-    (updaterOrValue: SortingState | ((prev: SortingState) => SortingState)) => {
-      const newSorting =
-        typeof updaterOrValue === "function"
-          ? updaterOrValue(sorting)
-          : updaterOrValue;
-      setSearchParams((prev) => {
-        if (newSorting.length > 0) {
-          const col = newSorting[0];
-          const backendField = SORT_FIELD_MAP[col.id] ?? col.id;
-          prev.set("sortBy", backendField);
-          prev.set("sortDir", col.desc ? "desc" : "asc");
-        } else {
-          prev.delete("sortBy");
-          prev.delete("sortDir");
-        }
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [sorting, setSearchParams],
-  );
-
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      setSearchParams((prev) => {
-        prev.set("page", String(newPage));
-        return prev;
-      });
-    },
-    [setSearchParams],
-  );
-
-  const handlePageSizeChange = useCallback(
-    (newPageSize: number) => {
-      setSearchParams((prev) => {
-        prev.set("pageSize", String(newPageSize));
-        prev.set("page", "1");
-        return prev;
-      });
-    },
-    [setSearchParams],
   );
 
   const [exporting, setExporting] = useState(false);
@@ -364,7 +289,6 @@ export default function ApplicationsPage() {
     );
   }
 
-  const selectedIds = Object.keys(rowSelection);
   const selectedCount = selectedIds.length;
 
   function handleBulkArchive() {
@@ -471,7 +395,7 @@ export default function ApplicationsPage() {
                   label="Publisher"
                   value={publisherParam}
                   options={publisherOptions}
-                  onChange={handlePublisherChange}
+                  onChange={(value) => handleFilterChange("publisher", value)}
                 />
               </div>
               <div className="flex items-center gap-1">
