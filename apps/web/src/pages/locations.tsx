@@ -409,7 +409,7 @@ export default function LocationsPage() {
         }}
         location={editingLocation}
         onSubmit={handleFormSubmit}
-        loading={createMutation.isPending || updateMutation.isPending}
+        loading={createMutation.isPending || updateMutation.isPending || checkDuplicatesMutation.isPending}
       />
 
       <ConfirmDialog

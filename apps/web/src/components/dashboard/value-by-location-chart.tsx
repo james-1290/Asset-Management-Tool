@@ -53,7 +53,11 @@ export function ValueByLocationChart({ data, isLoading }: ValueByLocationChartPr
                 tick={{ fill: "var(--color-muted-foreground)" }}
               />
               <YAxis
-                tickFormatter={(v: number) => `${getCurrencySymbol()}${(v / 1000).toFixed(0)}k`}
+                tickFormatter={(v: number) =>
+                  v >= 1000
+                    ? `${getCurrencySymbol()}${(v / 1000).toFixed(0)}k`
+                    : `${getCurrencySymbol()}${v.toFixed(0)}`
+                }
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}

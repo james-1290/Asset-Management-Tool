@@ -14,10 +14,21 @@ import type { PagedResponse } from "../../types/paged-response";
  */
 export function createEntityApi<T, TCreate, TUpdate, TParams>(path: string) {
   return {
-    getAll: (): Promise<T[]> =>
-      apiClient
-        .get<PagedResponse<T>>(path, { pageSize: 1000 })
-        .then((r) => r.items),
+    // Fetch every row for dropdowns/filters. The backend caps pageSize at 100,
+    // so page through until the full set is collected rather than silently
+    // truncating at the first page.
+    getAll: async (): Promise<T[]> => {
+      const items: T[] = [];
+      let page = 1;
+      // Safety bound: 100 pages × 100 = 10k rows.
+      while (page <= 100) {
+        const r = await apiClient.get<PagedResponse<T>>(path, { page, pageSize: 100 });
+        items.push(...r.items);
+        if (r.items.length === 0 || items.length >= r.totalCount) break;
+        page++;
+      }
+      return items;
+    },
 
     getPaged: (params: TParams): Promise<PagedResponse<T>> =>
       apiClient.get<PagedResponse<T>>(

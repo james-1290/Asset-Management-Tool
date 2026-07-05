@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -233,6 +233,15 @@ function NotificationList({
   const notifications = data?.items ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  // After marking-read/dismissing reduces the count, don't strand the user on
+  // an empty page past the end. Reconciling page state to the new bound is a
+  // legitimate data-driven sync.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (isLoading) {
     return (
