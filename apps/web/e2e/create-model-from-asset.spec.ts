@@ -35,9 +35,6 @@ test("Add Model dialog from asset form shows image picker", async ({ page }) => 
   await page.getByRole("option", { name: /create new model/i }).click();
   await page.waitForTimeout(500);
 
-  // Screenshot the Add Model dialog
-  await page.screenshot({ path: "e2e/screenshots/add-model-with-image.png" });
-
   // Verify the image picker is visible on the form
   await expect(page.getByText("Model Image")).toBeVisible();
   await expect(page.getByText("Choose Image")).toBeVisible();
@@ -52,9 +49,6 @@ test("Add Model dialog from Asset Models page shows image picker", async ({ page
   // Click Add Model button on the page
   await page.getByRole("button", { name: /add model/i }).click();
   await page.waitForTimeout(500);
-
-  // Screenshot
-  await page.screenshot({ path: "e2e/screenshots/add-model-page-with-image.png" });
 
   // Verify the image picker is visible
   await expect(page.getByText("Model Image")).toBeVisible();

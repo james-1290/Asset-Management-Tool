@@ -237,4 +237,7 @@ Claude should follow an explore → plan → implement → verify loop.
 
 ## Tests
 
-- <none yet — see the testing item in tasks/todo.md>
+- Backend: `cd apps/api-kt && ./gradlew test` (JUnit unit tests + Testcontainers integration suite; needs Docker. Locally may require `DOCKER_API_VERSION=1.44`).
+- Frontend unit: `cd apps/web && npm run test` (Vitest).
+- Frontend e2e: `cd apps/web && npx playwright test` (needs the dev server on :5173 and the API on :5115 running).
+- CI runs backend `./gradlew build`, frontend build + Vitest + lint on every PR/push (`.github/workflows/ci.yml`).
