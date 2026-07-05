@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-05 15:20 — Frontend dead-code cleanup (second-sweep tier 1)
+
+- Removed a fully-dead dashboard data chain (4 unused hooks, 4 API client methods, 4 types) and two unreachable dashboard widget ids (`recentlyAdded`, `unassignedAssets`) that weren't toggleable or default-visible.
+- Deleted 4 orphaned components (`applications-toolbar`, `attention-strip`, `ui/tabs`, `ui/breadcrumb`).
+- Removed unused hook re-exports (`useAssets`/`useCertificates`/`useApplications`), unused single-item hooks + their now-orphaned `getById` API methods (`useAssetModel`/`useAssetTemplate`), unused `format.ts` helpers (`getActiveCurrency`/`getActiveDateFormat`), the unused `BAR_CHART_COLOR` constant, and the deprecated `onSubmit` path in the asset-model form dialog. No behaviour change; build + 35 tests + lint green.
+
 ## 2026-07-05 15:05 — Backend dead-code cleanup (second-sweep tier 1)
 
 - Removed compiler-flagged dead code: 5 unused vars (`now`/`existingCfvs`), 5 unused imports, an unnecessary `!!`, two always-true `authProvider != null` checks (the column is non-null), an unused Specification `query` param, and two unused `AssetModelRepository` query methods. No behaviour change; full test suite green.

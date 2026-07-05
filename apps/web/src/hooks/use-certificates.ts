@@ -18,7 +18,6 @@ const certificateHooks = createEntityHooks<
   CertificateQueryParams
 >(certificateInvalidation, certificatesApi);
 
-export const useCertificates = certificateHooks.useAll;
 export const usePagedCertificates = certificateHooks.usePaged;
 export const useCertificate = certificateHooks.useDetail;
 export const useCreateCertificate = certificateHooks.useCreate;

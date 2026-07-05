@@ -20,7 +20,6 @@ const applicationHooks = createEntityHooks<
   ApplicationQueryParams
 >(applicationInvalidation, applicationsApi);
 
-export const useApplications = applicationHooks.useAll;
 export const usePagedApplications = applicationHooks.usePaged;
 export const useApplication = applicationHooks.useDetail;
 export const useCreateApplication = applicationHooks.useCreate;

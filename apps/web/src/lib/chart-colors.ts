@@ -8,8 +8,6 @@ export const STATUS_COLORS: Record<string, string> = {
   Archived: "#D1D5DB",
 };
 
-export const BAR_CHART_COLOR = "#3B82F6";
-
 export const CHART_PALETTE = [
   "#3B82F6", // blue
   "#10B981", // emerald

@@ -5,14 +5,10 @@ import type {
   WarrantyExpiryItem,
   AssetsByGroupItem,
   CheckedOutAsset,
-  RecentlyAddedAsset,
   AssetsByAgeBucket,
-  UnassignedAsset,
   ValueByLocation,
   CertificateExpiryItem,
-  CertificateSummary,
   LicenceExpiryItem,
-  ApplicationSummary,
   InventorySnapshotItem,
 } from "../../types/dashboard";
 import type { AuditLogEntry } from "../../types/audit-log";
@@ -57,18 +53,8 @@ export const dashboardApi = {
       .slice(0, limit);
   },
 
-  getRecentlyAdded(days: number = 7): Promise<RecentlyAddedAsset[]> {
-    return apiClient.get<RecentlyAddedAsset[]>(
-      `/dashboard/recently-added?days=${days}`
-    );
-  },
-
   getAssetsByAge(): Promise<AssetsByAgeBucket[]> {
     return apiClient.get<AssetsByAgeBucket[]>("/dashboard/assets-by-age");
-  },
-
-  getUnassigned(): Promise<UnassignedAsset[]> {
-    return apiClient.get<UnassignedAsset[]>("/dashboard/unassigned");
   },
 
   getValueByLocation(): Promise<ValueByLocation[]> {
@@ -81,18 +67,10 @@ export const dashboardApi = {
     );
   },
 
-  getCertificateSummary(): Promise<CertificateSummary> {
-    return apiClient.get<CertificateSummary>("/dashboard/certificate-summary");
-  },
-
   getLicenceExpiries(days: number = 30): Promise<LicenceExpiryItem[]> {
     return apiClient.get<LicenceExpiryItem[]>(
       `/dashboard/licence-expiries?days=${days}`
     );
-  },
-
-  getApplicationSummary(): Promise<ApplicationSummary> {
-    return apiClient.get<ApplicationSummary>("/dashboard/application-summary");
   },
 
   getInventorySnapshot(): Promise<InventorySnapshotItem[]> {

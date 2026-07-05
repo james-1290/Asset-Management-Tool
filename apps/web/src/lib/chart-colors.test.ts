@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { STATUS_COLORS, CHART_PALETTE, BAR_CHART_COLOR } from "./chart-colors";
+import { STATUS_COLORS, CHART_PALETTE } from "./chart-colors";
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
@@ -14,9 +14,5 @@ describe("chart-colors", () => {
     expect(CHART_PALETTE.length).toBeGreaterThanOrEqual(10);
     CHART_PALETTE.forEach((c) => expect(c).toMatch(HEX));
     expect(new Set(CHART_PALETTE).size).toBe(CHART_PALETTE.length);
-  });
-
-  it("exposes a valid single bar colour", () => {
-    expect(BAR_CHART_COLOR).toMatch(HEX);
   });
 });

@@ -28,14 +28,6 @@ export function setFormatSettings(settings: {
   if (settings.dateFormat) activeDateFormat = settings.dateFormat;
 }
 
-export function getActiveCurrency(): string {
-  return activeCurrency;
-}
-
-export function getActiveDateFormat(): string {
-  return activeDateFormat;
-}
-
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
 function toDate(value: string | number | Date | null | undefined): Date | null {

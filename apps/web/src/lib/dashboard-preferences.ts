@@ -7,9 +7,7 @@ export type WidgetId =
   | "assetsByLocation"
   | "recentActivity"
   | "checkedOut"
-  | "recentlyAdded"
   | "assetsByAge"
-  | "unassignedAssets"
   | "valueByLocation"
   | "certificateExpiries"
   | "licenceExpiries"
@@ -32,9 +30,7 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   assetsByLocation: "Assets by Location",
   recentActivity: "Recent Activity",
   checkedOut: "Checked Out Assets",
-  recentlyAdded: "Recently Added",
   assetsByAge: "Assets by Age",
-  unassignedAssets: "Unassigned Assets",
   valueByLocation: "Value by Location",
   certificateExpiries: "Certificate Expiries",
   licenceExpiries: "Licence Expiries",

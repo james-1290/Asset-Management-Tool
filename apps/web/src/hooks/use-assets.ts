@@ -21,7 +21,6 @@ const assetHooks = createEntityHooks<Asset, CreateAssetRequest, UpdateAssetReque
   assetsApi,
 );
 
-export const useAssets = assetHooks.useAll;
 export const usePagedAssets = assetHooks.usePaged;
 export const useAsset = assetHooks.useDetail;
 export const useCreateAsset = assetHooks.useCreate;

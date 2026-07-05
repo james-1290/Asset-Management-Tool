@@ -15,14 +15,6 @@ export function useAssetModels(assetTypeId?: string) {
   });
 }
 
-export function useAssetModel(id: string) {
-  return useQuery({
-    queryKey: assetModelKeys.detail(id),
-    queryFn: () => assetModelsApi.getById(id),
-    enabled: !!id,
-  });
-}
-
 export function useCreateAssetModel() {
   const queryClient = useQueryClient();
   return useMutation({
