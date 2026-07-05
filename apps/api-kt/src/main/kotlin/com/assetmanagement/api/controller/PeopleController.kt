@@ -117,7 +117,7 @@ class PeopleController(
     @Transactional(readOnly = true)
     fun getHistory(@PathVariable id: UUID, @RequestParam(required = false) limit: Int?): ResponseEntity<Any> {
         if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()
-        val pageable = PageRequest.of(0, limit ?: 50)
+        val pageable = PageRequest.of(0, (limit ?: 50).coerceIn(1, 500))
         val history = personHistoryRepository.findByPersonIdOrderByTimestampDesc(id, pageable).map { h ->
             PersonHistoryDto(h.id, h.eventType.name, h.details, h.timestamp,
                 h.performedByUser?.displayName,
@@ -174,6 +174,14 @@ class PeopleController(
         if (request.locationId != null) {
             val loc = locationRepository.findById(request.locationId).orElse(null)
             if (loc == null || loc.isArchived) return ResponseEntity.badRequest().body(mapOf("error" to "Invalid location ID."))
+        }
+
+        // Reject an email already used by another active person (create checks this too).
+        if (!request.email.isNullOrBlank()) {
+            val existing = personRepository.findByEmailIgnoreCaseAndIsArchivedFalse(request.email)
+            if (existing != null && existing.id != person.id) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(mapOf("error" to "A person with this email already exists"))
+            }
         }
 
         val changes = mutableListOf<AuditChange>()

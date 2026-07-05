@@ -164,7 +164,7 @@ class LocationsController(
 
     @PutMapping("/{id}")
     @Transactional
-    fun update(@PathVariable id: UUID, @RequestBody request: UpdateLocationRequest): ResponseEntity<Any> {
+    fun update(@PathVariable id: UUID, @Valid @RequestBody request: UpdateLocationRequest): ResponseEntity<Any> {
         val location = locationRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         versionConflict(request.entityVersion, location.entityVersion)?.let { return it }
 

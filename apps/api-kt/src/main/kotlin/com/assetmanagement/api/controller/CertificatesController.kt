@@ -386,7 +386,7 @@ class CertificatesController(
 
     @PutMapping("/{id}")
     @Transactional
-    fun update(@PathVariable id: UUID, @RequestBody request: UpdateCertificateRequest): ResponseEntity<Any> {
+    fun update(@PathVariable id: UUID, @Valid @RequestBody request: UpdateCertificateRequest): ResponseEntity<Any> {
         val certificate = certificateRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
 
@@ -517,7 +517,7 @@ class CertificatesController(
         @RequestParam(required = false) limit: Int?
     ): ResponseEntity<Any> {
         if (!certificateRepository.existsById(id)) return ResponseEntity.notFound().build()
-        val pageable = PageRequest.of(0, limit ?: 50)
+        val pageable = PageRequest.of(0, (limit ?: 50).coerceIn(1, 500))
         val history = certificateHistoryRepository.findByCertificateIdOrderByTimestampDesc(id, pageable).map { h ->
             CertificateHistoryDto(
                 h.id,

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-07-05 20:10 — Backend correctness batch (third-sweep)
+
+- **getHistory `limit<=0` → 500**: `PageRequest.of(0, limit)` threw on non-positive limits (Certificates/Applications/People). Now `coerceIn(1, 500)`. Verified: `?limit=0`/`-5` return 200.
+- **Asset update depreciationMonths**: applied `request.depreciationMonths ?: old` so the field could never be cleared and the audit logged a change that wasn't made. Now applies the value directly (consistent with other fields + the change tracking).
+- **Asset bulk-status**: rejected terminal statuses (`Retired`/`Sold`/`Archived` need the dedicated flows with dates/assignment cleanup — verified 400) and clears the assignee when moving to `Available` (was leaving a dangling assignee).
+- **Applications archive/bulk-archive**: now blocked when active licence seats exist (previously orphaned seat rows + stale `usedSeats`).
+- **People update**: rejects an email already used by another active person (create already did).
+- **Missing `@Valid`** added to Certificate/Application/Location update endpoints.
+- **Last-admin guard** (`UsersController.update`): the last active Admin can't be deactivated or demoted (verified 400) — prevents org-wide admin lockout.
+- **SCIM**: `listUsers` now honours `startIndex`/`count` with correct `totalResults`; `createUser` rejects duplicates (externalId/username/email) instead of silently creating a second user.
+
 ## 2026-07-05 19:45 — Frontend security hardening (third-sweep)
 
 - **Login SSO redirect**: the open-redirect guard (`startsWith("/") || startsWith(origin)`) allowed protocol-relative `//evil.com`. Now resolves the URL against the current origin and requires it to stay same-origin, rejecting `//` and `\` prefixes.

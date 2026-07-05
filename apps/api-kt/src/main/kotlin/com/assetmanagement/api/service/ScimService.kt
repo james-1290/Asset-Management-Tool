@@ -51,9 +51,14 @@ class ScimService(
             userRepository.findAll()
         }
 
-        val scimUsers = users.map { toScimUser(it, baseUrl) }
+        // SCIM paging: startIndex is 1-based; count is the page size.
+        val total = users.size
+        val from = (startIndex - 1).coerceIn(0, total)
+        val to = if (count <= 0) from else (from + count).coerceAtMost(total)
+        val page = users.subList(from, to)
+        val scimUsers = page.map { toScimUser(it, baseUrl) }
         return ScimListResponse(
-            totalResults = scimUsers.size,
+            totalResults = total,
             startIndex = startIndex,
             itemsPerPage = scimUsers.size,
             resources = scimUsers
@@ -68,6 +73,13 @@ class ScimService(
     fun createUser(scimUser: ScimUser, baseUrl: String): ScimUser {
         val email = scimUser.emails?.firstOrNull()?.value ?: scimUser.userName ?: ""
         val username = scimUser.userName ?: email
+        // SCIM: creating a user that already exists must not silently duplicate.
+        val existing = scimUser.externalId?.let { userRepository.findByExternalId(it) }
+            ?: userRepository.findByUsername(username)
+            ?: userRepository.findByEmail(email)
+        if (existing != null) {
+            throw IllegalStateException("User already exists: $username")
+        }
         val displayName = scimUser.displayName
             ?: scimUser.name?.formatted
             ?: listOfNotNull(scimUser.name?.givenName, scimUser.name?.familyName).joinToString(" ").ifBlank { username }
