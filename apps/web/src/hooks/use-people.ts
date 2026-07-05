@@ -37,11 +37,11 @@ export function usePeopleSearch(query: string) {
   });
 }
 
-export function usePersonHistory(id: string, limit?: number) {
+export function usePersonHistory(id: string, limit?: number, enabled: boolean = true) {
   return useQuery({
     queryKey: ["people", id, "history", limit] as const,
     queryFn: () => peopleApi.getHistory(id, limit),
-    enabled: !!id,
+    enabled: enabled && !!id,
   });
 }
 
