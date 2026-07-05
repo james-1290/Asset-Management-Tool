@@ -42,6 +42,35 @@ function toDate(value: string | number | Date | null | undefined): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/**
+ * Whole calendar days from today (local) until a date-only value — negative if
+ * past, null if unparseable. Uses the local-calendar `toDate` so a bare
+ * "YYYY-MM-DD" isn't shifted a day by UTC parsing.
+ */
+export function daysUntilDate(value: string | number | Date | null | undefined): number | null {
+  const d = toDate(value);
+  if (!d) return null;
+  const today = new Date();
+  const a = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const b = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  return Math.round((b - a) / 86_400_000);
+}
+
+/** True if a date-only value is strictly before today (local). */
+export function isExpired(value: string | number | Date | null | undefined): boolean {
+  const n = daysUntilDate(value);
+  return n !== null && n < 0;
+}
+
+/** True if a date-only value falls within [today, today + withinDays] (local). */
+export function isExpiringSoon(
+  value: string | number | Date | null | undefined,
+  withinDays = 90,
+): boolean {
+  const n = daysUntilDate(value);
+  return n !== null && n >= 0 && n <= withinDays;
+}
+
 /** Format a date value (date-only) using the org's configured date format. */
 export function formatDate(
   value: string | number | Date | null | undefined,

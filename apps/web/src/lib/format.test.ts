@@ -6,7 +6,18 @@ import {
   formatCurrency,
   getCurrencySymbol,
   formatCompactCurrency,
+  daysUntilDate,
+  isExpired,
+  isExpiringSoon,
 } from "./format";
+
+function localDateOnly(offsetDays: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
 
 // A fixed local date/time to format. Using explicit args avoids timezone drift
 // in the date-only assertions (we compare against local getters).
@@ -93,5 +104,30 @@ describe("formatCompactCurrency", () => {
 
   it("formats small amounts in full with no decimals", () => {
     expect(formatCompactCurrency(750)).toBe("£750");
+  });
+});
+
+describe("date-only expiry helpers (timezone-safe)", () => {
+  it("daysUntilDate returns 0 for today, positive for future, negative for past", () => {
+    expect(daysUntilDate(localDateOnly(0))).toBe(0);
+    expect(daysUntilDate(localDateOnly(5))).toBe(5);
+    expect(daysUntilDate(localDateOnly(-3))).toBe(-3);
+    expect(daysUntilDate(null)).toBeNull();
+    expect(daysUntilDate("")).toBeNull();
+  });
+
+  it("isExpired only for strictly-past dates", () => {
+    expect(isExpired(localDateOnly(-1))).toBe(true);
+    expect(isExpired(localDateOnly(0))).toBe(false);
+    expect(isExpired(localDateOnly(1))).toBe(false);
+    expect(isExpired(null)).toBe(false);
+  });
+
+  it("isExpiringSoon covers today..+withinDays inclusive", () => {
+    expect(isExpiringSoon(localDateOnly(0))).toBe(true);
+    expect(isExpiringSoon(localDateOnly(90))).toBe(true);
+    expect(isExpiringSoon(localDateOnly(91))).toBe(false);
+    expect(isExpiringSoon(localDateOnly(-1))).toBe(false);
+    expect(isExpiringSoon(localDateOnly(10), 7)).toBe(false);
   });
 });

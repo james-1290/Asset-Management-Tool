@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { daysUntilDate } from "../lib/format";
 import { toast } from "sonner";
 import {
   Bell,
@@ -69,7 +70,7 @@ interface UrgencyConfig {
 }
 
 function getUrgency(expiryDate: string): UrgencyConfig {
-  const days = Math.ceil((new Date(expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const days = daysUntilDate(expiryDate) ?? 0;
   if (days <= 0) {
     return {
       label: "Expired",

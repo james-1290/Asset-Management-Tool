@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-05 21:10 — Fix: timezone off-by-one in expiry logic (third-sweep)
+
+- Date-only values (`YYYY-MM-DD`) were compared with `new Date(iso)` (UTC midnight) against a local `now`, so expiry highlighting/urgency could be off by a day near midnight in non-UTC timezones. Added timezone-safe `daysUntilDate` / `isExpired` / `isExpiringSoon` to `lib/format` (built on the existing local-calendar parser) with unit tests, and replaced the duplicated per-file logic in asset/certificate/application detail pages, the notifications urgency, and the applications table's expiry urgency. 38 unit tests + 7 e2e green.
+
 ## 2026-07-05 20:50 — Backend performance (third-sweep)
 
 - Set `hibernate.default_batch_fetch_size: 100` so a page of rows resolves its to-one relations in a few `IN(...)` batches instead of one query per row (mitigates N+1 on CSV exports and sub-resource lists that don't fetch-join). Full 60-endpoint read sweep still clean, 0 lazy errors.
