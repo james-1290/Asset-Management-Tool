@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-05 13:40 — Remove dead disabled buttons (2FA card, Preview Daily Report)
+
+- Removed the non-functional `disabled` "Configure 2FA" card (Profile tab) and "Preview Daily Report" button (Alerts tab), plus their now-unused icon imports. 2FA is an explicit non-goal, and both were dead half-built UI. (The backlog listed this as done under PR #141, but the removal had never actually landed on `main` — this reconciles the code with the todo.)
+
 ## 2026-07-04 23:50 — Date-only storage (DATE / LocalDate) + fix truncating daysUntilExpiry
 
 - **DB migration V016**: converts the business date-only columns from `DATETIME` to `DATE` — `assets`(purchase/warranty/sold/retired), `certificates`(issued/expiry), `applications`(purchase/expiry/deactivated), `alert_history`(expiry), `user_notifications`(expiry). True timestamps (created/updated, audit/history, token_invalidated_at) stay `DATETIME`. Existing values truncate to their date part (no day shift); indexes preserved.
