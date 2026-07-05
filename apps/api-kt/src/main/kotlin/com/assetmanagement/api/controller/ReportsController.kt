@@ -8,14 +8,12 @@ import com.assetmanagement.api.util.CsvExport
 import com.assetmanagement.api.util.CsvUtils
 import com.assetmanagement.api.util.DepreciationCalculator
 import com.assetmanagement.api.model.enums.ApplicationStatus
-import com.assetmanagement.api.model.enums.CertificateStatus
 import com.opencsv.CSVWriter
 import jakarta.persistence.EntityManager
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -108,7 +106,6 @@ class ReportsController(
         val purchaseDates = em.createQuery(
             "SELECT a.purchaseDate FROM com.assetmanagement.api.model.Asset a WHERE a.isArchived = false AND a.purchaseDate IS NOT NULL"
         ).resultList as List<java.time.LocalDate>
-        val now = today()
         var lt1 = 0; var oneToThree = 0; var threeToFive = 0; var fivePlus = 0
         purchaseDates.forEach { pd ->
             val days = ChronoUnit.DAYS.between(pd, today())
@@ -595,8 +592,6 @@ class ReportsController(
         @RequestParam(required = false) locationId: UUID?,
         @RequestParam(required = false) format: String?
     ): ResponseEntity<*> {
-        val now = today()
-
         // Build dynamic JPQL query with optional filters
         val jpql = StringBuilder(
             """SELECT a FROM com.assetmanagement.api.model.Asset a

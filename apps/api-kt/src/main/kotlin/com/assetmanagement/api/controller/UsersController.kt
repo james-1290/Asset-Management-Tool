@@ -79,7 +79,7 @@ class UsersController(
     fun update(@PathVariable id: UUID, @Valid @RequestBody request: UpdateUserRequest): ResponseEntity<Any> {
         val user = userRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
 
-        val isSsoUser = user.authProvider != null && user.authProvider != "LOCAL"
+        val isSsoUser = user.authProvider != "LOCAL"
 
         // For SSO users, only role changes are allowed — displayName, email, active are managed by the identity provider
         if (isSsoUser) {

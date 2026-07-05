@@ -53,7 +53,6 @@ class DashboardController(
         ).setParameter("excludedStatuses", excludedStatuses)
          .resultList as List<Array<Any>>
 
-        val now = Instant.now()
         var totalBookValue = BigDecimal.ZERO
         for (row in depreciableAssets) {
             val cost = row[0] as BigDecimal
@@ -223,7 +222,6 @@ class DashboardController(
                WHERE a.isArchived = false AND a.purchaseDate IS NOT NULL"""
         ).resultList as List<java.time.LocalDate>
 
-        val now = Instant.now()
         var lessThan1 = 0
         var oneToThree = 0
         var threeToFive = 0
