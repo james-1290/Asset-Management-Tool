@@ -13,16 +13,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DateRangePicker, type DateRange } from "./date-range-picker";
-import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
+import { formatCurrency, formatDate, formatDateTime, toLocalISODate } from "@/lib/format";
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalISODate();
 }
 
 function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr);
+  const [y, m, dd] = dateStr.split("-").map(Number);
+  const d = new Date(y, m - 1, dd);
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return toLocalISODate(d);
 }
 
 export function LicenceSummaryReport() {

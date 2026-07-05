@@ -28,13 +28,11 @@ export function CheckoutDialog({
   loading,
 }: CheckoutDialogProps) {
   const [personId, setPersonId] = useState("");
-  const [personName, setPersonName] = useState<string | undefined>();
   const [notes, setNotes] = useState("");
 
   function handleOpenChange(next: boolean) {
     if (!next) {
       setPersonId("");
-      setPersonName(undefined);
       setNotes("");
     }
     onOpenChange(next);
@@ -62,10 +60,8 @@ export function CheckoutDialog({
             <Label>Person *</Label>
             <PersonCombobox
               value={personId}
-              displayName={personName}
               onValueChange={(val) => {
                 setPersonId(val);
-                setPersonName(undefined);
               }}
             />
           </div>

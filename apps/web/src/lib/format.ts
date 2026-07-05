@@ -42,6 +42,14 @@ function toDate(value: string | number | Date | null | undefined): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/** A Date (default now) as a local-calendar "YYYY-MM-DD" — avoids the UTC day
+ *  shift of `toISOString().slice(0,10)` for date-input values. */
+export function toLocalISODate(date: Date = new Date()): string {
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${mm}-${dd}`;
+}
+
 /**
  * Whole calendar days from today (local) until a date-only value — negative if
  * past, null if unparseable. Uses the local-calendar `toDate` so a bare
