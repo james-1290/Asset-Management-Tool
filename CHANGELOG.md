@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-05 23:20 — Leak/race & a11y polish (third-sweep tail)
+
+- **`useAssetModelImage`**: added a cancellation guard so a superseded/unmounted fetch can't `setState` late or leak an object URL, and de-dupes concurrent object URLs for the same key (revokes the extra).
+- **Attachments preview**: revoke the preview blob URL on unmount (not only on dialog close).
+- **Offboard person search**: debounced (250ms) so it no longer fires an API call on every keystroke (also avoids out-of-order results).
+- **Accessibility**: added `aria-label`s to the attachment Preview/Download/Delete icon buttons.
+
 ## 2026-07-05 23:00 — Frontend polish tail (third-sweep)
 
 - **Report date pickers**: `todayISO`/`addDays` used `toISOString()` (UTC), so the Next-30/90 presets and default ranges could be a day off in positive-offset timezones. Added a shared `toLocalISODate` helper and switched the date-range-picker + expiries/licence-summary reports to it.

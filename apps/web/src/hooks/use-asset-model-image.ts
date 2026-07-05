@@ -23,6 +23,7 @@ export function useAssetModelImage(assetModelId: string | null | undefined, imag
     }
 
     setIsLoading(true);
+    let cancelled = false;
     const token = localStorage.getItem("token");
     fetch(`/api/v1/asset-models/${assetModelId}/image`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -33,11 +34,30 @@ export function useAssetModelImage(assetModelId: string | null | undefined, imag
       })
       .then((blob) => {
         const objectUrl = URL.createObjectURL(blob);
+        // A newer effect (or unmount) superseded this fetch — discard.
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+          return;
+        }
+        // A concurrent fetch for the same key already cached one — don't leak ours.
+        const existing = blobCache.get(cacheKey);
+        if (existing) {
+          URL.revokeObjectURL(objectUrl);
+          setSrc(existing);
+          return;
+        }
         blobCache.set(cacheKey, objectUrl);
         setSrc(objectUrl);
       })
-      .catch(() => setSrc(null))
-      .finally(() => setIsLoading(false));
+      .catch(() => {
+        if (!cancelled) setSrc(null);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [assetModelId, imageUrl]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
