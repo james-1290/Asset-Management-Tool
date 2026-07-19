@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-19 16:00 — Assets "More Filters" on shadcn Popover (fourth sweep)
+
+- The Assets "More Filters" panel was a hand-rolled dropdown: a plain `<button>` toggling an absolutely-positioned `<div>`, with its own `useState`/`useRef`/`mousedown` click-outside effect and no focus trap or Escape handling. Replaced it with the shared shadcn `Popover` + a `Button` trigger (variant `outline`, primary tint when advanced filters are active) — gaining focus management, Escape-to-close, and correct positioning for free, and removing the bespoke effect. Completes the toolbar cleanup (after #198 native selects and #199 FilterChip). Verified: build, lint, 7 e2e pass.
+
 ## 2026-07-19 15:45 — Rebuild FilterChip on shadcn Select (fourth sweep)
 
 - The `FilterChip` dropdown (Type/Status/etc. across the assets, certificates, people, applications and audit-log toolbars) was a hand-rolled listbox: no arrow-key navigation, no typeahead, no roving focus, and a manual `mousedown` click-outside handler. Rebuilt its internals on the shared shadcn `Select` (Radix) so it gains keyboard nav, typeahead, focus management and theme-aware menu styling — while keeping the exact same external props, so all call sites are unchanged. The "All" option uses an `"__all__"` sentinel mapped to/from `""`. Verified: build, lint, and 7 e2e (incl. the pages that render FilterChip) pass.
