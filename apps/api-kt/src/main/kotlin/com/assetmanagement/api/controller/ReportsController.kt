@@ -479,7 +479,7 @@ class ReportsController(
         // If from/to provided, filter warranty expiry within that window; otherwise show all past warranty
         @Suppress("UNCHECKED_CAST")
         val pastWarrantyAssets = if (rangeFrom != null || rangeTo != null) {
-            val qFrom = rangeFrom ?: java.time.LocalDate.MIN
+            val qFrom = rangeFrom ?: java.time.LocalDate.ofEpochDay(0)
             val qTo = rangeTo ?: now
             em.createQuery(
                 """SELECT a FROM com.assetmanagement.api.model.Asset a
@@ -515,7 +515,7 @@ class ReportsController(
         // Oldest assets — if from/to provided, filter by purchase date window
         @Suppress("UNCHECKED_CAST")
         val oldestAssetsList = if (rangeFrom != null || rangeTo != null) {
-            val qFrom = rangeFrom ?: java.time.LocalDate.MIN
+            val qFrom = rangeFrom ?: java.time.LocalDate.ofEpochDay(0)
             val qTo = rangeTo ?: now
             em.createQuery(
                 """SELECT a FROM com.assetmanagement.api.model.Asset a

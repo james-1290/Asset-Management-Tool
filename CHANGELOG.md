@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-19 10:30 — Fix two date bugs: asset-lifecycle 500 + notification-bell miscount (fourth sweep)
+
+- **Reports `/asset-lifecycle`** 500'd whenever only `to`/`from` bounded one side, because the open bound used `LocalDate.MIN` (year -999,999,999) against a MySQL `DATE` column (floor 1000-01-01). Use `LocalDate.ofEpochDay(0)`. Verified: `?to=2026-12-31` now 200.
+- **Notification bell** (`NotificationsController`) was missed by the V016 date-only migration: it compared `LocalDate` expiry columns against an `Instant` `now`, dropping items expiring *today*. Now uses `today()`/`today().plusDays(n)` and `LocalDate` paths, matching the rest of the app. Full backend suite green.
+
 ## 2026-07-05 23:45 — Adopt useListPage on remaining list pages (third-sweep tail)
 
 - Migrated the five secondary list pages (asset-types, certificate-types, application-types, locations, audit-log) onto the shared `useListPage` hook, matching the four primary pages — removing the duplicated URL-param plumbing (search debounce, sorting memo, page/sort/pageSize handlers, row selection) from each. Added a `defaultPageSize` option to the hook so audit-log keeps its 50-row default. Pure plumbing extraction — query keys, saved views, filters, and default sorts (incl. audit-log's timestamp-desc) preserved. Build + lint + 38 unit + 7 e2e green.
