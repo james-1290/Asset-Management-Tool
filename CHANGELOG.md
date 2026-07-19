@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-19 15:45 — Rebuild FilterChip on shadcn Select (fourth sweep)
+
+- The `FilterChip` dropdown (Type/Status/etc. across the assets, certificates, people, applications and audit-log toolbars) was a hand-rolled listbox: no arrow-key navigation, no typeahead, no roving focus, and a manual `mousedown` click-outside handler. Rebuilt its internals on the shared shadcn `Select` (Radix) so it gains keyboard nav, typeahead, focus management and theme-aware menu styling — while keeping the exact same external props, so all call sites are unchanged. The "All" option uses an `"__all__"` sentinel mapped to/from `""`. Verified: build, lint, and 7 e2e (incl. the pages that render FilterChip) pass.
+
 ## 2026-07-19 15:25 — Replace native selects in the Assets filter with shadcn Select (fourth sweep)
 
 - The Assets "More Filters" popover used two hand-rolled native `<select>` elements (Location, Assigned To). Native option lists are rendered by the OS and ignore the app theme, so in dark mode they showed as white dropdowns with dark text — jarring and off-brand. Replaced both with the shared shadcn `Select` (theme-aware, keyboard-accessible), using an `"all"` sentinel mapped to `""` (Radix forbids empty item values), matching the existing audit-log toolbar pattern. No filter-behaviour change. Verified: build, lint, and e2e (incl. the Assets list) pass.
