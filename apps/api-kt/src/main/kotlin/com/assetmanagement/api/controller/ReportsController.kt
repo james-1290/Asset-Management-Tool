@@ -20,10 +20,14 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.*
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.transaction.annotation.Transactional
 
 @RestController
 @RequestMapping("/api/v1/reports")
 @PreAuthorize("hasAnyRole('Admin', 'Operator')")
+// Read-only endpoints: JOIN FETCH queries + in-memory aggregation run inside one
+// read-only transaction per request (open-in-view is disabled).
+@Transactional(readOnly = true)
 class ReportsController(
     private val em: EntityManager
 ) {

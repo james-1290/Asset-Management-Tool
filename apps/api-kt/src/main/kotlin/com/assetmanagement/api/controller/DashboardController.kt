@@ -16,11 +16,15 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/dashboard")
 @PreAuthorize("hasAnyRole('Admin','Operator')")
+// Read-only endpoints: a single read-only transaction per request lets the JPA
+// aggregate queries run against one consistent snapshot (and hints the driver).
+@Transactional(readOnly = true)
 class DashboardController(
     private val em: EntityManager
 ) {

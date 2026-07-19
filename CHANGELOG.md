@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-19 14:25 — Correctness cluster: CSV status, number locale, history cap, read-only tx (fourth sweep)
+
+- **CSV export status.** Certificate and application/licence exports wrote the *stored* status field, so a record stored "Active" but past its expiry exported as "Active" while every list/detail view (which use `computeStatus`) showed "Expired". Both exports now use `computeStatus(status, expiryDate)`, matching the UI. (Assets have no date-derived status, so their export is unchanged.) New regression test.
+- **Number-format locale.** Eight money `String.format("%.2f", …)` sites (asset/application exports + sold-price/audit values) omitted a `Locale`, so under a comma-decimal JVM default locale they emitted `1234,56` and corrupted CSV numeric columns. All now pass `Locale.ROOT`.
+- **Unbounded asset history.** `GET /assets/{id}/history` with no `limit` loaded the entire timeline (each with its `changes` collection) into memory. It now always pages, defaulting to 500 and clamping any explicit limit to 1000.
+- **Read-only transactions.** `DashboardController` and `ReportsController` (both purely read) are now `@Transactional(readOnly = true)`, so each request's aggregate/JOIN-FETCH queries run in one read-only transaction (open-in-view is disabled).
+- Verified: full `./gradlew test` passes; API rebuilt + restarted; dashboard, reports, and all three exports respond 200.
+
 ## 2026-07-19 14:00 — Chart dark-mode tooltip fix + honest single-series bars (fourth sweep)
 
 - Every dashboard chart duplicated a tooltip style that set a card background but no text colour, so Recharts rendered its default near-black text — unreadable on the dark-theme card. Consolidated into a single `chartTooltipStyle` in `chart-colors.ts` with `color: var(--color-card-foreground)` and applied it across all five charts (age/location/type/value bars + status donut).
