@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-19 17:20 — JacksonConfig honours spring.jackson.* (non_null now applied) (fourth sweep)
+
+- `JacksonConfig` exposed a hand-built `ObjectMapper` bean, which made Spring Boot's `JacksonAutoConfiguration` back off — silently discarding everything configured under `spring.jackson.*`, most importantly `default-property-inclusion: non_null`. As a result null fields were serialized on every response despite the config asking otherwise. Replaced the bean with a `Jackson2ObjectMapperBuilderCustomizer` that only layers on the two lenient date deserializers, so Boot's auto-configured mapper (Kotlin module, `write-dates-as-timestamps: false`, and `non_null`) is preserved. Responses now omit null fields as intended (smaller payloads).
+- Verified this is safe for the client: the SPA doesn't schema-validate API responses, and its only `=== null` checks are on locally-computed values. Full `./gradlew test` (incl. the flexible-date deserialization tests) passes, and all 9 e2e specs pass with the frontend running against the `non_null` API (assets/applications/certificates/types/templates/people/locations render correctly with null fields omitted).
+
 ## 2026-07-19 17:00 — Security-header hardening: CORS credentials + X-XSS-Protection (fourth sweep)
 
 - **CORS `allowCredentials` false.** Auth is a stateless JWT in the `Authorization` header (no cookies — confirmed: the SPA reads the token from localStorage, never sends `withCredentials`), so cross-origin credentials are never needed. Set `allowCredentials = false` so the API doesn't advertise/permit credentialed cross-origin requests. No functional change (the SPA is served same-origin via proxy; the allowed origin is still echoed).

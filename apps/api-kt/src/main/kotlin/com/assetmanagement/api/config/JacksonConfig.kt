@@ -2,11 +2,8 @@ package com.assetmanagement.api.config
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.kotlinModule
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.time.Instant
@@ -16,18 +13,20 @@ import java.time.ZoneOffset
 @Configuration
 class JacksonConfig {
 
+    /**
+     * Layer the lenient date deserializers onto Spring Boot's auto-configured
+     * ObjectMapper via a customizer, instead of replacing it with a hand-built
+     * one. The previous `objectMapper()` bean discarded everything Boot applies
+     * from `spring.jackson.*` — most importantly `default-property-inclusion:
+     * non_null` (so null fields were being serialized) — as well as the Kotlin
+     * module and `write-dates-as-timestamps: false`. Those are all preserved now.
+     */
     @Bean
-    fun objectMapper(): ObjectMapper {
-        val timeModule = JavaTimeModule().apply {
-            addDeserializer(Instant::class.java, FlexibleInstantDeserializer())
-            addDeserializer(LocalDate::class.java, FlexibleLocalDateDeserializer())
+    fun flexibleDateDeserializers(): Jackson2ObjectMapperBuilderCustomizer =
+        Jackson2ObjectMapperBuilderCustomizer { builder ->
+            builder.deserializerByType(Instant::class.java, FlexibleInstantDeserializer())
+            builder.deserializerByType(LocalDate::class.java, FlexibleLocalDateDeserializer())
         }
-        return ObjectMapper().apply {
-            registerModule(kotlinModule())
-            registerModule(timeModule)
-            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        }
-    }
 }
 
 /**
