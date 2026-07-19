@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-19 14:45 — Ops/production-readiness: health probes, graceful shutdown, pool tuning (fourth sweep)
+
+- Added Spring Boot Actuator with liveness/readiness health groups. The existing `/api/v1/health` was a shallow always-"healthy" check; `/actuator/health/readiness` now actually verifies **database** connectivity (group `readinessState,db`), so an orchestrator won't route traffic to an instance that can't reach MySQL. Only `health` is exposed and only as UP/DOWN (`show-details: never`), so the probe paths are safe to leave unauthenticated (permitted in `SecurityConfig`; skipped by the rate-limit filter).
+- `server.shutdown: graceful` + `spring.lifecycle.timeout-per-shutdown-phase: 20s` so in-flight requests finish on SIGTERM instead of being dropped.
+- Explicit Hikari pool config (name, size via `DB_POOL_MAX`/`DB_POOL_MIN_IDLE`, 30s connection timeout, 30m `max-lifetime` to recycle before MySQL's `wait_timeout`).
+- Verified: full `./gradlew test` passes; health/liveness/readiness return UP (200) unauthenticated, `/actuator/env` is not accessible (401), login + reads unaffected. New `docs/deployment.md` section.
+
 ## 2026-07-19 14:25 — Correctness cluster: CSV status, number locale, history cap, read-only tx (fourth sweep)
 
 - **CSV export status.** Certificate and application/licence exports wrote the *stored* status field, so a record stored "Active" but past its expiry exported as "Active" while every list/detail view (which use `computeStatus`) showed "Expired". Both exports now use `computeStatus(status, expiryDate)`, matching the UI. (Assets have no date-derived status, so their export is unchanged.) New regression test.

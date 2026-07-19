@@ -33,8 +33,9 @@ class RateLimitFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        // Skip rate limiting for health check
-        if (request.requestURI == "/api/v1/health") {
+        // Skip rate limiting for health checks / orchestrator probes.
+        val uri = request.requestURI
+        if (uri == "/api/v1/health" || uri.startsWith("/actuator/health")) {
             filterChain.doFilter(request, response)
             return
         }

@@ -1,5 +1,26 @@
 # Deployment (production serving)
 
+## Health probes & graceful shutdown (API)
+
+The API exposes Spring Boot Actuator health endpoints for orchestrators (only
+`health` is exposed, and only as UP/DOWN — no component details — so the probe
+paths are safe to leave unauthenticated):
+
+| Endpoint | Meaning | Use as |
+|----------|---------|--------|
+| `/actuator/health/liveness` | The app process is running | liveness probe (restart if failing) |
+| `/actuator/health/readiness` | The app **and its database** are reachable | readiness probe (route traffic only when UP) |
+| `/actuator/health` | Aggregate UP/DOWN | quick manual check |
+
+`server.shutdown: graceful` lets in-flight requests finish (up to
+`spring.lifecycle.timeout-per-shutdown-phase`, 20s) on SIGTERM — send SIGTERM
+and wait before killing the container. The Hikari pool is tuned via
+`spring.datasource.hikari.*` (override the size with `DB_POOL_MAX` /
+`DB_POOL_MIN_IDLE`); `max-lifetime` (30m) recycles connections before MySQL's
+`wait_timeout` can drop them.
+
+
+
 The Vite dev server (`npm run dev`) is for local development only. It ships
 unminified sources, an open HMR websocket, and sets no Content-Security-Policy
 on the app document. **Do not expose it to production.**
