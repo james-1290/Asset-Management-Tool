@@ -21,6 +21,9 @@ const cases = [
   { route: "/applications", open: /add application/i, heading: /add new application/i, submit: /add application/i },
   { route: "/asset-types", open: /add asset type/i, heading: /add asset type/i, submit: /add asset type/i },
   { route: "/asset-templates", open: /add template/i, heading: /add template/i, submit: /add template/i },
+  // Migrated from hand-rolled dialogs onto the shared FormDialog shell.
+  { route: "/people", open: /add person/i, heading: /add person/i, submit: /^create$/i },
+  { route: "/locations", open: /add location/i, heading: /add location/i, submit: /^create$/i },
 ];
 
 for (const c of cases) {
