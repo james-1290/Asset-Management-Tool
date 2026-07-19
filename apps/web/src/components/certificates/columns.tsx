@@ -10,8 +10,8 @@ import {
 } from "../ui/dropdown-menu";
 import { CertificateStatusBadge } from "./certificate-status-badge";
 import { AvatarPlaceholder } from "../avatar-placeholder";
+import { ExpiryDateCell } from "../expiry-date-cell";
 import type { Certificate } from "../../types/certificate";
-import { formatDateOrDash as formatDate } from "../../lib/format";
 
 interface ColumnActions {
   onEdit: (certificate: Certificate) => void;
@@ -108,7 +108,7 @@ export function getCertificateColumns({
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => formatDate(row.original.expiryDate),
+      cell: ({ row }) => <ExpiryDateCell value={row.original.expiryDate} />,
     },
     {
       accessorKey: "status",

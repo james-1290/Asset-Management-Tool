@@ -10,22 +10,13 @@ import {
 } from "../ui/dropdown-menu";
 import { ApplicationStatusBadge } from "./application-status-badge";
 import { AvatarPlaceholder } from "../avatar-placeholder";
+import { ExpiryDateCell } from "../expiry-date-cell";
 import type { Application } from "../../types/application";
-import { formatDateOrDash as formatDate, daysUntilDate } from "../../lib/format";
 
 interface ColumnActions {
   onEdit: (application: Application) => void;
   onArchive: (application: Application) => void;
   onDeactivate?: (application: Application) => void;
-}
-
-/** Returns "expired" | "expiring" | "normal" based on the expiry date */
-function getExpiryUrgency(iso: string | null): "expired" | "expiring" | "normal" {
-  const days = daysUntilDate(iso);
-  if (days === null) return "normal";
-  if (days < 0) return "expired";
-  if (days < 30) return "expiring";
-  return "normal";
 }
 
 const ICON_COLORS = [
@@ -137,15 +128,7 @@ export function getApplicationColumns({
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => {
-        const urgency = getExpiryUrgency(row.original.expiryDate);
-        const colorClass = urgency === "expired"
-          ? "text-red-600 dark:text-red-400 font-medium"
-          : urgency === "expiring"
-            ? "text-orange-600 dark:text-orange-400 font-medium"
-            : "";
-        return <span className={colorClass}>{formatDate(row.original.expiryDate)}</span>;
-      },
+      cell: ({ row }) => <ExpiryDateCell value={row.original.expiryDate} />,
     },
     {
       accessorKey: "status",

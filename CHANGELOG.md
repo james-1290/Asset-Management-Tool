@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-19 18:20 — Shared expiry-date cell (fourth sweep)
+
+- The application/licence table coloured its expiry-date cell by urgency (red once expired, orange within 30 days) but the certificate table rendered a plain date — so the same "expiring soon" signal was present on one list and missing on the other. Extracted a shared `ExpiryDateCell` and used it in both, so expiry cells read identically everywhere. Removed the per-table inline urgency helper. Verified: build, lint, and e2e (certificates + applications) pass.
+
 ## 2026-07-19 18:00 — Chart accessibility (fourth sweep)
 
 - The dashboard charts had no accessibility affordances — a screen reader saw an unlabeled SVG and keyboard users couldn't inspect data points. Added Recharts' `accessibilityLayer` (keyboard navigation + screen-reader data-point announcements) and a descriptive `aria-label` to all five charts (assets by age/location/type, value by location, and the status donut). Verified: build, lint, and 9 e2e pass.
