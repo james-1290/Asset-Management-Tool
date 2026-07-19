@@ -58,7 +58,7 @@ class ApplicationsController(
 
     // ── GET / ── Paged list ─────────────────────────────────────────────
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
@@ -103,7 +103,7 @@ class ApplicationsController(
 
     // ── GET /export ── CSV export ───────────────────────────────────────
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/export")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
@@ -162,7 +162,7 @@ class ApplicationsController(
 
     // ── GET /{id} ── Get by ID ──────────────────────────────────────────
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<Any> {
         val app = applicationRepository.findById(id).orElse(null)
@@ -431,7 +431,7 @@ class ApplicationsController(
 
     // ── GET /{id}/history ── History timeline ────────────────────────────
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/history")
     @Transactional(readOnly = true)
     fun getHistory(
@@ -609,7 +609,7 @@ class ApplicationsController(
 
     // ── Seat management ─────────────────────────────────────────────────
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/seats")
     fun listSeats(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!applicationRepository.existsById(id)) return ResponseEntity.notFound().build()

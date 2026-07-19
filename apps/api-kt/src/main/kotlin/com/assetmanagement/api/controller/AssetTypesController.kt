@@ -51,7 +51,7 @@ class AssetTypesController(
             fieldType = ft, options = f.options, isRequired = f.isRequired, sortOrder = f.sortOrder)
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
     @Transactional(readOnly = true)
     fun getAll(
@@ -60,12 +60,12 @@ class AssetTypesController(
         @RequestParam(defaultValue = "asc") sortDir: String,
     ) = crud.getAll(page, pageSize, search, sortBy, sortDir)
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
     @Transactional(readOnly = true)
     fun getById(@PathVariable id: UUID) = crud.getById(id)
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/customfields")
     @Transactional(readOnly = true)
     fun getCustomFields(@PathVariable id: UUID) = crud.getCustomFields(id)

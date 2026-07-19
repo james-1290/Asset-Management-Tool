@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-19 11:35 — Gate domain reads to explicit roles (fourth sweep)
+
+- Every read/export GET on the 12 domain controllers was `@PreAuthorize("isAuthenticated()")`, overriding the class-level Admin/Operator gate — so authorization for reads was "any authenticated principal" rather than the intended role set. Changed all of them to `hasAnyRole('Admin','Operator','User')` (the seeded read-only `User` role is the SSO/SCIM default), so a principal with no recognised role is now denied (least privilege) while the read-only role still works. Writes remain Admin/Operator. Verified: admin reads 200, User-role reads 200 (incl. export) + write 403, and a new integration test locks it in.
+
 ## 2026-07-19 10:55 — Fix login-lockout header-spoof bypass (fourth sweep)
 
 - The login brute-force lockout keyed on `X-Forwarded-For` unconditionally, so an attacker could rotate the header per request to get a fresh key and never trip the 5-attempt/15-min lockout. Extracted a shared, proxy-gated `ClientIpResolver` (honours XFF only when `security.trust-forwarded-for=true`, else uses the socket peer) now used by both `AuthController` login and `RateLimitFilter`. Verified: 6 bad logins with rotating XFF now lock at attempt 6 (429).

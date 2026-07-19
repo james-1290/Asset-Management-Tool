@@ -58,7 +58,7 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     // 1. GET / — Paged list with search, status filter, includeStatuses, sorting, typeId
     // ──────────────────────────────────────────────────────────────────────────
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
@@ -111,7 +111,7 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     // 2. GET /export — CSV export with same filters + optional ids param
     // ──────────────────────────────────────────────────────────────────────────
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/export")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
@@ -192,7 +192,7 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     // 3. GET /{id} — Get by ID with custom field values
     // ──────────────────────────────────────────────────────────────────────────
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<Any> {
         val asset = assetRepository.findById(id).orElse(null)
@@ -479,7 +479,7 @@ class AssetsController(
     // ──────────────────────────────────────────────────────────────────────────
     // 6. GET /{id}/history — History timeline with changes
     // ──────────────────────────────────────────────────────────────────────────
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/history")
     @Transactional(readOnly = true)
     fun getHistory(

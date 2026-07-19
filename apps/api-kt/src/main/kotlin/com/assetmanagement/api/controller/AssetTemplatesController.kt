@@ -31,7 +31,7 @@ class AssetTemplatesController(
 ) {
 
     // GET / — List all (optionally filter by assetTypeId)
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
     fun getAll(@RequestParam(required = false) assetTypeId: UUID?): ResponseEntity<List<AssetTemplateDto>> {
         val templates = if (assetTypeId != null) {
@@ -49,7 +49,7 @@ class AssetTemplatesController(
     }
 
     // GET /{id} — Get by ID with custom field values
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<Any> {
         val template = assetTemplateRepository.findById(id).orElse(null)

@@ -42,7 +42,7 @@ class PeopleController(
 ) {
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/search")
     fun search(@RequestParam(required = false) q: String?, @RequestParam(defaultValue = "5") limit: Int): ResponseEntity<List<PersonSearchResult>> {
         val safeLim = limit.coerceIn(1, 50)
@@ -51,7 +51,7 @@ class PeopleController(
         return ResponseEntity.ok(results)
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
@@ -71,7 +71,7 @@ class PeopleController(
         return ResponseEntity.ok(PagedResponse(items, p, ps, result.totalElements))
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/export")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
@@ -105,14 +105,14 @@ class PeopleController(
         }
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<PersonDto> {
         val person = personRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(person.toDto())
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/history")
     @Transactional(readOnly = true)
     fun getHistory(@PathVariable id: UUID, @RequestParam(required = false) limit: Int?): ResponseEntity<Any> {
@@ -126,7 +126,7 @@ class PeopleController(
         return ResponseEntity.ok(history)
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/assets")
     fun getAssignedAssets(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()
@@ -271,7 +271,7 @@ class PeopleController(
         return ResponseEntity.ok(results)
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/summary")
     fun getSummary(@PathVariable id: UUID): ResponseEntity<PersonSummaryDto> {
         if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()
@@ -293,7 +293,7 @@ class PeopleController(
         ))
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/certificates")
     fun getAssignedCertificates(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()
@@ -306,7 +306,7 @@ class PeopleController(
         return ResponseEntity.ok(certs)
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/applications")
     fun getAssignedApplications(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()

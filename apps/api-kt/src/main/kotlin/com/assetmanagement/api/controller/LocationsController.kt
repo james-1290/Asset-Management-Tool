@@ -65,7 +65,7 @@ class LocationsController(
         return Sort.by(dir, prop)
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
@@ -83,7 +83,7 @@ class LocationsController(
         return ResponseEntity.ok(PagedResponse(items, p, ps, result.totalElements))
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/export")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
@@ -110,7 +110,7 @@ class LocationsController(
         }
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<LocationDto> {
         val location = locationRepository.findById(id).orElse(null)
@@ -118,7 +118,7 @@ class LocationsController(
         return ResponseEntity.ok(location.toDto())
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/assets")
     fun getAssets(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!locationRepository.existsById(id)) return ResponseEntity.notFound().build()
@@ -134,7 +134,7 @@ class LocationsController(
         return ResponseEntity.ok(assets)
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/people")
     fun getPeople(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!locationRepository.existsById(id)) return ResponseEntity.notFound().build()
@@ -229,7 +229,7 @@ class LocationsController(
         return ResponseEntity.noContent().build()
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/certificates")
     fun getCertificates(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!locationRepository.existsById(id)) return ResponseEntity.notFound().build()
@@ -245,7 +245,7 @@ class LocationsController(
         return ResponseEntity.ok(certs)
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/applications")
     fun getApplications(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!locationRepository.existsById(id)) return ResponseEntity.notFound().build()
