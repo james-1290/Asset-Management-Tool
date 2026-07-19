@@ -48,7 +48,7 @@ class AssetModelsController(
     // ──────────────────────────────────────────────────────────────────────────
     // GET / — Paged list with search + assetTypeId filter
     // ──────────────────────────────────────────────────────────────────────────
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
@@ -110,7 +110,7 @@ class AssetModelsController(
     // ──────────────────────────────────────────────────────────────────────────
     // GET /{id}
     // ──────────────────────────────────────────────────────────────────────────
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<Any> {
         val model = assetModelRepository.findById(id).orElse(null)
@@ -302,7 +302,7 @@ class AssetModelsController(
     // ──────────────────────────────────────────────────────────────────────────
     // GET /{id}/image — Serve image with correct MIME type
     // ──────────────────────────────────────────────────────────────────────────
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/image")
     fun getImage(@PathVariable id: UUID): ResponseEntity<InputStreamResource> {
         val model = assetModelRepository.findById(id).orElse(null)

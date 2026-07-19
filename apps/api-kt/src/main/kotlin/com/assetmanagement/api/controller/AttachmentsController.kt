@@ -138,7 +138,7 @@ class AttachmentsController(
         }
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{entityType}/{entityId}")
     fun list(
         @PathVariable entityType: String,
@@ -154,7 +154,7 @@ class AttachmentsController(
         return ResponseEntity.ok(attachments.map { toDto(it) })
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/download")
     fun download(@PathVariable id: UUID): ResponseEntity<InputStreamResource> {
         val attachment = attachmentRepository.findById(id).orElse(null)

@@ -127,7 +127,7 @@ class ReportsController(
     // ========================================================================
     // 1. GET /asset-summary
     // ========================================================================
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/asset-summary")
     fun assetSummary(
         @RequestParam(required = false) format: String?
@@ -169,7 +169,7 @@ class ReportsController(
     // ========================================================================
     // 2. GET /expiries?days=30
     // ========================================================================
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/expiries")
     fun expiries(
         @RequestParam(required = false) days: Int?,
@@ -277,7 +277,7 @@ class ReportsController(
     // ========================================================================
     // 3. GET /licence-summary
     // ========================================================================
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/licence-summary")
     fun licenceSummary(
         @RequestParam(required = false) from: String?,
@@ -399,7 +399,7 @@ class ReportsController(
     // ========================================================================
     // 4. GET /assignments
     // ========================================================================
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/assignments")
     fun assignments(
         @RequestParam(required = false) format: String?
@@ -464,7 +464,7 @@ class ReportsController(
     // ========================================================================
     // 5. GET /asset-lifecycle
     // ========================================================================
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/asset-lifecycle")
     fun assetLifecycle(
         @RequestParam(required = false) from: String?,
@@ -585,7 +585,7 @@ class ReportsController(
     // ========================================================================
     // 6. GET /depreciation
     // ========================================================================
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/depreciation")
     fun depreciation(
         @RequestParam(required = false) assetTypeId: UUID?,

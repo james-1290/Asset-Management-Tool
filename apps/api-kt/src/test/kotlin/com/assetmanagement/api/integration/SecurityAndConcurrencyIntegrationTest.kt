@@ -33,6 +33,27 @@ class SecurityAndConcurrencyIntegrationTest : AbstractIntegrationTest() {
     }
 
     @Test
+    fun `read-only User role can read domain data but cannot write`() {
+        val admin = loginAsAdmin()
+        val u = "viewer-${System.nanoTime()}"
+        val create = postJson(
+            "/api/v1/users",
+            """{"username":"$u","displayName":"Read Only","email":"$u@example.com","password":"Password123!","role":"User"}""",
+            admin,
+        )
+        assertEquals(HttpStatus.CREATED, create.statusCode, "User create should succeed: ${create.body}")
+        val token = login(u, "Password123!")
+
+        // Reads are gated to Admin/Operator/User — the read-only role may read.
+        assertEquals(HttpStatus.OK, getWithToken("/api/v1/assets?pageSize=1", token).statusCode, "User should read assets")
+        assertEquals(HttpStatus.OK, getWithToken("/api/v1/assets/export", token).statusCode, "User should export assets")
+
+        // Writes remain Admin/Operator only.
+        val write = postJson("/api/v1/locations", """{"name":"nope-${System.nanoTime()}"}""", token)
+        assertEquals(HttpStatus.FORBIDDEN, write.statusCode, "User must not be able to write")
+    }
+
+    @Test
     fun `a stale entityVersion update is rejected with 409`() {
         val token = loginAsAdmin()
         val name = "Loc-${System.nanoTime()}"

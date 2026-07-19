@@ -253,7 +253,7 @@ class CertificatesController(
 
     // ── Endpoints ────────────────────────────────────────────────────────
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
@@ -280,7 +280,7 @@ class CertificatesController(
         return ResponseEntity.ok(PagedResponse(items, p, ps, result.totalElements))
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/export")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     fun export(
@@ -329,7 +329,7 @@ class CertificatesController(
         }
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
     fun getById(@PathVariable id: UUID): ResponseEntity<CertificateDto> {
         val certificate = certificateRepository.findById(id).orElse(null)
@@ -509,7 +509,7 @@ class CertificatesController(
         return ResponseEntity.ok(saved.toDto(cfValues))
     }
 
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/history")
     @Transactional(readOnly = true)
     fun getHistory(
