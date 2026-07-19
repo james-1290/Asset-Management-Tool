@@ -34,7 +34,7 @@ export function AssetsByTypeChart({
           </p>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
+            <BarChart accessibilityLayer aria-label="Assets by type" data={data} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
               <XAxis
                 dataKey="label"
                 fontSize={11}

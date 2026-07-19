@@ -84,7 +84,7 @@ export function StatusBreakdownChart({
             {/* Donut chart */}
             <div className="shrink-0 w-[160px] h-[160px]">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+                <PieChart accessibilityLayer aria-label="Asset status breakdown">
                   <Pie
                     data={sorted}
                     dataKey="count"

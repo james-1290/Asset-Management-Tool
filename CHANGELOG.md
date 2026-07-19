@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-19 18:00 — Chart accessibility (fourth sweep)
+
+- The dashboard charts had no accessibility affordances — a screen reader saw an unlabeled SVG and keyboard users couldn't inspect data points. Added Recharts' `accessibilityLayer` (keyboard navigation + screen-reader data-point announcements) and a descriptive `aria-label` to all five charts (assets by age/location/type, value by location, and the status donut). Verified: build, lint, and 9 e2e pass.
+
 ## 2026-07-19 17:40 — Backend polish: alert-email BCC + SCIM transactions & audit (fourth sweep)
 
 - **Alert digest recipient privacy.** `EmailService` put every recipient of the group alert digest in the `To` field (both SMTP and Graph), so each recipient could see everyone else's address. Now the recipients are **BCC'd** (To = the sender), for both providers.
