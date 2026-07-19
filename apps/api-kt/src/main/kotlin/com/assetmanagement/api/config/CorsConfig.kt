@@ -23,7 +23,10 @@ class CorsConfig {
             allowedOrigins = validOrigins
             allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
             allowedHeaders = listOf("Content-Type", "Authorization")
-            allowCredentials = true
+            // Auth is a stateless JWT in the Authorization header — no cookies —
+            // so cross-origin credentials are never needed. Leaving this false
+            // avoids exposing the API to credentialed cross-origin requests.
+            allowCredentials = false
             maxAge = 3600
         }
         val source = UrlBasedCorsConfigurationSource()

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-19 17:00 — Security-header hardening: CORS credentials + X-XSS-Protection (fourth sweep)
+
+- **CORS `allowCredentials` false.** Auth is a stateless JWT in the `Authorization` header (no cookies — confirmed: the SPA reads the token from localStorage, never sends `withCredentials`), so cross-origin credentials are never needed. Set `allowCredentials = false` so the API doesn't advertise/permit credentialed cross-origin requests. No functional change (the SPA is served same-origin via proxy; the allowed origin is still echoed).
+- **`X-XSS-Protection: 0`.** Was `1; mode=block`. Per current OWASP guidance the legacy browser XSS auditor should be disabled — it's removed from modern browsers and a side-channel risk where still present; the CSP is the real defence. Switched to `DISABLED`.
+- Verified: full `./gradlew test` passes; header confirmed `X-XSS-Protection: 0`; CORS preflight from the allowed origin returns Allow-Origin/Methods with no Allow-Credentials; login 200.
+
 ## 2026-07-19 16:40 — Design-token polish: destructive-foreground, reduced-motion, table tokens (fourth sweep)
 
 - **Invisible destructive text.** In light mode `--destructive-foreground` was `#EF4444` — identical to `--destructive` — so any `text-destructive-foreground` on a `bg-destructive` fill rendered red-on-red (invisible). Set it to white.

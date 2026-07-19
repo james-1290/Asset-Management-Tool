@@ -92,7 +92,11 @@ class SecurityConfig(
         http.headers { headers ->
             headers.frameOptions { it.deny() }
             headers.contentTypeOptions { }
-            headers.xssProtection { it.headerValue(org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK) }
+            // Send "X-XSS-Protection: 0" — OWASP guidance is to disable the
+            // legacy browser XSS auditor (removed from modern browsers, and a
+            // side-channel risk where still present); the CSP below is the real
+            // defence.
+            headers.xssProtection { it.headerValue(org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue.DISABLED) }
             headers.httpStrictTransportSecurity { hsts ->
                 hsts.includeSubDomains(true)
                 hsts.maxAgeInSeconds(31536000)
