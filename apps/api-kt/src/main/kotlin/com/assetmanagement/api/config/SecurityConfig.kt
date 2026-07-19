@@ -82,6 +82,7 @@ class SecurityConfig(
                     .requestMatchers("/api/v1/auth/login").permitAll()
                     .requestMatchers("/api/v1/auth/sso-config").permitAll()
                     .requestMatchers("/api/v1/health").permitAll()
+                    .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                     .apply { if (scimEnabled) requestMatchers("/scim/v2/**").permitAll() }
                     .apply { if (swaggerEnabled) requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll() }
                     .anyRequest().authenticated()

@@ -1,12 +1,26 @@
 server:
   port: 5115
+  # Let in-flight requests finish (up to the timeout below) before the JVM exits
+  # on SIGTERM, instead of dropping them.
+  shutdown: graceful
 
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   datasource:
     url: jdbc:mysql://localhost:3306/assetmgmt?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: AssetMgmtPool
+      maximum-pool-size: ${DB_POOL_MAX:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      connection-timeout: 30000   # fail fast (30s) if the pool is exhausted
+      idle-timeout: 600000        # retire idle connections after 10m
+      # Recycle connections well before MySQL's wait_timeout drops them, so a
+      # long-idle connection isn't handed out already-dead.
+      max-lifetime: 1800000       # 30m
   jpa:
     # Disable Open Session In View: the Hibernate session is bound to the
     # transaction, not the HTTP request. Read endpoints that build DTOs from
@@ -85,3 +99,20 @@ springdoc:
   swagger-ui:
     enabled: ${SWAGGER_ENABLED:false}
     path: /swagger-ui.html
+
+# Actuator: expose only health, and only UP/DOWN (no component details) so it's
+# safe to leave the probe endpoints unauthenticated for orchestrators. Liveness
+# = the app is running; readiness = the app AND its database are reachable.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+      group:
+        readiness:
+          include: readinessState,db
