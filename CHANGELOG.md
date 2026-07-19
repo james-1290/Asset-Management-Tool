@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-19 14:00 — Chart dark-mode tooltip fix + honest single-series bars (fourth sweep)
+
+- Every dashboard chart duplicated a tooltip style that set a card background but no text colour, so Recharts rendered its default near-black text — unreadable on the dark-theme card. Consolidated into a single `chartTooltipStyle` in `chart-colors.ts` with `color: var(--color-card-foreground)` and applied it across all five charts (age/location/type/value bars + status donut).
+- The four single-series bar charts (assets by age/location/type, value by location) painted each bar a different `CHART_PALETTE` colour, implying a per-bar distinction that doesn't exist — the category is already on the axis. They now use one on-brand `CHART_SERIES` colour so bars differ by length, not hue. `CHART_PALETTE` is retained (documented) for genuinely categorical/multi-series use. Verified: build, 40 unit tests, lint, and 7 e2e all pass.
+
 ## 2026-07-19 13:30 — Wire up personal alert rules (fourth sweep)
 
 - Users can create per-user alert rules (`UserAlertRulesController` + the "My Alerts" settings tab), but `AlertProcessingService.processPersonalAlerts()` was never invoked — neither the scheduler nor the manual `send-now` trigger called it — so personal rules silently never fired. The scheduler now runs it on the same schedule as the global digest (in its own try/catch so one can't skip the other), and `POST /alerts/send-now` runs it too (best-effort). Made `processPersonalAlerts()` `@Transactional` so its dedup/notification writes commit atomically, matching `processAlerts()`. Verified with a new integration test: an active certificate rule with a 30-day threshold now produces a `personal` notification for its owner.

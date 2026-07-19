@@ -3,7 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Label } from "rechar
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StatusBreakdownItem } from "@/types/dashboard";
-import { STATUS_COLORS } from "@/lib/chart-colors";
+import { STATUS_COLORS, chartTooltipStyle } from "@/lib/chart-colors";
 
 interface StatusBreakdownChartProps {
   data: StatusBreakdownItem[] | undefined;
@@ -32,14 +32,6 @@ const DONUT_COLORS = [
   "#e0e7ff", // indigo-100
   "#ddd6fe", // violet-200
 ];
-
-const tooltipStyle = {
-  borderRadius: "8px",
-  border: "1px solid var(--color-border)",
-  backgroundColor: "var(--color-card)",
-  fontSize: "12px",
-  boxShadow: "0 2px 8px rgb(0 0 0 / 0.06)",
-};
 
 function formatTotal(total: number): string {
   if (total >= 1000) return `${(total / 1000).toFixed(1)}k`;
@@ -146,7 +138,7 @@ export function StatusBreakdownChart({
                       value,
                       STATUS_LABELS[name as string] ?? name,
                     ]}
-                    contentStyle={tooltipStyle}
+                    contentStyle={chartTooltipStyle}
                   />
                 </PieChart>
               </ResponsiveContainer>
