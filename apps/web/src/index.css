@@ -67,7 +67,9 @@
   --accent-foreground: #2918dc;
   /* Destructive */
   --destructive: #EF4444;
-  --destructive-foreground: #EF4444;
+  /* Foreground sits ON the destructive fill — must be white, not the same red
+     (which rendered destructive-foreground text invisible on destructive bg). */
+  --destructive-foreground: #FFFFFF;
   /* Borders & inputs */
   --border: #E2E8F0;
   --input: #E2E8F0;
@@ -132,6 +134,19 @@
     @apply bg-background text-foreground font-sans antialiased;
     font-size: 13px;
     line-height: 1.5;
+  }
+}
+
+/* Respect users who ask for less motion: near-instant animations/transitions
+   (dialogs, popovers, skeletons, chart transitions) instead of no styling. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

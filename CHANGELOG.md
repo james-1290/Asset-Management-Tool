@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-19 16:40 — Design-token polish: destructive-foreground, reduced-motion, table tokens (fourth sweep)
+
+- **Invisible destructive text.** In light mode `--destructive-foreground` was `#EF4444` — identical to `--destructive` — so any `text-destructive-foreground` on a `bg-destructive` fill rendered red-on-red (invisible). Set it to white.
+- **Reduced motion.** Added a `@media (prefers-reduced-motion: reduce)` rule that collapses animations/transitions to ~instant (dialogs, popovers, skeletons, chart transitions) for users who ask for less motion — previously nothing was honoured.
+- **Table tokens.** `ui/table.tsx` hardcoded `slate-*` for the header background, row dividers, and row hover instead of theme tokens, so they didn't track the palette. Switched to `bg-muted/50` and `divide-border` (matching the already-tokenised `TableFooter`).
+- Verified: build, lint, and 9 e2e pass.
+
 ## 2026-07-19 16:20 — Migrate person/location/user dialogs to shared FormDialog (fourth sweep)
 
 - The person, location and user create/edit dialogs hand-rolled their own dialog chrome (bare `DialogContent`, small header, `outline` Cancel button, `space-y-4` body, "Saving…" ellipsis) while six other entity dialogs used the shared `FormDialog` (bordered header, scrollable body, `bg-muted/50` footer with `ghost` Cancel). Migrated all three onto `FormDialog` (chrome only — every field, schema, and reset-on-open effect is unchanged), so all create/edit dialogs now look and behave identically. The user dialog's SSO note moved to `FormDialog`'s `description` slot (rendered as an accessible `DialogDescription`). Verified: build, lint, and e2e (added `/people` + `/locations` cases to the FormDialog spec) pass.
