@@ -1,5 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Checkbox } from "../ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { ListFilter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCurrencySymbol } from "@/lib/format";
@@ -149,29 +156,37 @@ export function AssetsToolbar({
           <div className="absolute left-0 top-full z-50 mt-1 w-[360px] rounded-lg border bg-popover p-3 shadow-md space-y-3">
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Location</label>
-              <select
-                value={locationId}
-                onChange={(e) => onLocationIdChange(e.target.value)}
-                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground"
+              <Select
+                value={locationId || "all"}
+                onValueChange={(v) => onLocationIdChange(v === "all" ? "" : v)}
               >
-                <option value="">All locations</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>{l.name}</option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All locations" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All locations</SelectItem>
+                  {locations.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Assigned To</label>
-              <select
-                value={assignedPersonId}
-                onChange={(e) => onAssignedPersonIdChange(e.target.value)}
-                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground"
+              <Select
+                value={assignedPersonId || "all"}
+                onValueChange={(v) => onAssignedPersonIdChange(v === "all" ? "" : v)}
               >
-                <option value="">All people</option>
-                {people.map((p) => (
-                  <option key={p.id} value={p.id}>{p.fullName}</option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All people" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All people</SelectItem>
+                  {people.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.fullName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Purchase Date</label>
