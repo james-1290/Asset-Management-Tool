@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -21,6 +22,7 @@ class ScimService(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
     private val userRoleRepository: UserRoleRepository,
+    private val auditService: AuditService,
     @Value("\${saml.default-role:User}") private val defaultRole: String
 ) {
     private val log = LoggerFactory.getLogger(ScimService::class.java)
@@ -70,6 +72,7 @@ class ScimService(
         return toScimUser(user, baseUrl)
     }
 
+    @Transactional
     fun createUser(scimUser: ScimUser, baseUrl: String): ScimUser {
         val email = scimUser.emails?.firstOrNull()?.value ?: scimUser.userName ?: ""
         val username = scimUser.userName ?: email
@@ -101,9 +104,12 @@ class ScimService(
         }
 
         log.info("SCIM created user: id={}, username={}, externalId={}", user.id, username, scimUser.externalId)
+        auditService.log(AuditEntry("Created", "User", user.id.toString(), user.displayName,
+            "SCIM provisioned user $username", actorName = "SCIM"))
         return toScimUser(user, baseUrl)
     }
 
+    @Transactional
     fun replaceUser(id: UUID, scimUser: ScimUser, baseUrl: String): ScimUser? {
         val user = userRepository.findById(id).orElse(null) ?: return null
 
@@ -121,9 +127,12 @@ class ScimService(
         userRepository.save(user)
 
         log.info("SCIM replaced user: id={}", id)
+        auditService.log(AuditEntry("Updated", "User", user.id.toString(), user.displayName,
+            "SCIM replaced user", actorName = "SCIM"))
         return toScimUser(user, baseUrl)
     }
 
+    @Transactional
     fun patchUser(id: UUID, patchOp: ScimPatchOp, baseUrl: String): ScimUser? {
         val user = userRepository.findById(id).orElse(null) ?: return null
 
@@ -138,15 +147,20 @@ class ScimService(
         userRepository.save(user)
 
         log.info("SCIM patched user: id={}", id)
+        auditService.log(AuditEntry("Updated", "User", user.id.toString(), user.displayName,
+            "SCIM patched user", actorName = "SCIM"))
         return toScimUser(user, baseUrl)
     }
 
+    @Transactional
     fun deactivateUser(id: UUID): Boolean {
         val user = userRepository.findById(id).orElse(null) ?: return false
         user.isActive = false
         user.updatedAt = Instant.now()
         userRepository.save(user)
         log.info("SCIM deactivated user: id={}", id)
+        auditService.log(AuditEntry("Deactivated", "User", user.id.toString(), user.displayName,
+            "SCIM deactivated user", actorName = "SCIM"))
         return true
     }
 

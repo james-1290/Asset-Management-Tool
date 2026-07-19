@@ -61,7 +61,10 @@ class EmailService(
         val message: MimeMessage = sender.createMimeMessage()
         val helper = MimeMessageHelper(message, true, "UTF-8")
         helper.setFrom(fromAddress)
-        helper.setTo(recipients.toTypedArray())
+        // BCC the recipients (To = sender) so a group digest doesn't disclose
+        // every recipient's address to all the others.
+        helper.setTo(fromAddress)
+        helper.setBcc(recipients.toTypedArray())
         helper.setSubject(subject)
         helper.setText(htmlBody, true)
 
@@ -104,7 +107,14 @@ class EmailService(
                 contentType = BodyType.Html
                 content = htmlBody
             }
-            toRecipients = recipients.map { addr ->
+            // BCC the recipients (To = sender) so a group digest doesn't
+            // disclose every recipient's address to all the others.
+            toRecipients = listOf(
+                Recipient().apply {
+                    emailAddress = EmailAddress().apply { address = fromAddress }
+                },
+            )
+            bccRecipients = recipients.map { addr ->
                 Recipient().apply {
                     emailAddress = EmailAddress().apply {
                         address = addr
