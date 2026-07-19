@@ -244,6 +244,10 @@ class AlertProcessingService(
         log.info("Created {} global user notifications for {} users", created, activeUsers.size)
     }
 
+    // Personal notification writes commit atomically (same rationale as
+    // processAlerts): the run is low-frequency, and each per-rule email send is
+    // already wrapped so a delivery failure can't roll back the dedup rows.
+    @Transactional
     fun processPersonalAlerts() {
         val today = today()
         val activeRules = userAlertRuleRepository.findByIsActiveTrue()

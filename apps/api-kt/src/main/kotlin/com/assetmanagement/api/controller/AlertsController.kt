@@ -8,6 +8,7 @@ import com.assetmanagement.api.repository.AlertHistoryRepository
 import com.assetmanagement.api.service.AlertProcessingService
 import com.assetmanagement.api.service.EmailService
 import com.assetmanagement.api.service.SlackService
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.ResponseEntity
@@ -23,6 +24,7 @@ class AlertsController(
     private val slackService: SlackService,
     private val alertHistoryRepository: AlertHistoryRepository
 ) {
+    private val log = LoggerFactory.getLogger(AlertsController::class.java)
 
     @PostMapping("/send-now")
     fun sendNow(): ResponseEntity<Any> {
@@ -31,6 +33,13 @@ class AlertsController(
         }
 
         val result = alertProcessingService.processAlerts()
+        // Also run per-user personal alert rules (best-effort — a failure here
+        // shouldn't fail the global run the caller asked for).
+        try {
+            alertProcessingService.processPersonalAlerts()
+        } catch (e: Exception) {
+            log.error("Manual personal alert processing failed", e)
+        }
         return ResponseEntity.ok(result)
     }
 

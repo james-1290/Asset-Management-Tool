@@ -56,6 +56,14 @@ class AlertSchedulerService(
                 } catch (e: Exception) {
                     log.error("Scheduled alert processing failed", e)
                 }
+                // Personal (per-user rule) alerts run on the same schedule but in
+                // their own try/catch so a failure here can't skip the global run
+                // above, or vice versa.
+                try {
+                    alertProcessingService.processPersonalAlerts()
+                } catch (e: Exception) {
+                    log.error("Scheduled personal alert processing failed", e)
+                }
             },
             CronTrigger(cronExpression)
         )

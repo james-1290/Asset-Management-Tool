@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-19 13:30 — Wire up personal alert rules (fourth sweep)
+
+- Users can create per-user alert rules (`UserAlertRulesController` + the "My Alerts" settings tab), but `AlertProcessingService.processPersonalAlerts()` was never invoked — neither the scheduler nor the manual `send-now` trigger called it — so personal rules silently never fired. The scheduler now runs it on the same schedule as the global digest (in its own try/catch so one can't skip the other), and `POST /alerts/send-now` runs it too (best-effort). Made `processPersonalAlerts()` `@Transactional` so its dedup/notification writes commit atomically, matching `processAlerts()`. Verified with a new integration test: an active certificate rule with a 30-day threshold now produces a `personal` notification for its owner.
+
 ## 2026-07-19 13:05 — Upgrade Spring Boot 3.2.5 (EOL) → 3.3.7 (fourth sweep)
 
 - Spring Boot 3.2.x is end-of-life (no more security patches). Upgraded to 3.3.7, bumped `io.spring.dependency-management` 1.1.4 → 1.1.6 and `springdoc-openapi` 2.4.0 → 2.6.0 (the 2.4 line is pinned to Boot 3.2). Kotlin stays 1.9.23 (fully supported on 3.3).
