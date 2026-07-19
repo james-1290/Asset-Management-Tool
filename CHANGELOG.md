@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-19 15:05 — Composite list indexes + stable sort tiebreak (fourth sweep)
+
+- **Stable pagination.** Every list `sortOf(...)` (assets/certificates/applications/people/locations/audit) sorted by a single non-unique column, so rows with an equal sort value (same name, same createdAt, same timestamp) had no defined order — meaning page 2 could repeat or skip rows from page 1. All six now append an `id ASC` tiebreak for a total order.
+- **Composite indexes (V017).** List pages always filter `is_archived` then sort by the default column, but V011's single-column `is_archived` indexes can't serve the ORDER BY, forcing a filesort. Added leading-`is_archived` composites (`(is_archived, name)` for assets/certs/apps/locations, `(is_archived, full_name)` + `(is_archived, department)` for people, `(is_archived, created_at)` for assets). Because InnoDB appends the PK to secondary indexes, `(is_archived, name)` also orders by `(name, id)` — matching the new tiebreak. Verified with `EXPLAIN`: the assets list query now uses `idx_assets_archived_name` with `Using index` (covering, no filesort).
+- Verified: full `./gradlew build` passes (Testcontainers applies V017 clean); Flyway applied V017 on the running DB; list endpoints respond 200.
+
 ## 2026-07-19 14:45 — Ops/production-readiness: health probes, graceful shutdown, pool tuning (fourth sweep)
 
 - Added Spring Boot Actuator with liveness/readiness health groups. The existing `/api/v1/health` was a shallow always-"healthy" check; `/actuator/health/readiness` now actually verifies **database** connectivity (group `readinessState,db`), so an orchestrator won't route traffic to an instance that can't reach MySQL. Only `health` is exposed and only as UP/DOWN (`show-details: never`), so the probe paths are safe to leave unauthenticated (permitted in `SecurityConfig`; skipped by the rate-limit filter).

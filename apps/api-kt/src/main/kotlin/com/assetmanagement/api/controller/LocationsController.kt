@@ -62,7 +62,7 @@ class LocationsController(
             "createdat" -> "createdAt"
             else -> "name"
         }
-        return Sort.by(dir, prop)
+        return Sort.by(dir, prop).and(Sort.by(Sort.Direction.ASC, "id"))
     }
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")

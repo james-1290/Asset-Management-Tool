@@ -933,7 +933,7 @@ class ApplicationsController(
             "createdat" -> "createdAt"
             else -> "name"
         }
-        return Sort.by(dir, prop)
+        return Sort.by(dir, prop).and(Sort.by(Sort.Direction.ASC, "id"))
     }
 
     private fun loadCustomFieldValues(appId: UUID): List<CustomFieldValue> {

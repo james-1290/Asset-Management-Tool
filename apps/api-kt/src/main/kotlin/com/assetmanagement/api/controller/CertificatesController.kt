@@ -130,7 +130,7 @@ class CertificatesController(
             "certificatetypename" -> "certificateType.name"
             else -> "name"
         }
-        return Sort.by(dir, prop)
+        return Sort.by(dir, prop).and(Sort.by(Sort.Direction.ASC, "id"))
     }
 
     private fun Certificate.toDto(cfValues: List<CustomFieldValueDto> = emptyList()) = CertificateDto(

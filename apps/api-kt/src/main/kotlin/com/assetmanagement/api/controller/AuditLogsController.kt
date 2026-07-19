@@ -111,7 +111,7 @@ class AuditLogsController(
             "action" -> "action"; "entitytype" -> "entityType"; "entityname" -> "entityName"; "actorname" -> "actorName"
             else -> "timestamp"
         }
-        return Sort.by(dir, prop)
+        return Sort.by(dir, prop).and(Sort.by(Sort.Direction.ASC, "id"))
     }
 
     private fun AuditLog.toDto() = AuditLogDto(id, actorName, action, entityType, entityId, entityName, source.name, details, timestamp)
