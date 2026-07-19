@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-19 17:40 — Backend polish: alert-email BCC + SCIM transactions & audit (fourth sweep)
+
+- **Alert digest recipient privacy.** `EmailService` put every recipient of the group alert digest in the `To` field (both SMTP and Graph), so each recipient could see everyone else's address. Now the recipients are **BCC'd** (To = the sender), for both providers.
+- **SCIM writes were untransactional and unaudited.** `ScimService.createUser` saved the user then its role in separate auto-commits (a role failure left an orphaned user), and none of create/replace/patch/deactivate emitted an audit event — violating the "all writes are audited" rule the rest of the app follows. Added `@Transactional` to all four writes and an `AuditEntry` (actor `SCIM`) for each. Verified at runtime: a SCIM `POST /Users` returns 201 and writes a `Created / User / … / SCIM` audit row; full `./gradlew test` passes.
+
 ## 2026-07-19 17:20 — JacksonConfig honours spring.jackson.* (non_null now applied) (fourth sweep)
 
 - `JacksonConfig` exposed a hand-built `ObjectMapper` bean, which made Spring Boot's `JacksonAutoConfiguration` back off — silently discarding everything configured under `spring.jackson.*`, most importantly `default-property-inclusion: non_null`. As a result null fields were serialized on every response despite the config asking otherwise. Replaced the bean with a `Jackson2ObjectMapperBuilderCustomizer` that only layers on the two lenient date deserializers, so Boot's auto-configured mapper (Kotlin module, `write-dates-as-timestamps: false`, and `non_null`) is preserved. Responses now omit null fields as intended (smaller payloads).
