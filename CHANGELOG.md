@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-19 16:20 — Migrate person/location/user dialogs to shared FormDialog (fourth sweep)
+
+- The person, location and user create/edit dialogs hand-rolled their own dialog chrome (bare `DialogContent`, small header, `outline` Cancel button, `space-y-4` body, "Saving…" ellipsis) while six other entity dialogs used the shared `FormDialog` (bordered header, scrollable body, `bg-muted/50` footer with `ghost` Cancel). Migrated all three onto `FormDialog` (chrome only — every field, schema, and reset-on-open effect is unchanged), so all create/edit dialogs now look and behave identically. The user dialog's SSO note moved to `FormDialog`'s `description` slot (rendered as an accessible `DialogDescription`). Verified: build, lint, and e2e (added `/people` + `/locations` cases to the FormDialog spec) pass.
+
 ## 2026-07-19 16:00 — Assets "More Filters" on shadcn Popover (fourth sweep)
 
 - The Assets "More Filters" panel was a hand-rolled dropdown: a plain `<button>` toggling an absolutely-positioned `<div>`, with its own `useState`/`useRef`/`mousedown` click-outside effect and no focus trap or Escape handling. Replaced it with the shared shadcn `Popover` + a `Button` trigger (variant `outline`, primary tint when advanced filters are active) — gaining focus management, Escape-to-close, and correct positioning for free, and removing the bespoke effect. Completes the toolbar cleanup (after #198 native selects and #199 FilterChip). Verified: build, lint, 7 e2e pass.
