@@ -11,6 +11,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege: CI only needs to read the repo.
+permissions:
+  contents: read
+
 jobs:
   backend:
     name: Backend (Kotlin) — build & test
@@ -47,8 +51,14 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Audit dependencies (high severity)
-        run: npm audit --audit-level=high || true
+      - name: Audit shipped dependencies (blocking)
+        # Fail the build on a high/critical vuln in a dependency that ships to
+        # users. Dev/build tooling (test runner, bundler) is audited below but
+        # kept non-blocking so a transitive dev-only advisory can't derail
+        # unrelated PRs.
+        run: npm audit --omit=dev --audit-level=high
+      - name: Audit all dependencies (informational)
+        run: npm audit || true
       - name: Build (type-check + bundle)
         run: npm run build
       - name: Unit tests

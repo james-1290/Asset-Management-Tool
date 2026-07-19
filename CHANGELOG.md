@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-19 12:35 — Clear dependency vulnerabilities + gate CI audit (fourth sweep)
+
+- `npm audit` reported 16 vulnerabilities (1 critical, 7 high). `npm audit fix` patched the runtime-facing chain (react-router/react-router-dom → 7.18.1, rollup, minimatch, picomatch, flatted) without breaking changes; bumping the dev/test chain (vitest 2 → 4, which pulls vite 7) cleared the rest. Now **0 vulnerabilities**. Verified: 38 unit tests, 7 e2e, build, and lint all pass on vitest 4 / vite 7.
+- CI: replaced the non-blocking `npm audit --audit-level=high || true` with a **blocking** audit of shipped deps (`npm audit --omit=dev --audit-level=high`) plus a non-blocking full-tree audit for visibility, so a high/critical vuln in a dependency that reaches users now fails the build while a transitive dev-only advisory doesn't derail unrelated PRs. Added least-privilege `permissions: contents: read` to the workflow.
+
 ## 2026-07-19 12:10 — Production SPA serving + security headers on the app document (fourth sweep)
 
 - The app document (the HTML the browser loads first) got no security headers: the API sets CSP/HSTS/frame-deny/etc. but only on `/api/**` responses, and the dev server sets none. Added a production serving path — `apps/web/nginx.conf` (+ multi-stage `Dockerfile`, `.dockerignore`) — that serves the built `dist/` with the full header suite (CSP, nosniff, `X-Frame-Options: DENY`, Referrer-Policy, Permissions-Policy, HSTS) and proxies `/api`,`/saml2`,`/login/saml2`,`/scim` on the same origin so the CSP can keep `connect-src 'self'`. CSP is tuned to the real bundle (own JS, inline styles for React/Tailwind, Google Fonts, `blob:`/`data:` images). Mirrored the policy onto `vite preview` in `vite.config.ts`; dev server gets the non-CSP headers only (CSP would break HMR). Verified: all 7 e2e tests pass in a real browser against the CSP-enabled preview build (image picker, form dialogs, bulk selection). New `docs/deployment.md`.
