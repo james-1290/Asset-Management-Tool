@@ -1,9 +1,9 @@
 package com.assetmanagement.api.security
 
+import com.assetmanagement.api.util.ClientIpResolver
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
@@ -14,9 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger
 @Component
 @Order(1)
 class RateLimitFilter(
-    // Only trust X-Forwarded-For when the app sits behind a proxy that sets it;
-    // otherwise a client can spoof/rotate the header to evade the limiter.
-    @Value("\${security.trust-forwarded-for:false}") private val trustForwardedFor: Boolean
+    private val clientIpResolver: ClientIpResolver,
 ) : OncePerRequestFilter() {
 
     companion object {
@@ -41,7 +39,7 @@ class RateLimitFilter(
             return
         }
 
-        val clientIp = clientIp(request)
+        val clientIp = clientIpResolver.resolve(request)
         val now = Instant.now()
 
         if (requestCounts.size > MAX_TRACKED_KEYS) {
@@ -70,10 +68,4 @@ class RateLimitFilter(
         filterChain.doFilter(request, response)
     }
 
-    private fun clientIp(request: HttpServletRequest): String =
-        if (trustForwardedFor) {
-            request.getHeader("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim()?.ifBlank { null } ?: request.remoteAddr
-        } else {
-            request.remoteAddr
-        }
 }

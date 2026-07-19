@@ -26,6 +26,7 @@ class AuthController(
     private val currentUserService: CurrentUserService,
     private val auditService: AuditService,
     private val loginRateLimitService: LoginRateLimitService,
+    private val clientIpResolver: com.assetmanagement.api.util.ClientIpResolver,
     @Value("\${saml.enabled:false}") private val samlEnabled: Boolean,
     @Value("\${saml.registration-id:entra}") private val samlRegistrationId: String,
     @Value("\${auth.local-login.enabled:true}") private val localLoginEnabled: Boolean
@@ -37,7 +38,9 @@ class AuthController(
             return ResponseEntity.status(404).body(mapOf("error" to "Local login is disabled. Use SSO to sign in."))
         }
 
-        val clientIp = httpRequest.getHeader("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim() ?: httpRequest.remoteAddr
+        // Use the proxy-gated client IP (not raw X-Forwarded-For) so an attacker
+        // can't rotate the header to reset the per-account lockout counter.
+        val clientIp = clientIpResolver.resolve(httpRequest)
         val rateLimitKey = "$clientIp:${request.username}"
 
         if (loginRateLimitService.isBlocked(rateLimitKey)) {

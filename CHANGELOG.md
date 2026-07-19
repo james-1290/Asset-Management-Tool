@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-19 10:55 — Fix login-lockout header-spoof bypass (fourth sweep)
+
+- The login brute-force lockout keyed on `X-Forwarded-For` unconditionally, so an attacker could rotate the header per request to get a fresh key and never trip the 5-attempt/15-min lockout. Extracted a shared, proxy-gated `ClientIpResolver` (honours XFF only when `security.trust-forwarded-for=true`, else uses the socket peer) now used by both `AuthController` login and `RateLimitFilter`. Verified: 6 bad logins with rotating XFF now lock at attempt 6 (429).
+
 ## 2026-07-19 10:30 — Fix two date bugs: asset-lifecycle 500 + notification-bell miscount (fourth sweep)
 
 - **Reports `/asset-lifecycle`** 500'd whenever only `to`/`from` bounded one side, because the open bound used `LocalDate.MIN` (year -999,999,999) against a MySQL `DATE` column (floor 1000-01-01). Use `LocalDate.ofEpochDay(0)`. Verified: `?to=2026-12-31` now 200.
