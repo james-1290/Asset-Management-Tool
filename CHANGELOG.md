@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-19 12:10 — Production SPA serving + security headers on the app document (fourth sweep)
+
+- The app document (the HTML the browser loads first) got no security headers: the API sets CSP/HSTS/frame-deny/etc. but only on `/api/**` responses, and the dev server sets none. Added a production serving path — `apps/web/nginx.conf` (+ multi-stage `Dockerfile`, `.dockerignore`) — that serves the built `dist/` with the full header suite (CSP, nosniff, `X-Frame-Options: DENY`, Referrer-Policy, Permissions-Policy, HSTS) and proxies `/api`,`/saml2`,`/login/saml2`,`/scim` on the same origin so the CSP can keep `connect-src 'self'`. CSP is tuned to the real bundle (own JS, inline styles for React/Tailwind, Google Fonts, `blob:`/`data:` images). Mirrored the policy onto `vite preview` in `vite.config.ts`; dev server gets the non-CSP headers only (CSP would break HMR). Verified: all 7 e2e tests pass in a real browser against the CSP-enabled preview build (image picker, form dialogs, bulk selection). New `docs/deployment.md`.
+
 ## 2026-07-19 11:35 — Gate domain reads to explicit roles (fourth sweep)
 
 - Every read/export GET on the 12 domain controllers was `@PreAuthorize("isAuthenticated()")`, overriding the class-level Admin/Operator gate — so authorization for reads was "any authenticated principal" rather than the intended role set. Changed all of them to `hasAnyRole('Admin','Operator','User')` (the seeded read-only `User` role is the SSO/SCIM default), so a principal with no recognised role is now denied (least privilege) while the read-only role still works. Writes remain Admin/Operator. Verified: admin reads 200, User-role reads 200 (incl. export) + write 403, and a new integration test locks it in.
