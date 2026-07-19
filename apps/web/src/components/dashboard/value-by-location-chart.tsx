@@ -33,6 +33,8 @@ export function ValueByLocationChart({ data, isLoading }: ValueByLocationChartPr
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
+              accessibilityLayer
+              aria-label="Value by location"
               data={data}
               margin={{ top: 4, right: 4, left: -4, bottom: 0 }}
             >

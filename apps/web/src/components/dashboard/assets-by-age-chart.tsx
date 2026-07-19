@@ -32,6 +32,8 @@ export function AssetsByAgeChart({ data, isLoading }: AssetsByAgeChartProps) {
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
+              accessibilityLayer
+              aria-label="Assets by age"
               data={data}
               layout="vertical"
               margin={{ top: 4, right: 12, left: 4, bottom: 0 }}
