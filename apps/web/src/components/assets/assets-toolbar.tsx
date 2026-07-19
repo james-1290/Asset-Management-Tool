@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect } from "react";
 import { Checkbox } from "../ui/checkbox";
 import {
   Select,
@@ -7,6 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Button } from "../ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { ListFilter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCurrencySymbol } from "@/lib/format";
@@ -85,19 +86,6 @@ export function AssetsToolbar({
   onCostMinChange,
   onCostMaxChange,
 }: AssetsToolbarProps) {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
-    }
-    if (moreOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [moreOpen]);
-
   const hasAdvancedFilters = !!(locationId || assignedPersonId || purchaseDateFrom || purchaseDateTo || warrantyExpiryFrom || warrantyExpiryTo || costMin || costMax);
   const hasAnyFilter = !!(typeId || status || search || includeRetired || includeSold || hasAdvancedFilters);
 
@@ -133,27 +121,25 @@ export function AssetsToolbar({
         onChange={(v) => onStatusChange(v || "all")}
         allLabel="All"
       />
-      <div ref={moreRef} className="relative">
-        <button
-          type="button"
-          onClick={() => setMoreOpen(!moreOpen)}
-          className={cn(
-            "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors hover:bg-accent",
-            hasAdvancedFilters || moreOpen
-              ? "border border-primary/30 bg-primary/5 text-foreground"
-              : "text-foreground"
-          )}
-        >
-          <ListFilter className="h-4 w-4 shrink-0" />
-          <span>More Filters</span>
-          {hasAdvancedFilters && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-              {[locationId, assignedPersonId, purchaseDateFrom || purchaseDateTo, warrantyExpiryFrom || warrantyExpiryTo, costMin || costMax].filter(Boolean).length}
-            </span>
-          )}
-        </button>
-        {moreOpen && (
-          <div className="absolute left-0 top-full z-50 mt-1 w-[360px] rounded-lg border bg-popover p-3 shadow-md space-y-3">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "gap-2 rounded-lg",
+              hasAdvancedFilters && "border-primary/30 bg-primary/5",
+            )}
+          >
+            <ListFilter className="h-4 w-4 shrink-0" />
+            <span>More Filters</span>
+            {hasAdvancedFilters && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                {[locationId, assignedPersonId, purchaseDateFrom || purchaseDateTo, warrantyExpiryFrom || warrantyExpiryTo, costMin || costMax].filter(Boolean).length}
+              </span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-[360px] space-y-3">
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Location</label>
               <Select
@@ -230,9 +216,8 @@ export function AssetsToolbar({
                 Sold
               </label>
             </div>
-          </div>
-        )}
-      </div>
+        </PopoverContent>
+      </Popover>
       {hasAnyFilter && (
         <>
           <div className="h-6 w-px bg-border mx-1" />
