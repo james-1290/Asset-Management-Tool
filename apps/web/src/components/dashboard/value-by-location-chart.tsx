@@ -1,7 +1,6 @@
 import {
   BarChart,
   Bar,
-  Cell,
   XAxis,
   YAxis,
   Tooltip,
@@ -9,7 +8,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CHART_PALETTE } from "@/lib/chart-colors";
+import { CHART_SERIES, chartTooltipStyle } from "@/lib/chart-colors";
 import { formatCurrency, getCurrencySymbol } from "@/lib/format";
 import type { ValueByLocation } from "@/types/dashboard";
 
@@ -17,14 +16,6 @@ interface ValueByLocationChartProps {
   data: ValueByLocation[] | undefined;
   isLoading: boolean;
 }
-
-const tooltipStyle = {
-  borderRadius: "8px",
-  border: "1px solid var(--color-border)",
-  backgroundColor: "var(--color-card)",
-  fontSize: "12px",
-  boxShadow: "0 2px 8px rgb(0 0 0 / 0.06)",
-};
 
 export function ValueByLocationChart({ data, isLoading }: ValueByLocationChartProps) {
   return (
@@ -66,13 +57,9 @@ export function ValueByLocationChart({ data, isLoading }: ValueByLocationChartPr
               <Tooltip
                 formatter={(value) => [formatCurrency(value as number, { minimumFractionDigits: 0, maximumFractionDigits: 0 }), "Value"]}
                 cursor={{ fill: "var(--color-muted)", opacity: 0.4 }}
-                contentStyle={tooltipStyle}
+                contentStyle={chartTooltipStyle}
               />
-              <Bar dataKey="totalValue" radius={[3, 3, 0, 0]}>
-                {data.map((_, i) => (
-                  <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />
-                ))}
-              </Bar>
+              <Bar dataKey="totalValue" radius={[3, 3, 0, 0]} fill={CHART_SERIES} />
             </BarChart>
           </ResponsiveContainer>
         )}
