@@ -489,7 +489,7 @@ class PeopleController(
             "email" -> "email"; "department" -> "department"; "jobtitle" -> "jobTitle"
             "createdat" -> "createdAt"; else -> "fullName"
         }
-        return Sort.by(dir, prop)
+        return Sort.by(dir, prop).and(Sort.by(Sort.Direction.ASC, "id"))
     }
 
     private fun Person.toDto() = PersonDto(id, fullName, email, department, jobTitle, locationId, location?.name, isArchived, createdAt, updatedAt, entityVersion)

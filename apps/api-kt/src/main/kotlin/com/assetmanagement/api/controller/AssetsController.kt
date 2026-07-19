@@ -1297,7 +1297,7 @@ class AssetsController(
             "createdat" -> "createdAt"
             else -> "name"
         }
-        return Sort.by(dir, prop)
+        return Sort.by(dir, prop).and(Sort.by(Sort.Direction.ASC, "id"))
     }
 
     private fun toDto(asset: Asset, cfvs: List<CustomFieldValue>): AssetDto {
