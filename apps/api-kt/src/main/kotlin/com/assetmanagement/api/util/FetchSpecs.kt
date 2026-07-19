@@ -16,8 +16,11 @@ import org.springframework.data.jpa.domain.Specification
  */
 fun <T> withFetch(vararg attributes: String): Specification<T> =
     Specification { root, query, _ ->
-        val resultType = query.resultType
-        if (resultType != java.lang.Long::class.java && resultType != java.lang.Long.TYPE) {
+        // Spring Data 3.3+ types `query` as nullable (it's absent on some
+        // non-SELECT paths). A fetch join only matters for a data SELECT, so if
+        // there's no query — or it's the count query — contribute no fetch.
+        val resultType = query?.resultType
+        if (resultType != null && resultType != java.lang.Long::class.java && resultType != java.lang.Long.TYPE) {
             attributes.forEach { root.fetch<Any, Any>(it, JoinType.LEFT) }
         }
         null // contributes no predicate; combine with the filter spec via .and(...)

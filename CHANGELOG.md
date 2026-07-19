@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-19 13:05 — Upgrade Spring Boot 3.2.5 (EOL) → 3.3.7 (fourth sweep)
+
+- Spring Boot 3.2.x is end-of-life (no more security patches). Upgraded to 3.3.7, bumped `io.spring.dependency-management` 1.1.4 → 1.1.6 and `springdoc-openapi` 2.4.0 → 2.6.0 (the 2.4 line is pinned to Boot 3.2). Kotlin stays 1.9.23 (fully supported on 3.3).
+- One source change for the Spring Data 3.3 API: `Specification.toPredicate`'s `CriteriaQuery` argument is now nullable, so `FetchSpecs.withFetch` reads `query?.resultType` and contributes no fetch join when the query is absent (non-SELECT paths) — behaviour unchanged for the data/count queries it targets.
+- Verified: full `./gradlew build` (unit + Testcontainers integration suite) passes; API boots on 3.3.7 with Flyway validating the schema; login, authed reads (assets/me/notifications/reports), Swagger UI + `/v3/api-docs` (springdoc 2.6), and SSO config all respond 200.
+
 ## 2026-07-19 12:35 — Clear dependency vulnerabilities + gate CI audit (fourth sweep)
 
 - `npm audit` reported 16 vulnerabilities (1 critical, 7 high). `npm audit fix` patched the runtime-facing chain (react-router/react-router-dom → 7.18.1, rollup, minimatch, picomatch, flatted) without breaking changes; bumping the dev/test chain (vitest 2 → 4, which pulls vite 7) cleared the rest. Now **0 vulnerabilities**. Verified: 38 unit tests, 7 e2e, build, and lint all pass on vitest 4 / vite 7.
