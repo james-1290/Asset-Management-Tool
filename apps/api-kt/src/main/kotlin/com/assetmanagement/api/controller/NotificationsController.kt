@@ -7,14 +7,14 @@ import com.assetmanagement.api.repository.ApplicationRepository
 import com.assetmanagement.api.repository.AssetRepository
 import com.assetmanagement.api.repository.CertificateRepository
 import com.assetmanagement.api.repository.SystemSettingRepository
+import com.assetmanagement.api.util.today
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import java.time.LocalDate
 
 @RestController
 @RequestMapping("/api/v1/notifications")
@@ -29,12 +29,14 @@ class NotificationsController(
     fun getSummary(): ResponseEntity<NotificationSummary> {
         val thresholdStr = systemSettingRepository.findByKey("alerts.thresholds")?.value ?: "90,30,14,7"
         val maxDays = thresholdStr.split(",").mapNotNull { it.trim().toLongOrNull() }.maxOrNull() ?: 90L
-        val now = Instant.now()
-        val cutoff = now.plus(maxDays, ChronoUnit.DAYS)
+        // Date-only comparison (V016): expiry columns are LocalDate; comparing
+        // against an Instant would drop items expiring today (UTC-midnight shift).
+        val now = today()
+        val cutoff = today().plusDays(maxDays)
 
         val warrantySpec = org.springframework.data.jpa.domain.Specification<com.assetmanagement.api.model.Asset> { root, _, cb ->
             cb.and(cb.equal(root.get<Boolean>("isArchived"), false),
-                cb.isNotNull(root.get<Instant>("warrantyExpiryDate")),
+                cb.isNotNull(root.get<LocalDate>("warrantyExpiryDate")),
                 cb.greaterThanOrEqualTo(root.get("warrantyExpiryDate"), now),
                 cb.lessThanOrEqualTo(root.get("warrantyExpiryDate"), cutoff))
         }
@@ -44,7 +46,7 @@ class NotificationsController(
 
         val certSpec = org.springframework.data.jpa.domain.Specification<com.assetmanagement.api.model.Certificate> { root, _, cb ->
             cb.and(cb.equal(root.get<Boolean>("isArchived"), false),
-                cb.isNotNull(root.get<Instant>("expiryDate")),
+                cb.isNotNull(root.get<LocalDate>("expiryDate")),
                 cb.greaterThanOrEqualTo(root.get("expiryDate"), now),
                 cb.lessThanOrEqualTo(root.get("expiryDate"), cutoff))
         }
@@ -54,7 +56,7 @@ class NotificationsController(
 
         val licenceSpec = org.springframework.data.jpa.domain.Specification<com.assetmanagement.api.model.Application> { root, _, cb ->
             cb.and(cb.equal(root.get<Boolean>("isArchived"), false),
-                cb.isNotNull(root.get<Instant>("expiryDate")),
+                cb.isNotNull(root.get<LocalDate>("expiryDate")),
                 cb.greaterThanOrEqualTo(root.get("expiryDate"), now),
                 cb.lessThanOrEqualTo(root.get("expiryDate"), cutoff))
         }
