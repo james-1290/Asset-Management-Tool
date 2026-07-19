@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-19 15:25 — Replace native selects in the Assets filter with shadcn Select (fourth sweep)
+
+- The Assets "More Filters" popover used two hand-rolled native `<select>` elements (Location, Assigned To). Native option lists are rendered by the OS and ignore the app theme, so in dark mode they showed as white dropdowns with dark text — jarring and off-brand. Replaced both with the shared shadcn `Select` (theme-aware, keyboard-accessible), using an `"all"` sentinel mapped to `""` (Radix forbids empty item values), matching the existing audit-log toolbar pattern. No filter-behaviour change. Verified: build, lint, and e2e (incl. the Assets list) pass.
+
 ## 2026-07-19 15:05 — Composite list indexes + stable sort tiebreak (fourth sweep)
 
 - **Stable pagination.** Every list `sortOf(...)` (assets/certificates/applications/people/locations/audit) sorted by a single non-unique column, so rows with an equal sort value (same name, same createdAt, same timestamp) had no defined order — meaning page 2 could repeat or skip rows from page 1. All six now append an `id ASC` tiebreak for a total order.
