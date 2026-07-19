@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpStatus
+import java.time.LocalDate
 
 /**
  * Regression guard for the date-only (LocalDate) certificate fields: exporting
@@ -42,5 +43,28 @@ class CertificateDateIntegrationTest : AbstractIntegrationTest() {
 
         val after = getWithToken("/api/v1/certificates/$certId", token).body!!
         assertTrue(after.contains("\"expiryDate\":\"2029-06-30\""), "renewed expiry should be 2029-06-30")
+    }
+
+    @Test
+    fun `export renders the date-derived status, not the stored one`() {
+        val token = loginAsAdmin()
+        val typeId = idOf(
+            postJson("/api/v1/certificate-types", """{"name":"Cert Type ${System.nanoTime()}"}""", token).body!!,
+        )
+        // Stored status is Active, but the expiry is in the past — the computed
+        // status is Expired, and the export must reflect that (like the UI does).
+        val name = "PastExpiryCert-${System.nanoTime()}"
+        val past = LocalDate.now().minusDays(5)
+        postJson(
+            "/api/v1/certificates",
+            """{"name":"$name","certificateTypeId":"$typeId","status":"Active","issuedDate":"${past.minusYears(1)}","expiryDate":"$past"}""",
+            token,
+        )
+
+        val export = getWithToken("/api/v1/certificates/export", token)
+        assertEquals(HttpStatus.OK, export.statusCode)
+        val row = export.body!!.lineSequence().first { it.contains(name) }
+        assertTrue(row.contains("Expired"), "export row should show computed status Expired: $row")
+        assertTrue(!row.contains("Active"), "export row must not show the stored status Active: $row")
     }
 }

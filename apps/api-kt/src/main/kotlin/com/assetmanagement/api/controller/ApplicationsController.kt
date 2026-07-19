@@ -143,7 +143,9 @@ class ApplicationsController(
             arrayOf(
                 a.name,
                 a.applicationType?.name ?: "",
-                a.status.name,
+                // Match the list/detail views: export the date-derived status, not
+                // the stored one (a licence stored "Active" but past expiry is "Expired").
+                computeStatus(a.status.name, a.expiryDate),
                 a.publisher ?: "",
                 a.version ?: "",
                 a.licenceKey ?: "",
@@ -151,7 +153,7 @@ class ApplicationsController(
                 a.maxSeats?.toString() ?: "",
                 a.usedSeats?.toString() ?: "",
                 a.expiryDate?.let { dateOnlyFormat.format(it) } ?: "",
-                a.purchaseCost?.let { String.format("%.2f", it) } ?: "",
+                a.purchaseCost?.let { String.format(java.util.Locale.ROOT, "%.2f", it) } ?: "",
                 a.autoRenewal.toString(),
                 a.notes ?: "",
                 dateFormat.format(a.createdAt),
@@ -1044,6 +1046,6 @@ class ApplicationsController(
             oldVal == null || newVal == null -> true
             else -> oldVal.compareTo(newVal) != 0
         }
-        if (changed) changes.add(AuditChange(field, oldVal?.let { String.format("%.2f", it) }, newVal?.let { String.format("%.2f", it) }))
+        if (changed) changes.add(AuditChange(field, oldVal?.let { String.format(java.util.Locale.ROOT, "%.2f", it) }, newVal?.let { String.format(java.util.Locale.ROOT, "%.2f", it) }))
     }
 }

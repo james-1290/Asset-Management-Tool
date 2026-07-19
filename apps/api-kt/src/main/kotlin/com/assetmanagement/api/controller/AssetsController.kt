@@ -55,6 +55,11 @@ class AssetsController(
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
     private val dateOnlyFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
 
+    private companion object {
+        const val DEFAULT_HISTORY_LIMIT = 500
+        const val MAX_HISTORY_LIMIT = 1000
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // 1. GET / — Paged list with search, status filter, includeStatuses, sorting, typeId
     // ──────────────────────────────────────────────────────────────────────────
@@ -177,11 +182,11 @@ class AssetsController(
                 a.assignedPerson?.fullName ?: "",
                 a.serialNumber ?: "",
                 a.purchaseDate?.let { dateOnlyFormat.format(it) } ?: "",
-                a.purchaseCost?.let { String.format("%.2f", it) } ?: "",
+                a.purchaseCost?.let { String.format(java.util.Locale.ROOT, "%.2f", it) } ?: "",
                 a.warrantyExpiryDate?.let { dateOnlyFormat.format(it) } ?: "",
                 a.depreciationMonths?.toString() ?: "",
-                dep.bookValue?.let { String.format("%.2f", it) } ?: "",
-                dep.total?.let { String.format("%.2f", it) } ?: "",
+                dep.bookValue?.let { String.format(java.util.Locale.ROOT, "%.2f", it) } ?: "",
+                dep.total?.let { String.format(java.util.Locale.ROOT, "%.2f", it) } ?: "",
                 a.notes ?: "",
                 dateFormat.format(a.createdAt),
                 dateFormat.format(a.updatedAt)
@@ -489,11 +494,13 @@ class AssetsController(
         if (!assetRepository.existsById(id))
             return ResponseEntity.notFound().build()
 
-        val historyEntries = if (limit != null && limit > 0) {
-            assetHistoryRepository.findByAssetIdOrderByTimestampDesc(id, PageRequest.of(0, limit))
-        } else {
-            assetHistoryRepository.findByAssetIdOrderByTimestampDesc(id)
-        }
+        // Always page the query: an unbounded fetch loads the entire timeline (each
+        // with its `changes` collection) into memory. Default to a generous cap when
+        // no limit is given, and clamp an explicit limit so an API caller can't ask
+        // for an unbounded result.
+        val effectiveLimit = (limit?.takeIf { it > 0 } ?: DEFAULT_HISTORY_LIMIT).coerceAtMost(MAX_HISTORY_LIMIT)
+        val historyEntries =
+            assetHistoryRepository.findByAssetIdOrderByTimestampDesc(id, PageRequest.of(0, effectiveLimit))
 
         val dtos = historyEntries.map { h ->
             AssetHistoryDto(
@@ -753,7 +760,7 @@ class AssetsController(
         changes.add(AuditChange("Sold Date", null, soldDate.toString()))
 
         if (request.soldPrice != null)
-            changes.add(AuditChange("Sold Price", null, String.format("%.2f", request.soldPrice)))
+            changes.add(AuditChange("Sold Price", null, String.format(java.util.Locale.ROOT, "%.2f", request.soldPrice)))
 
         asset.status = AssetStatus.Sold
         asset.soldDate = soldDate
@@ -764,7 +771,7 @@ class AssetsController(
 
         var details = "Sold asset \"${asset.name}\""
         if (request.soldPrice != null)
-            details += " for ${String.format("%.2f", request.soldPrice)}"
+            details += " for ${String.format(java.util.Locale.ROOT, "%.2f", request.soldPrice)}"
         if (request.notes != null)
             details += " — ${request.notes}"
 
@@ -1364,6 +1371,6 @@ class AssetsController(
             oldVal == null || newVal == null -> true
             else -> oldVal.compareTo(newVal) != 0
         }
-        if (changed) changes.add(AuditChange(field, oldVal?.let { String.format("%.2f", it) }, newVal?.let { String.format("%.2f", it) }))
+        if (changed) changes.add(AuditChange(field, oldVal?.let { String.format(java.util.Locale.ROOT, "%.2f", it) }, newVal?.let { String.format(java.util.Locale.ROOT, "%.2f", it) }))
     }
 }

@@ -316,7 +316,9 @@ class CertificatesController(
             arrayOf(
                 c.name,
                 c.certificateType?.name ?: "",
-                c.status.name,
+                // Match the list/detail views: export the date-derived status, not
+                // the stored one (a cert stored "Active" but past expiry is "Expired").
+                computeStatus(c.status.name, c.expiryDate),
                 c.issuer ?: "",
                 c.subject ?: "",
                 c.issuedDate?.let { dateOnlyFormat.format(it) } ?: "",
