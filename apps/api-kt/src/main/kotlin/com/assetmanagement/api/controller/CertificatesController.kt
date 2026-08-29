@@ -164,7 +164,9 @@ class CertificatesController(
         val values = customFieldValueRepository.findByEntityId(entityId)
         return values.mapNotNull { cfv ->
             val def = cfv.customFieldDefinition
-            if (def != null) {
+            // Skip values whose definition has been archived, matching the asset
+            // and application responses (certificates previously leaked them).
+            if (def != null && !def.isArchived) {
                 CustomFieldValueDto(def.id, def.name, def.fieldType.name, cfv.value)
             } else {
                 null
@@ -178,7 +180,8 @@ class CertificatesController(
         return allValues.groupBy { it.entityId }.mapValues { (_, values) ->
             values.mapNotNull { cfv ->
                 val def = cfv.customFieldDefinition
-                if (def != null) {
+                // Skip archived-definition values, matching asset/application responses.
+                if (def != null && !def.isArchived) {
                     CustomFieldValueDto(def.id, def.name, def.fieldType.name, cfv.value)
                 } else {
                     null
