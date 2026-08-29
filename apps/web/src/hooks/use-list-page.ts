@@ -56,9 +56,23 @@ export function useListPage({ sortFieldMap, defaultSortBy, defaultSortDir = "asc
     setSearchInput(searchParam);
   }, [searchParam]);
 
+  // Reverse of sortFieldMap (backend field -> column id). The controlled sort
+  // state must carry the TanStack *column id* — that's what `column.getIsSorted()`
+  // compares against — while the URL keeps the backend field name. Without this,
+  // a page whose map changes the field (e.g. `fullName` -> `"fullname"`) has a
+  // sort-state id that never matches its column id, so the header is stuck
+  // ascending and can't toggle to descending.
+  const columnIdByBackendField = useMemo(() => {
+    const reverse: Record<string, string> = {};
+    for (const [columnId, backendField] of Object.entries(sortFieldMap)) {
+      reverse[backendField] = columnId;
+    }
+    return reverse;
+  }, [sortFieldMap]);
+
   const sorting: SortingState = useMemo(
-    () => [{ id: sortByParam, desc: sortDirParam === "desc" }],
-    [sortByParam, sortDirParam],
+    () => [{ id: columnIdByBackendField[sortByParam] ?? sortByParam, desc: sortDirParam === "desc" }],
+    [sortByParam, sortDirParam, columnIdByBackendField],
   );
 
   const handleSortingChange = useCallback(
