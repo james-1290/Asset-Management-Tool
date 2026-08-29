@@ -254,7 +254,9 @@ class AssetModelsController(
         // type rather than trusting the client-supplied Content-Type header. The stored
         // extension is derived from the detected type, so mismatched bytes cannot be
         // served back under an image MIME type.
-        val detectedType = Tika().detect(file.inputStream)
+        // Close the multipart stream Tika is handed (it doesn't); a fresh stream
+        // is opened below for storage.
+        val detectedType = file.inputStream.use { Tika().detect(it) }
         val ext = ALLOWED_IMAGE_TYPES[detectedType]
             ?: return ResponseEntity.badRequest().body(mapOf("error" to "File content does not match an allowed image type"))
 

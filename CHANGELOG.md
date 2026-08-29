@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-08-29 16:45 — Close upload stream leaks + return 413 for oversized uploads (fifth sweep, hardening)
+
+- **Stream leaks.** The CSV import (`ImportController` validate + execute), attachment upload (`AttachmentsController`), and asset-model image upload (`AssetModelsController`) handed `MultipartFile.inputStream` to a `CSVReader`/Tika and never closed it — a file-descriptor leak per call. Each now wraps the read in `.use { }` so the reader/stream is closed.
+- **Oversized upload → 413.** With the 10MB multipart cap, an over-limit upload threw `MaxUploadSizeExceededException`, which fell through to the generic 500. Added a handler returning **413** with a clear message. Verified at runtime: an 11MB upload returns 413, a normal upload 200; full suite passes.
+
 ## 2026-08-29 16:25 — Align AssetModels list endpoint with siblings (fifth sweep, bug/consistency)
 
 - `AssetModelsController.getAll` returned an ad-hoc `mapOf("items"…, "total"…)` instead of the standard `PagedResponse` every other list endpoint uses. The frontend `PagedResponse<T>` reads `totalCount`, so it saw `undefined` and its page-through loop only terminated on an empty page — one wasted request per dropdown load. Now returns `PagedResponse(...totalCount)`. Also aligned three more divergences: case-insensitive sort keys (`when(sortBy.lowercase())`), a stable `id` sort tiebreak, and LIKE-wildcard escaping via `SqlUtils.escapeLikePattern`. Verified: full suite + asset-model e2e pass; the list now returns `totalCount`.

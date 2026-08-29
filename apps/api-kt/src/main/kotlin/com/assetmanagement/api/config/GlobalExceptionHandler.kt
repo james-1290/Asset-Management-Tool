@@ -9,6 +9,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.orm.ObjectOptimisticLockingFailureException
@@ -79,6 +80,14 @@ class GlobalExceptionHandler {
     fun handleOptimisticLock(ex: ObjectOptimisticLockingFailureException): ResponseEntity<Map<String, Any>> {
         return ResponseEntity.status(409)
             .body(mapOf("error" to "This record was modified by another user. Please refresh and try again."))
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException::class)
+    fun handleMaxUploadSize(ex: MaxUploadSizeExceededException): ResponseEntity<Map<String, Any>> {
+        // Without this an over-limit upload falls through to the generic 500;
+        // 413 with a clear message is the correct, actionable response.
+        return ResponseEntity.status(413)
+            .body(mapOf("error" to "The uploaded file is too large. The maximum allowed size is 10MB."))
     }
 
     @ExceptionHandler(Exception::class)

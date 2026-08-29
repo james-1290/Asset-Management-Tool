@@ -103,11 +103,12 @@ class ImportController(
             return ResponseEntity.badRequest().body(mapOf("error" to "Invalid entity type: $entityType"))
         }
 
-        val reader = CSVReaderBuilder(InputStreamReader(file.inputStream))
+        // `use` closes the CSVReader — and with it the InputStreamReader and the
+        // multipart file-backed stream — so repeated imports don't leak FDs.
+        val allRows = CSVReaderBuilder(InputStreamReader(file.inputStream))
             .withSkipLines(0)
             .build()
-
-        val allRows = reader.readAll()
+            .use { it.readAll() }
         if (allRows.isEmpty()) {
             return ResponseEntity.badRequest().body(mapOf("error" to "CSV file is empty"))
         }
@@ -174,11 +175,12 @@ class ImportController(
             return ResponseEntity.badRequest().body(mapOf("error" to "Invalid entity type: $entityType"))
         }
 
-        val reader = CSVReaderBuilder(InputStreamReader(file.inputStream))
+        // `use` closes the CSVReader — and with it the InputStreamReader and the
+        // multipart file-backed stream — so repeated imports don't leak FDs.
+        val allRows = CSVReaderBuilder(InputStreamReader(file.inputStream))
             .withSkipLines(0)
             .build()
-
-        val allRows = reader.readAll()
+            .use { it.readAll() }
         if (allRows.isEmpty()) {
             return ResponseEntity.badRequest().body(mapOf("error" to "CSV file is empty"))
         }
