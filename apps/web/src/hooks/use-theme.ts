@@ -2,6 +2,15 @@ import { useEffect, useState } from "react"
 
 type Theme = "light" | "dark" | "system"
 
+const THEMES: readonly Theme[] = ["light", "dark", "system"]
+
+function readStoredTheme(): Theme {
+  // Validate rather than blindly casting: a stale/garbage stored value must not
+  // become an invalid Theme.
+  const stored = localStorage.getItem("theme")
+  return THEMES.includes(stored as Theme) ? (stored as Theme) : "system"
+}
+
 function getSystemTheme(): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
 }
@@ -12,9 +21,7 @@ function applyTheme(theme: Theme) {
 }
 
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    return (localStorage.getItem("theme") as Theme) || "system"
-  })
+  const [theme, setThemeState] = useState<Theme>(readStoredTheme)
 
   useEffect(() => {
     applyTheme(theme)
