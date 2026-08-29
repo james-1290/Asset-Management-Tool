@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 18:55 — Certificates toolbar uses shadcn Popover (fifth sweep, consistency)
+
+- The certificates "More" filter was the last hand-rolled dropdown (a `<button>` toggling an absolutely-positioned `<div>` with its own `useState`/`useRef`/`mousedown` click-outside), violating the CLAUDE.md "use shadcn, don't hand-roll primitives" rule and diverging from the assets toolbar. Replaced with the shared shadcn `Popover` + `Button`, gaining focus management and Escape-to-close. Verified: build, lint, e2e (incl. /certificates) pass.
+
 ## 2026-08-29 18:35 — Serialize seat assignment to enforce maxSeats (fifth sweep, hardening)
 
 - `POST /applications/{id}/seats` counted seats then inserted without atomicity or a DB cap, so two concurrent assignments could both pass the `used >= maxSeats` check and over-allocate. `assignSeat` (already `@Transactional`) now fetches the application via a `PESSIMISTIC_WRITE` lock (`findByIdForUpdate`), so concurrent assigns serialize on the application row and the count+insert is atomic. Verified: new `SeatAssignmentIntegrationTest` (maxSeats=1 → first seat 200, second 409); full suite passes.
