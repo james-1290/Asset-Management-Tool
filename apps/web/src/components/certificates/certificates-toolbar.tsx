@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
 import type { Table } from "@tanstack/react-table";
 import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { ColumnToggle } from "../column-toggle";
 import { FilterChip } from "../filter-chip";
 import { ListFilter } from "lucide-react";
@@ -44,19 +45,6 @@ export function CertificatesToolbar({
   onExpiryFromChange,
   onExpiryToChange,
 }: CertificatesToolbarProps) {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
-    }
-    if (moreOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [moreOpen]);
-
   const hasAdvancedFilters = !!(expiryFrom || expiryTo);
 
   return (
@@ -82,36 +70,33 @@ export function CertificatesToolbar({
           onChange={onStatusFilterChange}
           allLabel="All statuses"
         />
-        <div ref={moreRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setMoreOpen(!moreOpen)}
-            className={cn(
-              "inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-sm transition-colors hover:bg-accent",
-              hasAdvancedFilters || moreOpen
-                ? "border-primary/30 bg-primary/5 text-foreground"
-                : "border-border text-muted-foreground"
-            )}
-          >
-            <ListFilter className="h-4 w-4 shrink-0" />
-            More
-            {hasAdvancedFilters && (
-              <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">1</span>
-            )}
-          </button>
-          {moreOpen && (
-            <div className="absolute left-0 top-full z-50 mt-1 w-[320px] rounded-lg border bg-popover p-3 shadow-md space-y-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Expiry Date</label>
-                <div className="flex items-center gap-2">
-                  <input type="date" value={expiryFrom} onChange={(e) => onExpiryFromChange(e.target.value)} className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
-                  <span className="text-xs text-muted-foreground">to</span>
-                  <input type="date" value={expiryTo} onChange={(e) => onExpiryToChange(e.target.value)} className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
-                </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "gap-1 rounded-full px-3",
+                hasAdvancedFilters && "border-primary/30 bg-primary/5",
+              )}
+            >
+              <ListFilter className="h-4 w-4 shrink-0" />
+              More
+              {hasAdvancedFilters && (
+                <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">1</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-[320px] space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Expiry Date</label>
+              <div className="flex items-center gap-2">
+                <input type="date" value={expiryFrom} onChange={(e) => onExpiryFromChange(e.target.value)} className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
+                <span className="text-xs text-muted-foreground">to</span>
+                <input type="date" value={expiryTo} onChange={(e) => onExpiryToChange(e.target.value)} className="w-full rounded-md border bg-background px-2 py-1 text-sm" />
               </div>
             </div>
-          )}
-        </div>
+          </PopoverContent>
+        </Popover>
       </div>
       <div className="ml-auto">
         <ColumnToggle table={table} />
