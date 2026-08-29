@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 20:30 — Fix list column headers stuck on ascending (fifth sweep, correctness)
+
+- The shared `useListPage` built the TanStack controlled-sort state with the *backend* field name as the row `id`, but headers compare `column.getIsSorted()` against the *column* id. On any page whose `sortFieldMap` changes the field's case (People: `fullName`→`fullname`, `jobTitle`→`jobtitle`), the ids never matched, so `getIsSorted()` was always false and the header could only ever sort ascending — descending was unreachable. Now the sort state carries the column id (via a reverse of `sortFieldMap`) while the URL keeps the backend field. Identity-mapped pages (assets/certificates/applications) are unaffected. Verified: build, lint, unit, and a new `people-sort` e2e (header toggles desc→asc) pass; full e2e green.
+
 ## 2026-08-29 20:10 — Audit-log failed logins against SSO accounts (fifth sweep, security)
 
 - The login handler audited every failure branch (unknown user, inactive, wrong password) except the non-LOCAL/SSO branch. That left two gaps a final audit surfaced: local-login attempts against SSO-provisioned usernames produced no `LoginFailed` trail (a monitoring blind spot on high-value accounts), and the skipped synchronous audit insert made that branch return faster than the others — a residual timing signal that partially undercut the enumeration hardening. Added the matching `auditService.log(...)`. Verified: full suite passes.
