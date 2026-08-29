@@ -7,6 +7,7 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.MySQLContainer
@@ -17,7 +18,11 @@ import org.testcontainers.utility.DockerImageName
  * throwaway MySQL container, so Flyway migrates from clean and Hibernate's
  * `ddl-auto: validate` runs against a real schema on every test run.
  */
+// The "test" profile is an explicit dev-safe profile, so SecurityStartupValidator
+// tolerates the default test secrets instead of failing the boot (it fails closed
+// on an unset/"default" profile).
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 abstract class AbstractIntegrationTest {
 
     @Autowired

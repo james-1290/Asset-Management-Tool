@@ -22,8 +22,13 @@ This starts:
 ```bash
 cd apps/api-kt
 ./gradlew build
-java -jar build/libs/asset-management-api-1.0.0.jar
+SPRING_PROFILES_ACTIVE=dev java -jar build/libs/asset-management-api-1.0.0.jar
 ```
+
+The `dev` profile is **required** for local runs: it's the only mode in which
+the app tolerates the built-in default secrets. With no profile set (or any
+non-dev profile) the app fails fast on the default JWT key / admin password —
+this is deliberate, so a production deploy can't accidentally boot insecure.
 
 The API starts on `http://localhost:5115`. On startup it applies any pending
 **Flyway** migrations automatically.
@@ -52,7 +57,7 @@ Open three terminals:
 cd infra && docker compose up -d
 
 # Terminal 2: API (requires JDK 21)
-cd apps/api-kt && ./gradlew build && java -jar build/libs/asset-management-api-1.0.0.jar
+cd apps/api-kt && ./gradlew build && SPRING_PROFILES_ACTIVE=dev java -jar build/libs/asset-management-api-1.0.0.jar
 
 # Terminal 3: frontend
 cd apps/web && npm run dev
@@ -64,10 +69,13 @@ cd apps/web && npm run dev
 - `apps/web/.env` — frontend overrides (copy from `apps/web/.env.example`).
 - The API is configured through `apps/api-kt/src/main/resources/application.yml`,
   with every secret overridable by an environment variable. For anything other
-  than local dev you must set at least: `SPRING_PROFILES_ACTIVE` (a non-dev
-  profile), `JWT_KEY`, `ADMIN_PASSWORD`, `DB_USERNAME`/`DB_PASSWORD`, and — if
-  SCIM is enabled — `SCIM_BEARER_TOKEN`. On a non-dev profile the app refuses to
-  start on the built-in dev defaults.
+  than local dev you must set at least: `JWT_KEY`, `ADMIN_PASSWORD`,
+  `DB_USERNAME`/`DB_PASSWORD`, and — if SCIM is enabled — `SCIM_BEARER_TOKEN`.
+  The app boots on the built-in dev defaults **only** under an explicit dev
+  profile (`SPRING_PROFILES_ACTIVE=dev`); with no profile set, or any other
+  profile, it refuses to start until real secrets are supplied. This fail-closed
+  default means a deploy that forgets to configure the profile/secrets aborts
+  instead of running with the public default key.
 
 ## Database migrations
 
