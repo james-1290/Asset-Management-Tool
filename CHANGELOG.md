@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 17:40 — Certificates stop leaking archived custom-field values (fifth sweep, consistency)
+
+- Certificate responses mapped custom-field values without filtering archived definitions, while asset and application responses skip them — so an archived custom field kept showing on certificates only. Added the `!def.isArchived` filter to both the single-entity and batch certificate CFV mappers, matching the siblings. Verified: full suite passes; cert list 200.
+
 ## 2026-08-29 17:25 — Remove verified dead code (fifth sweep, tidy)
 
 - Deleted code with zero references (grep-confirmed across main + test): the unused `UserDto` DTO (the API uses `UserDetailDto`); the unused `findAllByOrderBySentAtDesc` alert-history query; the unpaged `findByAssetIdOrderByTimestampDesc`/`findByPersonIdOrderByTimestampDesc` overloads (every caller now passes a `Pageable`); two dead `private fun isAdmin()` helpers (authorization is via `@PreAuthorize`) plus their now-orphaned `SecurityContextHolder` imports; and the never-called `assetModelsApi.getPaged` + its unused `AssetModelQueryParams` type. Verified: full backend suite, frontend build + lint pass.
