@@ -7,6 +7,7 @@ import com.assetmanagement.api.service.AuditEntry
 import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
 import com.assetmanagement.api.service.StorageService
+import com.assetmanagement.api.util.SqlUtils
 import jakarta.persistence.criteria.Predicate
 import org.apache.tika.Tika
 import org.springframework.core.io.InputStreamResource
@@ -63,14 +64,15 @@ class AssetModelsController(
         val ps = pageSize.coerceIn(1, 100)
 
         val dir = if (sortDir.equals("desc", true)) Sort.Direction.DESC else Sort.Direction.ASC
-        val sortProp = when (sortBy) {
-            "name" -> "name"
+        // Match the sibling list controllers: case-insensitive sort keys + a stable
+        // `id` tiebreak so equal-valued rows don't shuffle across pages.
+        val sortProp = when (sortBy.lowercase()) {
             "manufacturer" -> "manufacturer"
-            "createdAt" -> "createdAt"
-            "updatedAt" -> "updatedAt"
+            "createdat" -> "createdAt"
+            "updatedat" -> "updatedAt"
             else -> "name"
         }
-        val pageable = PageRequest.of(p - 1, ps, Sort.by(dir, sortProp))
+        val pageable = PageRequest.of(p - 1, ps, Sort.by(dir, sortProp).and(Sort.by(Sort.Direction.ASC, "id")))
 
         val spec = Specification<AssetModel> { root, _, cb ->
             val predicates = mutableListOf<Predicate>()
@@ -84,11 +86,12 @@ class AssetModelsController(
             }
 
             if (!search.isNullOrBlank()) {
-                val pattern = "%${search.lowercase()}%"
+                // Escape LIKE wildcards in user input, matching the sibling controllers.
+                val pattern = "%${SqlUtils.escapeLikePattern(search.lowercase())}%"
                 predicates.add(
                     cb.or(
-                        cb.like(cb.lower(root.get("name")), pattern),
-                        cb.like(cb.lower(root.get("manufacturer")), pattern)
+                        cb.like(cb.lower(root.get("name")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("manufacturer")), pattern, '\\')
                     )
                 )
             }
@@ -98,13 +101,11 @@ class AssetModelsController(
 
         val result = assetModelRepository.findAll(spec, pageable)
 
-        return ResponseEntity.ok(mapOf(
-            "items" to result.content.map { toDto(it) },
-            "total" to result.totalElements,
-            "page" to p,
-            "pageSize" to ps,
-            "totalPages" to result.totalPages
-        ))
+        // Standard PagedResponse (field `totalCount`) like every other list
+        // endpoint — the previous ad-hoc map used `total`, which the frontend's
+        // PagedResponse type (which reads `totalCount`) saw as undefined, so its
+        // paging loop only stopped on an empty page (one wasted request per load).
+        return ResponseEntity.ok(PagedResponse(result.content.map { toDto(it) }, p, ps, result.totalElements))
     }
 
     // ──────────────────────────────────────────────────────────────────────────
