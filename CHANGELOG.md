@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 17:05 — Close login account-enumeration vectors (fifth sweep, security)
+
+- The login endpoint let an attacker enumerate accounts two ways: an SSO account returned a distinct "This account uses SSO…" message (vs the generic error for unknown users), and bcrypt ran only for existing local users, so response time revealed whether a username existed. Now every failure mode (unknown user / SSO account / inactive / wrong password) returns the **identical** generic 401 and spends **exactly one bcrypt** — a real check, or a dummy against a fixed hash computed from the same encoder. Verified at runtime: unknown-user and wrong-password responses are byte-identical and comparable in latency (~60ms, bcrypt-dominated); valid login still 200.
+
 ## 2026-08-29 16:45 — Close upload stream leaks + return 413 for oversized uploads (fifth sweep, hardening)
 
 - **Stream leaks.** The CSV import (`ImportController` validate + execute), attachment upload (`AttachmentsController`), and asset-model image upload (`AssetModelsController`) handed `MultipartFile.inputStream` to a `CSVReader`/Tika and never closed it — a file-descriptor leak per call. Each now wraps the read in `.use { }` so the reader/stream is closed.
