@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 16:25 — Align AssetModels list endpoint with siblings (fifth sweep, bug/consistency)
+
+- `AssetModelsController.getAll` returned an ad-hoc `mapOf("items"…, "total"…)` instead of the standard `PagedResponse` every other list endpoint uses. The frontend `PagedResponse<T>` reads `totalCount`, so it saw `undefined` and its page-through loop only terminated on an empty page — one wasted request per dropdown load. Now returns `PagedResponse(...totalCount)`. Also aligned three more divergences: case-insensitive sort keys (`when(sortBy.lowercase())`), a stable `id` sort tiebreak, and LIKE-wildcard escaping via `SqlUtils.escapeLikePattern`. Verified: full suite + asset-model e2e pass; the list now returns `totalCount`.
+
 ## 2026-08-29 16:05 — CSV exports fetch-join to-one relations (fifth sweep, perf)
 
 - The list endpoints fetch-join their denormalised to-one relations, but the `/export` paths (up to `CsvExport.MAX_ROWS` = 100k rows) did not, so every name column was a lazy load — softened to ~ceil(N/100) queries per relation by `default_batch_fetch_size`, but still thousands of round-trips on a large export. Added `.and(withFetch(...))` to the filtered-spec branch of the asset (`assetType`,`location`,`assignedPerson`), certificate (`certificateType`), application (`applicationType`) and people (`location`) exports. Only to-one relations are fetched, so pagination's count query is unaffected (FetchSpecs skips the join on the count query). Verified: full suite passes; all four exports return 200 with data at runtime.
