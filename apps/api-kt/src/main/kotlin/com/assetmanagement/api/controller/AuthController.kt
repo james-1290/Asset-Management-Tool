@@ -72,6 +72,13 @@ class AuthController(
 
         if (user.authProvider != "LOCAL") {
             passwordEncoder.matches(request.password, dummyPasswordHash) // equalize timing
+            // Audit this like every other failure branch: without it, local-login
+            // attempts against SSO-provisioned accounts leave no LoginFailed trail
+            // (a monitoring blind spot on high-value targets), and the missing
+            // synchronous audit insert would also make this branch return faster
+            // than the others — reintroducing a timing signal.
+            auditService.log(AuditEntry("LoginFailed", "User", user.id.toString(), request.username,
+                "Failed login attempt — non-local (SSO) account", null, request.username))
             loginRateLimitService.recordFailedAttempt(rateLimitKey)
             return invalidCredentials
         }

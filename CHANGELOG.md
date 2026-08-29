@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 20:10 — Audit-log failed logins against SSO accounts (fifth sweep, security)
+
+- The login handler audited every failure branch (unknown user, inactive, wrong password) except the non-LOCAL/SSO branch. That left two gaps a final audit surfaced: local-login attempts against SSO-provisioned usernames produced no `LoginFailed` trail (a monitoring blind spot on high-value accounts), and the skipped synchronous audit insert made that branch return faster than the others — a residual timing signal that partially undercut the enumeration hardening. Added the matching `auditService.log(...)`. Verified: full suite passes.
+
 ## 2026-08-29 19:45 — Selected-rows export honours the requested sort (fifth sweep, consistency)
 
 - Exporting selected rows by `ids` used `findAllById` (unspecified order) for certificates, applications and people, silently ignoring the `sortBy`/`sortDir` params — while the assets export already honoured them. Switched the three ids-branches to a sorted spec (`id IN (...)` + `sortOf`, with the same `withFetch` join as the filtered branch), so a selected-rows CSV comes out in the table's order. Verified: full suite passes; a people ids-export with `sortBy=fullname&sortDir=desc` returns Diana→Charlie→Bob→Alice.
