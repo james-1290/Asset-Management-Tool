@@ -85,7 +85,11 @@ class PeopleController(
     ) {
         val people = if (!ids.isNullOrBlank()) {
             val idList = ids.split(",").mapNotNull { runCatching { UUID.fromString(it.trim()) }.getOrNull() }
-            personRepository.findAllById(idList).filter { !it.isArchived }
+            // Honour the requested sort for a selected-rows export too, matching assets.
+            val spec = Specification<Person> { root, _, cb ->
+                cb.and(cb.equal(root.get<Boolean>("isArchived"), false), root.get<UUID>("id").`in`(idList))
+            }.and(withFetch("location"))
+            personRepository.findAll(spec, sortOf(sortBy, sortDir))
         } else {
             personRepository.findAll(
                 // Fetch-join the to-one relation the CSV denormalises (N+1 guard).

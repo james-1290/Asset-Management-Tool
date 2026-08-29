@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 19:45 — Selected-rows export honours the requested sort (fifth sweep, consistency)
+
+- Exporting selected rows by `ids` used `findAllById` (unspecified order) for certificates, applications and people, silently ignoring the `sortBy`/`sortDir` params — while the assets export already honoured them. Switched the three ids-branches to a sorted spec (`id IN (...)` + `sortOf`, with the same `withFetch` join as the filtered branch), so a selected-rows CSV comes out in the table's order. Verified: full suite passes; a people ids-export with `sortBy=fullname&sortDir=desc` returns Diana→Charlie→Bob→Alice.
+
 ## 2026-08-29 19:25 — Extract shared SortableHeader for data tables (fifth sweep, tidy)
 
 - The sortable column-header button (ghost button + `ArrowUpDown` that toggles sort) was hand-written ~16 times across 7 `columns.tsx` files, and the icon size had drifted (`h-3.5` in assets vs `h-4` everywhere else). Extracted a single `SortableHeader` component and replaced all 16 call sites, standardising the header style and icon size. Removed the now-unused `ArrowUpDown`/`Button` imports. Verified: build, lint, and 9 e2e pass.

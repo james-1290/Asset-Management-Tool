@@ -299,7 +299,12 @@ class CertificatesController(
     ) {
         val certificates = if (!ids.isNullOrBlank()) {
             val idList = ids.split(",").mapNotNull { runCatching { UUID.fromString(it.trim()) }.getOrNull() }
-            certificateRepository.findAllById(idList).filter { !it.isArchived }
+            // Honour the requested sort for a selected-rows export too (findAllById
+            // returns an unspecified order), matching the assets export.
+            val spec = Specification<Certificate> { root, _, cb ->
+                cb.and(cb.equal(root.get<Boolean>("isArchived"), false), root.get<UUID>("id").`in`(idList))
+            }.and(withFetch("certificateType"))
+            certificateRepository.findAll(spec, sortOf(sortBy, sortDir))
         } else {
             certificateRepository.findAll(
                 // Fetch-join the to-one relation the CSV denormalises (N+1 guard).
