@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
+import { SortableHeader } from "../sortable-header";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, ShieldCheck } from "lucide-react";
+import { MoreHorizontal, ShieldCheck } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -26,14 +27,7 @@ export function getCertificateColumns({
     {
       accessorKey: "name",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <SortableHeader column={column} label="Name" />
       ),
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
@@ -59,27 +53,13 @@ export function getCertificateColumns({
     {
       accessorKey: "certificateTypeName",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Type
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <SortableHeader column={column} label="Type" />
       ),
     },
     {
       accessorKey: "issuer",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Issuer
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <SortableHeader column={column} label="Issuer" />
       ),
       cell: ({ row }) => row.original.issuer || "—",
     },
@@ -99,28 +79,14 @@ export function getCertificateColumns({
     {
       accessorKey: "expiryDate",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Expiry Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <SortableHeader column={column} label="Expiry Date" />
       ),
       cell: ({ row }) => <ExpiryDateCell value={row.original.expiryDate} />,
     },
     {
       accessorKey: "status",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Status
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <SortableHeader column={column} label="Status" />
       ),
       cell: ({ row }) => (
         <CertificateStatusBadge status={row.original.status} />

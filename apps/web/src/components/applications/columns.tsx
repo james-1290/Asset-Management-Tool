@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
+import { SortableHeader } from "../sortable-header";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, AppWindow } from "lucide-react";
+import { MoreHorizontal, AppWindow } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -43,14 +44,7 @@ export function getApplicationColumns({
     {
       accessorKey: "name",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Application Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <SortableHeader column={column} label="Application Name" />
       ),
       cell: ({ row }) => {
         const color = hashColor(row.original.name);
@@ -79,27 +73,13 @@ export function getApplicationColumns({
     {
       accessorKey: "applicationTypeName",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Type
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <SortableHeader column={column} label="Type" />
       ),
     },
     {
       accessorKey: "publisher",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Publisher
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <SortableHeader column={column} label="Publisher" />
       ),
       cell: ({ row }) => row.original.publisher || "—",
     },
@@ -119,28 +99,14 @@ export function getApplicationColumns({
     {
       accessorKey: "expiryDate",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Expiry Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <SortableHeader column={column} label="Expiry Date" />
       ),
       cell: ({ row }) => <ExpiryDateCell value={row.original.expiryDate} />,
     },
     {
       accessorKey: "status",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Status
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <SortableHeader column={column} label="Status" />
       ),
       cell: ({ row }) => (
         <ApplicationStatusBadge status={row.original.status} />

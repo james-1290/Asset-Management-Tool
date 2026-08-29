@@ -1,5 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { SortableHeader } from "../sortable-header";
+import { MoreHorizontal } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -31,14 +32,7 @@ export function getTypeColumns<T extends TypeRow>({
     {
       accessorKey: "name",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <SortableHeader column={column} label="Name" />
       ),
       cell: ({ row }) => (
         <button

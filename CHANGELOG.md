@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 19:25 — Extract shared SortableHeader for data tables (fifth sweep, tidy)
+
+- The sortable column-header button (ghost button + `ArrowUpDown` that toggles sort) was hand-written ~16 times across 7 `columns.tsx` files, and the icon size had drifted (`h-3.5` in assets vs `h-4` everywhere else). Extracted a single `SortableHeader` component and replaced all 16 call sites, standardising the header style and icon size. Removed the now-unused `ArrowUpDown`/`Button` imports. Verified: build, lint, and 9 e2e pass.
+
 ## 2026-08-29 19:05 — Validate stored theme (fifth sweep, hardening)
 
 - `useTheme` read `localStorage.getItem("theme") as Theme` — a blind cast that trusts a possibly stale/garbage stored value as a valid `Theme`. Now validated against the allowed set, falling back to `"system"`. Verified: build, lint, unit tests pass.
