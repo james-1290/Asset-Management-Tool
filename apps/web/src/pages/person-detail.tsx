@@ -32,7 +32,6 @@ import {
 } from "../hooks/use-people";
 import { useLocations } from "../hooks/use-locations";
 import type { PersonFormValues } from "../lib/schemas/person";
-import type { AssetStatus } from "../types/asset";
 import { formatDateOrNull as formatDate } from "../lib/format";
 
 function StatusBadge({ status }: { status: string }) {
@@ -302,7 +301,7 @@ export default function PersonDetailPage() {
                         </TableCell>
                         <TableCell>{asset.assetTypeName}</TableCell>
                         <TableCell>
-                          <AssetStatusBadge status={asset.status as AssetStatus} />
+                          <AssetStatusBadge status={asset.status} />
                         </TableCell>
                         <TableCell>{asset.locationName || "—"}</TableCell>
                       </TableRow>

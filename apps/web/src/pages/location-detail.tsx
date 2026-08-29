@@ -27,7 +27,6 @@ import {
   useArchiveLocation,
 } from "../hooks/use-locations";
 import type { LocationFormValues } from "../lib/schemas/location";
-import type { AssetStatus } from "../types/asset";
 import { formatDateOrNull as formatDate } from "../lib/format";
 
 export default function LocationDetailPage() {
@@ -216,7 +215,7 @@ export default function LocationDetailPage() {
                     </TableCell>
                     <TableCell>{asset.assetTypeName || "—"}</TableCell>
                     <TableCell>
-                      <AssetStatusBadge status={asset.status as AssetStatus} />
+                      <AssetStatusBadge status={asset.status} />
                     </TableCell>
                   </TableRow>
                 ))}
