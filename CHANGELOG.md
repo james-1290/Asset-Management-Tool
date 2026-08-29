@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 15:45 — Global search no longer hydrates whole collections to count (fifth sweep, perf)
+
+- The global search (a typeahead endpoint hit on nearly every keystroke) computed each matched person's / location's "N assets" figure by loading that entity's entire LAZY `assignedAssets` / `assets` collection into memory and counting in Kotlin — so a single busy location with thousands of assets hydrated thousands of `Asset` entities per keystroke. Replaced with two batched grouped-`COUNT` queries (`countActiveByAssignedPersonIds` / `countActiveByLocationIds`) that return `[id, count]` for all matched rows at once. Empty-match sets skip the query. Verified: new `SearchCountIntegrationTest`, full suite, and a runtime check ("Head Office → 11 assets") all pass.
+
 ## 2026-08-29 15:26 — Clear newly-disclosed dependency vulns (fifth sweep, security)
 
 - The CI dependency-audit gate (blocking on shipped deps) flagged three high/moderate advisories disclosed since the last clearance: `react-router`/`react-router-dom` (RSC-mode CSRF bypass, GHSA-qwww-vcr4-c8h2), `nanoid` (infinite loop on size 0), and `postcss` (arbitrary .map read). `npm audit fix` bumped react-router-dom to 7.18.3 (+ transitive fixes) with no breaking changes — **0 vulnerabilities** now. Verified: build, 40 unit tests, lint, and 9 e2e pass.
