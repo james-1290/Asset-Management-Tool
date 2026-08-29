@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 19:05 — Validate stored theme (fifth sweep, hardening)
+
+- `useTheme` read `localStorage.getItem("theme") as Theme` — a blind cast that trusts a possibly stale/garbage stored value as a valid `Theme`. Now validated against the allowed set, falling back to `"system"`. Verified: build, lint, unit tests pass.
+
 ## 2026-08-29 18:55 — Certificates toolbar uses shadcn Popover (fifth sweep, consistency)
 
 - The certificates "More" filter was the last hand-rolled dropdown (a `<button>` toggling an absolutely-positioned `<div>` with its own `useState`/`useRef`/`mousedown` click-outside), violating the CLAUDE.md "use shadcn, don't hand-roll primitives" rule and diverging from the assets toolbar. Replaced with the shared shadcn `Popover` + `Button`, gaining focus management and Escape-to-close. Verified: build, lint, e2e (incl. /certificates) pass.
