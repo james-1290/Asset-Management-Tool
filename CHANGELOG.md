@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 15:20 — Fail closed on default secrets (fifth sweep, security)
+
+- `SecurityStartupValidator` only aborted startup when the profile was *not* dev, but it treated an unset/`default` profile as dev — so a production deploy that forgot `SPRING_PROFILES_ACTIVE` would boot on the committed default JWT signing key and `admin123` admin password (full auth-bypass / token-forgery exposure) with only a log line. Inverted to **fail closed**: the app now tolerates default secrets *only* under an explicit `dev`/`test`/`local` profile and refuses to start otherwise, with an actionable error. The check now reads `Environment.activeProfiles` directly (a `@Value("\${spring.profiles.active}")` isn't populated by test `@ActiveProfiles`). Integration tests run under `@ActiveProfiles("test")`; local runs and docs/CLAUDE.md now use `SPRING_PROFILES_ACTIVE=dev`. Verified: full test suite passes; a no-profile boot aborts with the security error (port stays closed); a `dev` boot starts and login returns 200.
+
 ## 2026-07-19 18:20 — Shared expiry-date cell (fourth sweep)
 
 - The application/licence table coloured its expiry-date cell by urgency (red once expired, orange within 30 days) but the certificate table rendered a plain date — so the same "expiring soon" signal was present on one list and missing on the other. Extracted a shared `ExpiryDateCell` and used it in both, so expiry cells read identically everywhere. Removed the per-table inline urgency helper. Verified: build, lint, and e2e (certificates + applications) pass.

@@ -8,7 +8,7 @@ After ANY backend changes (new endpoints, migrations, model changes, controller 
 
 After completing any work, ALWAYS ensure the following services are running before finishing:
 1. **Docker infrastructure**: `cd infra && docker compose up -d` (MySQL, MailHog)
-2. **API server**: Build the JAR then run it: `cd apps/api-kt && JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home" java -jar build/libs/asset-management-api-1.0.0.jar`
+2. **API server**: Build the JAR then run it (the `dev` profile is required locally — the app fails closed on default secrets otherwise): `cd apps/api-kt && JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home" SPRING_PROFILES_ACTIVE=dev java -jar build/libs/asset-management-api-1.0.0.jar`
 3. **Verify**: Confirm login works with `curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5115/api/v1/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"admin123"}'` — should return 200
 
 Never leave the user with a stopped API or database. If you killed a process for testing, restart it before declaring done.
@@ -125,7 +125,7 @@ Claude should follow an explore → plan → implement → verify loop.
   - run lint/format
   - exercise the feature (API call + UI path)
 - Prefer automated verification over manual claims.
-- **After any backend code change**: rebuild and restart the API (`cd apps/api-kt && ./gradlew bootJar && java -jar build/libs/asset-management-api-1.0.0.jar`, JDK 21) and verify new/changed endpoints respond correctly with `curl` before declaring done. The running JAR does NOT hot-reload code changes.
+- **After any backend code change**: rebuild and restart the API (`cd apps/api-kt && ./gradlew bootJar && SPRING_PROFILES_ACTIVE=dev java -jar build/libs/asset-management-api-1.0.0.jar`, JDK 21) and verify new/changed endpoints respond correctly with `curl` before declaring done. The running JAR does NOT hot-reload code changes.
 
 ## Claude input (encouraged, bounded)
 
@@ -232,7 +232,7 @@ Claude should follow an explore → plan → implement → verify loop.
 ## Backend (requires JDK 21)
 
 - Build: `cd apps/api-kt && ./gradlew bootJar`
-- Run: `cd apps/api-kt && java -jar build/libs/asset-management-api-1.0.0.jar` (port 5115)
+- Run: `cd apps/api-kt && SPRING_PROFILES_ACTIVE=dev java -jar build/libs/asset-management-api-1.0.0.jar` (port 5115; `dev` profile required locally — fails closed on default secrets otherwise)
 - Compile-check only: `./gradlew compileKotlin`
 
 ## Tests
