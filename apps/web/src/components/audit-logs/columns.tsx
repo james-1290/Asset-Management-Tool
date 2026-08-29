@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import { SortableHeader } from "../sortable-header";
 import { Link } from "react-router-dom";
-import { ArrowUpDown, Info } from "lucide-react";
-import { Button } from "../ui/button";
+import { Info } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -54,14 +54,7 @@ export const auditLogColumns: ColumnDef<AuditLogEntry, unknown>[] = [
   {
     accessorKey: "timestamp",
     header: ({ column }) => (
-      <Button
-        variant="ghost"
-        className="-ml-4"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Timestamp
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
+      <SortableHeader column={column} label="Timestamp" />
     ),
     cell: ({ row }) => {
       const { date, time } = formatTimestamp(row.getValue("timestamp") as string);

@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import { SortableHeader } from "../sortable-header";
 import { Link } from "react-router-dom";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -24,14 +25,7 @@ export function getPersonColumns({
     {
       accessorKey: "fullName",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Full Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <SortableHeader column={column} label="Full Name" />
       ),
       cell: ({ row }) => (
         <div className="flex items-center gap-3">

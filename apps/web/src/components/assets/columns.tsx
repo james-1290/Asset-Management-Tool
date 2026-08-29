@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import { SortableHeader } from "../sortable-header";
 import { Link } from "react-router-dom";
-import { ArrowUpDown, MoreVertical } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -34,14 +35,7 @@ export function getAssetColumns({
     {
       accessorKey: "name",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Asset Name
-          <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
-        </Button>
+        <SortableHeader column={column} label="Asset Name" />
       ),
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
@@ -96,14 +90,7 @@ export function getAssetColumns({
     {
       accessorKey: "purchaseCost",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          className="-ml-4 text-xs font-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Financials
-          <ArrowUpDown className="ml-2 h-3.5 w-3.5" />
-        </Button>
+        <SortableHeader column={column} label="Financials" />
       ),
       cell: ({ row }) => {
         const cost = row.original.purchaseCost;
