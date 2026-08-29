@@ -32,6 +32,12 @@ class AuthController(
     @Value("\${auth.local-login.enabled:true}") private val localLoginEnabled: Boolean
 ) {
 
+    // A fixed bcrypt hash used only to spend bcrypt time on failure paths where
+    // there's no real hash to check, so login timing doesn't reveal whether a
+    // username exists. Computed from the same encoder, so its cost factor always
+    // matches real password hashes.
+    private val dummyPasswordHash: String by lazy { passwordEncoder.encode("timing-equalizer") }
+
     @PostMapping("/login")
     fun login(@Valid @RequestBody request: LoginRequest, httpRequest: HttpServletRequest): ResponseEntity<Any> {
         if (!localLoginEnabled) {
@@ -48,32 +54,43 @@ class AuthController(
             return ResponseEntity.status(429).body(mapOf("error" to "Too many login attempts. Try again in ${remaining / 60 + 1} minutes."))
         }
 
+        // Identical response for every failure mode below, so a caller can't tell
+        // "no such user" from "SSO account" from "wrong password" (account
+        // enumeration). Each failure path also runs exactly one bcrypt — a real
+        // check, or a dummy against a fixed hash — so response time doesn't leak
+        // whether the username exists.
+        val invalidCredentials = ResponseEntity.status(401).body<Any>(mapOf("error" to "Invalid username or password."))
+
         val user = userRepository.findWithRolesByUsername(request.username)
         if (user == null) {
+            passwordEncoder.matches(request.password, dummyPasswordHash) // equalize timing
             auditService.log(AuditEntry("LoginFailed", "User", "", request.username,
                 "Failed login attempt — user not found", null, request.username))
             loginRateLimitService.recordFailedAttempt(rateLimitKey)
-            return ResponseEntity.status(401).body(mapOf("error" to "Invalid username or password."))
+            return invalidCredentials
         }
 
         if (user.authProvider != "LOCAL") {
+            passwordEncoder.matches(request.password, dummyPasswordHash) // equalize timing
             loginRateLimitService.recordFailedAttempt(rateLimitKey)
-            return ResponseEntity.status(401).body(mapOf("error" to "This account uses SSO. Please sign in with your identity provider."))
+            return invalidCredentials
         }
 
         if (!user.isActive) {
+            passwordEncoder.matches(request.password, dummyPasswordHash) // equalize timing
             auditService.log(AuditEntry("LoginFailed", "User", user.id.toString(), request.username,
                 "Failed login attempt — account inactive", null, request.username))
             loginRateLimitService.recordFailedAttempt(rateLimitKey)
-            return ResponseEntity.status(401).body(mapOf("error" to "Invalid username or password."))
+            return invalidCredentials
         }
 
         val passwordHash = user.passwordHash
         if (passwordHash == null || !passwordEncoder.matches(request.password, passwordHash)) {
+            if (passwordHash == null) passwordEncoder.matches(request.password, dummyPasswordHash) // equalize timing
             auditService.log(AuditEntry("LoginFailed", "User", user.id.toString(), request.username,
                 "Failed login attempt — invalid password", null, request.username))
             loginRateLimitService.recordFailedAttempt(rateLimitKey)
-            return ResponseEntity.status(401).body(mapOf("error" to "Invalid username or password."))
+            return invalidCredentials
         }
 
         val roles = user.userRoles.mapNotNull { it.role?.name }
