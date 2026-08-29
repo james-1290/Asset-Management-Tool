@@ -90,7 +90,9 @@ class AttachmentsController(
         // type instead of the generic application/x-tika-ooxml, which would
         // otherwise reject valid Office documents.
         val tika = Tika()
-        val detectedType = tika.detect(file.inputStream, originalFileName)
+        // Tika.detect doesn't close the stream it's handed, and MultipartFile
+        // hands out a fresh (often file-backed) stream each call — close it.
+        val detectedType = file.inputStream.use { tika.detect(it, originalFileName) }
         if (detectedType !in ALLOWED_MIME_TYPES) {
             return ResponseEntity.badRequest().body(mapOf("error" to "File content does not match allowed types"))
         }
