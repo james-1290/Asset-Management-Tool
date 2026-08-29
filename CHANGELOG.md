@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 20:55 — Fetch-join a person's assigned assets (fifth sweep, perf)
+
+- `PeopleController.getAssignedAssets` loaded a person's assets without a fetch join, then read `assetType`/`location` per asset — batched by the global `default_batch_fetch_size` but still avoidable follow-up queries, and inconsistent with the sibling `getAll` which uses `withFetch`. Added `withFetch("assetType","location")` so it loads in one query. Verified: full suite passes; endpoint 200. (The history-timeline and seat-list lazy loads flagged alongside this were left as-is: they're already batched by `default_batch_fetch_size=100`, and a collection fetch-join with a Pageable would regress to in-memory pagination.)
+
 ## 2026-08-29 20:30 — Fix list column headers stuck on ascending (fifth sweep, correctness)
 
 - The shared `useListPage` built the TanStack controlled-sort state with the *backend* field name as the row `id`, but headers compare `column.getIsSorted()` against the *column* id. On any page whose `sortFieldMap` changes the field's case (People: `fullName`→`fullname`, `jobTitle`→`jobtitle`), the ids never matched, so `getIsSorted()` was always false and the header could only ever sort ascending — descending was unreachable. Now the sort state carries the column id (via a reverse of `sortFieldMap`) while the URL keeps the backend field. Identity-mapped pages (assets/certificates/applications) are unaffected. Verified: build, lint, unit, and a new `people-sort` e2e (header toggles desc→asc) pass; full e2e green.
