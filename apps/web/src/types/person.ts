@@ -1,3 +1,5 @@
+import type { AssetStatus } from "./asset";
+
 export interface Person {
   id: string;
   fullName: string;
@@ -53,7 +55,7 @@ export interface AssignedAsset {
   id: string;
   name: string;
   serialNumber: string | null;
-  status: string;
+  status: AssetStatus;
   assetTypeName: string;
   locationName: string | null;
 }

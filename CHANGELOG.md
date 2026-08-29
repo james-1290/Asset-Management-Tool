@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 17:55 — Type asset-status fields as AssetStatus (fifth sweep, type safety)
+
+- `AssignedAsset.status` (person detail) and `LocationAsset.status` (location detail) were typed `string`, forcing `as AssetStatus` casts at the `<AssetStatusBadge>` call sites that hid any backend/enum drift. Typed both fields as the `AssetStatus` union and removed the two casts (+ orphaned imports). Deliberately left the certificate/application assigned-status fields and the polymorphic report status as-is — they are *not* `AssetStatus`. Verified: build, lint, 40 unit tests, 9 e2e pass.
+
 ## 2026-08-29 17:40 — Certificates stop leaking archived custom-field values (fifth sweep, consistency)
 
 - Certificate responses mapped custom-field values without filtering archived definitions, while asset and application responses skip them — so an archived custom field kept showing on certificates only. Added the `!def.isArchived` filter to both the single-entity and batch certificate CFV mappers, matching the siblings. Verified: full suite passes; cert list 200.

@@ -1,3 +1,5 @@
+import type { AssetStatus } from "./asset";
+
 export interface Location {
   id: string;
   name: string;
@@ -29,7 +31,7 @@ export interface LocationAsset {
   id: string;
   name: string;
   assetTypeName: string | null;
-  status: string;
+  status: AssetStatus;
   assignedPersonName: string | null;
 }
 
