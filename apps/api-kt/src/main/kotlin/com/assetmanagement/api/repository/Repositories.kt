@@ -95,7 +95,6 @@ interface AssetRepository : JpaRepository<Asset, UUID>, JpaSpecificationExecutor
 @Repository
 interface AssetHistoryRepository : JpaRepository<AssetHistory, UUID> {
     fun findByAssetIdOrderByTimestampDesc(assetId: UUID, pageable: Pageable): List<AssetHistory>
-    fun findByAssetIdOrderByTimestampDesc(assetId: UUID): List<AssetHistory>
 }
 
 @Repository
@@ -131,7 +130,6 @@ interface ApplicationHistoryRepository : JpaRepository<ApplicationHistory, UUID>
 @Repository
 interface PersonHistoryRepository : JpaRepository<PersonHistory, UUID> {
     fun findByPersonIdOrderByTimestampDesc(personId: UUID, pageable: Pageable): List<PersonHistory>
-    fun findByPersonIdOrderByTimestampDesc(personId: UUID): List<PersonHistory>
 }
 
 @Repository
@@ -173,7 +171,6 @@ interface SystemSettingRepository : JpaRepository<SystemSetting, String> {
 @Repository
 interface AlertHistoryRepository : JpaRepository<AlertHistory, UUID> {
     fun existsByEntityTypeAndEntityIdAndThresholdDays(entityType: String, entityId: UUID, thresholdDays: Int): Boolean
-    fun findAllByOrderBySentAtDesc(pageable: Pageable): Page<AlertHistory>
 
     @Modifying
     @Transactional

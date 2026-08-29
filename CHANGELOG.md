@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 17:25 — Remove verified dead code (fifth sweep, tidy)
+
+- Deleted code with zero references (grep-confirmed across main + test): the unused `UserDto` DTO (the API uses `UserDetailDto`); the unused `findAllByOrderBySentAtDesc` alert-history query; the unpaged `findByAssetIdOrderByTimestampDesc`/`findByPersonIdOrderByTimestampDesc` overloads (every caller now passes a `Pageable`); two dead `private fun isAdmin()` helpers (authorization is via `@PreAuthorize`) plus their now-orphaned `SecurityContextHolder` imports; and the never-called `assetModelsApi.getPaged` + its unused `AssetModelQueryParams` type. Verified: full backend suite, frontend build + lint pass.
+
 ## 2026-08-29 17:05 — Close login account-enumeration vectors (fifth sweep, security)
 
 - The login endpoint let an attacker enumerate accounts two ways: an SSO account returned a distinct "This account uses SSO…" message (vs the generic error for unknown users), and bcrypt ran only for existing local users, so response time revealed whether a username existed. Now every failure mode (unknown user / SSO account / inactive / wrong password) returns the **identical** generic 401 and spends **exactly one bcrypt** — a real check, or a dummy against a fixed hash computed from the same encoder. Verified at runtime: unknown-user and wrong-password responses are byte-identical and comparable in latency (~60ms, bcrypt-dominated); valid login still 200.

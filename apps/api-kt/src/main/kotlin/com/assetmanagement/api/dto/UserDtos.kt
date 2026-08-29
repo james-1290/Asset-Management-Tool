@@ -6,14 +6,6 @@ import jakarta.validation.constraints.Size
 import java.time.Instant
 import java.util.*
 
-data class UserDto(
-    val id: UUID,
-    val username: String,
-    val displayName: String,
-    val email: String,
-    val isActive: Boolean
-)
-
 data class UserDetailDto(
     val id: UUID,
     val username: String,

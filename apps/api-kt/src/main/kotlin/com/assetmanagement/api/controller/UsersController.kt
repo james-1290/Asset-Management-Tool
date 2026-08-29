@@ -10,7 +10,6 @@ import com.assetmanagement.api.service.*
 import com.assetmanagement.api.util.PasswordValidator
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
@@ -28,9 +27,6 @@ class UsersController(
     private val currentUserService: CurrentUserService,
     private val passwordEncoder: PasswordEncoder
 ) {
-    private fun isAdmin(): Boolean =
-        SecurityContextHolder.getContext().authentication?.authorities?.any { it.authority == "ROLE_Admin" } == true
-
     private fun toDetailDto(u: User): UserDetailDto =
         UserDetailDto(u.id, u.username, u.displayName, u.email, u.isActive,
             u.userRoles.mapNotNull { it.role?.name }, u.createdAt, u.authProvider)
