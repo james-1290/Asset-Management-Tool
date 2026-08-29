@@ -88,7 +88,8 @@ class PeopleController(
             personRepository.findAllById(idList).filter { !it.isArchived }
         } else {
             personRepository.findAll(
-                buildSpec(search, locationId, department),
+                // Fetch-join the to-one relation the CSV denormalises (N+1 guard).
+                buildSpec(search, locationId, department).and(withFetch("location")),
                 PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir)),
             ).content
         }

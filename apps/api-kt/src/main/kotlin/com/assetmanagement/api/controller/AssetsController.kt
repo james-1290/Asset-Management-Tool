@@ -158,6 +158,9 @@ class AssetsController(
             val spec = buildFilteredSpec(search, status, includeStatuses, typeId,
                 locationId, assignedPersonId, purchaseDateFrom, purchaseDateTo,
                 warrantyExpiryFrom, warrantyExpiryTo, costMin, costMax, unassigned, createdAfter)
+                // Fetch-join the to-one relations the CSV rows denormalise, so a
+                // large export doesn't lazy-load them per row (N+1).
+                .and(withFetch("assetType", "location", "assignedPerson"))
             assetRepository.findAll(spec, PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir))).content
         }
 
