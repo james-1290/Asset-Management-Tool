@@ -263,6 +263,14 @@ class AlertProcessingService(
 
             if (entityTypes.isEmpty() || thresholds.isEmpty()) continue
 
+            // Load this user's existing personal-notification keys once, instead of
+            // an existsBy query per matching entity (the same optimisation
+            // createGlobalNotifications already uses). Key = (type, id, thresholdDays).
+            val existingKeys: Set<Triple<String, UUID, Int>> =
+                userNotificationRepository.findByUserId(rule.userId)
+                    .map { Triple(it.entityType, it.entityId, it.thresholdDays) }
+                    .toSet()
+
             val personalItems = mutableListOf<ExpiringItem>()
 
             for (threshold in thresholds) {
@@ -278,10 +286,7 @@ class AlertProcessingService(
                         )
                     }
                     assetRepository.findAll(spec).forEach { asset ->
-                        val exists = userNotificationRepository.existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(
-                            "warranty", asset.id, rule.userId, threshold
-                        )
-                        if (!exists) {
+                        if (Triple("warranty", asset.id, threshold) !in existingKeys) {
                             val daysUntil = daysUntil(asset.warrantyExpiryDate!!)
                             personalItems.add(ExpiringItem("warranty", asset.id, asset.name, asset.warrantyExpiryDate!!, threshold, daysUntil))
                         }
@@ -298,10 +303,7 @@ class AlertProcessingService(
                         )
                     }
                     certificateRepository.findAll(spec).forEach { cert ->
-                        val exists = userNotificationRepository.existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(
-                            "certificate", cert.id, rule.userId, threshold
-                        )
-                        if (!exists) {
+                        if (Triple("certificate", cert.id, threshold) !in existingKeys) {
                             val daysUntil = daysUntil(cert.expiryDate!!)
                             personalItems.add(ExpiringItem("certificate", cert.id, cert.name, cert.expiryDate!!, threshold, daysUntil))
                         }
@@ -318,10 +320,7 @@ class AlertProcessingService(
                         )
                     }
                     applicationRepository.findAll(spec).forEach { app ->
-                        val exists = userNotificationRepository.existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(
-                            "licence", app.id, rule.userId, threshold
-                        )
-                        if (!exists) {
+                        if (Triple("licence", app.id, threshold) !in existingKeys) {
                             val daysUntil = daysUntil(app.expiryDate!!)
                             personalItems.add(ExpiringItem("licence", app.id, app.name, app.expiryDate!!, threshold, daysUntil))
                         }

@@ -189,6 +189,7 @@ interface UserNotificationRepository : JpaRepository<UserNotification, UUID>, Jp
     fun countByUserIdAndIsReadFalseAndIsDismissedFalse(userId: UUID): Long
     fun existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(entityType: String, entityId: UUID, userId: UUID, thresholdDays: Int): Boolean
     fun findByEntityIdIn(entityIds: Collection<UUID>): List<UserNotification>
+    fun findByUserId(userId: UUID): List<UserNotification>
 
     @Modifying
     @Transactional

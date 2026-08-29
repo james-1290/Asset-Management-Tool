@@ -64,5 +64,14 @@ class PersonalAlertsIntegrationTest : AbstractIntegrationTest() {
             notes.any { it.entityId == certId && it.userId == ownerId && it.notificationType == "personal" },
             "expected a personal notification for the expiring certificate; got ${notes.map { it.notificationType to it.userId }}",
         )
+
+        // Dedup guard: a second run must not create a duplicate notification for
+        // the same (entity, threshold) — this exercises the bulk key-set lookup
+        // that replaced the per-row existsBy check.
+        val countAfterFirst = notes.count { it.entityId == certId && it.userId == ownerId }
+        alertProcessingService.processPersonalAlerts()
+        val countAfterSecond = userNotificationRepository.findByEntityIdIn(setOf(certId))
+            .count { it.entityId == certId && it.userId == ownerId }
+        assertEquals(countAfterFirst, countAfterSecond, "second run must not duplicate the notification")
     }
 }

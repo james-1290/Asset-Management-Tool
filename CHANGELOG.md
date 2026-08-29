@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 18:15 — Personal alerts: bulk dedup lookup instead of per-row exists (fifth sweep, perf)
+
+- `AlertProcessingService.processPersonalAlerts` ran one `existsBy…` query per matching entity per threshold per rule (an N+1) to skip already-notified items — the same N+1 `createGlobalNotifications` was already refactored away from. Now each rule pre-loads its user's existing notification keys once (`findByUserId`) into a `Set<(type, id, thresholdDays)>` and checks membership in memory. Dedup behaviour is unchanged (auto-flush means multi-rule same-user runs still see prior inserts). Verified: `PersonalAlertsIntegrationTest` extended to assert a second run creates no duplicate; full suite passes.
+
 ## 2026-08-29 17:55 — Type asset-status fields as AssetStatus (fifth sweep, type safety)
 
 - `AssignedAsset.status` (person detail) and `LocationAsset.status` (location detail) were typed `string`, forcing `as AssetStatus` casts at the `<AssetStatusBadge>` call sites that hid any backend/enum drift. Typed both fields as the `AssetStatus` union and removed the two casts (+ orphaned imports). Deliberately left the certificate/application assigned-status fields and the polymorphic report status as-is — they are *not* `AssetStatus`. Verified: build, lint, 40 unit tests, 9 e2e pass.
