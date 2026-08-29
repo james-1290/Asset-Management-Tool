@@ -6,15 +6,6 @@ import type {
 } from "../../types/asset-model";
 import type { PagedResponse } from "../../types/paged-response";
 
-export interface AssetModelQueryParams {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-  assetTypeId?: string;
-  sortBy?: string;
-  sortDir?: string;
-}
-
 export const assetModelsApi = {
   async getAll(assetTypeId?: string): Promise<AssetModel[]> {
     // Backend caps pageSize at 100 — page through for the full dropdown list.
@@ -29,10 +20,6 @@ export const assetModelsApi = {
       page++;
     }
     return items;
-  },
-
-  getPaged(params: AssetModelQueryParams): Promise<PagedResponse<AssetModel>> {
-    return apiClient.get<PagedResponse<AssetModel>>("/asset-models", params as Record<string, string | number | undefined>);
   },
 
   create(data: CreateAssetModelRequest): Promise<AssetModel> {

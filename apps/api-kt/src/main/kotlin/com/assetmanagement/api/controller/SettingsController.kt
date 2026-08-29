@@ -11,7 +11,6 @@ import com.assetmanagement.api.service.CurrentUserService
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
@@ -31,9 +30,6 @@ class SettingsController(
 
     private fun maskWebhookUrl(value: String): String =
         if (value.length > 20) value.substring(0, 20) + "..." else value
-
-    private fun isAdmin(): Boolean =
-        SecurityContextHolder.getContext().authentication?.authorities?.any { it.authority == "ROLE_Admin" } == true
 
     private fun getSetting(key: String, default_: String = ""): String =
         systemSettingRepository.findByKey(key)?.value ?: default_
