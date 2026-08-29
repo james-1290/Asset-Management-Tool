@@ -137,7 +137,9 @@ class PeopleController(
         if (!personRepository.existsById(id)) return ResponseEntity.notFound().build()
         val spec = Specification<com.assetmanagement.api.model.Asset> { root, _, cb ->
             cb.and(cb.equal(root.get<UUID>("assignedPersonId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
-        }
+        // Fetch-join the to-one relations the DTO reads (matches the sibling list
+        // endpoint) so a person's assets load in one query, not batched follow-ups.
+        }.and(withFetch("assetType", "location"))
         val assets = assetRepository.findAll(spec, Sort.by("name")).map { a ->
             AssignedAssetDto(a.id, a.name, a.serialNumber, a.status.name, a.assetType?.name ?: "", a.location?.name)
         }
