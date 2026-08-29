@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-08-29 15:26 — Clear newly-disclosed dependency vulns (fifth sweep, security)
+
+- The CI dependency-audit gate (blocking on shipped deps) flagged three high/moderate advisories disclosed since the last clearance: `react-router`/`react-router-dom` (RSC-mode CSRF bypass, GHSA-qwww-vcr4-c8h2), `nanoid` (infinite loop on size 0), and `postcss` (arbitrary .map read). `npm audit fix` bumped react-router-dom to 7.18.3 (+ transitive fixes) with no breaking changes — **0 vulnerabilities** now. Verified: build, 40 unit tests, lint, and 9 e2e pass.
+
+
 ## 2026-07-19 18:20 — Shared expiry-date cell (fourth sweep)
 
 - The application/licence table coloured its expiry-date cell by urgency (red once expired, orange within 30 days) but the certificate table rendered a plain date — so the same "expiring soon" signal was present on one list and missing on the other. Extracted a shared `ExpiryDateCell` and used it in both, so expiry cells read identically everywhere. Removed the per-table inline urgency helper. Verified: build, lint, and e2e (certificates + applications) pass.
