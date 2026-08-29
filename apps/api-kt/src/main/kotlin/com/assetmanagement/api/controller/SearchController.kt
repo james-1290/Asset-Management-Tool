@@ -103,14 +103,16 @@ class SearchController(
             )
         }
         val personCount = personRepository.count(personSpec).toInt()
-        val people = personRepository.findAll(personSpec, PageRequest.of(0, lim, Sort.by("fullName"))).content.map { person ->
+        val personRows = personRepository.findAll(personSpec, PageRequest.of(0, lim, Sort.by("fullName"))).content
+        // One grouped COUNT for all matched people, instead of loading each
+        // person's whole assignedAssets collection just to count it.
+        val assetCountByPerson =
+            if (personRows.isEmpty()) emptyMap()
+            else countMap(assetRepository.countActiveByAssignedPersonIds(personRows.map { it.id }))
+        val people = personRows.map { person ->
             val subtitle = listOfNotNull(person.department, person.jobTitle).joinToString(" \u00b7 ").ifEmpty { person.email }
-            val assignedCount = try {
-                person.assignedAssets.count { !it.isArchived }
-            } catch (_: Exception) {
-                0
-            }
-            val extra = if (assignedCount > 0) "$assignedCount asset${if (assignedCount != 1) "s" else ""}" else null
+            val assignedCount = assetCountByPerson[person.id] ?: 0
+            val extra = if (assignedCount > 0) "$assignedCount asset${if (assignedCount != 1L) "s" else ""}" else null
             SearchResultItem(person.id, person.fullName, subtitle, extra)
         }
 
@@ -122,18 +124,27 @@ class SearchController(
             )
         }
         val locationCount = locationRepository.count(locationSpec).toInt()
-        val locations = locationRepository.findAll(locationSpec, PageRequest.of(0, lim, Sort.by("name"))).content.map { loc ->
+        val locationRows = locationRepository.findAll(locationSpec, PageRequest.of(0, lim, Sort.by("name"))).content
+        // One grouped COUNT for all matched locations, instead of loading each
+        // location's whole assets collection just to count it.
+        val assetCountByLocation =
+            if (locationRows.isEmpty()) emptyMap()
+            else countMap(assetRepository.countActiveByLocationIds(locationRows.map { it.id }))
+        val locations = locationRows.map { loc ->
             val subtitle = listOfNotNull(loc.city, loc.country).joinToString(", ").ifEmpty { null }
-            val locAssetCount = try {
-                loc.assets.count { !it.isArchived }
-            } catch (_: Exception) {
-                0
-            }
-            val extra = if (locAssetCount > 0) "$locAssetCount asset${if (locAssetCount != 1) "s" else ""}" else null
+            val locAssetCount = assetCountByLocation[loc.id] ?: 0
+            val extra = if (locAssetCount > 0) "$locAssetCount asset${if (locAssetCount != 1L) "s" else ""}" else null
             SearchResultItem(loc.id, loc.name, subtitle, extra)
         }
 
         val counts = SearchCounts(assetCount, certCount, appCount, personCount, locationCount)
         return ResponseEntity.ok(SearchResponse(assets, certs, apps, people, locations, counts))
     }
+
+    /**
+     * Turns grouped-count rows ([id, count]) into a lookup map. Returns empty for
+     * an empty id list (skips a pointless `IN ()` query, which some DBs reject).
+     */
+    private fun countMap(rows: List<Array<Any>>): Map<UUID, Long> =
+        rows.associate { it[0] as UUID to (it[1] as Long) }
 }

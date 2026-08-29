@@ -69,6 +69,27 @@ interface AssetRepository : JpaRepository<Asset, UUID>, JpaSpecificationExecutor
     fun countByAssetTypeIdAndIsArchivedFalse(assetTypeId: UUID): Long
     fun countByLocationIdAndIsArchivedFalse(locationId: UUID): Long
     fun countByAssetModelIdAndIsArchivedFalse(assetModelId: UUID): Long
+
+    /**
+     * Batched active-asset counts grouped by assigned person, for a set of people.
+     * Used by global search to show "N assets" per person without loading each
+     * person's whole `assignedAssets` collection (an N+1 that would hydrate every
+     * asset just to count). Each row is [personId: UUID, count: Long].
+     */
+    @Query(
+        "SELECT a.assignedPersonId, COUNT(a) FROM Asset a " +
+        "WHERE a.assignedPersonId IN :personIds AND a.isArchived = false " +
+        "GROUP BY a.assignedPersonId"
+    )
+    fun countActiveByAssignedPersonIds(@Param("personIds") personIds: Collection<UUID>): List<Array<Any>>
+
+    /** Batched active-asset counts grouped by location. Each row is [locationId, count]. */
+    @Query(
+        "SELECT a.locationId, COUNT(a) FROM Asset a " +
+        "WHERE a.locationId IN :locationIds AND a.isArchived = false " +
+        "GROUP BY a.locationId"
+    )
+    fun countActiveByLocationIds(@Param("locationIds") locationIds: Collection<UUID>): List<Array<Any>>
 }
 
 @Repository
