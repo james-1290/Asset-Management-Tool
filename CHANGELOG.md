@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 18:35 — Serialize seat assignment to enforce maxSeats (fifth sweep, hardening)
+
+- `POST /applications/{id}/seats` counted seats then inserted without atomicity or a DB cap, so two concurrent assignments could both pass the `used >= maxSeats` check and over-allocate. `assignSeat` (already `@Transactional`) now fetches the application via a `PESSIMISTIC_WRITE` lock (`findByIdForUpdate`), so concurrent assigns serialize on the application row and the count+insert is atomic. Verified: new `SeatAssignmentIntegrationTest` (maxSeats=1 → first seat 200, second 409); full suite passes.
+
 ## 2026-08-29 18:15 — Personal alerts: bulk dedup lookup instead of per-row exists (fifth sweep, perf)
 
 - `AlertProcessingService.processPersonalAlerts` ran one `existsBy…` query per matching entity per threshold per rule (an N+1) to skip already-notified items — the same N+1 `createGlobalNotifications` was already refactored away from. Now each rule pre-loads its user's existing notification keys once (`findByUserId`) into a `Set<(type, id, thresholdDays)>` and checks membership in memory. Dedup behaviour is unchanged (auto-flush means multi-rule same-user runs still see prior inserts). Verified: `PersonalAlertsIntegrationTest` extended to assert a second run creates no duplicate; full suite passes.

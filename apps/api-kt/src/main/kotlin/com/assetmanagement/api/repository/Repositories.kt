@@ -1,10 +1,12 @@
 package com.assetmanagement.api.repository
 
 import com.assetmanagement.api.model.*
+import jakarta.persistence.LockModeType
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
+import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -119,6 +121,15 @@ interface ApplicationTypeRepository : ArchivableTypeRepository<ApplicationType>
 interface ApplicationRepository : JpaRepository<Application, UUID>, JpaSpecificationExecutor<Application> {
     fun countByApplicationTypeIdAndIsArchivedFalse(applicationTypeId: UUID): Long
     fun countByLocationIdAndIsArchivedFalse(locationId: UUID): Long
+
+    /**
+     * Fetch an application with a pessimistic write lock, so concurrent seat
+     * assignments serialize on the application row — the seat-cap check and the
+     * insert then happen atomically and can't over-allocate `maxSeats`.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM Application a WHERE a.id = :id")
+    fun findByIdForUpdate(@Param("id") id: UUID): Application?
 }
 
 @Repository

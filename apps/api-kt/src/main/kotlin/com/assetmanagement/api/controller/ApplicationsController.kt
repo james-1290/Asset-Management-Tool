@@ -633,7 +633,9 @@ class ApplicationsController(
     @PostMapping("/{id}/seats")
     @Transactional
     fun assignSeat(@PathVariable id: UUID, @RequestBody request: AssignSeatRequest): ResponseEntity<Any> {
-        val app = applicationRepository.findById(id).orElse(null)
+        // Lock the application row so concurrent seat assignments serialize here —
+        // otherwise two requests can both pass the seat-cap check and over-allocate.
+        val app = applicationRepository.findByIdForUpdate(id)
             ?: return ResponseEntity.notFound().build()
         if (app.isArchived)
             return ResponseEntity.badRequest().body(mapOf("error" to "Cannot assign seats on an archived application."))
