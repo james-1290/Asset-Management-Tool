@@ -126,6 +126,8 @@ class ApplicationsController(
             applicationRepository.findAllById(idList).filter { !it.isArchived }
         } else {
             val spec = buildSpec(search, status, includeStatuses, typeId, expiryFrom, expiryTo, licenceType, costMin, costMax)
+                // Fetch-join the to-one relation the CSV denormalises (N+1 guard).
+                .and(withFetch("applicationType"))
             applicationRepository.findAll(spec, PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir))).content
         }
 

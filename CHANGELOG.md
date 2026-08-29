@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-29 16:05 — CSV exports fetch-join to-one relations (fifth sweep, perf)
+
+- The list endpoints fetch-join their denormalised to-one relations, but the `/export` paths (up to `CsvExport.MAX_ROWS` = 100k rows) did not, so every name column was a lazy load — softened to ~ceil(N/100) queries per relation by `default_batch_fetch_size`, but still thousands of round-trips on a large export. Added `.and(withFetch(...))` to the filtered-spec branch of the asset (`assetType`,`location`,`assignedPerson`), certificate (`certificateType`), application (`applicationType`) and people (`location`) exports. Only to-one relations are fetched, so pagination's count query is unaffected (FetchSpecs skips the join on the count query). Verified: full suite passes; all four exports return 200 with data at runtime.
+
 ## 2026-08-29 15:45 — Global search no longer hydrates whole collections to count (fifth sweep, perf)
 
 - The global search (a typeahead endpoint hit on nearly every keystroke) computed each matched person's / location's "N assets" figure by loading that entity's entire LAZY `assignedAssets` / `assets` collection into memory and counting in Kotlin — so a single busy location with thousands of assets hydrated thousands of `Asset` entities per keystroke. Replaced with two batched grouped-`COUNT` queries (`countActiveByAssignedPersonIds` / `countActiveByLocationIds`) that return `[id, count]` for all matched rows at once. Empty-match sets skip the query. Verified: new `SearchCountIntegrationTest`, full suite, and a runtime check ("Head Office → 11 assets") all pass.

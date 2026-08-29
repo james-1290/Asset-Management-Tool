@@ -299,7 +299,8 @@ class CertificatesController(
             certificateRepository.findAllById(idList).filter { !it.isArchived }
         } else {
             certificateRepository.findAll(
-                buildSpec(search, status, typeId, expiryFrom, expiryTo),
+                // Fetch-join the to-one relation the CSV denormalises (N+1 guard).
+                buildSpec(search, status, typeId, expiryFrom, expiryTo).and(withFetch("certificateType")),
                 PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir)),
             ).content
         }
