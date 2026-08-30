@@ -1,0 +1,42 @@
+{
+  "platform": {
+    "enabled": true
+  },
+  "globalValidation": {
+    "unauthenticatedClientAction": "RedirectToLoginPage",
+    "redirectToProvider": "azureactivedirectory",
+    "excludedPaths": [
+      "/api/v1/health",
+      "/actuator/health",
+      "/actuator/health/liveness",
+      "/actuator/health/readiness",
+      "/scim/v2/*"
+    ]
+  },
+  "httpSettings": {
+    "requireHttps": true,
+    "forwardProxy": {
+      "convention": "NoProxy"
+    }
+  },
+  "login": {
+    "tokenStore": {
+      "enabled": true
+    }
+  },
+  "identityProviders": {
+    "azureActiveDirectory": {
+      "enabled": true,
+      "registration": {
+        "openIdIssuer": "https://login.microsoftonline.com/REPLACE_WITH_TENANT_ID/v2.0",
+        "clientId": "REPLACE_WITH_CLIENT_ID",
+        "clientSecretSettingName": "MICROSOFT_PROVIDER_AUTHENTICATION_SECRET"
+      },
+      "validation": {
+        "allowedAudiences": [
+          "api://REPLACE_WITH_CLIENT_ID"
+        ]
+      }
+    }
+  }
+}

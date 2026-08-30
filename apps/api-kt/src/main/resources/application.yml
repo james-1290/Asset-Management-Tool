@@ -52,7 +52,14 @@ spring:
   mail:
     host: ""
   autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
+    exclude:
+      - org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
+      # Without this, Boot auto-configures an in-memory user and logs a
+      # "Using generated security password" line at every start. The user is
+      # unusable (this app defines its own filter chain with no form login or
+      # basic auth) but the message reads like a live credential in production
+      # logs, and identity comes from Entra alone.
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   jackson:
     serialization:
       write-dates-as-timestamps: false
