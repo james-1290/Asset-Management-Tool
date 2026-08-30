@@ -1,6 +1,7 @@
 package com.assetmanagement.api.security
 
 import com.assetmanagement.api.util.ClientIpResolver
+import org.springframework.beans.factory.annotation.Value
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -15,10 +16,14 @@ import java.util.concurrent.atomic.AtomicInteger
 @Order(1)
 class RateLimitFilter(
     private val clientIpResolver: ClientIpResolver,
+    // Configurable so local development and the e2e suite — which drive far more
+    // traffic from a single IP than any real user — aren't throttled into flaky
+    // failures. The production default is unchanged.
+    @Value("\${security.rate-limit.requests-per-minute:120}")
+    private val maxRequestsPerMinute: Int,
 ) : OncePerRequestFilter() {
 
     companion object {
-        private const val MAX_REQUESTS_PER_MINUTE = 120
         private const val WINDOW_SECONDS = 60L
         // Cap the map so a spray of distinct client IPs can't grow it without bound.
         private const val MAX_TRACKED_KEYS = 50_000
@@ -56,15 +61,15 @@ class RateLimitFilter(
             }
         }!!
 
-        if (window.count.get() > MAX_REQUESTS_PER_MINUTE) {
+        if (window.count.get() > maxRequestsPerMinute) {
             response.status = 429
             response.contentType = "application/json"
             response.writer.write("""{"error":"Rate limit exceeded. Try again later."}""")
             return
         }
 
-        response.setHeader("X-RateLimit-Limit", MAX_REQUESTS_PER_MINUTE.toString())
-        response.setHeader("X-RateLimit-Remaining", (MAX_REQUESTS_PER_MINUTE - window.count.get()).coerceAtLeast(0).toString())
+        response.setHeader("X-RateLimit-Limit", maxRequestsPerMinute.toString())
+        response.setHeader("X-RateLimit-Remaining", (maxRequestsPerMinute - window.count.get()).coerceAtLeast(0).toString())
 
         filterChain.doFilter(request, response)
     }

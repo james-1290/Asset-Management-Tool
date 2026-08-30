@@ -1,0 +1,17 @@
+# Integration-test profile.
+#
+# Enables the Easy Auth path (and its local emulator) so tests can authenticate
+# the same way the deployed app does — through a session cookie rather than an
+# application-issued token. The emulator refuses to run outside an explicit
+# dev/local/test profile, so this cannot leak into a real deployment.
+auth:
+  easy-auth:
+    enabled: true
+    local-emulator:
+      enabled: true
+
+# A single developer/test machine makes far more requests from one IP than a
+# real user, so the production-shaped rate limit would throttle it.
+security:
+  rate-limit:
+    requests-per-minute: 100000
