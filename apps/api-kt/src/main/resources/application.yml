@@ -98,6 +98,15 @@ auth:
     # Optional "entraAppRole:localRole,..." mapping. Empty means the Entra app
     # role values are used verbatim (name them Admin / Operator / User to match).
     role-map: ${EASY_AUTH_ROLE_MAP:}
+    # Local stand-in for the App Service auth sidecar, so a developer machine can
+    # exercise the same Easy Auth code path without an Azure deployment. Refuses
+    # to start unless a dev/local/test profile is active — see
+    # LocalEasyAuthEmulator. Enabled by the dev profile; never set this elsewhere.
+    local-emulator:
+      enabled: ${EASY_AUTH_LOCAL_EMULATOR:false}
+      # Optional "key:email:Display Name:Role1|Role2" entries, comma-separated.
+      # Blank uses the built-in admin / operator / user / norole identities.
+      identities: ${EASY_AUTH_LOCAL_IDENTITIES:}
 
 app:
   admin:

@@ -2,6 +2,7 @@ package com.assetmanagement.api.config
 
 import com.assetmanagement.api.security.EasyAuthPrincipalFilter
 import com.assetmanagement.api.security.JwtAuthenticationFilter
+import com.assetmanagement.api.security.LocalEasyAuthEmulatorFilter
 import com.assetmanagement.api.security.SamlAuthSuccessHandler
 import com.assetmanagement.api.security.ScimAuthFilter
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,6 +40,9 @@ class SecurityConfig(
 
     @Autowired(required = false)
     private var easyAuthPrincipalFilter: EasyAuthPrincipalFilter? = null
+
+    @Autowired(required = false)
+    private var localEasyAuthEmulatorFilter: LocalEasyAuthEmulatorFilter? = null
 
     @Bean
     @Order(1)
@@ -85,6 +89,9 @@ class SecurityConfig(
                 auth
                     .requestMatchers("/api/v1/auth/login").permitAll()
                     .requestMatchers("/api/v1/auth/sso-config").permitAll()
+                    // Local Easy Auth emulator only — in Azure these paths are
+                    // answered by the platform and never reach this container.
+                    .apply { if (localEasyAuthEmulatorFilter != null) requestMatchers("/.auth/**").permitAll() }
                     .requestMatchers("/api/v1/health").permitAll()
                     .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                     .apply { if (scimEnabled) requestMatchers("/scim/v2/**").permitAll() }
@@ -123,6 +130,12 @@ class SecurityConfig(
 
         easyAuthPrincipalFilter?.let { filter ->
             http.addFilterBefore(filter, JwtAuthenticationFilter::class.java)
+
+            // The local emulator stands in for the App Service auth sidecar, so
+            // it has to inject its headers before the filter that reads them.
+            localEasyAuthEmulatorFilter?.let { emulator ->
+                http.addFilterBefore(emulator, EasyAuthPrincipalFilter::class.java)
+            }
         }
 
         return http.build()

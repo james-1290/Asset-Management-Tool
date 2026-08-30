@@ -6,3 +6,14 @@ logging:
   level:
     com.assetmanagement: DEBUG
     org.hibernate.SQL: DEBUG
+
+# Local development authenticates through the same Easy Auth code path the app
+# uses on Azure App Service, with the emulator standing in for the platform's
+# auth sidecar. Sign in at http://localhost:5115/.auth/login/aad (or via the
+# SPA, which redirects there). Moving to App Service means turning the emulator
+# off and letting the real sidecar supply the headers — no code change.
+auth:
+  easy-auth:
+    enabled: true
+    local-emulator:
+      enabled: true

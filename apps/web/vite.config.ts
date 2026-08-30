@@ -32,6 +32,10 @@ const baseSecurityHeaders = {
 // origin — this is what lets the app's CSP keep `connect-src 'self'`.
 const proxy = {
   '/api': { target: 'http://localhost:5115', changeOrigin: true },
+  // Easy Auth endpoints. On Azure App Service these are answered by the
+  // platform's auth sidecar; locally the API serves an emulator of them, so the
+  // app talks to the same URLs in both environments.
+  '/.auth': { target: 'http://localhost:5115', changeOrigin: true },
   '/saml2': { target: 'http://localhost:5115', changeOrigin: true },
   '/login/saml2': { target: 'http://localhost:5115', changeOrigin: true },
   '/scim': { target: 'http://localhost:5115', changeOrigin: true },
