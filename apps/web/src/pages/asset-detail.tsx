@@ -53,6 +53,7 @@ import {
   isExpiringSoon,
   isExpired,
 } from "../lib/format";
+import { useAuth } from "@/contexts/auth-context";
 
 function formatCurrency(value: number | null): string | null {
   if (value == null) return null;
@@ -64,6 +65,7 @@ function formatCurrency(value: number | null): string | null {
 const HISTORY_PREVIEW_LIMIT = 5;
 
 export default function AssetDetailPage() {
+  const { canWrite } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: asset, isLoading, isError } = useAsset(id!);
@@ -302,9 +304,10 @@ export default function AssetDetailPage() {
           </div>
         </div>
 
-        {/* Action buttons */}
+        {/* Action buttons — hidden entirely for a read-only viewer, whose
+            writes the API refuses. */}
         <div className="flex flex-wrap items-center gap-2">
-          {isActiveAsset && (
+          {canWrite && isActiveAsset && (
             <>
               {asset.status === "Available" && (
                 <Button variant="outline" size="sm" onClick={() => setCheckoutOpen(true)}>
@@ -328,14 +331,18 @@ export default function AssetDetailPage() {
               </Button>
             </>
           )}
-          <Button variant="outline" size="sm" onClick={() => setCloneFormOpen(true)}>
-            <Copy className="mr-1.5 h-3.5 w-3.5" />
-            Clone
-          </Button>
-          <Button size="sm" onClick={() => setFormOpen(true)}>
-            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            Edit
-          </Button>
+          {canWrite && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setCloneFormOpen(true)}>
+                <Copy className="mr-1.5 h-3.5 w-3.5" />
+                Clone
+              </Button>
+              <Button size="sm" onClick={() => setFormOpen(true)}>
+                <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                Edit
+              </Button>
+            </>
+          )}
         </div>
       </DetailCard>
 

@@ -5,13 +5,23 @@ import { Button } from "./ui/button";
 interface BulkActionBarProps {
   selectedCount: number;
   onClearSelection: () => void;
+  /**
+   * The write actions (bulk edit, archive, status changes). Hidden from a
+   * read-only viewer, whose writes the API refuses — offering them only leads
+   * to an "Access denied" after the click.
+   */
   children: ReactNode;
+  /** Actions any viewer may use, such as exporting the selection. */
+  readOnlyActions?: ReactNode;
+  canWrite?: boolean;
 }
 
 export function BulkActionBar({
   selectedCount,
   onClearSelection,
   children,
+  readOnlyActions,
+  canWrite = true,
 }: BulkActionBarProps) {
   if (selectedCount === 0) return null;
 
@@ -21,7 +31,10 @@ export function BulkActionBar({
         {selectedCount} selected
       </span>
       <div className="w-px h-4 bg-border" />
-      <div className="flex items-center gap-1.5">{children}</div>
+      <div className="flex items-center gap-1.5">
+        {canWrite && children}
+        {readOnlyActions}
+      </div>
       <div className="flex-1" />
       <Button
         variant="ghost"

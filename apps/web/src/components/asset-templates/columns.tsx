@@ -11,6 +11,12 @@ import type { AssetTemplate } from "../../types/asset-template";
 import { formatCurrency as fmtCurrency } from "../../lib/format";
 
 interface ColumnActions {
+  /**
+   * Whether the viewer may change records. A read-only user gets no row
+   * actions: the API refuses the write, so offering Edit or Delete only
+   * leads them into a dialog that cannot be saved.
+   */
+  canWrite?: boolean;
   onEdit: (template: AssetTemplate) => void;
   onArchive: (template: AssetTemplate) => void;
 }
@@ -20,10 +26,11 @@ function formatCurrency(value: number | null): string {
 }
 
 export function getAssetTemplateColumns({
+  canWrite = true,
   onEdit,
   onArchive,
 }: ColumnActions): ColumnDef<AssetTemplate, unknown>[] {
-  return [
+  const columns: ColumnDef<AssetTemplate, unknown>[] = [
     {
       accessorKey: "name",
       header: "Name",
@@ -87,4 +94,7 @@ export function getAssetTemplateColumns({
       },
     },
   ];
+
+  // A read-only viewer gets no row-actions column at all.
+  return canWrite ? columns : columns.filter((c) => c.id !== "actions");
 }

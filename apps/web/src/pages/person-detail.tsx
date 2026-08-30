@@ -33,6 +33,7 @@ import {
 import { useLocations } from "../hooks/use-locations";
 import type { PersonFormValues } from "../lib/schemas/person";
 import { formatDateOrNull as formatDate } from "../lib/format";
+import { useAuth } from "@/contexts/auth-context";
 
 function StatusBadge({ status }: { status: string }) {
   const variant = status === "Active" ? "default"
@@ -44,6 +45,7 @@ function StatusBadge({ status }: { status: string }) {
 const HISTORY_PREVIEW_LIMIT = 5;
 
 export default function PersonDetailPage() {
+  const { canWrite } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: person, isLoading, isError } = usePerson(id!);
@@ -183,22 +185,27 @@ export default function PersonDetailPage() {
 
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {!person.isArchived && (
-            <Button variant="outline" size="sm" onClick={() => setArchiveOpen(true)}>
-              <Archive className="mr-1.5 h-3.5 w-3.5" />
-              Archive
+          {canWrite && (
+            <>
+            {!person.isArchived && (
+              <Button variant="outline" size="sm" onClick={() => setArchiveOpen(true)}>
+                <Archive className="mr-1.5 h-3.5 w-3.5" />
+                Archive
+              </Button>
+            )}
+            {!person.isArchived && hasAssignments && (
+              <Button variant="outline" size="sm" onClick={() => setOffboardOpen(true)}>
+                <UserMinus className="mr-1.5 h-3.5 w-3.5" />
+                Offboard
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setFormOpen(true)}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              Edit
             </Button>
+          
+            </>
           )}
-          {!person.isArchived && hasAssignments && (
-            <Button variant="outline" size="sm" onClick={() => setOffboardOpen(true)}>
-              <UserMinus className="mr-1.5 h-3.5 w-3.5" />
-              Offboard
-            </Button>
-          )}
-          <Button size="sm" onClick={() => setFormOpen(true)}>
-            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            Edit
-          </Button>
         </div>
       </DetailCard>
 

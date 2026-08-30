@@ -145,6 +145,7 @@ export default function ApplicationsPage() {
     () => [
       getSelectionColumn<Application>(),
       ...getApplicationColumns({
+        canWrite,
         onEdit: (application) => {
           setEditingApplication(application);
           setFormOpen(true);
@@ -157,7 +158,7 @@ export default function ApplicationsPage() {
         },
       }),
     ],
-    [],
+    [canWrite],
   );
 
   const [exporting, setExporting] = useState(false);
@@ -435,6 +436,7 @@ export default function ApplicationsPage() {
               </div>
             </div>
             <BulkActionBar
+              canWrite={canWrite}
               selectedCount={selectedCount}
               onClearSelection={() => setRowSelection({})}
             >

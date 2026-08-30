@@ -174,6 +174,7 @@ export default function AssetsPage() {
     () => [
       getSelectionColumn<Asset>(),
       ...getAssetColumns({
+        canWrite,
         onEdit: (asset) => {
           setEditingAsset(asset);
           setFormOpen(true);
@@ -184,7 +185,7 @@ export default function AssetsPage() {
         customFieldDefinitions: allCustomFieldDefs,
       }),
     ],
-    [allCustomFieldDefs],
+    [allCustomFieldDefs, canWrite],
   );
 
   // Hide custom field columns by default
@@ -583,6 +584,7 @@ export default function AssetsPage() {
             />
             {/* Bulk actions (only when selected) */}
             <BulkActionBar
+              canWrite={canWrite}
               selectedCount={selectedCount}
               onClearSelection={() => setRowSelection({})}
             >

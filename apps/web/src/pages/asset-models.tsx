@@ -43,6 +43,7 @@ export default function AssetModelsPage() {
   const columns = useMemo(
     () =>
       getAssetModelColumns({
+        canWrite,
         onEdit: (model) => {
           setEditingModel(model);
           setFormOpen(true);
@@ -51,7 +52,7 @@ export default function AssetModelsPage() {
           setArchivingModel(model);
         },
       }),
-    [],
+    [canWrite],
   );
 
   function handleArchive() {

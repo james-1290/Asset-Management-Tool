@@ -37,10 +37,12 @@ import {
   isExpiringSoon,
   isExpired,
 } from "../lib/format";
+import { useAuth } from "@/contexts/auth-context";
 
 const HISTORY_PREVIEW_LIMIT = 5;
 
 export default function CertificateDetailPage() {
+  const { canWrite } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: certificate, isLoading, isError } = useCertificate(id!);
@@ -191,14 +193,19 @@ export default function CertificateDetailPage() {
 
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" onClick={() => setFormOpen(true)}>
-            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            Edit
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setRenewOpen(true)}>
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-            Renew
-          </Button>
+          {canWrite && (
+            <>
+            <Button size="sm" onClick={() => setFormOpen(true)}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              Edit
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setRenewOpen(true)}>
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+              Renew
+            </Button>
+          
+            </>
+          )}
         </div>
       </DetailCard>
 

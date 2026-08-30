@@ -42,6 +42,7 @@ import {
   isExpiringSoon,
   isExpired,
 } from "../lib/format";
+import { useAuth } from "@/contexts/auth-context";
 
 function formatCurrency(value: number | null): string | null {
   if (value == null) return null;
@@ -62,6 +63,7 @@ const LICENCE_TYPE_LABELS: Record<string, string> = {
 const HISTORY_PREVIEW_LIMIT = 5;
 
 export default function ApplicationDetailPage() {
+  const { canWrite } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: application, isLoading, isError } = useApplication(id!);
@@ -253,35 +255,40 @@ export default function ApplicationDetailPage() {
 
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {application.status !== "Inactive" && !application.isArchived && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDeactivateOpen(true)}
-            >
-              Deactivate
+          {canWrite && (
+            <>
+            {application.status !== "Inactive" && !application.isArchived && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeactivateOpen(true)}
+              >
+                Deactivate
+              </Button>
+            )}
+            {application.status === "Inactive" && !application.isArchived && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReactivate}
+                disabled={reactivateMutation.isPending}
+              >
+                {reactivateMutation.isPending ? "Reactivating..." : "Reactivate"}
+              </Button>
+            )}
+            {!application.isArchived && (
+              <Button size="sm" variant="outline" onClick={() => setRenewOpen(true)}>
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                Renew
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setFormOpen(true)}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              Edit
             </Button>
+          
+            </>
           )}
-          {application.status === "Inactive" && !application.isArchived && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReactivate}
-              disabled={reactivateMutation.isPending}
-            >
-              {reactivateMutation.isPending ? "Reactivating..." : "Reactivate"}
-            </Button>
-          )}
-          {!application.isArchived && (
-            <Button size="sm" variant="outline" onClick={() => setRenewOpen(true)}>
-              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-              Renew
-            </Button>
-          )}
-          <Button size="sm" onClick={() => setFormOpen(true)}>
-            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            Edit
-          </Button>
         </div>
       </DetailCard>
 
