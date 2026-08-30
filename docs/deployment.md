@@ -1,5 +1,33 @@
 # Deployment (production serving)
 
+## Azure App Service
+
+The deployment target is a **single** App Service with Microsoft Entra sign-in
+provided by App Service's built-in authentication ("Easy Auth"): the platform
+authenticates the user and injects the identity as request headers, and the app
+holds no signing key, client secret or passwords of its own.
+
+Everything specific to that — the Entra app registration and app roles, the
+file-based `auth.json` (with the `AllowAnonymous` vs `RedirectToLoginPage`
+trade-off), the required application settings, and the ephemeral-storage
+caveat — lives in **[`infra/azure/README.md`](../infra/azure/README.md)**.
+
+Two things worth repeating here:
+
+- `EASY_AUTH_ENABLED=true` is **required**. The app refuses to start without it
+  on a non-dev profile, because nothing would be authenticating requests.
+- `EASY_AUTH_LOCAL_EMULATOR` must never be set outside local development. It
+  grants identities without a password; it refuses to construct unless a
+  dev/local/test profile is active, and the startup validator aborts the boot if
+  it is enabled.
+
+## Container images
+
+- `apps/api-kt/Dockerfile` — multi-stage: builds with the Gradle wrapper on a
+  JDK, ships only a JRE, the fat jar and a non-root user.
+- `apps/web/Dockerfile` — builds the SPA and serves `dist/` from nginx.
+
+
 ## Health probes & graceful shutdown (API)
 
 The API exposes Spring Boot Actuator health endpoints for orchestrators (only

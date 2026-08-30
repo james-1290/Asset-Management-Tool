@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-30 — Azure App Service deployment configuration (Entra migration)
+
+- Added `infra/azure/` with the file-based Easy Auth configuration and a deployment guide: the Entra app registration steps (app roles `Admin`/`Operator`/`User`, **Assignment required = Yes**, group assignment needing Entra ID P1), the `az rest` call that points the site at `auth.json`, the required application settings, and the storage caveat.
+- **Two auth variants, with the trade-off written down.** `auth.json` uses `AllowAnonymous` and lets the application enforce access (it fails closed); `auth.require-authentication.json` uses `RedirectToLoginPage` and gates at the platform, which then *requires* `excludedPaths` for health and SCIM or probes and provisioning break. The first is the default and the tested one — under `RedirectToLoginPage` a background `fetch` with an expired session follows the redirect and receives sign-in HTML where it expected JSON. `excludedPaths` needs file-based configuration; the portal cannot express it.
+- Noted that `tokenStore` must stay enabled: Easy Auth's claims mapping — which is what puts the object id, email, name and `roles` claims into `X-MS-CLIENT-PRINCIPAL` — depends on it.
+- Added `apps/api-kt/Dockerfile` (there wasn't one): multi-stage, JRE-only runtime, non-root user, `MaxRAMPercentage` set, and SIGTERM reaching the JVM so Spring's graceful shutdown works.
+- **Suppressed Spring's `UserDetailsServiceAutoConfiguration`.** With no `UserDetailsService` bean left, Boot was auto-configuring an in-memory user and logging "Using generated security password" at every start. The account is unusable — this app defines its own filter chain with no form login or basic auth — but the line reads like a live credential in production logs.
+- Verified by building and running the image in a production-like shape: without `EASY_AUTH_ENABLED` it **aborts** with the fail-closed message; with it set and no profile, it boots, logs "Security configuration validated successfully", serves `/api/v1/health` 200, returns 401 for an unauthenticated API call, has no emulator endpoint, and emits no generated-password line.
+
 ## 2026-08-30 — Remove local accounts, passwords and application-issued tokens (Entra migration)
 
 - Every user now signs in with Microsoft Entra through App Service, so the app's own account system is gone: `JwtAuthenticationFilter`, `TokenService`, `LoginRateLimitService`, `PasswordValidator`, `POST /api/v1/auth/login`, admin user creation, admin password reset and self-service password change are all deleted, along with the `jwt.*` / `app.admin.password` / `auth.local-login` settings, the `passwordEncoder` bean and the **jjwt** dependency. `JwtUserDetails` is now `AuthenticatedUser` — nothing about the principal is JWT-shaped any more.
