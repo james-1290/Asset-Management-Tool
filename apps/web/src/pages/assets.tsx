@@ -40,6 +40,7 @@ import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 import { usePeople } from "../hooks/use-people";
+import { useAuth } from "@/contexts/auth-context";
 
 // Map TanStack column IDs to backend sortBy values
 const SORT_FIELD_MAP: Record<string, string> = {
@@ -55,6 +56,7 @@ const SORT_FIELD_MAP: Record<string, string> = {
 };
 
 export default function AssetsPage() {
+  const { canWrite } = useAuth();
   const {
     searchParams,
     setSearchParams,
@@ -516,15 +518,17 @@ export default function AssetsPage() {
         actions={
           <div className="flex items-center gap-3">
             <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
-            <Button
-              onClick={() => {
-                setEditingAsset(null);
-                setFormOpen(true);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Asset
-            </Button>
+            {canWrite && (
+              <Button
+                onClick={() => {
+                  setEditingAsset(null);
+                  setFormOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Asset
+              </Button>
+            )}
           </div>
         }
       />

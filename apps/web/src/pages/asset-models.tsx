@@ -22,8 +22,10 @@ import {
 } from "../hooks/use-asset-models";
 import { useAssetTypes } from "../hooks/use-asset-types";
 import type { AssetModel } from "../types/asset-model";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function AssetModelsPage() {
+  const { canWrite } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const filterTypeId = searchParams.get("typeId") ?? "";
 
@@ -113,15 +115,17 @@ export default function AssetModelsPage() {
                 {models.length}
               </span>
             )}
-            <Button
-              onClick={() => {
-                setEditingModel(null);
-                setFormOpen(true);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Model
-            </Button>
+            {canWrite && (
+              <Button
+                onClick={() => {
+                  setEditingModel(null);
+                  setFormOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Model
+              </Button>
+            )}
           </div>
         }
       />
