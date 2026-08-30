@@ -17,36 +17,23 @@ class SecurityAndConcurrencyIntegrationTest : AbstractIntegrationTest() {
 
     @Test
     fun `non-admin (Operator) is forbidden from admin-only endpoints`() {
-        val admin = loginAsAdmin()
-        val u = "op-${System.nanoTime()}"
-        val create = postJson(
-            "/api/v1/users",
-            """{"username":"$u","displayName":"Op User","email":"$u@example.com","password":"Password123!","role":"Operator"}""",
-            admin,
-        )
-        assertEquals(HttpStatus.CREATED, create.statusCode, "operator create should succeed: ${create.body}")
+        // Roles come from the Entra app role in the sign-in claims, so a test
+        // picks its role by signing in as the matching identity rather than by
+        // creating an account.
+        val operator = signInWithCookie("operator")
 
-        val opToken = login(u, "Password123!")
         // GET /users is @PreAuthorize("hasRole('Admin')").
-        val resp = getWithToken("/api/v1/users", opToken)
+        val resp = getAs("/api/v1/users", operator)
         assertEquals(HttpStatus.FORBIDDEN, resp.statusCode, "Operator must be forbidden from the admin user list")
     }
 
     @Test
     fun `read-only User role can read domain data but cannot write`() {
-        val admin = loginAsAdmin()
-        val u = "viewer-${System.nanoTime()}"
-        val create = postJson(
-            "/api/v1/users",
-            """{"username":"$u","displayName":"Read Only","email":"$u@example.com","password":"Password123!","role":"User"}""",
-            admin,
-        )
-        assertEquals(HttpStatus.CREATED, create.statusCode, "User create should succeed: ${create.body}")
-        val token = login(u, "Password123!")
+        val token = signInWithCookie("user")
 
         // Reads are gated to Admin/Operator/User — the read-only role may read.
-        assertEquals(HttpStatus.OK, getWithToken("/api/v1/assets?pageSize=1", token).statusCode, "User should read assets")
-        assertEquals(HttpStatus.OK, getWithToken("/api/v1/assets/export", token).statusCode, "User should export assets")
+        assertEquals(HttpStatus.OK, getAs("/api/v1/assets?pageSize=1", token).statusCode, "User should read assets")
+        assertEquals(HttpStatus.OK, getAs("/api/v1/assets/export", token).statusCode, "User should export assets")
 
         // Writes remain Admin/Operator only.
         val write = postJson("/api/v1/locations", """{"name":"nope-${System.nanoTime()}"}""", token)

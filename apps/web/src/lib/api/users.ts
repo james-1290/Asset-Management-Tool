@@ -1,12 +1,12 @@
 import { apiClient } from "../api-client";
-import type {
-  UserDetail,
-  CreateUserRequest,
-  UpdateUserRequest,
-  ResetPasswordRequest,
-  RoleOption,
-} from "../../types/settings";
+import type { UserDetail, SetUserActiveRequest, RoleOption } from "../../types/settings";
 
+/**
+ * Users are provisioned by signing in, and their name, email and roles come
+ * from Microsoft Entra — so this is a read-only view plus one local control:
+ * deactivating revokes access to this application immediately, without waiting
+ * for an Entra assignment change to propagate.
+ */
 export const usersApi = {
   getAll(includeInactive = false): Promise<UserDetail[]> {
     return apiClient.get<UserDetail[]>("/users", { includeInactive: includeInactive ? "true" : undefined });
@@ -16,16 +16,8 @@ export const usersApi = {
     return apiClient.get<UserDetail>(`/users/${id}`);
   },
 
-  create(data: CreateUserRequest): Promise<UserDetail> {
-    return apiClient.post<UserDetail>("/users", data);
-  },
-
-  update(id: string, data: UpdateUserRequest): Promise<UserDetail> {
-    return apiClient.put<UserDetail>(`/users/${id}`, data);
-  },
-
-  resetPassword(id: string, data: ResetPasswordRequest): Promise<void> {
-    return apiClient.put<void>(`/users/${id}/password`, data);
+  setActive(id: string, data: SetUserActiveRequest): Promise<UserDetail> {
+    return apiClient.put<UserDetail>(`/users/${id}/active`, data);
   },
 
   getRoles(): Promise<RoleOption[]> {

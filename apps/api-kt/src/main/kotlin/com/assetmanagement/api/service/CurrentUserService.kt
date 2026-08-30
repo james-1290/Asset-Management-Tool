@@ -1,6 +1,6 @@
 package com.assetmanagement.api.service
 
-import com.assetmanagement.api.security.JwtUserDetails
+import com.assetmanagement.api.security.AuthenticatedUser
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import java.util.*
@@ -12,7 +12,7 @@ class CurrentUserService {
         get() {
             val principal = SecurityContextHolder.getContext().authentication?.principal
             return when (principal) {
-                is JwtUserDetails -> try { UUID.fromString(principal.userId) } catch (_: Exception) { null }
+                is AuthenticatedUser -> try { UUID.fromString(principal.userId) } catch (_: Exception) { null }
                 else -> null
             }
         }
@@ -21,7 +21,7 @@ class CurrentUserService {
         get() {
             val principal = SecurityContextHolder.getContext().authentication?.principal
             return when (principal) {
-                is JwtUserDetails -> principal.displayName
+                is AuthenticatedUser -> principal.displayName
                 else -> "System"
             }
         }

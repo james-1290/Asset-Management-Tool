@@ -16,9 +16,16 @@ request/response shapes; this page is an orientation map only.
 ## Conventions
 
 - **Prefix**: all endpoints live under `/api/v1`.
-- **Auth**: stateless JWT. `POST /auth/login` returns a token; send it as
-  `Authorization: Bearer <token>`. SCIM provisioning is also
-  supported.
+- **Auth**: Microsoft Entra sign-in via Azure App Service built-in
+  authentication. The browser carries the platform session cookie; the app
+  reads the identity from the `X-MS-CLIENT-PRINCIPAL` headers the platform
+  injects. There is no application login endpoint — sign-in and sign-out are
+  `/.auth/login/aad` and `/.auth/logout`. `GET /auth/me` reports the current
+  user. Writes must echo the `XSRF-TOKEN` cookie in an `X-XSRF-TOKEN` header
+  (CSRF protection); SCIM machine callers use a bearer token and are exempt.
+- **Roles**: come from Entra app roles (`Admin`, `Operator`, `User`) and are
+  mirrored into the local user on every request. A user holding no app role is
+  refused with `403 no_role_assigned`.
 - **RBAC**: reads generally require any authenticated user; writes require
   `Admin` or `Operator`; user/settings/audit administration requires `Admin`.
 - **Pagination**: list endpoints take `page` / `pageSize` and return a

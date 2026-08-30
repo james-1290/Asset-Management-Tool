@@ -9,7 +9,7 @@ After ANY backend changes (new endpoints, migrations, model changes, controller 
 After completing any work, ALWAYS ensure the following services are running before finishing:
 1. **Docker infrastructure**: `cd infra && docker compose up -d` (MySQL, MailHog)
 2. **API server**: Build the JAR then run it (the `dev` profile is required locally — the app fails closed on default secrets otherwise): `cd apps/api-kt && JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home" SPRING_PROFILES_ACTIVE=dev java -jar build/libs/asset-management-api-1.0.0.jar`
-3. **Verify**: Confirm login works with `curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5115/api/v1/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"admin123"}'` — should return 200
+3. **Verify**: Confirm sign-in works with `curl -s -o /dev/null -w "%{http_code}" "http://localhost:5115/.auth/login/aad?identity=admin"` — should return 302. (Local sign-in goes through the Easy Auth emulator; there are no passwords. Identities: `admin`, `operator`, `user`, `norole`.)
 
 Never leave the user with a stopped API or database. If you killed a process for testing, restart it before declaring done.
 

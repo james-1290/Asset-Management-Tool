@@ -44,6 +44,19 @@ class EasyAuthUserService(
     }
 
     /**
+     * Why a platform-authenticated caller was allowed or refused. The reasons are
+     * distinct because they need different explanations: "no role" is fixed by an
+     * administrator in Entra, a deactivated account by an administrator here, and
+     * a conflicting account needs someone to look at the data.
+     */
+    sealed interface Resolution {
+        data class Allowed(val user: User) : Resolution
+        data object NoRole : Resolution
+        data object Deactivated : Resolution
+        data object Conflict : Resolution
+    }
+
+    /**
      * Entra app-role value -> local role name, parsed from
      * `EASY_AUTH_ROLE_MAP` as `entraRole:localRole,entraRole:localRole`.
      * Empty config means the app-role values are used as local role names
@@ -71,7 +84,7 @@ class EasyAuthUserService(
      * look provisioned but were never actually authorised.
      */
     @Transactional
-    fun resolve(principal: EasyAuthPrincipal): User? {
+    fun resolve(principal: EasyAuthPrincipal): Resolution {
         // Resolve roles *before* touching the users table: a refused sign-in
         // must not leave a provisioned row behind.
         val roles = resolveRoles(principal)
@@ -81,19 +94,19 @@ class EasyAuthUserService(
                     "Assign the user an Admin/Operator/User app role on the app registration.",
                 principal.externalId, principal.roles
             )
-            return null
+            return Resolution.NoRole
         }
 
-        val user = findOrCreate(principal) ?: return null
+        val user = findOrCreate(principal) ?: return Resolution.Conflict
         if (!user.isActive) {
             log.warn("Easy Auth sign-in refused: user {} is deactivated", user.id)
-            return null
+            return Resolution.Deactivated
         }
         syncProfile(user, principal)
         syncRoles(user, roles)
         // Re-read with roles fetch-joined: open-in-view is off, so the caller
         // can't traverse the lazy collection once this transaction closes.
-        return userRepository.findWithRolesById(user.id)
+        return Resolution.Allowed(userRepository.findWithRolesById(user.id)!!)
     }
 
     private fun resolveRoles(principal: EasyAuthPrincipal): List<Role> =
@@ -137,7 +150,6 @@ class EasyAuthUserService(
             username = principal.username,
             email = principal.email,
             displayName = principal.displayName,
-            passwordHash = null,
             authProvider = AUTH_PROVIDER,
             externalId = principal.externalId
         )

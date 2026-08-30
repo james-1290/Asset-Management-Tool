@@ -91,7 +91,6 @@ class ScimService(
             username = username,
             email = email,
             displayName = displayName,
-            passwordHash = null,
             authProvider = "SCIM",
             externalId = scimUser.externalId,
             isActive = scimUser.active

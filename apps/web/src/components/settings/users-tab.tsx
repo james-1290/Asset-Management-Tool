@@ -1,17 +1,10 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, MoreHorizontal, KeyRound, Pencil, Users } from "lucide-react";
-import {
-  useUsers,
-  useCreateUser,
-  useUpdateUser,
-  useResetPassword,
-} from "@/hooks/use-users";
-import type { UserDetail, CreateUserRequest, UpdateUserRequest } from "@/types/settings";
+import { MoreHorizontal, ShieldCheck, ShieldOff, Users } from "lucide-react";
+import { useUsers, useSetUserActive } from "@/hooks/use-users";
+import type { UserDetail } from "@/types/settings";
 import { DataTable } from "@/components/data-table";
 import { userColumns } from "./user-columns";
-import { UserFormDialog } from "./user-form-dialog";
-import { ResetPasswordDialog } from "./reset-password-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,57 +12,39 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { ColumnDef } from "@tanstack/react-table";
 
+/**
+ * Who has access to the application.
+ *
+ * Accounts are created by signing in, and names, emails and roles come from
+ * Microsoft Entra — they are re-applied from the sign-in claims on every
+ * request, so editing them here would be overwritten within moments. Access is
+ * granted and removed by assigning app roles in Entra.
+ *
+ * The exception is deactivation, kept because an Entra assignment change can
+ * take time to propagate and an administrator sometimes needs to cut off access
+ * to this application right now.
+ */
 export function UsersTab() {
   const { data: users = [], isLoading } = useUsers(true);
-  const createUser = useCreateUser();
-  const updateUser = useUpdateUser();
-  const resetPassword = useResetPassword();
+  const setActive = useSetUserActive();
 
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserDetail | null>(null);
-  const [resetUser, setResetUser] = useState<UserDetail | null>(null);
+  const [pendingUser, setPendingUser] = useState<UserDetail | null>(null);
 
-  function handleCreate(values: CreateUserRequest) {
-    createUser.mutate(values, {
-      onSuccess: () => {
-        toast.success("User created");
-        setFormOpen(false);
-      },
-      onError: (err) => {
-        toast.error(err.message || "Failed to create user");
-      },
-    });
-  }
-
-  function handleEdit(values: UpdateUserRequest) {
-    if (!editingUser) return;
-    updateUser.mutate(
-      { id: editingUser.id, data: values },
+  function applyActiveChange() {
+    if (!pendingUser) return;
+    const isActive = !pendingUser.isActive;
+    setActive.mutate(
+      { id: pendingUser.id, data: { isActive } },
       {
         onSuccess: () => {
-          toast.success("User updated");
-          setEditingUser(null);
+          toast.success(isActive ? "Access restored" : "Access revoked");
+          setPendingUser(null);
         },
         onError: (err) => {
-          toast.error(err.message || "Failed to update user");
-        },
-      }
-    );
-  }
-
-  function handleResetPassword(newPassword: string) {
-    if (!resetUser) return;
-    resetPassword.mutate(
-      { id: resetUser.id, data: { newPassword } },
-      {
-        onSuccess: () => {
-          toast.success("Password reset successfully");
-          setResetUser(null);
-        },
-        onError: (err) => {
-          toast.error(err.message || "Failed to reset password");
+          toast.error(err.message || "Failed to update access");
         },
       }
     );
@@ -85,16 +60,19 @@ export function UsersTab() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setEditingUser(row.original)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit
+          <DropdownMenuItem onClick={() => setPendingUser(row.original)}>
+            {row.original.isActive ? (
+              <>
+                <ShieldOff className="mr-2 h-4 w-4" />
+                Revoke access
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Restore access
+              </>
+            )}
           </DropdownMenuItem>
-          {(!row.original.authProvider || row.original.authProvider === "LOCAL") && (
-            <DropdownMenuItem onClick={() => setResetUser(row.original)}>
-              <KeyRound className="mr-2 h-4 w-4" />
-              Reset Password
-            </DropdownMenuItem>
-          )}
         </DropdownMenuContent>
       </DropdownMenu>
     ),
@@ -108,51 +86,36 @@ export function UsersTab() {
 
   return (
     <div className="space-y-8">
-      {/* User Management Card */}
       <section className="bg-card rounded-xl border overflow-hidden shadow-sm">
-        <div className="p-6 border-b flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-bold">User Management</h2>
-          </div>
-          <Button size="sm" onClick={() => setFormOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
+        <div className="p-6 border-b flex items-center gap-2">
+          <Users className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-bold">Users</h2>
         </div>
         <div className="p-6">
           <p className="text-sm text-muted-foreground mb-6">
-            Manage user accounts, roles, and access permissions.
+            Accounts appear here after a person first signs in. Names, emails and roles are
+            managed in Microsoft Entra — assign an <strong>Admin</strong>, <strong>Operator</strong>{" "}
+            or <strong>User</strong> app role there to grant access. Revoking here blocks access to
+            this application immediately, without waiting for Entra to propagate.
           </p>
           <DataTable columns={columns} data={users} />
         </div>
       </section>
 
-      <UserFormDialog
-        open={formOpen || !!editingUser}
+      <ConfirmDialog
+        open={!!pendingUser}
         onOpenChange={(open) => {
-          if (!open) {
-            setFormOpen(false);
-            setEditingUser(null);
-          }
+          if (!open) setPendingUser(null);
         }}
-        user={editingUser}
-        onSubmitCreate={handleCreate}
-        onSubmitEdit={handleEdit}
-        loading={createUser.isPending || updateUser.isPending}
+        title={pendingUser?.isActive ? "Revoke access?" : "Restore access?"}
+        description={
+          pendingUser?.isActive
+            ? `${pendingUser?.displayName} will lose access to this application immediately, even though they can still sign in with Entra.`
+            : `${pendingUser?.displayName} will regain access, provided they still hold an app role in Entra.`
+        }
+        confirmLabel={pendingUser?.isActive ? "Revoke access" : "Restore access"}
+        onConfirm={applyActiveChange}
       />
-
-      {resetUser && (
-        <ResetPasswordDialog
-          open={!!resetUser}
-          onOpenChange={(open) => {
-            if (!open) setResetUser(null);
-          }}
-          userName={resetUser.displayName}
-          onSubmit={handleResetPassword}
-          loading={resetPassword.isPending}
-        />
-      )}
     </div>
   );
 }

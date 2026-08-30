@@ -31,7 +31,7 @@ class PersonalAlertsIntegrationTest : AbstractIntegrationTest() {
     @Test
     fun `an active personal rule creates a personal notification for its owner`() {
         val token = loginAsAdmin()
-        val ownerId = UUID.fromString(idOf(getWithToken("/api/v1/auth/me", token).body!!))
+        val ownerId = UUID.fromString(idOf(getAs("/api/v1/auth/me", token).body!!))
 
         // A certificate expiring inside the rule's threshold window.
         val typeId = idOf(

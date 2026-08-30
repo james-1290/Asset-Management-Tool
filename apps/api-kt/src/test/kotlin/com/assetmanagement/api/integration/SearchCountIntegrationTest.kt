@@ -36,7 +36,7 @@ class SearchCountIntegrationTest : AbstractIntegrationTest() {
             assertEquals(HttpStatus.CREATED, r.statusCode, "asset create should succeed: ${r.body}")
         }
 
-        val resp = getWithToken("/api/v1/search?q=$locName", token)
+        val resp = getAs("/api/v1/search?q=$locName", token)
         assertEquals(HttpStatus.OK, resp.statusCode)
         // The location result should report "2 assets" in its extra field.
         val body = resp.body!!

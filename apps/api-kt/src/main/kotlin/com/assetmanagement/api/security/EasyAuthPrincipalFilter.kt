@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
@@ -38,17 +39,17 @@ class EasyAuthPrincipalFilter(
         const val HEADER_PRINCIPAL_NAME = "X-MS-CLIENT-PRINCIPAL-NAME"
 
         /**
-         * Set when the platform authenticated the caller but the application
-         * refused them (no app role, deactivated, or an unlinkable account).
+         * Carries *why* the platform-authenticated caller was refused, so the
+         * entry point can explain it.
          *
-         * This distinction matters to the SPA: "not signed in" is fixed by
-         * sending the user to the identity provider, whereas "signed in but
-         * refused" is not — redirecting there would return the user right back,
-         * unauthenticated in the app's eyes, forever. The entry point uses this
-         * to answer 403 instead of 401 so the client can show an explanation
+         * The refused/not-signed-in distinction matters to the SPA: "not signed
+         * in" is fixed by sending the user to the identity provider, whereas
+         * "signed in but refused" is not — redirecting there would return the
+         * user right back, refused again, forever. The entry point uses this to
+         * answer 403 instead of 401 so the client can show an explanation
          * rather than loop.
          */
-        const val ATTR_REFUSED = "com.assetmanagement.easyAuth.refused"
+        const val ATTR_REFUSAL = "com.assetmanagement.easyAuth.refusal"
     }
 
     override fun doFilterInternal(
@@ -64,6 +65,25 @@ class EasyAuthPrincipalFilter(
         filterChain.doFilter(request, response)
     }
 
+    /**
+     * Resolves the principal, retrying once if a concurrent request beat us to
+     * provisioning the same brand-new user.
+     *
+     * The SPA issues several requests in parallel as it loads, so a user's very
+     * first sign-in routinely arrives as a burst. Each request finds no row,
+     * each inserts, and all but one hit the unique constraint on username /
+     * external id — leaving the user apparently unauthenticated on their first
+     * ever visit. The loser's transaction is rolled back, so a second attempt
+     * simply finds the row the winner created.
+     */
+    private fun resolveWithRetry(principal: EasyAuthPrincipal): EasyAuthUserService.Resolution =
+        try {
+            easyAuthUserService.resolve(principal)
+        } catch (e: DataIntegrityViolationException) {
+            log.debug("Lost a provisioning race for externalId={}, retrying", principal.externalId)
+            easyAuthUserService.resolve(principal)
+        }
+
     private fun authenticate(request: HttpServletRequest) {
         val principal = EasyAuthPrincipalParser.parse(
             header = request.getHeader(HEADER_PRINCIPAL),
@@ -72,26 +92,27 @@ class EasyAuthPrincipalFilter(
             fallbackUsername = request.getHeader(HEADER_PRINCIPAL_NAME)
         ) ?: return
 
-        val user = try {
-            easyAuthUserService.resolve(principal)
+        val resolution = try {
+            resolveWithRetry(principal)
         } catch (e: Exception) {
             // Never turn a provisioning failure into a 500 on every request —
             // fail closed to "unauthenticated" and let the security chain answer.
             log.error("Easy Auth user resolution failed for externalId={}", principal.externalId, e)
-            null
-        }
-
-        if (user == null) {
-            // The platform vouched for this caller; we are the ones saying no.
-            request.setAttribute(ATTR_REFUSED, true)
             return
         }
+
+        if (resolution !is EasyAuthUserService.Resolution.Allowed) {
+            // The platform vouched for this caller; we are the ones saying no.
+            request.setAttribute(ATTR_REFUSAL, resolution)
+            return
+        }
+        val user = resolution.user
 
         val roles = user.userRoles.mapNotNull { it.role?.name }
         val authorities = roles.map { SimpleGrantedAuthority("ROLE_$it") }
 
         SecurityContextHolder.getContext().authentication = UsernamePasswordAuthenticationToken(
-            JwtUserDetails(user.id.toString(), user.username, user.displayName),
+            AuthenticatedUser(user.id.toString(), user.username, user.displayName),
             null,
             authorities
         )

@@ -76,23 +76,8 @@ export interface UserDetail {
   authProvider?: string;
 }
 
-export interface CreateUserRequest {
-  username: string;
-  displayName: string;
-  email: string;
-  password: string;
-  role: string;
-}
-
-export interface UpdateUserRequest {
-  displayName: string;
-  email: string;
-  role: string;
+export interface SetUserActiveRequest {
   isActive: boolean;
-}
-
-export interface ResetPasswordRequest {
-  newPassword: string;
 }
 
 export interface RoleOption {

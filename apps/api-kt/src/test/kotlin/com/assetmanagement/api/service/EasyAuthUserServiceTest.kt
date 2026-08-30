@@ -9,6 +9,8 @@ import com.assetmanagement.api.security.EasyAuthPrincipal
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyString
@@ -39,7 +41,7 @@ class EasyAuthUserServiceTest {
 
     @Test
     fun `refuses a principal with no app roles and provisions nothing`() {
-        assertNull(service().resolve(principal()))
+        assertSame(EasyAuthUserService.Resolution.NoRole, service().resolve(principal()))
 
         // The important half: a refused sign-in must not leave an account behind.
         verify(userRepository, never()).save(any(User::class.java))
@@ -50,7 +52,7 @@ class EasyAuthUserServiceTest {
     fun `refuses a principal whose app roles match no local role`() {
         `when`(roleRepository.findByName("Nonexistent")).thenReturn(null)
 
-        assertNull(service().resolve(principal("Nonexistent")))
+        assertSame(EasyAuthUserService.Resolution.NoRole, service().resolve(principal("Nonexistent")))
 
         verify(userRepository, never()).save(any(User::class.java))
     }
@@ -61,7 +63,9 @@ class EasyAuthUserServiceTest {
         `when`(roleRepository.findByName("Admin")).thenReturn(role("Admin"))
         `when`(userRepository.findByExternalId("oid-1")).thenReturn(existing)
 
-        assertNull(service().resolve(principal("Admin")))
+        // Distinct from "no role": an administrator here can restore it, and the
+        // user must be told that rather than sent to chase an Entra assignment.
+        assertSame(EasyAuthUserService.Resolution.Deactivated, service().resolve(principal("Admin")))
     }
 
     @Test
@@ -72,7 +76,7 @@ class EasyAuthUserServiceTest {
         `when`(userRoleRepository.findByUserId(existing.id)).thenReturn(emptyList())
         `when`(userRepository.findWithRolesById(existing.id)).thenReturn(existing)
 
-        assertNotNull(service().resolve(principal("Admin")))
+        assertInstanceOf(EasyAuthUserService.Resolution.Allowed::class.java, service().resolve(principal("Admin")))
     }
 
     @Test
@@ -86,7 +90,7 @@ class EasyAuthUserServiceTest {
         val resolved = service(roleMap = "AssetTool.Administrator:Admin")
             .resolve(principal("assettool.administrator"))
 
-        assertNotNull(resolved)
+        assertInstanceOf(EasyAuthUserService.Resolution.Allowed::class.java, resolved)
         verify(roleRepository).findByName("Admin")
     }
 
@@ -97,7 +101,7 @@ class EasyAuthUserServiceTest {
         `when`(userRepository.findByExternalId("oid-1")).thenReturn(null)
         `when`(userRepository.findByEmail("ada@example.com")).thenReturn(local)
 
-        assertNull(service().resolve(principal("Admin")))
+        assertSame(EasyAuthUserService.Resolution.Conflict, service().resolve(principal("Admin")))
 
         verify(userRepository, never()).save(any(User::class.java))
         assertEquals("LOCAL", local.authProvider)

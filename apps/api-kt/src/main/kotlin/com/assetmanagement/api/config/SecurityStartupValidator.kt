@@ -7,15 +7,27 @@ import org.springframework.context.event.EventListener
 import org.springframework.core.env.Environment
 import org.springframework.stereotype.Component
 
+/**
+ * Refuses to serve a deployment that is configured insecurely.
+ *
+ * Fails **closed**: an unset or unrecognised profile is treated as production,
+ * so a deploy that forgets `SPRING_PROFILES_ACTIVE` aborts rather than quietly
+ * running with development settings.
+ *
+ * The checks changed shape when identity moved to Microsoft Entra. There is no
+ * longer a JWT signing key or seeded admin password to leave at a default; the
+ * risks now are running *without* the platform authentication that is supposed
+ * to be in front of the app, or running the local sign-in emulator where real
+ * users can reach it.
+ */
 @Component
 class SecurityStartupValidator(
     private val environment: Environment,
-    @Value("\${jwt.key}") private val jwtKey: String,
-    @Value("\${app.admin.password:admin123}") private val adminPassword: String,
+    @Value("\${auth.easy-auth.enabled:false}") private val easyAuthEnabled: Boolean,
+    @Value("\${auth.easy-auth.local-emulator.enabled:false}") private val localEmulatorEnabled: Boolean,
     @Value("\${scim.bearer-token:change-me-in-production}") private val scimBearerToken: String,
     @Value("\${scim.enabled:false}") private val scimEnabled: Boolean,
-    @Value("\${springdoc.api-docs.enabled:true}") private val swaggerEnabled: Boolean,
-    @Value("\${auth.local-login.enabled:true}") private val localLoginEnabled: Boolean
+    @Value("\${springdoc.api-docs.enabled:true}") private val swaggerEnabled: Boolean
 ) {
     private val log = LoggerFactory.getLogger(SecurityStartupValidator::class.java)
 
@@ -23,24 +35,27 @@ class SecurityStartupValidator(
     fun validateSecurityConfig() {
         val warnings = mutableListOf<String>()
 
-        if (jwtKey == "ThisIsASecretKeyForDevelopmentPurposesOnly123!") {
-            warnings.add("SECURITY: JWT secret is using the default development key. Set JWT_KEY environment variable for production!")
+        if (!easyAuthEnabled) {
+            warnings.add(
+                "SECURITY: Easy Auth is disabled (auth.easy-auth.enabled=false). Nothing would authenticate " +
+                    "requests. Set EASY_AUTH_ENABLED=true and ensure App Service authentication is configured " +
+                    "in front of this app."
+            )
         }
 
-        if (adminPassword == "admin123") {
-            warnings.add("SECURITY: Admin password is using the default 'admin123'. Set ADMIN_PASSWORD environment variable for production!")
+        if (localEmulatorEnabled) {
+            warnings.add(
+                "SECURITY: the local Easy Auth emulator is enabled. It grants identities without a password " +
+                    "and must never run outside local development."
+            )
         }
 
         if (scimEnabled && scimBearerToken == "change-me-in-production") {
-            warnings.add("SECURITY: SCIM is enabled with the default bearer token. Set SCIM_BEARER_TOKEN environment variable for production!")
+            warnings.add("SECURITY: SCIM is enabled with the default bearer token. Set SCIM_BEARER_TOKEN for production!")
         }
 
         if (swaggerEnabled) {
             warnings.add("SECURITY: Swagger/OpenAPI is enabled. Set SWAGGER_ENABLED=false for production!")
-        }
-
-        if (localLoginEnabled && adminPassword == "admin123" && !isDevProfile()) {
-            warnings.add("SECURITY: LOCAL_LOGIN_ENABLED=true with default admin password on non-dev profile!")
         }
 
         if (warnings.isNotEmpty()) {
@@ -52,10 +67,9 @@ class SecurityStartupValidator(
                 val active = environment.activeProfiles.joinToString(",").ifEmpty { "(none)" }
                 throw IllegalStateException(
                     "SECURITY: ${warnings.size} configuration warning(s) detected on profile '$active'. " +
-                    "The app refuses to start with insecure defaults unless an explicit dev profile " +
-                    "(SPRING_PROFILES_ACTIVE=dev) is set. For a real deployment, provide the required " +
-                    "secrets (JWT_KEY, ADMIN_PASSWORD, and SCIM_BEARER_TOKEN if SCIM is enabled). Warnings:\n" +
-                    warnings.joinToString("\n") { "  - $it" }
+                        "The app refuses to start with insecure settings unless an explicit dev profile " +
+                        "(SPRING_PROFILES_ACTIVE=dev) is set. Warnings:\n" +
+                        warnings.joinToString("\n") { "  - $it" }
                 )
             }
         } else {
@@ -64,16 +78,10 @@ class SecurityStartupValidator(
     }
 
     /**
-     * Whether the app is running under an explicit developer/test profile that
-     * may tolerate default secrets. Fail-CLOSED: an unset or "default" profile is
-     * treated as production, so a deploy that forgets SPRING_PROFILES_ACTIVE
-     * refuses to boot with the committed default JWT key / admin password rather
-     * than silently running insecure. Only these named profiles opt into dev mode.
+     * Whether an explicit developer/test profile is active. Read from the
+     * Environment directly, since that reflects both `SPRING_PROFILES_ACTIVE`
+     * and a test's `@ActiveProfiles`, unlike a `@Value` on the property.
      */
-    private fun isDevProfile(): Boolean {
-        // Read the Environment's active profiles directly: this reflects both
-        // SPRING_PROFILES_ACTIVE and test @ActiveProfiles, unlike a
-        // @Value("\${spring.profiles.active}") which @ActiveProfiles doesn't set.
-        return environment.activeProfiles.any { it.lowercase() in setOf("dev", "test", "local") }
-    }
+    private fun isDevProfile(): Boolean =
+        environment.activeProfiles.any { it.lowercase() in setOf("dev", "test", "local") }
 }

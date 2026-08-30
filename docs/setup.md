@@ -26,16 +26,16 @@ SPRING_PROFILES_ACTIVE=dev java -jar build/libs/asset-management-api-1.0.0.jar
 ```
 
 The `dev` profile is **required** for local runs: it's the only mode in which
-the app tolerates the built-in default secrets. With no profile set (or any
-non-dev profile) the app fails fast on the default JWT key / admin password —
-this is deliberate, so a production deploy can't accidentally boot insecure.
+the app runs the local sign-in emulator instead of expecting Azure App Service's
+authentication in front of it. With no profile set (or any non-dev profile) the
+app fails fast — deliberately, so a production deploy can't boot with
+development settings.
 
 The API starts on `http://localhost:5115`. On startup it applies any pending
 **Flyway** migrations automatically.
 
 - API base: `http://localhost:5115/api/v1`
 - Swagger UI: `http://localhost:5115/swagger-ui.html` (enable with `SWAGGER_ENABLED=true`; off by default)
-- Default admin login (dev only): `admin` / `admin123`
 - Local Entra sign-in (dev only): `http://localhost:5115/.auth/login/aad`
 
 ### Signing in locally the way production will work
@@ -102,13 +102,15 @@ cd apps/web && npm run dev
 - `apps/web/.env` — frontend overrides (copy from `apps/web/.env.example`).
 - The API is configured through `apps/api-kt/src/main/resources/application.yml`,
   with every secret overridable by an environment variable. For anything other
-  than local dev you must set at least: `JWT_KEY`, `ADMIN_PASSWORD`,
+  than local dev you must set at least: `EASY_AUTH_ENABLED=true`,
   `DB_USERNAME`/`DB_PASSWORD`, and — if SCIM is enabled — `SCIM_BEARER_TOKEN`.
-  The app boots on the built-in dev defaults **only** under an explicit dev
-  profile (`SPRING_PROFILES_ACTIVE=dev`); with no profile set, or any other
-  profile, it refuses to start until real secrets are supplied. This fail-closed
-  default means a deploy that forgets to configure the profile/secrets aborts
-  instead of running with the public default key.
+  There are no application secrets to configure for sign-in: identity is Azure
+  App Service's built-in authentication, so the app holds no signing key,
+  client secret or passwords. The app boots with development settings **only**
+  under an explicit dev profile (`SPRING_PROFILES_ACTIVE=dev`); with no profile
+  set, or any other profile, it refuses to start unless Easy Auth is enabled and
+  the local emulator is off. That fail-closed default means a deploy that forgets
+  to configure authentication aborts rather than serving unauthenticated.
 
 ## Database migrations
 
