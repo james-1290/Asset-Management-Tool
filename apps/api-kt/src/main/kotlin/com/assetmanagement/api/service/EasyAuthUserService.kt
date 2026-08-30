@@ -1,5 +1,6 @@
 package com.assetmanagement.api.service
 
+import com.assetmanagement.api.model.Role
 import com.assetmanagement.api.model.User
 import com.assetmanagement.api.model.UserRole
 import com.assetmanagement.api.repository.RoleRepository
@@ -23,6 +24,9 @@ import java.time.Instant
  * are mirrored into `user_roles` so the rest of the app — `@PreAuthorize`,
  * audit attribution, the users list — keeps reading roles from the database
  * exactly as it does today.
+ *
+ * An app role is how access is granted, so a principal carrying none is
+ * refused outright: see [resolve].
  */
 @Service
 @ConditionalOnProperty(name = ["auth.easy-auth.enabled"], havingValue = "true")
@@ -30,7 +34,6 @@ class EasyAuthUserService(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
     private val userRoleRepository: UserRoleRepository,
-    @Value("\${auth.easy-auth.default-role:User}") private val defaultRole: String,
     @Value("\${auth.easy-auth.role-map:}") private val roleMapConfig: String
 ) {
 
@@ -58,19 +61,51 @@ class EasyAuthUserService(
             .toMap()
     }
 
+    /**
+     * Returns the local user for this principal, or null to refuse the request.
+     *
+     * Refuses when the principal carries no app role that maps to a local role.
+     * Assigning an app role is how access is granted, so "signed in but holds no
+     * role" is a misconfiguration in Entra, not a user to be waved through with
+     * reduced rights — and admitting them would quietly create accounts that
+     * look provisioned but were never actually authorised.
+     */
     @Transactional
     fun resolve(principal: EasyAuthPrincipal): User? {
+        // Resolve roles *before* touching the users table: a refused sign-in
+        // must not leave a provisioned row behind.
+        val roles = resolveRoles(principal)
+        if (roles.isEmpty()) {
+            log.warn(
+                "Easy Auth sign-in refused for externalId={}: no assigned app role maps to a local role (claim roles={}). " +
+                    "Assign the user an Admin/Operator/User app role on the app registration.",
+                principal.externalId, principal.roles
+            )
+            return null
+        }
+
         val user = findOrCreate(principal) ?: return null
         if (!user.isActive) {
-            log.warn("Easy Auth sign-in rejected: user {} is deactivated", user.id)
+            log.warn("Easy Auth sign-in refused: user {} is deactivated", user.id)
             return null
         }
         syncProfile(user, principal)
-        syncRoles(user, principal)
+        syncRoles(user, roles)
         // Re-read with roles fetch-joined: open-in-view is off, so the caller
         // can't traverse the lazy collection once this transaction closes.
         return userRepository.findWithRolesById(user.id)
     }
+
+    private fun resolveRoles(principal: EasyAuthPrincipal): List<Role> =
+        principal.roles
+            .map { roleMap[it.lowercase()] ?: it }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .mapNotNull { name ->
+                roleRepository.findByName(name).also {
+                    if (it == null) log.warn("Easy Auth app role '{}' has no matching local role — ignored", name)
+                }
+            }
 
     private fun findOrCreate(principal: EasyAuthPrincipal): User? {
         userRepository.findByExternalId(principal.externalId)?.let { return it }
@@ -79,14 +114,14 @@ class EasyAuthUserService(
         // external id yet — that's how SCIM-provisioned and previously-SAML
         // users carry over. LOCAL accounts are never auto-linked: doing so would
         // let anyone who can get an Entra mailbox at a matching address take
-        // over the break-glass admin.
+        // over a local account.
         if (principal.email.isNotBlank()) {
             userRepository.findByEmail(principal.email)?.let { existing ->
                 if (existing.authProvider != "LOCAL" && existing.externalId == null) {
                     existing.externalId = principal.externalId
                     existing.authProvider = AUTH_PROVIDER
                     existing.updatedAt = Instant.now()
-                    log.info("Linked existing {} user {} to Entra identity", existing.authProvider, existing.id)
+                    log.info("Linked existing user {} to Entra identity", existing.id)
                     return userRepository.save(existing)
                 }
                 log.warn(
@@ -124,41 +159,20 @@ class EasyAuthUserService(
         }
     }
 
-    private fun syncRoles(user: User, principal: EasyAuthPrincipal) {
-        val desired = desiredRoleNames(principal)
+    private fun syncRoles(user: User, desired: List<Role>) {
         val current = userRoleRepository.findByUserId(user.id)
         val currentNames = current.mapNotNull { it.role?.name }.toSet()
+        val desiredNames = desired.map { it.name }.toSet()
 
         // The common case is "nothing changed" on every request, so compare
         // before writing rather than rebuilding the assignments each time.
-        if (currentNames == desired) return
-
-        val desiredRoles = desired.mapNotNull { name ->
-            roleRepository.findByName(name).also {
-                if (it == null) log.warn("Easy Auth role '{}' has no matching local role — ignored", name)
-            }
-        }
-        if (desiredRoles.isEmpty()) {
-            log.warn("Easy Auth: no resolvable roles for user {} — leaving existing assignments untouched", user.id)
-            return
-        }
+        if (currentNames == desiredNames) return
 
         current.forEach { userRoleRepository.deleteByUserIdAndRoleId(user.id, it.roleId) }
-        desiredRoles.forEach { userRoleRepository.save(UserRole(userId = user.id, roleId = it.id)) }
+        desired.forEach { userRoleRepository.save(UserRole(userId = user.id, roleId = it.id)) }
         user.updatedAt = Instant.now()
         userRepository.save(user)
 
-        log.info("Synced roles for user {} from Entra: {} -> {}", user.id, currentNames, desiredRoles.map { it.name })
-    }
-
-    private fun desiredRoleNames(principal: EasyAuthPrincipal): Set<String> {
-        val mapped = principal.roles
-            .map { roleMap[it.lowercase()] ?: it }
-            .filter { it.isNotBlank() }
-            .toSet()
-        // A user assigned to the enterprise app but not to any app role still
-        // gets in (Entra let them through); give them the read-only default
-        // rather than an account with no permissions at all.
-        return mapped.ifEmpty { setOf(defaultRole) }
+        log.info("Synced roles for user {} from Entra: {} -> {}", user.id, currentNames, desiredNames)
     }
 }
