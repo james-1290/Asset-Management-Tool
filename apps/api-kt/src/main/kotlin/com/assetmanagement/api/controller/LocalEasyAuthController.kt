@@ -4,6 +4,7 @@ import com.assetmanagement.api.security.LocalEasyAuthEmulator
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -28,7 +29,16 @@ import java.net.URI
 @RequestMapping("/.auth")
 @ConditionalOnProperty(name = ["auth.easy-auth.local-emulator.enabled"], havingValue = "true")
 class LocalEasyAuthController(
-    private val emulator: LocalEasyAuthEmulator
+    private val emulator: LocalEasyAuthEmulator,
+    /**
+     * Where to land after signing in when the caller names no destination.
+     *
+     * On App Service `/` is the app itself, so `/` is the right default there
+     * and when the SPA proxies `/.auth` to this API. Hitting this API's own port
+     * directly, though, `/` is nothing at all — so the dev profile points this
+     * at the frontend.
+     */
+    @Value("\${auth.easy-auth.local-emulator.default-redirect:/}") private val defaultRedirect: String
 ) {
 
     /**
@@ -41,7 +51,7 @@ class LocalEasyAuthController(
         @RequestParam(name = "post_login_redirect_uri", required = false) redirectUri: String?,
         response: HttpServletResponse
     ): ResponseEntity<Any> {
-        val target = safeRedirect(redirectUri)
+        val target = redirectUri?.takeIf { it.isNotBlank() }?.let { safeRedirect(it) } ?: defaultRedirect
         val chosen = emulator.find(identity)
             ?: return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
@@ -57,7 +67,8 @@ class LocalEasyAuthController(
         response: HttpServletResponse
     ): ResponseEntity<Any> {
         response.addCookie(sessionCookie("", maxAge = 0))
-        return ResponseEntity.status(302).location(URI.create(safeRedirect(redirectUri))).build()
+        val target = redirectUri?.takeIf { it.isNotBlank() }?.let { safeRedirect(it) } ?: defaultRedirect
+        return ResponseEntity.status(302).location(URI.create(target)).build()
     }
 
     /**
@@ -90,9 +101,11 @@ class LocalEasyAuthController(
         }
 
     /**
-     * Only same-site absolute paths are honoured. Rejects protocol-relative
-     * (`//evil.com`) and backslash forms that a naive `startsWith("/")` misses,
-     * so the emulator can't be turned into an open redirect.
+     * Only same-site absolute paths are honoured **from the query string**.
+     * Rejects protocol-relative (`//evil.com`) and backslash forms that a naive
+     * `startsWith("/")` misses, so the emulator can't be turned into an open
+     * redirect. The configured default is exempt: it comes from deployment
+     * configuration, not from the caller.
      */
     private fun safeRedirect(uri: String?): String {
         if (uri.isNullOrBlank()) return "/"
@@ -127,6 +140,8 @@ class LocalEasyAuthController(
                 ul { list-style: none; padding: 0; }
                 li { border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.75rem; margin-bottom: 0.5rem; }
                 li span { display: block; color: #6b7280; font-size: 0.875rem; }
+                p.target { color: #6b7280; font-size: 0.875rem; }
+                code { background: #f3f4f6; padding: 0.1rem 0.3rem; border-radius: 3px; }
               </style>
             </head>
             <body>
@@ -135,6 +150,7 @@ class LocalEasyAuthController(
                 Development only. This stands in for Azure App Service's Entra sign-in and
                 grants any identity below without a password.
               </p>
+              <p class="target">After signing in you'll be sent to <code>${escape(target)}</code>.</p>
               <ul>
             $rows
               </ul>
