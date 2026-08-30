@@ -174,3 +174,65 @@ strings (ADR-003's intent carries over).
 `citext`) are not available; where needed, enforce equivalents in application
 logic or via MySQL-compatible constraints. See `tasks/todo.md` for open
 data-model items (unique constraints, auto-managed `updatedAt`, etc.).
+
+---
+
+## ADR-014: Azure App Service with Entra "Easy Auth", roles from Entra app roles
+
+**Date**: 2026-08-30
+**Status**: Accepted — supersedes the SSO parts of ADR-012 and the hosting
+target in ADR-013's consequence
+
+**Context**: The original hypothesis was self-managed hosting with in-app
+accounts (username/password), stateless JWTs, optional SAML SSO and SCIM
+provisioning. The deployment target is now **Azure App Service**, where every
+user signs in with Microsoft Entra. Once Entra owns identity, an in-app user
+list, password reset and local login are duplicated (and weaker) copies of
+something the platform already does.
+
+**Decision**:
+
+1. **One App Service**, serving the SPA and API behind a single origin (nginx +
+   the Kotlin API), with App Service built-in authentication ("Easy Auth") in
+   front of it. Not two App Services: that would mean configuring Easy Auth
+   twice, a second app registration, CORS, and a client-directed token flow, for
+   no benefit.
+2. **Easy Auth, not our own OIDC client.** The platform's auth sidecar completes
+   the Entra sign-in and injects `X-MS-CLIENT-PRINCIPAL` headers. The app reads
+   those headers; it holds no client secret and issues no tokens of its own.
+3. **Roles come from Entra app roles**, not SCIM group provisioning. Groups are
+   assigned to `Admin`/`Operator`/`User` app roles on the app registration and
+   arrive in the `roles` claim, which we mirror into `user_roles` so
+   `@PreAuthorize` and audit attribution keep reading roles from the database.
+4. **No default role.** A principal holding no app role is refused. Assigning an
+   app role *is* how access is granted, so no-role means an Entra
+   misconfiguration, not a user to admit with reduced rights.
+5. **No local accounts in production.** Local login, password hashes, admin
+   password reset and JIT SAML are removed. Local development uses a
+   dev-profile injector that simulates the Easy Auth headers, so there is one
+   auth path in the code rather than two.
+
+**Why not SCIM group provisioning** (the initially preferred option): the
+enterprise application that App Service auth creates comes from an *app
+registration*, and such service principals do not expose the Provisioning
+blade. SCIM would have required a second, hand-created non-gallery enterprise
+app, the same groups assigned in both places, `/Groups` endpoints we do not have
+(our SCIM implementation is `/Users` only), and handling Entra's ~40-minute sync
+lag with a JIT fallback anyway. App roles deliver the same group-driven
+authorisation with none of that, and are correct immediately on sign-in.
+
+**Consequences**:
+
+- **Entra ID P1** is required (group-based assignment), and the enterprise app
+  must have **Assignment required = Yes** — without it any user in the tenant
+  can sign in and provision themselves an account.
+- Health and machine endpoints must be listed in Easy Auth's `excludedPaths`,
+  which requires *file-based* auth configuration (`auth.json`); the portal UI
+  cannot express it.
+- Auth becomes **cookie**-based, so CSRF has to be reconsidered — `SecurityConfig`
+  disabled it precisely because JWT auth was stateless and header-borne.
+- App Service container storage is ephemeral, so `UPLOAD_DIR` attachments must
+  move to Azure Blob Storage.
+- Users appear in the database only after their first sign-in. This is
+  acceptable because assets are assigned to **People**, a separate table, so a
+  person can hold assets without ever having logged in.

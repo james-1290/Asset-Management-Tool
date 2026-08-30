@@ -45,11 +45,14 @@ Primary users: IT/admin staff. UX must be consistent and simple.
 - Backend: Kotlin + Spring Boot (JDK 21), Gradle build, `apps/api-kt`
 - DB: MySQL 8 (Spring Data JPA / Hibernate; Flyway migrations)
 - Local hosting: Docker Compose (MySQL + MailHog)
-- Future hosting: Azure (Container Apps + Azure Database for MySQL + Blob Storage)
+- Future hosting: Azure (App Service + Azure Database for MySQL + Blob Storage)
 
 ## Non-goals for now
 
-- SSO (future; design auth so OIDC can be added later)
+- In-app user management. Identity is moving to **Microsoft Entra via Azure App
+  Service built-in auth ("Easy Auth")**: users sign in with Entra, roles come
+  from Entra app roles, and local accounts/passwords are being removed. See
+  ADR-014 in `tasks/decisions.md`.
 - Attachments are low priority (but keep interfaces ready)
 
 ---
