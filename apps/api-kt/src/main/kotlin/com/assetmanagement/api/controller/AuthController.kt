@@ -2,7 +2,6 @@ package com.assetmanagement.api.controller
 
 import com.assetmanagement.api.dto.LoginRequest
 import com.assetmanagement.api.dto.LoginResponse
-import com.assetmanagement.api.dto.SsoConfigResponse
 import com.assetmanagement.api.dto.UserProfileResponse
 import com.assetmanagement.api.repository.UserRepository
 import com.assetmanagement.api.service.AuditEntry
@@ -27,8 +26,6 @@ class AuthController(
     private val auditService: AuditService,
     private val loginRateLimitService: LoginRateLimitService,
     private val clientIpResolver: com.assetmanagement.api.util.ClientIpResolver,
-    @Value("\${saml.enabled:false}") private val samlEnabled: Boolean,
-    @Value("\${saml.registration-id:entra}") private val samlRegistrationId: String,
     @Value("\${auth.local-login.enabled:true}") private val localLoginEnabled: Boolean
 ) {
 
@@ -141,15 +138,6 @@ class AuthController(
             roles = roles,
             themePreference = user.themePreference,
             authProvider = user.authProvider
-        ))
-    }
-
-    @GetMapping("/sso-config")
-    fun ssoConfig(): ResponseEntity<SsoConfigResponse> {
-        return ResponseEntity.ok(SsoConfigResponse(
-            ssoEnabled = samlEnabled,
-            ssoUrl = if (samlEnabled) "/saml2/authenticate/$samlRegistrationId" else null,
-            ssoLabel = if (samlEnabled) "Sign in with Microsoft" else null
         ))
     }
 }

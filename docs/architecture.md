@@ -39,7 +39,8 @@
 - **Build**: Gradle (`./gradlew`), runnable fat JAR via `bootJar`
 - **Persistence**: Spring Data JPA / Hibernate over MySQL
 - **Migrations**: Flyway (SQL under `src/main/resources/db/migration`)
-- **Auth**: stateless JWT; SAML 2.0 SSO + SCIM 2.0 provisioning (Entra ID)
+- **Auth**: Microsoft Entra sign-in via Azure App Service built-in authentication
+  ("Easy Auth"); roles from Entra app roles; SCIM 2.0 provisioning available
 - **API docs**: springdoc-openapi (Swagger UI), gated by `SWAGGER_ENABLED`
 - **API prefix**: `/api/v1/`
 
@@ -66,7 +67,7 @@
 ```
 Browser → Vite dev server (port 5173)
            ├── Static assets (served directly)
-           └── /api/*, /saml2, /login/saml2, /scim
+           └── /api/*, /.auth/*, /scim
                  → Proxy → Spring Boot API (port 5115)
                               └── MySQL (port 3306)
 ```

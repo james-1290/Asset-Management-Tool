@@ -28,7 +28,7 @@ const baseSecurityHeaders = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 }
 
-// API / SSO / SCIM are proxied to the backend so the browser sees a single
+// API / auth / SCIM are proxied to the backend so the browser sees a single
 // origin — this is what lets the app's CSP keep `connect-src 'self'`.
 const proxy = {
   '/api': { target: 'http://localhost:5115', changeOrigin: true },
@@ -36,8 +36,6 @@ const proxy = {
   // platform's auth sidecar; locally the API serves an emulator of them, so the
   // app talks to the same URLs in both environments.
   '/.auth': { target: 'http://localhost:5115', changeOrigin: true },
-  '/saml2': { target: 'http://localhost:5115', changeOrigin: true },
-  '/login/saml2': { target: 'http://localhost:5115', changeOrigin: true },
   '/scim': { target: 'http://localhost:5115', changeOrigin: true },
 }
 

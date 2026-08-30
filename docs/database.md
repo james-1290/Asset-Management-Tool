@@ -49,7 +49,7 @@ Grouped by area (see the migrations for exact columns, indexes, and constraints)
 
 ## Migration history (high level)
 
-`V001` initial schema → subsequent migrations add alert history, SAML/SCIM
+`V001` initial schema → subsequent migrations add alert history, SSO/SCIM
 columns, depreciation defaults, asset templates, FK/performance indexes,
 notifications & alert rules, attachments, optimistic-lock columns, asset
 models, token-invalidation, and application seat assignments. See the

@@ -17,7 +17,7 @@ request/response shapes; this page is an orientation map only.
 
 - **Prefix**: all endpoints live under `/api/v1`.
 - **Auth**: stateless JWT. `POST /auth/login` returns a token; send it as
-  `Authorization: Bearer <token>`. SAML SSO and SCIM provisioning are also
+  `Authorization: Bearer <token>`. SCIM provisioning is also
   supported.
 - **RBAC**: reads generally require any authenticated user; writes require
   `Admin` or `Operator`; user/settings/audit administration requires `Admin`.

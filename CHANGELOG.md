@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-30 — Remove SAML SSO (Entra migration)
+
+- Azure App Service authenticates against Entra over OIDC and hands us the identity in headers, so the app's own SAML service-provider implementation is redundant. Deleted `SamlConfig`, `SamlAuthSuccessHandler`, the dedicated SAML security filter chain, the `saml.*` configuration block, the `/api/v1/auth/sso-config` discovery endpoint (the SPA no longer asks — sign-in is always `/.auth/login/aad`), and the `/saml2` + `/login/saml2` proxy rules from nginx and the Vite config.
+- Dropped the `spring-security-saml2-service-provider` dependency and, with it, the extra Shibboleth Maven repository the build needed to resolve OpenSAML — one fewer non-Maven-Central source in the dependency chain.
+- `ScimService`'s default role was reading `saml.default-role`, an odd coupling now that SAML is gone; it reads `scim.default-role` instead (same default, `User`).
+- The JIT-provisioning link rule still adopts accounts left over from the SAML integration (identity-provider-managed, no `external_id` yet), so any user provisioned under the old scheme carries over on first Entra sign-in rather than being orphaned.
+- Verified: full backend suite (65 tests), frontend build, lint and unit tests pass.
+
 ## 2026-08-30 — CSRF protection for cookie-authenticated requests (Entra migration)
 
 - `SecurityConfig` disabled CSRF with the note *"Re-evaluate if cookie auth is added"*. Cookie auth has now been added — the App Service session cookie is attached by the browser to cross-site requests, which is exactly the condition CSRF exists for — so protection is enabled: `CookieCsrfTokenRepository` issues a readable `XSRF-TOKEN`, and the SPA echoes it in `X-XSRF-TOKEN` on every write. A `CsrfCookieFilter` forces the token to materialise, since a JSON API renders no template and Spring otherwise defers (and so never sends) it.

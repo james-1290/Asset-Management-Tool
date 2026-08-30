@@ -42,7 +42,7 @@ docker run -p 8080:80 asset-web   # needs the API reachable as host `api:5115`
   document** — CSP, `X-Content-Type-Options`, `X-Frame-Options: DENY`,
   `Referrer-Policy`, `Permissions-Policy`, and HSTS. (The API sets its own
   headers on `/api/**`; nginx covers the document the browser loads first.)
-- Proxies `/api`, `/saml2`, `/login/saml2`, and `/scim` to the backend, so the
+- Proxies `/api`, `/.auth`, and `/scim` to the backend, so the
   browser sees a **single origin**. This is what lets the CSP keep
   `connect-src 'self'` — no CORS, no cross-origin allowance.
 - Caches hashed `/assets/**` immutably but never caches `index.html`, so a
