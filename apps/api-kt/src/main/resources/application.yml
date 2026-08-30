@@ -108,6 +108,13 @@ auth:
       # Blank uses the built-in admin / operator / user / norole identities.
       identities: ${EASY_AUTH_LOCAL_IDENTITIES:}
 
+security:
+  rate-limit:
+    # Requests per minute per client IP. The default suits real users; local dev
+    # and the e2e suite raise it in their profiles, since they drive far more
+    # traffic from one address than a person ever would.
+    requests-per-minute: ${RATE_LIMIT_PER_MINUTE:120}
+
 app:
   admin:
     password: ${ADMIN_PASSWORD:admin123}

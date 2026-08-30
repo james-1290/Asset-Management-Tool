@@ -1,4 +1,5 @@
 import { redirectToLogin } from "@/lib/auth-urls";
+import { csrfHeader } from "@/lib/csrf";
 
 const BASE_URL = "/api/v1";
 
@@ -73,7 +74,7 @@ export const apiClient = {
   post<T>(path: string, body: unknown): Promise<T> {
     return fetch(`${BASE_URL}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...csrfHeader() },
       credentials: CREDENTIALS,
       body: JSON.stringify(body),
     }).then(handleResponse<T>);
@@ -82,7 +83,7 @@ export const apiClient = {
   put<T>(path: string, body: unknown): Promise<T> {
     return fetch(`${BASE_URL}${path}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...csrfHeader() },
       credentials: CREDENTIALS,
       body: JSON.stringify(body),
     }).then(handleResponse<T>);
@@ -91,6 +92,7 @@ export const apiClient = {
   delete<T = void>(path: string): Promise<T> {
     return fetch(`${BASE_URL}${path}`, {
       method: "DELETE",
+      headers: { ...csrfHeader() },
       credentials: CREDENTIALS,
     }).then(handleResponse<T>);
   },
@@ -100,6 +102,7 @@ export const apiClient = {
     formData.append(fieldName, file);
     return fetch(`${BASE_URL}${path}`, {
       method: "POST",
+      headers: { ...csrfHeader() },
       credentials: CREDENTIALS,
       body: formData,
     }).then(handleResponse<T>);

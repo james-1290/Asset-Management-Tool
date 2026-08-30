@@ -1,5 +1,6 @@
 package com.assetmanagement.api.config
 
+import com.assetmanagement.api.security.CsrfCookieFilter
 import com.assetmanagement.api.security.EasyAuthPrincipalFilter
 import com.assetmanagement.api.security.JwtAuthenticationFilter
 import com.assetmanagement.api.security.LocalEasyAuthEmulatorFilter
@@ -18,6 +19,11 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository
+import org.springframework.security.web.csrf.CsrfFilter
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher
+import org.springframework.security.web.util.matcher.RequestMatcher
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter
 import jakarta.servlet.http.HttpServletResponse
@@ -71,12 +77,51 @@ class SecurityConfig(
         return http.build()
     }
 
+    /**
+     * Requests that carry an `Authorization` header authenticate by bearer token,
+     * not by cookie, so they cannot be forged cross-site: a browser will not
+     * attach a custom header to a cross-origin request without a CORS preflight
+     * this API does not grant. Exempting them keeps machine callers (SCIM) and
+     * any token-authenticated client working while the browser session — which
+     * *is* cookie-borne and therefore forgeable — stays protected.
+     */
+    private val bearerAuthenticated = RequestMatcher { request ->
+        request.getHeader("Authorization")?.startsWith("Bearer ") == true
+    }
+
     @Bean
     @Order(2)
     fun apiFilterChain(http: HttpSecurity): SecurityFilterChain {
+        // Opting out of the deferred-token attribute name makes the token
+        // available eagerly, which is what a JSON API + SPA needs (there is no
+        // template render to trigger it) and keeps the plain-token contract the
+        // browser echoes back in X-XSRF-TOKEN.
+        val csrfRequestHandler = CsrfTokenRequestAttributeHandler().apply {
+            setCsrfRequestAttributeName(null)
+        }
+
         http
             .cors { it.configurationSource(corsConfig.corsConfigurationSource()) }
-            .csrf { it.disable() }
+            // Authentication is now the platform's session COOKIE (Azure App
+            // Service built-in auth), which browsers attach to cross-site
+            // requests — exactly the condition CSRF protection exists for. The
+            // previous stateless-JWT design did not need it; this one does.
+            .csrf { csrf ->
+                csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                    .csrfTokenRequestHandler(csrfRequestHandler)
+                    .ignoringRequestMatchers(
+                        bearerAuthenticated,
+                        // Sign-in/sign-out are the platform's own endpoints and
+                        // carry no application state; on App Service they never
+                        // reach this container at all.
+                        AntPathRequestMatcher("/.auth/**"),
+                        // Local password login: an unauthenticated endpoint with
+                        // no session to ride on, so there is nothing for a forged
+                        // request to escalate. Goes away with local login itself.
+                        AntPathRequestMatcher("/api/v1/auth/login", "POST")
+                    )
+            }
+            .addFilterAfter(CsrfCookieFilter(), CsrfFilter::class.java)
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .exceptionHandling { exceptions ->
                 exceptions.authenticationEntryPoint { request, response, _ ->
@@ -129,9 +174,6 @@ class SecurityConfig(
             headers.permissionsPolicy { it.policy("camera=(), microphone=(), geolocation=(), payment=()") }
             headers.contentSecurityPolicy { it.policyDirectives("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'") }
         }
-
-        // CSRF disabled: Stateless JWT auth doesn't use cookies for auth.
-        // Not vulnerable to form-based CSRF. Re-evaluate if cookie auth is added.
 
         // Easy Auth (Azure App Service) runs ahead of the JWT filter: when the
         // platform has already authenticated the caller there is no app-issued

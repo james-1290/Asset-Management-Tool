@@ -17,3 +17,9 @@ auth:
     enabled: true
     local-emulator:
       enabled: true
+
+# A single developer/test machine makes far more requests from one IP than a
+# real user, so the production-shaped rate limit would throttle it.
+security:
+  rate-limit:
+    requests-per-minute: 100000
