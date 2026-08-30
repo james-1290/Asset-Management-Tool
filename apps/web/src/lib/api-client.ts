@@ -1,4 +1,11 @@
+import { redirectToLogin } from "@/lib/auth-urls";
+
 const BASE_URL = "/api/v1";
+
+// Authentication rides on the platform's session cookie (Azure App Service
+// built-in auth), so requests carry credentials instead of an Authorization
+// header. Same-origin: the SPA and API are served from one origin by design.
+const CREDENTIALS: RequestCredentials = "same-origin";
 
 export function getApiErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiError && error.body && typeof error.body === "object" && "error" in error.body) {
@@ -21,16 +28,12 @@ export class ApiError extends Error {
   }
 }
 
-function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem("token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 async function handleResponse<T>(response: Response): Promise<T> {
+  // 401 means the session has gone (expired or signed out elsewhere) — send
+  // the user back through sign-in. A 403 is deliberately NOT handled here: the
+  // caller is signed in and simply isn't allowed, so redirecting would loop.
   if (response.status === 401) {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    window.location.href = "/login";
+    redirectToLogin();
     throw new ApiError(401, "Unauthorized");
   }
 
@@ -64,13 +67,14 @@ export const apiClient = {
       const qs = searchParams.toString();
       if (qs) url += `?${qs}`;
     }
-    return fetch(url, { headers: { ...getAuthHeaders() } }).then(handleResponse<T>);
+    return fetch(url, { credentials: CREDENTIALS }).then(handleResponse<T>);
   },
 
   post<T>(path: string, body: unknown): Promise<T> {
     return fetch(`${BASE_URL}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      headers: { "Content-Type": "application/json" },
+      credentials: CREDENTIALS,
       body: JSON.stringify(body),
     }).then(handleResponse<T>);
   },
@@ -78,7 +82,8 @@ export const apiClient = {
   put<T>(path: string, body: unknown): Promise<T> {
     return fetch(`${BASE_URL}${path}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      headers: { "Content-Type": "application/json" },
+      credentials: CREDENTIALS,
       body: JSON.stringify(body),
     }).then(handleResponse<T>);
   },
@@ -86,7 +91,7 @@ export const apiClient = {
   delete<T = void>(path: string): Promise<T> {
     return fetch(`${BASE_URL}${path}`, {
       method: "DELETE",
-      headers: { ...getAuthHeaders() },
+      credentials: CREDENTIALS,
     }).then(handleResponse<T>);
   },
 
@@ -95,7 +100,7 @@ export const apiClient = {
     formData.append(fieldName, file);
     return fetch(`${BASE_URL}${path}`, {
       method: "POST",
-      headers: { ...getAuthHeaders() },
+      credentials: CREDENTIALS,
       body: formData,
     }).then(handleResponse<T>);
   },
@@ -113,12 +118,10 @@ export const apiClient = {
       if (qs) url += `?${qs}`;
     }
 
-    const response = await fetch(url, { headers: { ...getAuthHeaders() } });
+    const response = await fetch(url, { credentials: CREDENTIALS });
 
     if (response.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+      redirectToLogin();
       throw new ApiError(401, "Unauthorized");
     }
 

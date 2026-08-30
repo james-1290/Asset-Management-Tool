@@ -1,14 +1,26 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
-import type { UserProfile, LoginResponse } from "@/types/auth"
+import type { UserProfile } from "@/types/auth"
+import { redirectToLogout } from "@/lib/auth-urls"
+
+/**
+ * Authentication state.
+ *
+ * `forbidden` is distinct from `unauthenticated` on purpose. The platform
+ * (Azure App Service / Entra) has signed the user in, but the application
+ * refuses them — typically because no app role is assigned. Sending them back
+ * to the identity provider would succeed and return them here unchanged, so the
+ * UI must explain the problem rather than retry.
+ */
+type AuthStatus = "loading" | "authenticated" | "unauthenticated" | "forbidden"
 
 interface AuthContextValue {
   user: UserProfile | null
-  token: string | null
+  status: AuthStatus
   isAuthenticated: boolean
   isLoading: boolean
   isAdmin: boolean
-  login: (username: string, password: string) => Promise<void>
-  loginWithToken: (token: string) => Promise<void>
+  /** Message from the server explaining a `forbidden` status, if it gave one. */
+  forbiddenReason: string | null
   logout: () => void
   updateUser: (profile: UserProfile) => void
 }
@@ -17,77 +29,57 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
-  const [token, setToken] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(() => !!localStorage.getItem("token"))
+  const [status, setStatus] = useState<AuthStatus>("loading")
+  const [forbiddenReason, setForbiddenReason] = useState<string | null>(null)
 
   useEffect(() => {
-    const savedToken = localStorage.getItem("token")
-    if (!savedToken) return
+    // Abort on unmount rather than ignoring a late response. A fetch whose body
+    // is never read leaves the connection open in the browser — under React
+    // StrictMode's double-invoked effects that leaked one request per mount,
+    // which among other things means the page never reaches network idle.
+    const controller = new AbortController()
 
-    // Validate token by calling /auth/me
-    fetch("/api/v1/auth/me", {
-      headers: { Authorization: `Bearer ${savedToken}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Invalid token")
-        return res.json()
+    // The session lives in the platform's auth cookie, so there is nothing to
+    // read from storage — ask the API who we are.
+    fetch("/api/v1/auth/me", { credentials: "same-origin", signal: controller.signal })
+      .then(async (res) => {
+        if (res.ok) {
+          const profile: UserProfile = await res.json()
+          setUser(profile)
+          setStatus("authenticated")
+          syncTheme(profile.themePreference)
+          return
+        }
+
+        if (res.status === 403) {
+          // Signed in with the identity provider, but refused by this app —
+          // no app role assigned. Retrying sign-in cannot fix it.
+          const body = await res.json().catch(() => null)
+          setForbiddenReason(body?.error ?? null)
+          setStatus("forbidden")
+          return
+        }
+
+        // Drain the body so the connection is released.
+        await res.text().catch(() => undefined)
+        setStatus("unauthenticated")
       })
-      .then((profile: UserProfile) => {
-        setToken(savedToken)
-        setUser(profile)
-        syncTheme(profile.themePreference)
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return
+        setStatus("unauthenticated")
       })
-      .catch(() => {
-        localStorage.removeItem("token")
-        localStorage.removeItem("user")
-      })
-      .finally(() => setIsLoading(false))
+
+    return () => controller.abort()
   }, [])
 
-  const login = useCallback(async (username: string, password: string) => {
-    const res = await fetch("/api/v1/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    })
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new Error(body?.error ?? "Login failed")
-    }
-
-    const data: LoginResponse = await res.json()
-    localStorage.setItem("token", data.token)
-    localStorage.setItem("user", JSON.stringify(data.user))
-    setToken(data.token)
-    setUser(data.user)
-    syncTheme(data.user.themePreference)
-  }, [])
-
-  const loginWithToken = useCallback(async (ssoToken: string) => {
-    const res = await fetch("/api/v1/auth/me", {
-      headers: { Authorization: `Bearer ${ssoToken}` },
-    })
-    if (!res.ok) throw new Error("Invalid SSO token")
-
-    const profile: UserProfile = await res.json()
-    localStorage.setItem("token", ssoToken)
-    localStorage.setItem("user", JSON.stringify(profile))
-    setToken(ssoToken)
-    setUser(profile)
-    syncTheme(profile.themePreference)
-  }, [])
-
+  // Sign-out is the platform's job: it clears the auth cookie and ends the
+  // federated session, so this is a full-page navigation, not a state change.
   const logout = useCallback(() => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("user")
-    setToken(null)
-    setUser(null)
+    redirectToLogout()
   }, [])
 
   const updateUser = useCallback((profile: UserProfile) => {
     setUser(profile)
-    localStorage.setItem("user", JSON.stringify(profile))
     syncTheme(profile.themePreference)
   }, [])
 
@@ -97,12 +89,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        token,
-        isAuthenticated: !!token && !!user,
-        isLoading,
+        status,
+        isAuthenticated: status === "authenticated",
+        isLoading: status === "loading",
         isAdmin,
-        login,
-        loginWithToken,
+        forbiddenReason,
         logout,
         updateUser,
       }}

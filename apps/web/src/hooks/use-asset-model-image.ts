@@ -24,9 +24,8 @@ export function useAssetModelImage(assetModelId: string | null | undefined, imag
 
     setIsLoading(true);
     let cancelled = false;
-    const token = localStorage.getItem("token");
     fetch(`/api/v1/asset-models/${assetModelId}/image`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: "same-origin",
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load image");

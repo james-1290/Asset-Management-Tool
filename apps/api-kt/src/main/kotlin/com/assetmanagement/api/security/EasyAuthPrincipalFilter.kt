@@ -36,6 +36,19 @@ class EasyAuthPrincipalFilter(
         const val HEADER_PRINCIPAL = "X-MS-CLIENT-PRINCIPAL"
         const val HEADER_PRINCIPAL_ID = "X-MS-CLIENT-PRINCIPAL-ID"
         const val HEADER_PRINCIPAL_NAME = "X-MS-CLIENT-PRINCIPAL-NAME"
+
+        /**
+         * Set when the platform authenticated the caller but the application
+         * refused them (no app role, deactivated, or an unlinkable account).
+         *
+         * This distinction matters to the SPA: "not signed in" is fixed by
+         * sending the user to the identity provider, whereas "signed in but
+         * refused" is not — redirecting there would return the user right back,
+         * unauthenticated in the app's eyes, forever. The entry point uses this
+         * to answer 403 instead of 401 so the client can show an explanation
+         * rather than loop.
+         */
+        const val ATTR_REFUSED = "com.assetmanagement.easyAuth.refused"
     }
 
     override fun doFilterInternal(
@@ -66,7 +79,13 @@ class EasyAuthPrincipalFilter(
             // fail closed to "unauthenticated" and let the security chain answer.
             log.error("Easy Auth user resolution failed for externalId={}", principal.externalId, e)
             null
-        } ?: return
+        }
+
+        if (user == null) {
+            // The platform vouched for this caller; we are the ones saying no.
+            request.setAttribute(ATTR_REFUSED, true)
+            return
+        }
 
         val roles = user.userRoles.mapNotNull { it.role?.name }
         val authorities = roles.map { SimpleGrantedAuthority("ROLE_$it") }

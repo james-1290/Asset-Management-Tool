@@ -1,22 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { signIn } from "./auth";
 
 const BASE_URL = "http://localhost:5173";
-const API_URL = "http://localhost:5115";
-
-async function login(page: import("@playwright/test").Page) {
-  const res = await page.request.post(`${API_URL}/api/v1/auth/login`, {
-    data: { username: "admin", password: "admin123" },
-  });
-  const { token } = await res.json();
-  await page.goto(BASE_URL);
-  await page.evaluate((t) => localStorage.setItem("token", t), token);
-}
 
 // Regression guard: the People "Full Name" column header must toggle between
 // ascending and descending. It was stuck ascending because the sort-state id
 // (backend field "fullname") never matched the TanStack column id ("fullName").
 test("People 'Full Name' header toggles to descending", async ({ page }) => {
-  await login(page);
+  await signIn(page);
   await page.goto(`${BASE_URL}/people`);
   await page.waitForLoadState("networkidle");
 

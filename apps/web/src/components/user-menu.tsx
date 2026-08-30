@@ -24,11 +24,6 @@ export function UserMenu() {
     .toUpperCase()
     .slice(0, 2)
 
-  function handleLogout() {
-    logout()
-    navigate("/login", { replace: true })
-  }
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -50,7 +45,7 @@ export function UserMenu() {
           <User className="mr-2 h-4 w-4" />
           Profile
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleLogout}>
+        <DropdownMenuItem onClick={logout}>
           <LogOut className="mr-2 h-4 w-4" />
           Log out
         </DropdownMenuItem>

@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom"
 import { Layout } from "@/components/layout"
 import { ProtectedRoute } from "@/components/protected-route"
-import LoginPage from "@/pages/login"
 import DashboardPage from "@/pages/dashboard"
 import AssetsPage from "@/pages/assets"
 import AssetDetailPage from "@/pages/asset-detail"
@@ -28,7 +27,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/" element={<DashboardPage />} />

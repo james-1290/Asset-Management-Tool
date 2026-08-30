@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-30 — Frontend switches to Easy Auth cookie sign-in (Entra migration)
+
+- The SPA no longer holds a token. `auth-context` asks `/api/v1/auth/me` with the platform session cookie (`credentials: "same-origin"`), the login form and its SSO-token-in-fragment handshake are deleted, and sign-in/sign-out are full-page navigations to `/.auth/login/aad` and `/.auth/logout` — the endpoints App Service publishes and the local emulator mirrors. `api-client`, the attachments API and the asset-model image hook drop their `Authorization` headers and `localStorage` token handling.
+- **Loop guard.** A user the identity provider signs in but the app refuses (no app role) would otherwise be redirected to sign-in, succeed, and return refused — forever. The API now distinguishes the two: the Easy Auth filter marks the request when *it* is the one refusing, and the entry point answers **403 `no_role_assigned`** instead of 401. The SPA renders an "Access not granted" page for that state and only redirects on a true 401. Covered by a new e2e test.
+- **Fixed a leaked connection found while doing this.** The auth check ignored a late response via a `cancelled` flag without reading its body, so under React StrictMode's double-invoked effects one response body was never drained and the browser held the connection open indefinitely — the page never reached network idle (which is what surfaced it: every `waitForLoadState("networkidle")` e2e test timed out). Now aborts via `AbortController` on unmount, and drains bodies it doesn't parse.
+- The four e2e specs each carried their own copy of a password-login helper; replaced with a shared `e2e/auth.ts` that signs in through `/.auth/login/aad`, so the tests exercise the real auth path and can pick a role.
+- `vitest.config.ts` gained the `@/...` alias it had never needed before (no unit-tested module had used one).
+- Verified: build, lint, 44 unit tests, full backend suite, and **11 e2e** (10 existing + the new access-denied guard) all pass.
+
 ## 2026-08-30 — Local emulator for App Service Easy Auth (Entra migration)
 
 - Production will run on Azure App Service, where the platform's auth sidecar authenticates against Entra and injects `X-MS-CLIENT-PRINCIPAL`. There is no sidecar on a developer machine, and standing up a real App Service purely to develop against isn't worth the running cost. Added `LocalEasyAuthEmulator`, which produces the identical header from a chosen developer identity, plus local stand-ins for `/.auth/login/aad`, `/.auth/logout` and `/.auth/me` matching the App Service contracts.

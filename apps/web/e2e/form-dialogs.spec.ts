@@ -1,17 +1,7 @@
 import { test, expect } from "@playwright/test";
+import { signIn } from "./auth";
 
 const BASE_URL = "http://localhost:5173";
-const API_URL = "http://localhost:5115";
-
-async function login(page: import("@playwright/test").Page) {
-  const res = await page.request.post(`${API_URL}/api/v1/auth/login`, {
-    data: { username: "admin", password: "admin123" },
-  });
-  const { token } = await res.json();
-  await page.goto(BASE_URL);
-  await page.evaluate((t) => localStorage.setItem("token", t), token);
-  await page.goto(BASE_URL);
-}
 
 // Each of these create dialogs now renders through the shared FormDialog shell.
 // Verify the panel chrome (heading + Cancel/submit buttons) shows and that
@@ -28,7 +18,7 @@ const cases = [
 
 for (const c of cases) {
   test(`FormDialog renders + closes on ${c.route}`, async ({ page }) => {
-    await login(page);
+    await signIn(page);
     await page.goto(`${BASE_URL}${c.route}`);
     await page.waitForLoadState("networkidle");
 
