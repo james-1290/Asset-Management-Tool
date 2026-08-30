@@ -69,26 +69,18 @@ abstract class AbstractIntegrationTest {
             .first { it.startsWith("AppServiceAuthSession=") }
             .substringBefore(";")
 
-        // Any request issues the CSRF cookie; take one along with the session.
-        val probe = restNoRedirect.exchange(
-            "/api/v1/auth/me", HttpMethod.GET,
-            HttpEntity<Void>(HttpHeaders().apply { add(HttpHeaders.COOKIE, session) }), String::class.java
-        )
-        val csrfCookie = probe.headers[HttpHeaders.SET_COOKIE].orEmpty()
-            .firstOrNull { it.startsWith("XSRF-TOKEN=") }
-            ?.substringBefore(";")
-
-        return SessionCookies(session, csrfCookie)
+        return SessionCookies(session)
     }
 
-    protected data class SessionCookies(val session: String, val csrfCookie: String?) {
-        val csrfToken: String? get() = csrfCookie?.substringAfter("XSRF-TOKEN=")
-
-        /** Headers carrying the session, and optionally the CSRF echo header. */
+    protected data class SessionCookies(val session: String) {
+        /**
+         * Headers for an authenticated request. `withCsrf` adds the custom
+         * header that state-changing requests must carry — omit it to simulate
+         * a forged cross-site request.
+         */
         fun headers(withCsrf: Boolean = true): HttpHeaders = HttpHeaders().apply {
             add(HttpHeaders.COOKIE, session)
-            csrfCookie?.let { add(HttpHeaders.COOKIE, it) }
-            if (withCsrf) csrfToken?.let { add("X-XSRF-TOKEN", it) }
+            if (withCsrf) add("X-Requested-With", "XMLHttpRequest")
         }
     }
 

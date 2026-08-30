@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { signIn, apiPost } from "./auth";
+import { signIn, apiPost, uid } from "./auth";
 
 const BASE_URL = "http://localhost:5173";
 
@@ -10,9 +10,9 @@ test("Add Model dialog from asset form shows image picker", async ({ page }) => 
   // <Select> only when the chosen type already has models (with none it renders
   // a plain button instead), so the spec sets that state up rather than relying
   // on whatever the developer's database happens to hold.
-  const typeName = `E2E Type ${Date.now()}`;
+  const typeName = `E2E Type ${uid()}`;
   const type = await apiPost<{ id: string }>(page, "/asset-types", { name: typeName });
-  await apiPost(page, "/asset-models", { name: `E2E Model ${Date.now()}`, assetTypeId: type.id });
+  await apiPost(page, "/asset-models", { name: `E2E Model ${uid()}`, assetTypeId: type.id });
 
   await page.goto(`${BASE_URL}/assets`);
   await page.waitForLoadState("networkidle");

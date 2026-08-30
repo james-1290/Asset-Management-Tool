@@ -27,3 +27,9 @@ auth:
 security:
   rate-limit:
     requests-per-minute: 100000
+
+# SCIM is off by default. Enabled locally so the provisioning endpoints are
+# exercised by the QA harness rather than being an untested corner.
+scim:
+  enabled: true
+  bearer-token: dev-scim-token

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { signIn, apiPost } from "./auth";
+import { signIn, apiPost, uid } from "./auth";
 
 const BASE_URL = "http://localhost:5173";
 
@@ -11,12 +11,17 @@ test("People 'Full Name' header toggles to descending", async ({ page }) => {
 
   // Two rows so a sort direction is observable, created here rather than
   // assumed to exist in the developer's database.
-  const stamp = Date.now();
+  const stamp = uid();
   await apiPost(page, "/people", { fullName: `E2E Alice ${stamp}` });
   await apiPost(page, "/people", { fullName: `E2E Zoe ${stamp}` });
 
   await page.goto(`${BASE_URL}/people`);
   await page.waitForLoadState("networkidle");
+
+  // Wait for rows: the table establishes its default sort state as the data
+  // arrives, and clicking the header before that yields the wrong first
+  // direction.
+  await expect(page.getByRole("checkbox", { name: /select row/i }).first()).toBeVisible({ timeout: 15000 });
 
   const header = page.getByRole("button", { name: /full name/i }).first();
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Archive, RefreshCw, Search, Download } from "lucide-react";
+import { Plus, Archive, RefreshCw, Search } from "lucide-react";
 import type { VisibilityState } from "@tanstack/react-table";
 import { useListPage } from "../hooks/use-list-page";
 import { Button } from "../components/ui/button";
@@ -30,6 +30,7 @@ import {
 } from "../hooks/use-applications";
 
 import { getSelectionColumn } from "../components/data-table-selection-column";
+import { ExportButton } from "@/components/export-button";
 import { BulkActionBar } from "../components/bulk-action-bar";
 import { useApplicationTypes } from "../hooks/use-application-types";
 import { useLocations } from "../hooks/use-locations";
@@ -426,15 +427,7 @@ export default function ApplicationsPage() {
                   </button>
                 </div>
                 <div className="w-px h-5 bg-border mx-1" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleExport}
-                  disabled={exporting}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
+                <ExportButton onExport={handleExport} loading={exporting} />
               </div>
             </div>
             <BulkActionBar

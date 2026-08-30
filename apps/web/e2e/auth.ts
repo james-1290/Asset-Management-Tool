@@ -29,22 +29,25 @@ export async function signIn(page: Page, identity: "admin" | "operator" | "user"
  * whatever happens to be in the developer's database.
  */
 export async function apiPost<T = unknown>(page: Page, path: string, body: unknown): Promise<T> {
-  // The sign-in endpoint is CSRF-exempt and so issues no token; any ordinary
-  // request does. Fetch one first rather than assuming the context already has
-  // it — otherwise the very first write in a fresh context is rejected.
-  let csrf = (await page.context().cookies()).find((c) => c.name === "XSRF-TOKEN")?.value;
-  if (!csrf) {
-    await page.request.get("/api/v1/auth/me");
-    csrf = (await page.context().cookies()).find((c) => c.name === "XSRF-TOKEN")?.value;
-  }
-  if (!csrf) throw new Error("no XSRF-TOKEN cookie was issued; is the API running?");
-
   const res = await page.request.post(`/api/v1${path}`, {
     data: body,
-    headers: { "X-XSRF-TOKEN": decodeURIComponent(csrf) },
+    // The custom header the API requires on state-changing requests.
+    headers: { "X-Requested-With": "XMLHttpRequest" },
   });
   if (!res.ok()) {
     throw new Error(`POST ${path} failed: ${res.status()} ${await res.text()}`);
   }
   return res.json() as Promise<T>;
+}
+
+/**
+ * A unique suffix for test fixture names.
+ *
+ * `Date.now()` alone is not enough: specs run in parallel workers and two of
+ * them can land in the same millisecond, then collide on a unique constraint —
+ * an intermittent 409 that looks like an application fault but is the test's
+ * own doing.
+ */
+export function uid(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }

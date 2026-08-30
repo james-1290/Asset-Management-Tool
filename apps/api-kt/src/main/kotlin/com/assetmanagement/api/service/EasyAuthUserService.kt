@@ -50,7 +50,17 @@ class EasyAuthUserService(
      * a conflicting account needs someone to look at the data.
      */
     sealed interface Resolution {
-        data class Allowed(val user: User) : Resolution
+        /**
+         * [roles] are the names this request resolved from the Entra claims —
+         * deliberately carried alongside the user rather than re-read from it.
+         *
+         * Re-reading was a race: the role rows had just been written in this
+         * same transaction, and the fetch-join could come back without them, so
+         * the caller was authenticated with **no authorities** and was refused
+         * 403 by method security. It showed up on a user's first ever request,
+         * and intermittently when a first sign-in arrived as a parallel burst.
+         */
+        data class Allowed(val user: User, val roles: List<String>) : Resolution
         data object NoRole : Resolution
         data object Deactivated : Resolution
         data object Conflict : Resolution
@@ -104,9 +114,7 @@ class EasyAuthUserService(
         }
         syncProfile(user, principal)
         syncRoles(user, roles)
-        // Re-read with roles fetch-joined: open-in-view is off, so the caller
-        // can't traverse the lazy collection once this transaction closes.
-        return Resolution.Allowed(userRepository.findWithRolesById(user.id)!!)
+        return Resolution.Allowed(user, roles.map { it.name })
     }
 
     private fun resolveRoles(principal: EasyAuthPrincipal): List<Role> =
