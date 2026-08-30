@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-30 — Easy Auth refuses a principal with no Entra app role (Entra migration)
+
+- Follow-up to the Easy Auth filter: a principal carrying no app role was admitted with a default read-only `User` role. Corrected to a **hard refusal** — an app role *is* how access is granted, so "signed in but holds no role" is an Entra misconfiguration, not a user to wave through with reduced rights. Admitting them also quietly created accounts that looked provisioned but had never been authorised.
+- Roles are now resolved **before** the `users` table is touched, so a refused sign-in leaves no provisioned row behind. Same refusal when the claim's app roles map to no local role at all. Both paths log the offending claim values so an admin can diagnose it from the app logs.
+- Removed the now-meaningless `EASY_AUTH_DEFAULT_ROLE` setting.
+- Verified: full `./gradlew test` green, including 6 new `EasyAuthUserServiceTest` cases covering no-role refusal (asserting nothing is provisioned), unmapped-role refusal, deactivated users, the configured role mapping, and the LOCAL-account auto-link guard.
+
 ## 2026-08-30 — Azure App Service (Easy Auth) principal filter (Entra migration, PR 1/7)
 
 - First step of the move to Azure App Service with Entra SSO for all sign-ins. Adds `EasyAuthPrincipalFilter`, which authenticates a request from the `X-MS-CLIENT-PRINCIPAL` headers injected by App Service's auth sidecar, plus `EasyAuthUserService`, which JIT-provisions the local `users` row on first sign-in and mirrors Entra **app roles** into `user_roles` on every request (compare-then-write, so the steady state is read-only). Roles stay authoritative in Entra: assign groups to the `Admin`/`Operator`/`User` app roles on the app registration and they arrive in the `roles` claim.
