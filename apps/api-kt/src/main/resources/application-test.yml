@@ -9,6 +9,15 @@ auth:
     enabled: true
     local-emulator:
       enabled: true
+      # Explicit list so a test can have an identity nothing else provisions —
+      # the concurrency test needs a user that does not yet exist. Listing them
+      # replaces the built-in defaults, so the usual four are repeated here.
+      identities: >-
+        admin:dev-admin@localhost:Dev Admin:Admin,
+        operator:dev-operator@localhost:Dev Operator:Operator,
+        user:dev-user@localhost:Dev User:User,
+        norole:dev-norole@localhost:Dev No Role,
+        racer:dev-racer@localhost:Dev Racer:Admin
 
 # A single developer/test machine makes far more requests from one IP than a
 # real user, so the production-shaped rate limit would throttle it.

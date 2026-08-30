@@ -14,9 +14,6 @@ class User(
     @Column(name = "username", nullable = false, unique = true)
     var username: String = "",
 
-    @Column(name = "password_hash")
-    var passwordHash: String? = null,
-
     @Column(name = "email", nullable = false, unique = true)
     var email: String = "",
 
@@ -42,9 +39,6 @@ class User(
     @org.hibernate.annotations.UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = Instant.now(),
-
-    @Column(name = "token_invalidated_at")
-    var tokenInvalidatedAt: Instant? = null,
 
     @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
     var userRoles: MutableList<UserRole> = mutableListOf()

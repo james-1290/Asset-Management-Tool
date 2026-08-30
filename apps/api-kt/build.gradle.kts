@@ -35,11 +35,6 @@ dependencies {
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-mysql")
 
-    // JWT
-    implementation("io.jsonwebtoken:jjwt-api:0.12.5")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.5")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5")
-
     // Microsoft Graph API (email via Entra ID)
     implementation("com.microsoft.graph:microsoft-graph:6.21.0")
     implementation("com.azure:azure-identity:1.15.0")

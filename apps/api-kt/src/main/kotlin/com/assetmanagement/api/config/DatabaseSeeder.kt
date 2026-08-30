@@ -2,27 +2,17 @@ package com.assetmanagement.api.config
 
 import com.assetmanagement.api.model.Role
 import com.assetmanagement.api.model.SystemSetting
-import com.assetmanagement.api.model.User
-import com.assetmanagement.api.model.UserRole
 import com.assetmanagement.api.repository.RoleRepository
 import com.assetmanagement.api.repository.SystemSettingRepository
-import com.assetmanagement.api.repository.UserRepository
-import com.assetmanagement.api.repository.UserRoleRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Component
 
 @Component
 class DatabaseSeeder(
     private val roleRepository: RoleRepository,
-    private val userRepository: UserRepository,
-    private val userRoleRepository: UserRoleRepository,
-    private val systemSettingRepository: SystemSettingRepository,
-    private val passwordEncoder: PasswordEncoder,
-    @Value("\${app.admin.password:admin123}") private val adminPassword: String,
-    @Value("\${auth.local-login.enabled:true}") private val localLoginEnabled: Boolean
+    private val systemSettingRepository: SystemSettingRepository
 ) : CommandLineRunner {
 
     private val log = LoggerFactory.getLogger(DatabaseSeeder::class.java)
@@ -33,25 +23,12 @@ class DatabaseSeeder(
     }
 
     private fun seedRoles() {
-        // Seed Admin role + admin user (only when local login is enabled)
+        // Roles are the grant of access: an Entra app role of the same name maps
+        // onto each of these. No users are seeded — they are provisioned on
+        // first sign-in from the identity the platform supplies.
         if (roleRepository.findByName("Admin") == null) {
-            val role = Role(name = "Admin", description = "Full system administrator")
-            roleRepository.save(role)
-
-            if (localLoginEnabled) {
-                val user = User(
-                    username = "admin",
-                    passwordHash = passwordEncoder.encode(adminPassword),
-                    email = "admin@localhost",
-                    displayName = "Administrator"
-                )
-                userRepository.save(user)
-
-                userRoleRepository.save(UserRole(userId = user.id, roleId = role.id))
-                log.info("Seeded Admin role and admin user")
-            } else {
-                log.info("Seeded Admin role (local login disabled — no admin user created)")
-            }
+            roleRepository.save(Role(name = "Admin", description = "Full system administrator"))
+            log.info("Seeded Admin role")
         }
 
         // Seed Operator role — referenced by @PreAuthorize on the business controllers

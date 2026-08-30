@@ -32,7 +32,7 @@ class CertificateDateIntegrationTest : AbstractIntegrationTest() {
         )
 
         // Export must succeed and contain the certificate's date (no time component).
-        val export = getWithToken("/api/v1/certificates/export", token)
+        val export = getAs("/api/v1/certificates/export", token)
         assertEquals(HttpStatus.OK, export.statusCode)
         assertTrue(export.body!!.contains("IT Dated Cert"), "export should include the certificate")
         assertTrue(export.body!!.contains("2027-01-15"), "export should render the bare expiry date")
@@ -41,7 +41,7 @@ class CertificateDateIntegrationTest : AbstractIntegrationTest() {
         val renew = postJson("/api/v1/certificates/$certId/renew", """{"newExpiryDate":"2029-06-30"}""", token)
         assertEquals(HttpStatus.OK, renew.statusCode)
 
-        val after = getWithToken("/api/v1/certificates/$certId", token).body!!
+        val after = getAs("/api/v1/certificates/$certId", token).body!!
         assertTrue(after.contains("\"expiryDate\":\"2029-06-30\""), "renewed expiry should be 2029-06-30")
     }
 
@@ -61,7 +61,7 @@ class CertificateDateIntegrationTest : AbstractIntegrationTest() {
             token,
         )
 
-        val export = getWithToken("/api/v1/certificates/export", token)
+        val export = getAs("/api/v1/certificates/export", token)
         assertEquals(HttpStatus.OK, export.statusCode)
         val row = export.body!!.lineSequence().first { it.contains(name) }
         assertTrue(row.contains("Expired"), "export row should show computed status Expired: $row")

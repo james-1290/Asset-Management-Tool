@@ -21,9 +21,10 @@ import org.testcontainers.utility.DockerImageName
  * throwaway MySQL container, so Flyway migrates from clean and Hibernate's
  * `ddl-auto: validate` runs against a real schema on every test run.
  */
-// The "test" profile is an explicit dev-safe profile, so SecurityStartupValidator
-// tolerates the default test secrets instead of failing the boot (it fails closed
-// on an unset/"default" profile).
+// The "test" profile is an explicit dev-safe profile: SecurityStartupValidator
+// tolerates development settings under it instead of failing the boot (it fails
+// closed on an unset/"default" profile), and it enables the Easy Auth emulator so
+// tests authenticate through the same path the deployed app uses.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 abstract class AbstractIntegrationTest {
@@ -92,37 +93,29 @@ abstract class AbstractIntegrationTest {
     }
 
     /** POST JSON, returning the raw String body + status via ResponseEntity. */
-    protected fun postJson(path: String, body: String, token: String? = null) =
-        rest.exchange(path, HttpMethod.POST, jsonEntity(body, token), String::class.java)
+    protected fun postJson(path: String, body: String, session: SessionCookies? = null) =
+        rest.exchange(path, HttpMethod.POST, jsonEntity(body, session), String::class.java)
 
-    protected fun getWithToken(path: String, token: String?) =
-        rest.exchange(path, HttpMethod.GET, HttpEntity<Void>(authHeaders(token)), String::class.java)
+    protected fun putJson(path: String, body: String, session: SessionCookies? = null) =
+        rest.exchange(path, HttpMethod.PUT, jsonEntity(body, session), String::class.java)
 
-    protected fun putJson(path: String, body: String, token: String? = null) =
-        rest.exchange(path, HttpMethod.PUT, jsonEntity(body, token), String::class.java)
+    protected fun getAs(path: String, session: SessionCookies?) =
+        rest.exchange(path, HttpMethod.GET, HttpEntity<Void>(authHeaders(session)), String::class.java)
 
-    protected fun jsonEntity(body: String, token: String? = null): HttpEntity<String> {
-        val headers = authHeaders(token)
+    protected fun deleteAs(path: String, session: SessionCookies?) =
+        rest.exchange(path, HttpMethod.DELETE, HttpEntity<Void>(authHeaders(session)), String::class.java)
+
+    protected fun jsonEntity(body: String, session: SessionCookies? = null): HttpEntity<String> {
+        val headers = authHeaders(session)
         headers.contentType = MediaType.APPLICATION_JSON
         return HttpEntity(body, headers)
     }
 
-    private fun authHeaders(token: String?): HttpHeaders {
-        val headers = HttpHeaders()
-        if (token != null) headers.setBearerAuth(token)
-        return headers
-    }
+    private fun authHeaders(session: SessionCookies?): HttpHeaders =
+        session?.headers() ?: HttpHeaders()
 
-    /** Log in as admin/admin123 and return the JWT. */
-    protected fun loginAsAdmin(): String = login("admin", "admin123")
-
-    /** Log in as an arbitrary user and return the JWT. */
-    protected fun login(username: String, password: String): String {
-        val resp = postJson("/api/v1/auth/login", """{"username":"$username","password":"$password"}""")
-        val body = resp.body ?: error("no login body")
-        return Regex("\"token\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
-            ?: error("no token in login response: $body")
-    }
+    /** Sign in as an administrator. */
+    protected fun loginAsAdmin(): SessionCookies = signInWithCookie("admin")
 
     companion object {
         // Singleton container shared across ALL integration test classes: started

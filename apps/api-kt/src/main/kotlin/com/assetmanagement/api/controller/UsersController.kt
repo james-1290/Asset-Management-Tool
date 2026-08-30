@@ -1,22 +1,36 @@
 package com.assetmanagement.api.controller
 
-import com.assetmanagement.api.dto.*
+import com.assetmanagement.api.dto.SetUserActiveRequest
+import com.assetmanagement.api.dto.UserDetailDto
 import com.assetmanagement.api.model.User
-import com.assetmanagement.api.model.UserRole
 import com.assetmanagement.api.repository.RoleRepository
 import com.assetmanagement.api.repository.UserRepository
 import com.assetmanagement.api.repository.UserRoleRepository
-import com.assetmanagement.api.service.*
-import com.assetmanagement.api.util.PasswordValidator
+import com.assetmanagement.api.service.AuditChange
+import com.assetmanagement.api.service.AuditEntry
+import com.assetmanagement.api.service.AuditService
+import com.assetmanagement.api.service.CurrentUserService
+import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.crypto.password.PasswordEncoder
-import jakarta.validation.Valid
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
-import java.net.URI
 import java.time.Instant
 import java.util.*
 
+/**
+ * Read-only view of who has access, plus a local emergency revoke.
+ *
+ * Users are created by signing in (JIT-provisioned from the Entra identity), and
+ * their name, email and **roles** come from Entra — roles are re-applied from
+ * the `roles` claim on every request. Editing any of that here would be
+ * overwritten within moments, so it isn't offered: access is granted and removed
+ * by assigning app roles in Entra.
+ *
+ * Deactivation is the one local control kept. Entra assignment changes can take
+ * time to propagate, and an administrator needs a way to cut off access to *this*
+ * application immediately.
+ */
 @RestController
 @RequestMapping("/api/v1/users")
 class UsersController(
@@ -24,8 +38,7 @@ class UsersController(
     private val roleRepository: RoleRepository,
     private val userRoleRepository: UserRoleRepository,
     private val auditService: AuditService,
-    private val currentUserService: CurrentUserService,
-    private val passwordEncoder: PasswordEncoder
+    private val currentUserService: CurrentUserService
 ) {
     private fun toDetailDto(u: User): UserDetailDto =
         UserDetailDto(u.id, u.username, u.displayName, u.email, u.isActive,
@@ -33,7 +46,7 @@ class UsersController(
 
     @GetMapping
     @PreAuthorize("hasRole('Admin')")
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     fun getAll(@RequestParam(defaultValue = "false") includeInactive: Boolean): ResponseEntity<List<UserDetailDto>> {
         val users = userRepository.findAll()
             .filter { if (includeInactive) true else it.isActive }
@@ -44,112 +57,52 @@ class UsersController(
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('Admin')")
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     fun getById(@PathVariable id: UUID): ResponseEntity<UserDetailDto> {
-        val user = userRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+        val user = userRepository.findWithRolesById(id) ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(toDetailDto(user))
     }
 
-    @PostMapping
+    /**
+     * Immediately grants or revokes access to this application, independent of
+     * Entra. A deactivated user is refused at sign-in even while they still hold
+     * the app role.
+     */
+    @PutMapping("/{id}/active")
     @PreAuthorize("hasRole('Admin')")
-    @org.springframework.transaction.annotation.Transactional
-    fun create(@Valid @RequestBody request: CreateUserRequest): ResponseEntity<Any> {
-        if (userRepository.existsByUsername(request.username)) return ResponseEntity.status(409).body(mapOf("error" to "Username is already taken."))
-        if (userRepository.existsByEmail(request.email)) return ResponseEntity.status(409).body(mapOf("error" to "Email is already in use."))
-        PasswordValidator.validate(request.password)?.let { return ResponseEntity.badRequest().body(mapOf("error" to it)) }
-        val role = roleRepository.findByName(request.role) ?: return ResponseEntity.badRequest().body(mapOf("error" to "Role '${request.role}' not found."))
+    @Transactional
+    fun setActive(@PathVariable id: UUID, @Valid @RequestBody request: SetUserActiveRequest): ResponseEntity<Any> {
+        val user = userRepository.findWithRolesById(id) ?: return ResponseEntity.notFound().build()
 
-        val user = User(username = request.username, displayName = request.displayName, email = request.email,
-            passwordHash = passwordEncoder.encode(request.password))
-        userRepository.save(user)
-        userRoleRepository.save(UserRole(userId = user.id, roleId = role.id))
+        if (user.isActive == request.isActive) return ResponseEntity.ok(toDetailDto(user))
 
-        auditService.log(AuditEntry("Created", "User", user.id.toString(), user.displayName,
-            "User created with role ${request.role}", currentUserService.userId, currentUserService.userName))
-
-        return ResponseEntity.created(URI("/api/v1/users/${user.id}"))
-            .body(toDetailDto(user.apply { userRoles = mutableListOf() }).copy(roles = listOf(request.role)))
-    }
-
-    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('Admin')")
-    @org.springframework.transaction.annotation.Transactional
-    fun update(@PathVariable id: UUID, @Valid @RequestBody request: UpdateUserRequest): ResponseEntity<Any> {
-        val user = userRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
-
-        val isSsoUser = user.authProvider != "LOCAL"
-
-        // For SSO users, only role changes are allowed — displayName, email, active are managed by the identity provider
-        if (isSsoUser) {
-            if (request.displayName != user.displayName || request.email != user.email || request.isActive != user.isActive) {
-                return ResponseEntity.badRequest().body(mapOf(
-                    "error" to "Display name, email, and active status are managed by the identity provider for SSO users. Only role can be changed."
-                ))
-            }
-        }
-
-        if (userRepository.findByEmail(request.email)?.let { it.id != id } == true)
-            return ResponseEntity.status(409).body(mapOf("error" to "Email is already in use."))
-
-        // Guard against locking the whole org out of admin: the last active Admin
-        // can't be deactivated or demoted.
-        val adminRole = roleRepository.findByName("Admin")
-        if (adminRole != null) {
-            val targetIsActiveAdmin = user.isActive &&
-                userRoleRepository.findByUserId(user.id).any { it.roleId == adminRole.id }
-            val willRemainAdmin = request.isActive && request.role == "Admin"
-            if (targetIsActiveAdmin && !willRemainAdmin) {
+        // Guard against locking the whole organisation out of administration.
+        if (!request.isActive) {
+            val adminRole = roleRepository.findByName("Admin")
+            if (adminRole != null && userRoleRepository.findByUserId(user.id).any { it.roleId == adminRole.id }) {
                 val activeAdminCount = userRepository.findByIsActiveTrue().count { u ->
                     userRoleRepository.findByUserId(u.id).any { it.roleId == adminRole.id }
                 }
-                if (activeAdminCount <= 1)
+                if (activeAdminCount <= 1) {
                     return ResponseEntity.badRequest().body(
-                        mapOf("error" to "Cannot deactivate or change the role of the last active administrator.")
+                        mapOf("error" to "Cannot deactivate the last active administrator.")
                     )
+                }
             }
         }
 
-        val changes = mutableListOf<AuditChange>()
-        if (user.displayName != request.displayName) changes.add(AuditChange("DisplayName", user.displayName, request.displayName))
-        if (user.email != request.email) changes.add(AuditChange("Email", user.email, request.email))
-        if (user.isActive != request.isActive) changes.add(AuditChange("IsActive", user.isActive.toString(), request.isActive.toString()))
-
-        user.displayName = request.displayName; user.email = request.email; user.isActive = request.isActive; user.updatedAt = Instant.now()
-
-        val newRole = roleRepository.findByName(request.role) ?: return ResponseEntity.badRequest().body(mapOf("error" to "Role '${request.role}' not found."))
-        val currentRoles = userRoleRepository.findByUserId(user.id)
-        val currentRole = currentRoles.firstOrNull()
-        if (currentRole == null || currentRole.roleId != newRole.id) {
-            if (currentRole != null) {
-                changes.add(AuditChange("Role", currentRole.role?.name ?: "", request.role))
-                userRoleRepository.deleteByUserIdAndRoleId(user.id, currentRole.roleId)
-            }
-            userRoleRepository.save(UserRole(userId = user.id, roleId = newRole.id))
-            user.tokenInvalidatedAt = Instant.now()
-        }
+        user.isActive = request.isActive
+        user.updatedAt = Instant.now()
         userRepository.save(user)
 
-        if (changes.isNotEmpty()) {
-            auditService.log(AuditEntry("Updated", "User", user.id.toString(), user.displayName,
-                "User updated", currentUserService.userId, currentUserService.userName, changes))
-        }
+        auditService.log(AuditEntry(
+            if (request.isActive) "Activated" else "Deactivated",
+            "User", user.id.toString(), user.displayName,
+            if (request.isActive) "User access restored" else "User access revoked",
+            currentUserService.userId, currentUserService.userName,
+            listOf(AuditChange("IsActive", (!request.isActive).toString(), request.isActive.toString()))
+        ))
 
-        return ResponseEntity.ok(UserDetailDto(user.id, user.username, user.displayName, user.email, user.isActive,
-            listOf(request.role), user.createdAt, user.authProvider))
-    }
-
-    @PutMapping("/{id}/password")
-    @PreAuthorize("hasRole('Admin')")
-    fun resetPassword(@PathVariable id: UUID, @Valid @RequestBody request: ResetPasswordRequest): ResponseEntity<Any> {
-        val user = userRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
-        if (user.authProvider != "LOCAL")
-            return ResponseEntity.badRequest().body(mapOf("error" to "Cannot reset password for SSO users."))
-        PasswordValidator.validate(request.newPassword)?.let { return ResponseEntity.badRequest().body(mapOf("error" to it)) }
-        user.passwordHash = passwordEncoder.encode(request.newPassword); user.updatedAt = Instant.now()
-        user.tokenInvalidatedAt = Instant.now()
-        userRepository.save(user)
-        auditService.log(AuditEntry("PasswordReset", "User", user.id.toString(), user.displayName,
-            "Password reset by admin", currentUserService.userId, currentUserService.userName))
-        return ResponseEntity.noContent().build()
+        return ResponseEntity.ok(toDetailDto(user))
     }
 }

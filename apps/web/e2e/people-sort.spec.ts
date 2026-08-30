@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { signIn } from "./auth";
+import { signIn, apiPost } from "./auth";
 
 const BASE_URL = "http://localhost:5173";
 
@@ -8,6 +8,13 @@ const BASE_URL = "http://localhost:5173";
 // (backend field "fullname") never matched the TanStack column id ("fullName").
 test("People 'Full Name' header toggles to descending", async ({ page }) => {
   await signIn(page);
+
+  // Two rows so a sort direction is observable, created here rather than
+  // assumed to exist in the developer's database.
+  const stamp = Date.now();
+  await apiPost(page, "/people", { fullName: `E2E Alice ${stamp}` });
+  await apiPost(page, "/people", { fullName: `E2E Zoe ${stamp}` });
+
   await page.goto(`${BASE_URL}/people`);
   await page.waitForLoadState("networkidle");
 

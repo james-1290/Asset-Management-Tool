@@ -58,11 +58,6 @@ spring:
       write-dates-as-timestamps: false
     default-property-inclusion: non_null
 
-jwt:
-  key: ${JWT_KEY:ThisIsASecretKeyForDevelopmentPurposesOnly123!}
-  issuer: AssetManagementApi
-  audience: AssetManagementApp
-  expiry-hours: 2
 
 cors:
   origins: http://localhost:5173
@@ -75,8 +70,6 @@ scim:
   base-url: ${SCIM_BASE_URL:http://localhost:5115}
 
 auth:
-  local-login:
-    enabled: ${LOCAL_LOGIN_ENABLED:true}
   # Azure App Service built-in authentication ("Easy Auth"). When enabled the
   # app trusts the X-MS-CLIENT-PRINCIPAL headers injected by the platform's auth
   # sidecar. Only ever enable this on an App Service where every request reaches
@@ -107,8 +100,6 @@ security:
     requests-per-minute: ${RATE_LIMIT_PER_MINUTE:120}
 
 app:
-  admin:
-    password: ${ADMIN_PASSWORD:admin123}
   upload-dir: ${UPLOAD_DIR:./uploads}
 
 springdoc:
