@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-30 — Azure App Service (Easy Auth) principal filter (Entra migration, PR 1/7)
+
+- First step of the move to Azure App Service with Entra SSO for all sign-ins. Adds `EasyAuthPrincipalFilter`, which authenticates a request from the `X-MS-CLIENT-PRINCIPAL` headers injected by App Service's auth sidecar, plus `EasyAuthUserService`, which JIT-provisions the local `users` row on first sign-in and mirrors Entra **app roles** into `user_roles` on every request (compare-then-write, so the steady state is read-only). Roles stay authoritative in Entra: assign groups to the `Admin`/`Operator`/`User` app roles on the app registration and they arrive in the `roles` claim.
+- Claim handling is deliberately tolerant: Easy Auth's default claims-mapping means a claim can arrive under its short OIDC name (`oid`, `roles`, `preferred_username`) or the long WS-Federation URI, so the parser accepts both and honours the principal's own `name_typ`/`role_typ`. It falls back to the sibling `X-MS-CLIENT-PRINCIPAL-ID`/`-NAME` headers when the claims blob is sparse, and treats a malformed header as "no identity" (request continues unauthenticated) rather than an error.
+- Entirely additive and **off by default** (`EASY_AUTH_ENABLED=false`). That flag is the trust boundary — the headers are only unforgeable while every route to the container passes through the auth sidecar, so it must not be enabled outside an App Service configured that way. Existing JWT/SAML/local login are untouched and remain the active path until PR 4 removes them.
+- Account-takeover guard carried over from the SAML handler and tightened: an existing account is auto-linked to an Entra identity only when it is already IdP-managed *and* has no `external_id` yet. `LOCAL` accounts are never auto-linked, so the break-glass admin can't be claimed by anyone who obtains a matching mailbox address.
+- Verified: `./gradlew test` — 6 new `EasyAuthPrincipalParserTest` cases and the rest of the unit suite pass.
+
 ## 2026-08-29 20:55 — Fetch-join a person's assigned assets (fifth sweep, perf)
 
 - `PeopleController.getAssignedAssets` loaded a person's assets without a fetch join, then read `assetType`/`location` per asset — batched by the global `default_batch_fetch_size` but still avoidable follow-up queries, and inconsistent with the sibling `getAll` which uses `withFetch`. Added `withFetch("assetType","location")` so it loads in one query. Verified: full suite passes; endpoint 200. (The history-timeline and seat-list lazy loads flagged alongside this were left as-is: they're already batched by `default_batch_fetch_size=100`, and a collection fetch-join with a Pageable would regress to in-memory pagination.)
