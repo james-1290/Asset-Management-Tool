@@ -1,6 +1,5 @@
 package com.assetmanagement.api.integration
 
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -12,12 +11,10 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 
 /**
- * Authentication moved from a bearer token to the platform's session cookie,
- * which browsers attach to cross-site requests — so CSRF protection is now
- * load-bearing rather than unnecessary.
- *
- * These drive a real cookie session, because that is the only configuration in
- * which CSRF means anything: bearer-token callers are exempt by design.
+ * Authentication is a session cookie, which browsers attach to cross-site
+ * requests — so a state-changing request must prove it came from this
+ * application. It does that with a custom header, which a cross-origin page
+ * cannot set without a CORS preflight this API does not grant.
  */
 class CsrfProtectionIntegrationTest : AbstractIntegrationTest() {
 
@@ -30,45 +27,29 @@ class CsrfProtectionIntegrationTest : AbstractIntegrationTest() {
     }
 
     @Test
-    fun `a cookie-authenticated write without the CSRF token is rejected`() {
+    fun `a cookie-authenticated write without the custom header is rejected`() {
         val session = signInWithCookie()
-        assertNotNull(session.csrfCookie, "expected an XSRF-TOKEN cookie to be issued")
 
-        // Session cookie present, echo header absent — precisely the shape of a
+        // Session cookie present, custom header absent — exactly the shape of a
         // cross-site forged request.
         val response = postLocation(session.headers(withCsrf = false))
 
-        // 401 rather than 403 because Spring evaluates CSRF before the
-        // authentication filters run, so the rejection is raised against an
-        // anonymous context and routed to the authentication entry point. The
-        // security property is the same — the write does not happen — and the
-        // status is benign in both directions: a genuine forgery gets nothing,
-        // while our own SPA hitting a stale token is sent to sign in, which
-        // issues a fresh session and token and self-heals.
-        assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode, "expected a CSRF rejection, got: ${response.body}")
-        assertTrue(!response.statusCode.is2xxSuccessful, "the write must not succeed")
+        assertEquals(HttpStatus.FORBIDDEN, response.statusCode, "expected a CSRF rejection, got: ${response.body}")
+        assertTrue(
+            response.body!!.contains("csrf_header_missing"),
+            "the rejection should say why: ${response.body}"
+        )
     }
 
     @Test
-    fun `the same write succeeds when the token is echoed back`() {
+    fun `the same write succeeds with the custom header`() {
         val session = signInWithCookie()
 
         val response = postLocation(session.headers(withCsrf = true))
 
         assertTrue(
             response.statusCode.is2xxSuccessful,
-            "expected the write to succeed with a valid CSRF token, got ${response.statusCode}: ${response.body}"
-        )
-    }
-
-    @Test
-    fun `the CSRF cookie is readable so the SPA can echo it`() {
-        val session = signInWithCookie()
-
-        // HttpOnly would make the whole scheme unusable from JavaScript.
-        assertTrue(
-            !session.csrfCookie!!.contains("HttpOnly", ignoreCase = true),
-            "XSRF-TOKEN must not be HttpOnly, was: ${session.csrfCookie}"
+            "expected the write to succeed, got ${response.statusCode}: ${response.body}"
         )
     }
 
@@ -81,18 +62,34 @@ class CsrfProtectionIntegrationTest : AbstractIntegrationTest() {
             HttpEntity<Void>(session.headers(withCsrf = false)), String::class.java
         )
 
-        assertTrue(response.statusCode.is2xxSuccessful, "GET should not require a CSRF token, got ${response.statusCode}")
+        assertTrue(response.statusCode.is2xxSuccessful, "GET should not require the header, got ${response.statusCode}")
     }
 
     @Test
-    fun `bearer-authenticated requests are exempt, since a custom header cannot be forged cross-site`() {
+    fun `the protection cannot go stale, unlike a rotating token`() {
+        val session = signInWithCookie()
+
+        // Twenty writes in a row with the same constant header. A synchroniser
+        // token that the server re-issued per response would start failing here;
+        // a constant header cannot.
+        repeat(20) { i ->
+            val response = postLocation(session.headers(withCsrf = true))
+            assertTrue(
+                response.statusCode.is2xxSuccessful,
+                "write $i should still succeed, got ${response.statusCode}: ${response.body}"
+            )
+        }
+    }
+
+    @Test
+    fun `bearer-authenticated requests are exempt, since they do not use the cookie`() {
         val token = loginAsAdmin()
 
         val response = postJson("/api/v1/locations", """{"name":"CSRF Exempt ${System.nanoTime()}"}""", token)
 
         assertTrue(
             response.statusCode.is2xxSuccessful,
-            "bearer-authenticated POST should not require a CSRF token, got ${response.statusCode}: ${response.body}"
+            "bearer-authenticated POST should not require the header, got ${response.statusCode}: ${response.body}"
         )
     }
 }

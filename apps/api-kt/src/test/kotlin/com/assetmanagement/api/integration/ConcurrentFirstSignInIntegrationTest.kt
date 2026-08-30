@@ -24,6 +24,54 @@ class ConcurrentFirstSignInIntegrationTest @Autowired constructor(
 ) : AbstractIntegrationTest() {
 
     @Test
+    fun `parallel first requests keep their role, not just their identity`() {
+        // A first sign-in arrives as a burst, and each request in it both
+        // provisions the user and syncs their roles. If the role sync is not
+        // safe under concurrency, a request can observe the user mid-sync with
+        // no roles attached and be refused 403 — the user is signed in, but
+        // momentarily powerless.
+        val username = "dev-racer2@localhost"
+        assertEquals(null, userRepository.findByUsername(username), "precondition: racer2 must not exist yet")
+
+        val redirect = restNoRedirect.exchange(
+            "/.auth/login/aad?identity=racer2", HttpMethod.GET,
+            HttpEntity<Void>(HttpHeaders()), String::class.java
+        )
+        val session = redirect.headers[HttpHeaders.SET_COOKIE].orEmpty()
+            .first { it.startsWith("AppServiceAuthSession=") }.substringBefore(";")
+
+        val parallelism = 8
+        val pool = Executors.newFixedThreadPool(parallelism)
+        try {
+            val calls = List(parallelism) { i ->
+                Callable {
+                    val headers = org.springframework.http.HttpHeaders().apply {
+                        contentType = org.springframework.http.MediaType.APPLICATION_JSON
+                        add(HttpHeaders.COOKIE, session)
+                        add("X-Requested-With", "XMLHttpRequest")
+                    }
+                    val resp = rest.exchange(
+                        "/api/v1/locations", HttpMethod.POST,
+                        HttpEntity("""{"name":"Race Loc $i ${System.nanoTime()}"}""", headers),
+                        String::class.java
+                    )
+                    resp.statusCode.value() to (resp.body ?: "")
+                }
+            }
+            val results = pool.invokeAll(calls).map { it.get(30, TimeUnit.SECONDS) }
+            val forbidden = results.filter { it.first == 403 }
+
+            assertTrue(
+                forbidden.isEmpty(),
+                "an admin's role must hold during concurrent first sign-in; got ${forbidden.size} " +
+                    "403s out of $parallelism: ${forbidden.take(2)}"
+            )
+        } finally {
+            pool.shutdownNow()
+        }
+    }
+
+    @Test
     fun `parallel first requests provision exactly one user and all succeed`() {
         // An identity nothing else in the suite signs in as, so this really is a
         // first sign-in.

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { signIn, apiPost } from "./auth";
+import { signIn, apiPost, uid } from "./auth";
 
 const BASE_URL = "http://localhost:5173";
 
@@ -10,8 +10,8 @@ test("Assets list: selecting rows reveals the bulk action bar", async ({ page })
 
   // Guarantee there is at least one row to select, rather than relying on
   // whatever the developer's database happens to hold.
-  const type = await apiPost<{ id: string }>(page, "/asset-types", { name: `E2E Type ${Date.now()}` });
-  await apiPost(page, "/assets", { name: `E2E Asset ${Date.now()}`, assetTypeId: type.id });
+  const type = await apiPost<{ id: string }>(page, "/asset-types", { name: `E2E Type ${uid()}` });
+  await apiPost(page, "/assets", { name: `E2E Asset ${uid()}`, assetTypeId: type.id });
 
   await page.goto(`${BASE_URL}/assets`);
   await expect(page.getByRole("checkbox", { name: /select all/i })).toBeVisible();

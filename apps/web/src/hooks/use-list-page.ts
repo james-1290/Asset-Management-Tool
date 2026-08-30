@@ -35,6 +35,13 @@ export function useListPage({ sortFieldMap, defaultSortBy, defaultSortDir = "asc
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
+    // Nothing to write when the box already matches the URL. Without this the
+    // effect rewrote the query string ~300ms after *every* mount — resetting
+    // `page` to 1 and able to discard a sort or page the user chose in that
+    // window, so an immediate click on a column header or "Next" could be
+    // silently undone.
+    if (searchInput === searchParam) return;
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setSearchParams((prev) => {
@@ -50,7 +57,7 @@ export function useListPage({ sortFieldMap, defaultSortBy, defaultSortDir = "asc
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [searchInput, setSearchParams]);
+  }, [searchInput, searchParam, setSearchParams]);
 
   useEffect(() => {
     setSearchInput(searchParam);

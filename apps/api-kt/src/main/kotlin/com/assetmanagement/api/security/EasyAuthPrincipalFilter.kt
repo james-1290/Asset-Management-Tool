@@ -107,9 +107,7 @@ class EasyAuthPrincipalFilter(
             return
         }
         val user = resolution.user
-
-        val roles = user.userRoles.mapNotNull { it.role?.name }
-        val authorities = roles.map { SimpleGrantedAuthority("ROLE_$it") }
+        val authorities = resolution.roles.map { SimpleGrantedAuthority("ROLE_$it") }
 
         SecurityContextHolder.getContext().authentication = UsernamePasswordAuthenticationToken(
             AuthenticatedUser(user.id.toString(), user.username, user.displayName),

@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-08-30 — Full feature QA sweep: harnesses, and four defects they found
+
+Exercised **every** feature, through the API and through the browser, looping until both suites ran clean from an empty database three times over.
+
+**Harnesses added** (repeatable, not one-off):
+- `scripts/qa/api_smoke.py` — signs in through the real Easy Auth path and calls **all 178 endpoints** across 30 controllers with a full data fixture: lifecycle actions (check-out/in, retire, sell, renew, seats, offboard), bulk operations, CSV import/export, attachments, model images, SCIM, plus role enforcement and CSRF behaviour. **197 checks, none skipped.**
+- `apps/web/e2e/qa/` — 46 Playwright tests covering every route, all settings and report tabs, CRUD through the real dialogs for every entity, the lifecycle workflows, table sorting/pagination/bulk selection, exports, global search, the import wizard, notifications, attachments and the audit log. Every page is watched for **uncaught errors, console errors and failed API calls** — the check that would have caught the 500-on-`/` reported earlier.
+
+**Defects found and fixed:**
+- **CSRF tokens were re-issued on every response.** The cookie repository minted a new `XSRF-TOKEN` per response even when the request presented a valid one. For a SPA that fires parallel requests this is a live fault: the page reads the cookie, another response replaces it, the browser then sends the new cookie with the old header, and the write is rejected — an unexplained "Access denied" on save, or a bounce to sign-in. Replaced with a required custom header (`X-Requested-With`), which a cross-origin page cannot set without a CORS preflight this API doesn't grant. It has no lifecycle, so nothing can rotate and nothing can race. `SameSite=Lax` on the session cookie remains the first layer.
+- **A user could be refused on their own first request.** After provisioning, the code re-read the user to collect roles, but the role rows had just been written in the same transaction and could come back missing — so the caller was authenticated with *no* authorities and got a 403 from method security. It affected the first ever request, and intermittently a first sign-in arriving as a parallel burst. The resolved roles are now carried with the result instead of being re-read. Reproduced by an integration test that fires 8 concurrent first writes; it fails without the fix.
+- **A sort or page chosen straight after load could be silently discarded.** The search debounce rewrote the query string ~300ms after *every* list-page mount, resetting `page` to 1 and able to wipe a sort picked inside that window. It now writes only when the search box actually differs from the URL. Guarded by an e2e test that clicks a column header immediately, without settling.
+- **The Applications list had an unlabelled export button.** It was the only one of six lists not using the shared `ExportButton` — a bare icon with no accessible name, invisible to screen readers and to any test looking for "Export", and missing the "Export Selected (N)" affordance. Now uses the shared component.
+
+**Also:** SCIM enabled in the dev profile so its endpoints are covered rather than untested; the stale `/api/v1/auth/sso-config` permit rule and the `generate-saml-keys.sh` script removed (both dead since SAML went); e2e fixtures given collision-proof ids after parallel workers sharing a millisecond produced spurious 409s; and several specs hardened to wait for data before acting.
+
+Verified: 197/197 API checks and 58/58 e2e green on three consecutive runs against a freshly wiped database, plus the backend suite (66 tests), 46 frontend unit tests, lint and build.
+
 ## 2026-08-30 — Unknown paths return 404, and local sign-in lands on the app
 
 - **An unmatched path was reported as `500 An internal error occurred`** with an error id and a full stack trace logged as "Unhandled exception". `NoResourceFoundException` fell through to the catch-all handler, so something as ordinary as a browser requesting `/favicon.ico` produced an alarming 500 and log noise. It now returns a plain `404 Not found`. Pre-existing, but newly visible because signing in lands on `/`.
