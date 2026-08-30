@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-30 — Unknown paths return 404, and local sign-in lands on the app
+
+- **An unmatched path was reported as `500 An internal error occurred`** with an error id and a full stack trace logged as "Unhandled exception". `NoResourceFoundException` fell through to the catch-all handler, so something as ordinary as a browser requesting `/favicon.ico` produced an alarming 500 and log noise. It now returns a plain `404 Not found`. Pre-existing, but newly visible because signing in lands on `/`.
+- **The local Easy Auth emulator sent you nowhere useful.** Its post-sign-in redirect defaulted to `/`, which is correct on App Service and when the SPA proxies `/.auth` — but hitting the API's own port directly, `/` is not a page, so picking an identity dropped you on the API root (the 500 above). The default is now configurable, and the dev profile points it at `http://localhost:5173/`. The sign-in page also states where it will send you. Redirects supplied in the query string are still restricted to same-site paths; only the configured default may be absolute, since it comes from deployment configuration rather than the caller.
+- Verified: signing in at `http://localhost:5115/.auth/login/aad` now redirects to the running app; `/`, `/favicon.ico` and an unknown API path all return `404 {"error":"Not found"}` with no stack traces logged. Backend suite green including a new regression test; e2e green.
+
 ## 2026-08-30 — Azure Blob Storage for attachments (Entra migration)
 
 - App Service container storage is **ephemeral** — uploads written to local disk are lost on restart, scale or redeploy — so attachments needed somewhere durable. Added `AzureBlobStorageService` behind the existing `StorageService` interface, selected by `STORAGE_TYPE=azure-blob`; `LocalStorageService` remains the default and the right choice for development.

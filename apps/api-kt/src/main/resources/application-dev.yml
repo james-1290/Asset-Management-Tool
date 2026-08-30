@@ -17,6 +17,10 @@ auth:
     enabled: true
     local-emulator:
       enabled: true
+      # The SPA runs on the Vite dev server, so signing in against the API's own
+      # port should land there rather than on "/", which is nothing on this port.
+      # (Through the SPA the /.auth proxy makes "/" correct anyway.)
+      default-redirect: ${EASY_AUTH_DEFAULT_REDIRECT:http://localhost:5173/}
 
 # A single developer/test machine makes far more requests from one IP than a
 # real user, so the production-shaped rate limit would throttle it.

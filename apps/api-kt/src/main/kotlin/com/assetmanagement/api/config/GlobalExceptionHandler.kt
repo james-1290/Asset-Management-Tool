@@ -7,6 +7,7 @@ import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.servlet.resource.NoResourceFoundException
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.multipart.MaxUploadSizeExceededException
@@ -88,6 +89,15 @@ class GlobalExceptionHandler {
         // 413 with a clear message is the correct, actionable response.
         return ResponseEntity.status(413)
             .body(mapOf("error" to "The uploaded file is too large. The maximum allowed size is 10MB."))
+    }
+
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNoResource(ex: NoResourceFoundException): ResponseEntity<Map<String, Any>> {
+        // A request for a path this app doesn't serve. Without this it fell
+        // through to the generic handler and was reported as "An internal error
+        // occurred" with a 500 and a logged stack trace — alarming, wrong, and
+        // noisy for something as ordinary as a browser asking for /favicon.ico.
+        return ResponseEntity.status(404).body(mapOf("error" to "Not found"))
     }
 
     @ExceptionHandler(Exception::class)
