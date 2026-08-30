@@ -1,12 +1,8 @@
 import { apiClient, ApiError } from "@/lib/api-client";
+import { redirectToLogin } from "@/lib/auth-urls";
 import type { Attachment } from "@/types/attachment";
 
 const BASE_URL = "/api/v1";
-
-function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem("token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 export const attachmentsApi = {
   list(entityType: string, entityId: string): Promise<Attachment[]> {
@@ -19,12 +15,10 @@ export const attachmentsApi = {
 
   async download(attachment: Attachment): Promise<void> {
     const url = `${BASE_URL}/attachments/${attachment.id}/download`;
-    const response = await fetch(url, { headers: { ...getAuthHeaders() } });
+    const response = await fetch(url, { credentials: "same-origin" });
 
     if (response.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+      redirectToLogin();
       throw new ApiError(401, "Unauthorized");
     }
 
@@ -45,12 +39,10 @@ export const attachmentsApi = {
 
   async getPreviewUrl(attachment: Attachment): Promise<string> {
     const url = `${BASE_URL}/attachments/${attachment.id}/download`;
-    const response = await fetch(url, { headers: { ...getAuthHeaders() } });
+    const response = await fetch(url, { credentials: "same-origin" });
 
     if (response.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+      redirectToLogin();
       throw new ApiError(401, "Unauthorized");
     }
 

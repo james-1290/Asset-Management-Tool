@@ -1,19 +1,28 @@
-import { Navigate, Outlet } from "react-router-dom"
+import { useEffect } from "react"
+import { Outlet } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
+import { redirectToLogin } from "@/lib/auth-urls"
+import AccessDeniedPage from "@/pages/access-denied"
 
 export function ProtectedRoute() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { status } = useAuth()
 
-  if (isLoading) {
+  // Sign-in leaves the origin, so it's a browser navigation rather than a
+  // client-side route change — hence an effect instead of <Navigate>.
+  useEffect(() => {
+    if (status === "unauthenticated") redirectToLogin()
+  }, [status])
+
+  if (status === "forbidden") return <AccessDeniedPage />
+
+  if (status !== "authenticated") {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="text-muted-foreground">
+          {status === "unauthenticated" ? "Redirecting to sign in..." : "Loading..."}
+        </div>
       </div>
     )
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
   }
 
   return <Outlet />

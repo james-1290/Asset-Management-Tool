@@ -79,10 +79,23 @@ class SecurityConfig(
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .exceptionHandling { exceptions ->
-                exceptions.authenticationEntryPoint { _, response, _ ->
-                    response.status = HttpServletResponse.SC_UNAUTHORIZED
+                exceptions.authenticationEntryPoint { request, response, _ ->
+                    // A caller the platform authenticated but the app refused
+                    // gets 403, not 401: sending them back to the identity
+                    // provider would succeed and return them here again,
+                    // unchanged — an endless redirect loop. 403 lets the client
+                    // explain the problem instead.
+                    val refused = request.getAttribute(EasyAuthPrincipalFilter.ATTR_REFUSED) == true
                     response.contentType = "application/json"
-                    response.writer.write("""{"error":"Authentication required"}""")
+                    if (refused) {
+                        response.status = HttpServletResponse.SC_FORBIDDEN
+                        response.writer.write(
+                            """{"error":"Your account has no role assigned for this application. Ask an administrator to assign you a role.","code":"no_role_assigned"}"""
+                        )
+                    } else {
+                        response.status = HttpServletResponse.SC_UNAUTHORIZED
+                        response.writer.write("""{"error":"Authentication required"}""")
+                    }
                 }
             }
             .authorizeHttpRequests { auth ->
