@@ -108,6 +108,17 @@ security:
 
 app:
   upload-dir: ${UPLOAD_DIR:./uploads}
+  storage:
+    # "local" (filesystem, the default and right for development) or
+    # "azure-blob". App Service container storage is ephemeral, so a real
+    # deployment must use azure-blob or mount durable storage.
+    type: ${STORAGE_TYPE:local}
+    blob:
+      container: ${BLOB_CONTAINER:attachments}
+      # Prefer account-name with a managed identity, so no storage secret is
+      # configured at all. connection-string is the fallback.
+      account-name: ${BLOB_ACCOUNT_NAME:}
+      connection-string: ${BLOB_CONNECTION_STRING:}
 
 springdoc:
   api-docs:

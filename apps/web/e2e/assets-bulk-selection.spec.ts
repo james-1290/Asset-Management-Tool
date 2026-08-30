@@ -16,6 +16,11 @@ test("Assets list: selecting rows reveals the bulk action bar", async ({ page })
   await page.goto(`${BASE_URL}/assets`);
   await expect(page.getByRole("checkbox", { name: /select all/i })).toBeVisible();
 
+  // Wait for rows to arrive before selecting: the header checkbox renders with
+  // the empty table, so clicking too early selects nothing and the bulk bar
+  // never appears. (Grew flakier as the table filled up.)
+  await expect(page.getByRole("checkbox", { name: /select row/i }).first()).toBeVisible();
+
   await page.getByRole("checkbox", { name: /select all/i }).click();
 
   // BulkActionBar renders "N selected" only when selectedCount > 0.

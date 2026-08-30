@@ -75,7 +75,7 @@ issued against the `*.azurewebsites.net` hostname instead of the public one.
 | `SWAGGER_ENABLED` | `false` (default) | The app refuses to start with it enabled outside a dev profile. |
 | `SCIM_ENABLED` / `SCIM_BEARER_TOKEN` | only if SCIM is used | Startup fails if SCIM is on with the default token. |
 | `RATE_LIMIT_PER_MINUTE` | `120` (default) | Raise only if a legitimate client is being throttled. |
-| `UPLOAD_DIR` | see below | |
+| `STORAGE_TYPE` | `azure-blob` | Container storage is ephemeral — see below. |
 
 `EASY_AUTH_LOCAL_EMULATOR` must **never** be set here. The emulator grants
 identities without a password; it refuses to start unless a dev/local/test
@@ -84,9 +84,28 @@ profile is active, and the startup validator aborts the boot if it is enabled.
 ## 4. Storage
 
 App Service container storage is **ephemeral** — attachments written to a local
-`UPLOAD_DIR` are lost on restart, scale or redeploy. Either set
-`WEBSITES_ENABLE_APP_SERVICE_STORAGE=true` and point `UPLOAD_DIR` at a path
-under `/home`, or move attachments to Azure Blob Storage.
+`UPLOAD_DIR` are lost on restart, scale or redeploy. Use Azure Blob Storage:
+
+| Setting | Value |
+|---------|-------|
+| `STORAGE_TYPE` | `azure-blob` |
+| `BLOB_ACCOUNT_NAME` | the storage account name |
+| `BLOB_CONTAINER` | `attachments` (default) |
+
+With `BLOB_ACCOUNT_NAME` the app authenticates with its **managed identity**
+(`DefaultAzureCredential`), so no storage secret is configured anywhere. Enable
+the App Service's system-assigned identity and grant it **Storage Blob Data
+Contributor** on the account or container. `BLOB_CONNECTION_STRING` is accepted
+as a fallback where a managed identity isn't available.
+
+The container is created on first use if it doesn't exist, and the client is
+built lazily — a storage outage fails the request that needs storage rather than
+preventing the app from booting.
+
+Leaving `STORAGE_TYPE` at its `local` default outside a dev profile logs a loud
+`STORAGE:` warning at startup rather than failing, since a deployment may
+legitimately have mounted durable storage (`WEBSITES_ENABLE_APP_SERVICE_STORAGE=true`
+with `UPLOAD_DIR` under `/home`).
 
 ## 5. Health probes
 
