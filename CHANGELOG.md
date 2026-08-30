@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-30 — Azure Blob Storage for attachments (Entra migration)
+
+- App Service container storage is **ephemeral** — uploads written to local disk are lost on restart, scale or redeploy — so attachments needed somewhere durable. Added `AzureBlobStorageService` behind the existing `StorageService` interface, selected by `STORAGE_TYPE=azure-blob`; `LocalStorageService` remains the default and the right choice for development.
+- Authentication prefers a **managed identity** (`DefaultAzureCredential`) via `BLOB_ACCOUNT_NAME`, so no storage secret is configured anywhere; `BLOB_CONNECTION_STRING` is a fallback. The client is built **lazily** and the container created on first use, so a storage outage fails the request that needs storage rather than stopping the app from booting.
+- `LocalStorageService` now logs a loud `STORAGE:` warning when it starts outside a dev profile. A warning rather than a hard failure, because a deployment may legitimately have mounted durable storage — but silently losing people's uploads on the next restart is the worse outcome.
+- Extracted `StorageKeys.validate` so both implementations share it. The local one already guarded against traversal; the blob one needed the same, where a leading slash or `..` writes silently to an unintended path rather than erroring.
+- **Fixed a flaky e2e test** found while verifying: the assets bulk-selection spec clicked "select all" as soon as the header checkbox appeared, which renders with the empty table — so if rows hadn't arrived it selected nothing and the bulk bar never showed. It grew flakier as the table filled up. Now waits for a row.
+- Verified: backend suite green (incl. 8 new storage tests); attachment upload and download exercised end to end against the API and confirmed on disk; the ephemeral-storage warning confirmed to fire in a production-shaped container run; 12 e2e green on three consecutive runs.
+
 ## 2026-08-30 — Azure App Service deployment configuration (Entra migration)
 
 - Added `infra/azure/` with the file-based Easy Auth configuration and a deployment guide: the Entra app registration steps (app roles `Admin`/`Operator`/`User`, **Assignment required = Yes**, group assignment needing Entra ID P1), the `az rest` call that points the site at `auth.json`, the required application settings, and the storage caveat.

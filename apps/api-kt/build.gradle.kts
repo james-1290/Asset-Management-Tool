@@ -39,6 +39,10 @@ dependencies {
     implementation("com.microsoft.graph:microsoft-graph:6.21.0")
     implementation("com.azure:azure-identity:1.15.0")
 
+    // Azure Blob Storage for attachments: App Service container storage is
+    // ephemeral, so uploads cannot live on local disk in a real deployment.
+    implementation("com.azure:azure-storage-blob:12.29.0")
+
     // CSV
     implementation("com.opencsv:opencsv:5.9")
 
