@@ -86,6 +86,18 @@ scim:
 auth:
   local-login:
     enabled: ${LOCAL_LOGIN_ENABLED:true}
+  # Azure App Service built-in authentication ("Easy Auth"). When enabled the
+  # app trusts the X-MS-CLIENT-PRINCIPAL headers injected by the platform's auth
+  # sidecar. Only ever enable this on an App Service where every request reaches
+  # the container through that sidecar — anywhere else the headers are forgeable.
+  easy-auth:
+    enabled: ${EASY_AUTH_ENABLED:false}
+    # Role given to a user who is assigned to the enterprise app but holds no
+    # app role. Must match a seeded role name.
+    default-role: ${EASY_AUTH_DEFAULT_ROLE:User}
+    # Optional "entraAppRole:localRole,..." mapping. Empty means the Entra app
+    # role values are used verbatim (name them Admin / Operator / User to match).
+    role-map: ${EASY_AUTH_ROLE_MAP:}
 
 app:
   admin:

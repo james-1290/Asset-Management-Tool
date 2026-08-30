@@ -1,5 +1,6 @@
 package com.assetmanagement.api.config
 
+import com.assetmanagement.api.security.EasyAuthPrincipalFilter
 import com.assetmanagement.api.security.JwtAuthenticationFilter
 import com.assetmanagement.api.security.SamlAuthSuccessHandler
 import com.assetmanagement.api.security.ScimAuthFilter
@@ -35,6 +36,9 @@ class SecurityConfig(
 
     @Autowired(required = false)
     private var scimAuthFilter: ScimAuthFilter? = null
+
+    @Autowired(required = false)
+    private var easyAuthPrincipalFilter: EasyAuthPrincipalFilter? = null
 
     @Bean
     @Order(1)
@@ -109,7 +113,15 @@ class SecurityConfig(
         // CSRF disabled: Stateless JWT auth doesn't use cookies for auth.
         // Not vulnerable to form-based CSRF. Re-evaluate if cookie auth is added.
 
+        // Easy Auth (Azure App Service) runs ahead of the JWT filter: when the
+        // platform has already authenticated the caller there is no app-issued
+        // token to inspect. The JWT filter stays in the chain while both auth
+        // modes coexist; it simply finds no Authorization header.
         scimAuthFilter?.let { filter ->
+            http.addFilterBefore(filter, JwtAuthenticationFilter::class.java)
+        }
+
+        easyAuthPrincipalFilter?.let { filter ->
             http.addFilterBefore(filter, JwtAuthenticationFilter::class.java)
         }
 
