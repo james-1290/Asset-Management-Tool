@@ -4,11 +4,9 @@ import com.assetmanagement.api.security.CsrfCookieFilter
 import com.assetmanagement.api.security.EasyAuthPrincipalFilter
 import com.assetmanagement.api.security.JwtAuthenticationFilter
 import com.assetmanagement.api.security.LocalEasyAuthEmulatorFilter
-import com.assetmanagement.api.security.SamlAuthSuccessHandler
 import com.assetmanagement.api.security.ScimAuthFilter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
@@ -39,9 +37,6 @@ class SecurityConfig(
 ) {
 
     @Autowired(required = false)
-    private var samlAuthSuccessHandler: SamlAuthSuccessHandler? = null
-
-    @Autowired(required = false)
     private var scimAuthFilter: ScimAuthFilter? = null
 
     @Autowired(required = false)
@@ -50,40 +45,13 @@ class SecurityConfig(
     @Autowired(required = false)
     private var localEasyAuthEmulatorFilter: LocalEasyAuthEmulatorFilter? = null
 
-    @Bean
-    @Order(1)
-    @ConditionalOnProperty(name = ["saml.enabled"], havingValue = "true")
-    fun samlFilterChain(http: HttpSecurity): SecurityFilterChain {
-        http
-            .securityMatcher("/saml2/**", "/login/saml2/**")
-            .cors { it.configurationSource(corsConfig.corsConfigurationSource()) }
-            .csrf { it.disable() }
-            .saml2Login { saml ->
-                saml.successHandler(samlAuthSuccessHandler)
-            }
-            .saml2Metadata { }
-
-        http.headers { headers ->
-            headers.frameOptions { it.deny() }
-            headers.contentTypeOptions { }
-            headers.httpStrictTransportSecurity { hsts ->
-                hsts.includeSubDomains(true)
-                hsts.maxAgeInSeconds(31536000)
-            }
-            headers.referrerPolicy { it.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN) }
-            headers.permissionsPolicy { it.policy("camera=(), microphone=(), geolocation=(), payment=()") }
-        }
-
-        return http.build()
-    }
-
     /**
      * Requests that carry an `Authorization` header authenticate by bearer token,
      * not by cookie, so they cannot be forged cross-site: a browser will not
      * attach a custom header to a cross-origin request without a CORS preflight
-     * this API does not grant. Exempting them keeps machine callers (SCIM) and
-     * any token-authenticated client working while the browser session — which
-     * *is* cookie-borne and therefore forgeable — stays protected.
+     * this API does not grant. Exempting them keeps machine callers (SCIM)
+     * working while the browser session — which *is* cookie-borne and therefore
+     * forgeable — stays protected.
      */
     private val bearerAuthenticated = RequestMatcher { request ->
         request.getHeader("Authorization")?.startsWith("Bearer ") == true

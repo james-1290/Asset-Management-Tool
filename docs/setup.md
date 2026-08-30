@@ -77,9 +77,9 @@ npm run dev
 ```
 
 The frontend starts on `http://localhost:5173`. API calls (`/api`, `/.auth`,
-`/saml2`, `/login/saml2`, `/scim`) are proxied to `http://localhost:5115` via
-Vite config, so the browser sees a single origin — the same shape as App
-Service, where `/.auth` is answered by the platform.
+`/scim`) are proxied to `http://localhost:5115` via Vite config, so the browser
+sees a single origin — the same shape as App Service, where `/.auth` is answered
+by the platform.
 
 ## 4. Run everything (quick start)
 

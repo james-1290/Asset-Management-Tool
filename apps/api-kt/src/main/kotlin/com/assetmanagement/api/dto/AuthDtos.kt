@@ -28,9 +28,3 @@ data class UserProfileResponse(
     val themePreference: String? = null,
     val authProvider: String = "LOCAL"
 )
-
-data class SsoConfigResponse(
-    val ssoEnabled: Boolean,
-    val ssoUrl: String? = null,
-    val ssoLabel: String? = null
-)

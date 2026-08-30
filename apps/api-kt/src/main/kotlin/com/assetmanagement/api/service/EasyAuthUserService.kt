@@ -111,8 +111,9 @@ class EasyAuthUserService(
         userRepository.findByExternalId(principal.externalId)?.let { return it }
 
         // Adopt an existing identity-provider-managed account that has no
-        // external id yet — that's how SCIM-provisioned and previously-SAML
-        // users carry over. LOCAL accounts are never auto-linked: doing so would
+        // external id yet — that's how SCIM-provisioned users, and any left
+        // over from the previous SAML integration, carry over. LOCAL accounts are
+        // never auto-linked: doing so would
         // let anyone who can get an Entra mailbox at a matching address take
         // over a local account.
         if (principal.email.isNotBlank()) {

@@ -23,7 +23,7 @@ class ScimService(
     private val roleRepository: RoleRepository,
     private val userRoleRepository: UserRoleRepository,
     private val auditService: AuditService,
-    @Value("\${saml.default-role:User}") private val defaultRole: String
+    @Value("\${scim.default-role:User}") private val defaultRole: String
 ) {
     private val log = LoggerFactory.getLogger(ScimService::class.java)
     private val isoFormatter = DateTimeFormatter.ISO_INSTANT
