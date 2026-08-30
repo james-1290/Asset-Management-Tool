@@ -36,6 +36,37 @@ The API starts on `http://localhost:5115`. On startup it applies any pending
 - API base: `http://localhost:5115/api/v1`
 - Swagger UI: `http://localhost:5115/swagger-ui.html` (enable with `SWAGGER_ENABLED=true`; off by default)
 - Default admin login (dev only): `admin` / `admin123`
+- Local Entra sign-in (dev only): `http://localhost:5115/.auth/login/aad`
+
+### Signing in locally the way production will work
+
+Production runs on **Azure App Service with Entra SSO**, where the platform's
+auth sidecar authenticates the user and passes the identity to the app in
+`X-MS-CLIENT-PRINCIPAL` headers. There is no sidecar on a developer machine, so
+the `dev` profile enables a **local emulator** of it (`LocalEasyAuthEmulator`)
+that produces the identical headers from a chosen developer identity.
+
+The app therefore runs the *same* authentication code path locally as it does on
+Azure — moving to App Service means switching the emulator off and letting the
+real sidecar supply the headers. No code changes.
+
+Visit `http://localhost:5115/.auth/login/aad` (or `/.auth/login/aad` through the
+frontend, same origin) to pick an identity:
+
+| Identity | Role | Purpose |
+|----------|------|---------|
+| `admin` | Admin | Full access |
+| `operator` | Operator | Create/edit records |
+| `user` | User | Read-only |
+| `norole` | *none* | Verifies that a principal with no app role is **refused** |
+
+Other `/.auth` endpoints match the App Service contract: `/.auth/logout` and
+`/.auth/me`. Override the identity list with `EASY_AUTH_LOCAL_IDENTITIES`
+(`key:email:Display Name:Role1|Role2`, comma-separated).
+
+The emulator **refuses to start unless a `dev`/`local`/`test` profile is
+active** — it mints identities without a password, so it must never run
+anywhere else.
 
 ## 3. Run the Frontend
 
@@ -45,8 +76,10 @@ npm install   # first time only
 npm run dev
 ```
 
-The frontend starts on `http://localhost:5173`. API calls (`/api`, `/saml2`,
-`/login/saml2`, `/scim`) are proxied to `http://localhost:5115` via Vite config.
+The frontend starts on `http://localhost:5173`. API calls (`/api`, `/.auth`,
+`/saml2`, `/login/saml2`, `/scim`) are proxied to `http://localhost:5115` via
+Vite config, so the browser sees a single origin — the same shape as App
+Service, where `/.auth` is answered by the platform.
 
 ## 4. Run everything (quick start)
 
