@@ -153,6 +153,28 @@ test("A read-only User sees no write affordances and cannot reach admin settings
 
   await visit(page, "/locations");
   await expect(page.getByRole("button", { name: /add location/i })).toHaveCount(0);
+  // No row action menu either — Edit/Delete would only lead to a refused save.
+  await expect(page.getByRole("button", { name: /open menu/i })).toHaveCount(0);
+
+  // No write actions in the bulk bar (Export Selected is still legitimate).
+  await visit(page, "/assets");
+  const selectAll = page.getByRole("checkbox", { name: /select all/i });
+  if (await selectAll.count()) {
+    await selectAll.click();
+    for (const label of [/^edit$/i, /^archive$/i, /^in maintenance$/i]) {
+      await expect(page.getByRole("button", { name: label })).toHaveCount(0);
+    }
+  }
+
+  // Nor on a record's own page.
+  const firstAsset = page.getByRole("row").nth(1).getByRole("link").first();
+  if (await firstAsset.count()) {
+    await firstAsset.click();
+    await page.waitForLoadState("networkidle");
+    for (const label of [/^check out$/i, /^retire$/i, /^sold$/i, /^clone$/i, /^edit$/i, /^upload$/i]) {
+      await expect(page.getByRole("button", { name: label })).toHaveCount(0);
+    }
+  }
 
   // The admin-only settings tab must not render its contents for a non-admin.
   await visit(page, "/settings?tab=users");
@@ -168,6 +190,8 @@ test("An Operator can write but cannot administer", async ({ page }) => {
   await visit(page, "/locations");
   await expect(page.getByRole("button", { name: /add location/i }), "an operator should be able to create")
     .toBeVisible();
+  // And an Operator keeps the row actions a read-only user loses.
+  await expect(page.getByRole("button", { name: /open menu/i }).first()).toBeVisible();
 
   await visit(page, "/settings?tab=users");
   await expect(page.getByText(/dev-admin@localhost/)).toHaveCount(0);

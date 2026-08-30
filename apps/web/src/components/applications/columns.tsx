@@ -15,6 +15,12 @@ import { ExpiryDateCell } from "../expiry-date-cell";
 import type { Application } from "../../types/application";
 
 interface ColumnActions {
+  /**
+   * Whether the viewer may change records. A read-only user gets no row
+   * actions: the API refuses the write, so offering Edit or Delete only
+   * leads them into a dialog that cannot be saved.
+   */
+  canWrite?: boolean;
   onEdit: (application: Application) => void;
   onArchive: (application: Application) => void;
   onDeactivate?: (application: Application) => void;
@@ -36,11 +42,12 @@ function hashColor(name: string) {
 }
 
 export function getApplicationColumns({
+  canWrite = true,
   onEdit,
   onArchive,
   onDeactivate,
 }: ColumnActions): ColumnDef<Application, unknown>[] {
-  return [
+  const columns: ColumnDef<Application, unknown>[] = [
     {
       accessorKey: "name",
       header: ({ column }) => (
@@ -145,4 +152,7 @@ export function getApplicationColumns({
       },
     },
   ];
+
+  // A read-only viewer gets no row-actions column at all.
+  return canWrite ? columns : columns.filter((c) => c.id !== "actions");
 }

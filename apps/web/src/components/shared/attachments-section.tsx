@@ -24,6 +24,7 @@ import {
 } from "@/hooks/use-attachments";
 import { attachmentsApi } from "@/lib/api/attachments";
 import type { Attachment } from "@/types/attachment";
+import { useAuth } from "@/contexts/auth-context";
 
 interface AttachmentsSectionProps {
   entityType: string;
@@ -55,6 +56,8 @@ function formatDate(iso: string): string {
 }
 
 export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionProps) {
+  // Uploading and deleting are writes; a read-only viewer may still download.
+  const { canWrite } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteTarget, setDeleteTarget] = useState<Attachment | null>(null);
   const [previewTarget, setPreviewTarget] = useState<Attachment | null>(null);
@@ -146,15 +149,17 @@ export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionP
               onChange={handleFileChange}
               className="hidden"
             />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadMutation.isPending}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              {uploadMutation.isPending ? "Uploading…" : "Upload"}
-            </Button>
+            {canWrite && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadMutation.isPending}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                {uploadMutation.isPending ? "Uploading…" : "Upload"}
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -206,16 +211,18 @@ export function AttachmentsSection({ entityType, entityId }: AttachmentsSectionP
                       >
                         <Download className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => setDeleteTarget(attachment)}
-                        title="Delete"
-                        aria-label="Delete attachment"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canWrite && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => setDeleteTarget(attachment)}
+                          title="Delete"
+                          aria-label="Delete attachment"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );

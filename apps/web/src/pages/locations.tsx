@@ -97,6 +97,7 @@ export default function LocationsPage() {
   const columns = useMemo(
     () =>
       getLocationColumns({
+        canWrite,
         onEdit: (location) => {
           setEditingLocation(location);
           setFormOpen(true);
@@ -105,7 +106,7 @@ export default function LocationsPage() {
           setArchivingLocation(location);
         },
       }),
-    [],
+    [canWrite],
   );
 
   const applyView = useCallback((view: SavedView) => {

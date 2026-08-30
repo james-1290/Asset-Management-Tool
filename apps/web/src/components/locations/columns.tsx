@@ -12,15 +12,22 @@ import {
 import type { Location } from "../../types/location";
 
 interface ColumnActions {
+  /**
+   * Whether the viewer may change records. A read-only user gets no row
+   * actions: the API refuses the write, so offering Edit or Delete only
+   * leads them into a dialog that cannot be saved.
+   */
+  canWrite?: boolean;
   onEdit: (location: Location) => void;
   onArchive: (location: Location) => void;
 }
 
 export function getLocationColumns({
+  canWrite = true,
   onEdit,
   onArchive,
 }: ColumnActions): ColumnDef<Location, unknown>[] {
-  return [
+  const columns: ColumnDef<Location, unknown>[] = [
     {
       accessorKey: "name",
       header: ({ column }) => (
@@ -85,4 +92,7 @@ export function getLocationColumns({
       },
     },
   ];
+
+  // A read-only viewer gets no row-actions column at all.
+  return canWrite ? columns : columns.filter((c) => c.id !== "actions");
 }

@@ -55,6 +55,7 @@ export default function AssetTemplatesPage() {
   const columns = useMemo(
     () =>
       getAssetTemplateColumns({
+        canWrite,
         onEdit: (template) => {
           setEditingTemplate(template);
           setFormOpen(true);
@@ -63,7 +64,7 @@ export default function AssetTemplatesPage() {
           setArchivingTemplate(template);
         },
       }),
-    [],
+    [canWrite],
   );
 
   function handleFormSubmit(values: TemplateFormValues) {

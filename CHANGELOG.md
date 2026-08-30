@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-30 — Complete the read-only permission fix (it was only a quarter done)
+
+The previous change hid the **create** buttons from a read-only `User`, but a check with the browser showed the rest were still there: Edit/Delete row menus, the bulk action bar's Edit/Archive/status buttons, and every action on a record's own page — Check out, Retire, Sold, Clone, Edit, Upload. The API refused all of them, so a read-only user could still walk into a dialog, fill it in, and be told "Access denied".
+
+- Row actions: each columns factory takes `canWrite` and drops the actions column entirely for a read-only viewer (`useMemo` dependencies updated accordingly, or the columns would not have been rebuilt when the role differed).
+- `BulkActionBar` now separates write actions from `readOnlyActions`, so a read-only user keeps "Export Selected" and loses the rest.
+- Detail pages (asset, certificate, application, person, location) gate their action rows, and the shared attachments section hides Upload and Delete while still allowing download.
+- Asserted directly: as `user` — no row menus, no bulk write buttons, no detail actions; as `admin` — all still present.
+
 ## 2026-08-30 — Close the QA coverage gaps, and the permission leak they exposed
 
 Reviewing the previous sweep's own coverage against "every feature" found real holes: custom fields, saved views, the column chooser, bulk actions, non-admin behaviour in the browser, report content, the import wizard run to completion, and attachment download/delete were all untested or tested only through the API. Added `e2e/qa/coverage.spec.ts` — 9 tests — to close them.

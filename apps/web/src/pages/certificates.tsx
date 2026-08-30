@@ -160,6 +160,7 @@ export default function CertificatesPage() {
     () => [
       getSelectionColumn<Certificate>(),
       ...getCertificateColumns({
+        canWrite,
         onEdit: (certificate) => {
           setEditingCertificate(certificate);
           setFormOpen(true);
@@ -169,7 +170,7 @@ export default function CertificatesPage() {
         },
       }),
     ],
-    [],
+    [canWrite],
   );
 
   const applyView = useCallback((view: SavedView) => {
@@ -500,6 +501,7 @@ export default function CertificatesPage() {
             </div>
             <ActiveFilterChips filters={activeFilters} onClearAll={handleClearAllFilters} />
             <BulkActionBar
+              canWrite={canWrite}
               selectedCount={selectedCount}
               onClearSelection={() => setRowSelection({})}
             >

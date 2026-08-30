@@ -119,6 +119,7 @@ export default function PeoplePage() {
     () => [
       getSelectionColumn<Person>(),
       ...getPersonColumns({
+        canWrite,
         onEdit: (person) => {
           setEditingPerson(person);
           setFormOpen(true);
@@ -128,7 +129,7 @@ export default function PeoplePage() {
         },
       }),
     ],
-    [],
+    [canWrite],
   );
 
   function handleBulkArchive() {

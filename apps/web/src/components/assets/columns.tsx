@@ -17,6 +17,8 @@ import type { CustomFieldDefinition } from "../../types/custom-field";
 import { formatCustomFieldValue, formatCurrency as fmtCurrency } from "../../lib/format";
 
 interface ColumnActions {
+  /** Whether the viewer may change records; read-only users get no actions. */
+  canWrite?: boolean;
   onEdit: (asset: Asset) => void;
   onArchive: (asset: Asset) => void;
   customFieldDefinitions?: CustomFieldDefinition[];
@@ -30,6 +32,7 @@ export function getAssetColumns({
   onEdit,
   onArchive,
   customFieldDefinitions = [],
+  canWrite = true,
 }: ColumnActions): ColumnDef<Asset, unknown>[] {
   const baseColumns: ColumnDef<Asset, unknown>[] = [
     {
@@ -162,5 +165,10 @@ export function getAssetColumns({
     },
   };
 
-  return [...baseColumns, ...customColumns, actionsColumn];
+  // A read-only viewer gets no row-actions column at all: the API refuses the
+  // write, so offering Edit or Delete only leads them into a dialog that cannot
+  // be saved.
+  return canWrite
+    ? [...baseColumns, ...customColumns, actionsColumn]
+    : [...baseColumns, ...customColumns];
 }

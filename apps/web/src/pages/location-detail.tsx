@@ -28,8 +28,10 @@ import {
 } from "../hooks/use-locations";
 import type { LocationFormValues } from "../lib/schemas/location";
 import { formatDateOrNull as formatDate } from "../lib/format";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function LocationDetailPage() {
+  const { canWrite } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: location, isLoading, isError } = useLocation(id!);
@@ -145,16 +147,21 @@ export default function LocationDetailPage() {
 
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {!location.isArchived && (
-            <Button variant="outline" size="sm" onClick={() => setArchiveOpen(true)}>
-              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              Archive
+          {canWrite && (
+            <>
+            {!location.isArchived && (
+              <Button variant="outline" size="sm" onClick={() => setArchiveOpen(true)}>
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Archive
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setFormOpen(true)}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              Edit Details
             </Button>
+          
+            </>
           )}
-          <Button size="sm" onClick={() => setFormOpen(true)}>
-            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            Edit Details
-          </Button>
         </div>
       </DetailCard>
 
