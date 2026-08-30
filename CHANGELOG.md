@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-30 — Close the QA coverage gaps, and the permission leak they exposed
+
+Reviewing the previous sweep's own coverage against "every feature" found real holes: custom fields, saved views, the column chooser, bulk actions, non-admin behaviour in the browser, report content, the import wizard run to completion, and attachment download/delete were all untested or tested only through the API. Added `e2e/qa/coverage.spec.ts` — 9 tests — to close them.
+
+- **A read-only User was shown write controls.** "Add Asset", "Add Location" and every other create button rendered for the `User` role, which the API then correctly refuses. The user would fill in an entire form and be told "Access denied" on save. The auth context now exposes `canWrite` (Admin or Operator), and all ten list pages gate their create button on it. This was a genuine defect, found only by signing in as a non-admin *in the browser* — the API-level role checks had passed all along.
+- Custom fields are now covered end to end: defined on a type, persisted, rendered on the asset form for that type, and the value saved to the record.
+- Saved views, the column chooser, and bulk status/archive from the action bar are driven through the UI.
+- Reports are asserted to render a table or chart rather than merely load, and the import wizard is run through validation to a completed import with the record verified afterwards.
+
+Verified: 197/197 API checks and **68/68** e2e green on three consecutive runs against a freshly wiped database, plus the backend suite, 46 frontend unit tests, lint and build.
+
 ## 2026-08-30 — Full feature QA sweep: harnesses, and four defects they found
 
 Exercised **every** feature, through the API and through the browser, looping until both suites ran clean from an empty database three times over.

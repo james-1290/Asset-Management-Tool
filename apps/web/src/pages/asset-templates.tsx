@@ -28,8 +28,10 @@ import {
 import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
 import type { AssetTemplate } from "../types/asset-template";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function AssetTemplatesPage() {
+  const { canWrite } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const filterTypeId = searchParams.get("typeId") ?? "";
 
@@ -195,15 +197,17 @@ export default function AssetTemplatesPage() {
                 {templates.length}
               </span>
             )}
-            <Button
-              onClick={() => {
-                setEditingTemplate(null);
-                setFormOpen(true);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Template
-            </Button>
+            {canWrite && (
+              <Button
+                onClick={() => {
+                  setEditingTemplate(null);
+                  setFormOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Template
+              </Button>
+            )}
           </div>
         }
       />

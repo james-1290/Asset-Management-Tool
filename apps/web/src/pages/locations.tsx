@@ -30,6 +30,7 @@ import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
+import { useAuth } from "@/contexts/auth-context";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -40,6 +41,7 @@ const SORT_FIELD_MAP: Record<string, string> = {
 };
 
 export default function LocationsPage() {
+  const { canWrite } = useAuth();
   const {
     setSearchParams,
     page,
@@ -281,15 +283,17 @@ export default function LocationsPage() {
                 {totalCount}
               </span>
             )}
-            <Button
-              onClick={() => {
-                setEditingLocation(null);
-                setFormOpen(true);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Location
-            </Button>
+            {canWrite && (
+              <Button
+                onClick={() => {
+                  setEditingLocation(null);
+                  setFormOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Location
+              </Button>
+            )}
           </div>
         }
       />

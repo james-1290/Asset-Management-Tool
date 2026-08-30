@@ -19,6 +19,15 @@ interface AuthContextValue {
   isAuthenticated: boolean
   isLoading: boolean
   isAdmin: boolean
+  /**
+   * Whether this user may create or change records.
+   *
+   * Writes require Admin or Operator; the read-only User role may only read.
+   * Offering a create or edit control to a read-only user isn't harmless — the
+   * API correctly refuses the write, so they fill in a whole form and are then
+   * told "Access denied".
+   */
+  canWrite: boolean
   /** Message from the server explaining a `forbidden` status, if it gave one. */
   forbiddenReason: string | null
   logout: () => void
@@ -84,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const isAdmin = user?.roles?.includes("Admin") ?? false
+  const canWrite = user?.roles?.some((r) => r === "Admin" || r === "Operator") ?? false
 
   return (
     <AuthContext.Provider
@@ -93,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: status === "authenticated",
         isLoading: status === "loading",
         isAdmin,
+        canWrite,
         forbiddenReason,
         logout,
         updateUser,

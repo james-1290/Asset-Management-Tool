@@ -28,6 +28,7 @@ import { applicationTypeSchema, type ApplicationTypeFormValues } from "../lib/sc
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
+import { useAuth } from "@/contexts/auth-context";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -36,6 +37,7 @@ const SORT_FIELD_MAP: Record<string, string> = {
 };
 
 export default function ApplicationTypesPage() {
+  const { canWrite } = useAuth();
   const {
     setSearchParams,
     page,
@@ -258,15 +260,17 @@ export default function ApplicationTypesPage() {
                 {totalCount}
               </span>
             )}
-            <Button
-              onClick={() => {
-                setEditingApplicationType(null);
-                setFormOpen(true);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Application Type
-            </Button>
+            {canWrite && (
+              <Button
+                onClick={() => {
+                  setEditingApplicationType(null);
+                  setFormOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Application Type
+              </Button>
+            )}
           </div>
         }
       />

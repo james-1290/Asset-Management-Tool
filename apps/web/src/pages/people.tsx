@@ -36,6 +36,7 @@ import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 import { ActiveFilterChips } from "../components/filters/active-filter-chips";
 import type { ActiveFilter } from "../components/filters/active-filter-chips";
+import { useAuth } from "@/contexts/auth-context";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   fullName: "fullname",
@@ -47,6 +48,7 @@ const SORT_FIELD_MAP: Record<string, string> = {
 };
 
 export default function PeoplePage() {
+  const { canWrite } = useAuth();
   const {
     searchParams,
     setSearchParams,
@@ -356,15 +358,17 @@ export default function PeoplePage() {
                 {totalCount}
               </span>
             )}
-            <Button
-              onClick={() => {
-                setEditingPerson(null);
-                setFormOpen(true);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Person
-            </Button>
+            {canWrite && (
+              <Button
+                onClick={() => {
+                  setEditingPerson(null);
+                  setFormOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Person
+              </Button>
+            )}
           </div>
         }
       />

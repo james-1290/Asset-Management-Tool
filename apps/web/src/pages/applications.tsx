@@ -39,6 +39,7 @@ import type { ApplicationFormValues } from "../lib/schemas/application";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 import { cn } from "../lib/utils";
+import { useAuth } from "@/contexts/auth-context";
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -50,6 +51,7 @@ const SORT_FIELD_MAP: Record<string, string> = {
 };
 
 export default function ApplicationsPage() {
+  const { canWrite } = useAuth();
   const {
     searchParams,
     page,
@@ -351,15 +353,17 @@ export default function ApplicationsPage() {
         title="Applications"
         breadcrumbs={[{ label: "Software", href: "/applications" }, { label: "Applications / Licences" }]}
         actions={
-          <Button
-            onClick={() => {
-              setEditingApplication(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Application
-          </Button>
+          canWrite && (
+            <Button
+              onClick={() => {
+                setEditingApplication(null);
+                setFormOpen(true);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Application
+            </Button>
+          )
         }
       />
 
