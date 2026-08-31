@@ -25,6 +25,7 @@ export const useApplication = applicationHooks.useDetail;
 export const useCreateApplication = applicationHooks.useCreate;
 export const useUpdateApplication = applicationHooks.useUpdate;
 export const useArchiveApplication = applicationHooks.useArchive;
+export const useRestoreApplication = applicationHooks.useRestore;
 export const useBulkArchiveApplications = applicationHooks.useBulkArchive;
 
 // Single-application actions invalidate the same keys as an update.

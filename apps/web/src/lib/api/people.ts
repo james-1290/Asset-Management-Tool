@@ -16,6 +16,8 @@ import type {
 import type { DuplicateCheckResult, CheckPersonDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface PersonQueryParams {
+  /** Include archived (soft-deleted) rows, so they can be restored. */
+  includeArchived?: boolean;
   page?: number;
   pageSize?: number;
   search?: string;

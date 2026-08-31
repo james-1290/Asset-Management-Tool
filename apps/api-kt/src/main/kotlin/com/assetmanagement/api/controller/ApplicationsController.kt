@@ -74,7 +74,8 @@ class ApplicationsController(
         @RequestParam(required = false) expiryTo: String?,
         @RequestParam(required = false) licenceType: String?,
         @RequestParam(required = false) costMin: BigDecimal?,
-        @RequestParam(required = false) costMax: BigDecimal?
+        @RequestParam(required = false) costMax: BigDecimal?,
+        @RequestParam(defaultValue = "false") includeArchived: Boolean
     ): ResponseEntity<Any> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
@@ -85,7 +86,7 @@ class ApplicationsController(
                 ?: return ResponseEntity.badRequest().body(mapOf("error" to "Invalid status: $status"))
         }
 
-        val spec = buildSpec(search, status, includeStatuses, typeId, expiryFrom, expiryTo, licenceType, costMin, costMax)
+        val spec = buildSpec(search, status, includeStatuses, typeId, expiryFrom, expiryTo, licenceType, costMin, costMax, includeArchived)
             .and(withFetch("applicationType", "asset", "person", "location"))
             .and(statusOrder(sortBy, sortDir))
         val sort = sortOf(sortBy, sortDir)
@@ -805,6 +806,26 @@ class ApplicationsController(
 
     // ── DELETE /{id} ── Archive (soft delete) ───────────────────────────
 
+    /**
+     * Brings an archived application back. Archiving is a soft delete, so
+     * without this the record was recoverable only by hand-written SQL.
+     */
+    @PostMapping("/{id}/restore")
+    @Transactional
+    fun restore(@PathVariable id: UUID): ResponseEntity<Any> {
+        val entity = applicationRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+        if (!entity.isArchived) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "This application is not archived."))
+        }
+        entity.isArchived = false
+        entity.updatedAt = Instant.now()
+        applicationRepository.save(entity)
+        auditService.log(AuditEntry("Restored", "Application", entity.id.toString(), entity.name,
+            "Restored application \"${entity.name}\"", currentUserService.userId, currentUserService.userName))
+        return ResponseEntity.ok(entity.toDto(loadCustomFieldValues(entity.id)))
+    }
+
     @DeleteMapping("/{id}")
     @Transactional
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
@@ -851,10 +872,13 @@ class ApplicationsController(
         expiryTo: String? = null,
         licenceType: String? = null,
         costMin: BigDecimal? = null,
-        costMax: BigDecimal? = null
+        costMax: BigDecimal? = null,
+        includeArchived: Boolean = false
     ): Specification<Application> = Specification { root, _, cb ->
         val predicates = mutableListOf<Predicate>()
-        predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+        // Archived rows are hidden by default but must be findable, or an
+        // archived record could never be restored.
+        if (!includeArchived) predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
 
         // Filter by typeId
         if (typeId != null) {

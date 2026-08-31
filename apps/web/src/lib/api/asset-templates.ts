@@ -22,4 +22,9 @@ export const assetTemplatesApi = {
   archive(id: string): Promise<void> {
     return apiClient.delete(`/asset-templates/${id}`);
   },
+
+  /** Undoes an archive; these modules don't use createEntityApi. */
+  restore(id: string): Promise<AssetTemplate> {
+    return apiClient.post<AssetTemplate>(`/asset-templates/${id}/restore`, {});
+  },
 };

@@ -23,6 +23,7 @@ export const useCertificate = certificateHooks.useDetail;
 export const useCreateCertificate = certificateHooks.useCreate;
 export const useUpdateCertificate = certificateHooks.useUpdate;
 export const useArchiveCertificate = certificateHooks.useArchive;
+export const useRestoreCertificate = certificateHooks.useRestore;
 export const useBulkArchiveCertificates = certificateHooks.useBulkArchive;
 
 export function useCertificateHistory(id: string, limit?: number) {

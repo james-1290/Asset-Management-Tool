@@ -58,7 +58,8 @@ class AssetTypesController(
         @RequestParam(defaultValue = "1") page: Int, @RequestParam(defaultValue = "25") pageSize: Int,
         @RequestParam(required = false) search: String?, @RequestParam(defaultValue = "name") sortBy: String,
         @RequestParam(defaultValue = "asc") sortDir: String,
-    ) = crud.getAll(page, pageSize, search, sortBy, sortDir)
+        @RequestParam(defaultValue = "false") includeArchived: Boolean,
+    ) = crud.getAll(page, pageSize, search, sortBy, sortDir, includeArchived)
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
@@ -73,6 +74,10 @@ class AssetTypesController(
     @DeleteMapping("/{id}")
     @Transactional
     fun archive(@PathVariable id: UUID) = crud.archive(id)
+
+    @PostMapping("/{id}/restore")
+    @Transactional
+    fun restore(@PathVariable id: UUID) = crud.restore(id)
 
     @PostMapping("/bulk-archive")
     @Transactional

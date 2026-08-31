@@ -61,10 +61,12 @@ class CertificatesController(
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
-    private fun buildSpec(search: String?, status: String?, typeId: UUID?, expiryFrom: String? = null, expiryTo: String? = null): Specification<Certificate> =
+    private fun buildSpec(search: String?, status: String?, typeId: UUID?, expiryFrom: String? = null, expiryTo: String? = null, includeArchived: Boolean = false): Specification<Certificate> =
         Specification { root, _, cb ->
             val predicates = mutableListOf<Predicate>()
-            predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+            // Archived rows are hidden by default but must be findable, or an
+            // archived record could never be restored.
+            if (!includeArchived) predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
 
             if (!search.isNullOrBlank()) {
                 val pattern = "%${SqlUtils.escapeLikePattern(search.lowercase())}%"
@@ -288,11 +290,12 @@ class CertificatesController(
         @RequestParam(required = false) expiryFrom: String?,
         @RequestParam(required = false) expiryTo: String?,
         @RequestParam(defaultValue = "name") sortBy: String,
-        @RequestParam(defaultValue = "asc") sortDir: String
+        @RequestParam(defaultValue = "asc") sortDir: String,
+        @RequestParam(defaultValue = "false") includeArchived: Boolean
     ): ResponseEntity<PagedResponse<CertificateDto>> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
-        val spec = buildSpec(search, status, typeId, expiryFrom, expiryTo)
+        val spec = buildSpec(search, status, typeId, expiryFrom, expiryTo, includeArchived)
             .and(withFetch("certificateType", "asset", "person", "location"))
             .and(statusOrder(sortBy, sortDir))
         val pageReq = PageRequest.of(p - 1, ps, sortOf(sortBy, sortDir))
@@ -644,6 +647,26 @@ class CertificatesController(
             )
         }
         return ResponseEntity.ok(BulkActionResponse(succeeded, failed))
+    }
+
+    /**
+     * Brings an archived certificate back. Archiving is a soft delete, so without this
+     * the record was recoverable only by hand-written SQL.
+     */
+    @PostMapping("/{id}/restore")
+    @Transactional
+    fun restore(@PathVariable id: UUID): ResponseEntity<Any> {
+        val entity = certificateRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+        if (!entity.isArchived) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "This certificate is not archived."))
+        }
+        entity.isArchived = false
+        entity.updatedAt = Instant.now()
+        certificateRepository.save(entity)
+        auditService.log(AuditEntry("Restored", "Certificate", entity.id.toString(), entity.name,
+            "Restored certificate \"${entity.name}\"", currentUserService.userId, currentUserService.userName))
+        return ResponseEntity.ok(entity.toDto(buildCustomFieldValueDtos(entity.id)))
     }
 
     @DeleteMapping("/{id}")

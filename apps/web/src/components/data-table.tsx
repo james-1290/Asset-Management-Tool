@@ -114,14 +114,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">{toolbar && toolbar(table)}</div>
-        {!isControlled && !hideTable && (
-          <div className="shrink-0">
-            <DensityToggle density={density} onDensityChange={setStoredDensity} />
-          </div>
-        )}
-      </div>
+      {toolbar && toolbar(table)}
       {hideTable ? (
         children
       ) : (
@@ -169,9 +162,12 @@ export function DataTable<TData, TValue>({
               )}
             </TableBody>
           </Table>
-          {paginationControls && (
-            <div className="border-t border-slate-100 dark:border-slate-800 px-6 py-4">
-              {paginationControls}
+          {(paginationControls || !isControlled) && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-800 px-6 py-4">
+              <div className="min-w-0 flex-1">{paginationControls}</div>
+              {!isControlled && (
+                <DensityToggle density={density} onDensityChange={setStoredDensity} />
+              )}
             </div>
           )}
         </div>

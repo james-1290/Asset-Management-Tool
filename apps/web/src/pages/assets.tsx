@@ -20,12 +20,14 @@ import { getSelectionColumn } from "../components/data-table-selection-column";
 import { GroupedGridView } from "../components/grouped-grid-view";
 import { ViewModeToggle } from "../components/view-mode-toggle";
 import { SavedViewSelector } from "../components/saved-view-selector";
+import { ArchivedToggle } from "@/components/archived-toggle";
 import { AssetCard } from "../components/assets/asset-card";
 import {
   usePagedAssets,
   useCreateAsset,
   useUpdateAsset,
   useArchiveAsset,
+  useRestoreAsset,
   useBulkArchiveAssets,
   useBulkStatusAssets,
   useBulkEditAssets,
@@ -85,6 +87,9 @@ export default function AssetsPage() {
   const includeSold = searchParams.get("includeSold") === "true";
   const typeIdParam = searchParams.get("typeId") ?? "";
   const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
+  // Archived rows are hidden until asked for; this is what makes a
+  // soft-deleted record findable again so it can be restored.
+  const showArchived = searchParams.get("includeArchived") === "true";
 
   // Exposes the grouped view, which the page already renders but had no control
   // to reach — it was previously only accessible by editing the URL by hand.
@@ -131,8 +136,9 @@ export default function AssetsPage() {
       costMax: costMaxParam || undefined,
       unassigned: unassignedParam || undefined,
       createdAfter: createdAfterParam || undefined,
+      includeArchived: showArchived || undefined,
     }),
-    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam, createdAfterParam],
+    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam, createdAfterParam, showArchived],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedAssets(queryParams);
@@ -143,6 +149,7 @@ export default function AssetsPage() {
   const checkDuplicatesMutation = useCheckAssetDuplicates();
   const updateMutation = useUpdateAsset();
   const archiveMutation = useArchiveAsset();
+  const restoreMutation = useRestoreAsset();
   const bulkArchiveMutation = useBulkArchiveAssets();
   const bulkStatusMutation = useBulkStatusAssets();
   const bulkEditMutation = useBulkEditAssets();
@@ -179,6 +186,14 @@ export default function AssetsPage() {
     return defs;
   }, [assetTypes]);
 
+  // Stable, so the columns memo that depends on it isn't rebuilt every render.
+  const handleRestore = useCallback((id: string, name: string) => {
+    restoreMutation.mutate(id, {
+      onSuccess: () => toast.success(`Restored ${name}`),
+      onError: (error) => toast.error(getApiErrorMessage(error, "Failed to restore")),
+    });
+  }, [restoreMutation]);
+
   const columns = useMemo(
     () => [
       getSelectionColumn<Asset>(),
@@ -191,10 +206,11 @@ export default function AssetsPage() {
         onArchive: (asset) => {
           setArchivingAsset(asset);
         },
+        onRestore: (asset) => handleRestore(asset.id, asset.name),
         customFieldDefinitions: allCustomFieldDefs,
       }),
     ],
-    [allCustomFieldDefs, canWrite],
+    [allCustomFieldDefs, canWrite, handleRestore],
   );
 
   // Hide custom field columns by default
@@ -475,6 +491,7 @@ export default function AssetsPage() {
     }
   }
 
+
   function handleArchive() {
     if (!archivingAsset) return;
     archiveMutation.mutate(archivingAsset.id, {
@@ -639,6 +656,10 @@ export default function AssetsPage() {
                 onCostMaxChange={(v) => handleFilterChange("costMax", v)}
               />
               <div className="flex items-center gap-1.5">
+                <ArchivedToggle
+                  showArchived={showArchived}
+                  onShowArchivedChange={(v) => handleFilterChange("includeArchived", v ? "true" : "")}
+                />
                 <SavedViewSelector
                   entityType="assets"
                   activeViewId={activeViewId}

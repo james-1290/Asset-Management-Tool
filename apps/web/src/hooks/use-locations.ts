@@ -26,6 +26,7 @@ export const useLocation = locationHooks.useDetail;
 export const useCreateLocation = locationHooks.useCreate;
 export const useUpdateLocation = locationHooks.useUpdate;
 export const useArchiveLocation = locationHooks.useArchive;
+export const useRestoreLocation = locationHooks.useRestore;
 
 export function useLocationAssets(id: string) {
   return useQuery({

@@ -15,16 +15,14 @@ export function LocationsToolbar({
   onSearchChange,
 }: LocationsToolbarProps) {
   return (
-    <div className="flex flex-1 items-center gap-2">
+    <div className="flex flex-1 flex-wrap items-center gap-2">
       <Input
         placeholder="Search locations…"
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        className="max-w-[240px]"
+        className="w-[220px] shrink-0"
       />
-      <div className="ml-auto">
-        <ColumnToggle table={table} />
-      </div>
+      <ColumnToggle table={table} />
     </div>
   );
 }

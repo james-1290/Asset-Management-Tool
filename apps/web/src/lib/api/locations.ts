@@ -11,6 +11,8 @@ import type {
 import type { DuplicateCheckResult, CheckLocationDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface LocationQueryParams {
+  /** Include archived (soft-deleted) rows, so they can be restored. */
+  includeArchived?: boolean;
   page?: number;
   pageSize?: number;
   search?: string;

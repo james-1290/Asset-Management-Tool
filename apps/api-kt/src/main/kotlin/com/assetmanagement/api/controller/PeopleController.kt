@@ -60,11 +60,12 @@ class PeopleController(
         @RequestParam(required = false) locationId: UUID?,
         @RequestParam(required = false) department: String?,
         @RequestParam(defaultValue = "fullname") sortBy: String,
-        @RequestParam(defaultValue = "asc") sortDir: String
+        @RequestParam(defaultValue = "asc") sortDir: String,
+        @RequestParam(defaultValue = "false") includeArchived: Boolean
     ): ResponseEntity<PagedResponse<PersonDto>> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
-        val spec = buildSpec(search, locationId, department).and(withFetch("location"))
+        val spec = buildSpec(search, locationId, department, includeArchived).and(withFetch("location"))
         val sort = sortOf(sortBy, sortDir)
         val result = personRepository.findAll(spec, PageRequest.of(p - 1, ps, sort))
         val items = result.content.map { it.toDto() }
@@ -234,6 +235,26 @@ class PeopleController(
                 "Bulk archived person \"${person.fullName}\"", currentUserService.userId, currentUserService.userName))
         }
         return ResponseEntity.ok(BulkActionResponse(succeeded, failed))
+    }
+
+    /**
+     * Brings an archived person back. Archiving is a soft delete, so without this
+     * the record was recoverable only by hand-written SQL.
+     */
+    @PostMapping("/{id}/restore")
+    @Transactional
+    fun restore(@PathVariable id: UUID): ResponseEntity<Any> {
+        val entity = personRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+        if (!entity.isArchived) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "This person is not archived."))
+        }
+        entity.isArchived = false
+        entity.updatedAt = Instant.now()
+        personRepository.save(entity)
+        auditService.log(AuditEntry("Restored", "Person", entity.id.toString(), entity.fullName,
+            "Restored person \"${entity.fullName}\"", currentUserService.userId, currentUserService.userName))
+        return ResponseEntity.ok(entity.toDto())
     }
 
     @DeleteMapping("/{id}")
@@ -471,9 +492,11 @@ class PeopleController(
         return ResponseEntity.ok(OffboardResultDto(results))
     }
 
-    private fun buildSpec(search: String?, locationId: UUID? = null, department: String? = null): Specification<Person> = Specification { root, _, cb ->
+    private fun buildSpec(search: String?, locationId: UUID? = null, department: String? = null, includeArchived: Boolean = false): Specification<Person> = Specification { root, _, cb ->
         val predicates = mutableListOf<Predicate>()
-        predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+        // Archived rows are hidden by default but must be findable, or an
+        // archived record could never be restored.
+        if (!includeArchived) predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
         if (!search.isNullOrBlank()) {
             val pattern = "%${SqlUtils.escapeLikePattern(search.lowercase())}%"
             predicates.add(cb.or(

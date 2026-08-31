@@ -9,6 +9,8 @@ import type { CertificateHistory } from "../../types/certificate-history";
 import type { DuplicateCheckResult, CheckCertificateDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface CertificateQueryParams {
+  /** Include archived (soft-deleted) rows, so they can be restored. */
+  includeArchived?: boolean;
   page?: number;
   pageSize?: number;
   search?: string;

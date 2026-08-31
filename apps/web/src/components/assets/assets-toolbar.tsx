@@ -113,7 +113,7 @@ export function AssetsToolbar({
   }
 
   return (
-    <div className="flex flex-1 items-center gap-2">
+    <div className="flex flex-1 flex-wrap items-center gap-2">
       {/*
         The list's own search. The page has always passed `search`/`onSearchChange`
         (and a saved view can set them), but nothing rendered them, leaving Assets
@@ -124,7 +124,7 @@ export function AssetsToolbar({
         placeholder="Search assets…"
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        className="max-w-[240px]"
+        className="w-[220px] shrink-0"
       />
       <FilterChip
         label="Type"
@@ -254,9 +254,7 @@ export function AssetsToolbar({
         the custom-field columns — which default to hidden — could not be shown
         on the one list most likely to have them.
       */}
-      <div className="ml-auto">
-        <ColumnToggle table={table} />
-      </div>
+      <ColumnToggle table={table} />
     </div>
   );
 }

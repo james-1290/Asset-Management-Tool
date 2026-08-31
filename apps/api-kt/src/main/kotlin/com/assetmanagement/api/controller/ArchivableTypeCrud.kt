@@ -37,12 +37,21 @@ class ArchivableTypeCrud<E : ArchivableType>(
     /** Non-archived entities still referencing the type. */
     private val inUseCount: (UUID) -> Long,
 ) {
-    fun getAll(page: Int, pageSize: Int, search: String?, sortBy: String, sortDir: String): ResponseEntity<PagedResponse<Any>> {
+    fun getAll(
+        page: Int,
+        pageSize: Int,
+        search: String?,
+        sortBy: String,
+        sortDir: String,
+        includeArchived: Boolean = false,
+    ): ResponseEntity<PagedResponse<Any>> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
         val spec = Specification<E> { root, _, cb ->
             val preds = mutableListOf<Predicate>()
-            preds.add(cb.equal(root.get<Boolean>("isArchived"), false))
+            // Archived rows are hidden by default, but must be findable — a type
+            // that cannot be listed cannot be restored.
+            if (!includeArchived) preds.add(cb.equal(root.get<Boolean>("isArchived"), false))
             if (!search.isNullOrBlank()) {
                 preds.add(cb.like(cb.lower(root.get("name")), "%${SqlUtils.escapeLikePattern(search.lowercase())}%", '\\'))
             }
@@ -82,6 +91,19 @@ class ArchivableTypeCrud<E : ArchivableType>(
         auditService.log(AuditEntry("Archived", auditEntityType, type.id.toString(), type.name,
             "Archived $typeNoun type \"${type.name}\"", currentUserService.userId, currentUserService.userName))
         return ResponseEntity.noContent().build()
+    }
+
+    fun restore(id: UUID): ResponseEntity<Any> {
+        val type = repository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+        if (!type.isArchived) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "This $typeNoun type is not archived."))
+        }
+        type.isArchived = false
+        type.updatedAt = Instant.now()
+        repository.save(type)
+        auditService.log(AuditEntry("Restored", auditEntityType, type.id.toString(), type.name,
+            "Restored $typeNoun type \"${type.name}\"", currentUserService.userId, currentUserService.userName))
+        return ResponseEntity.ok(toDto(type))
     }
 
     fun bulkArchive(request: BulkArchiveRequest): ResponseEntity<BulkActionResponse> {

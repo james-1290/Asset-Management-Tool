@@ -27,6 +27,7 @@ export const usePerson = personHooks.useDetail;
 export const useCreatePerson = personHooks.useCreate;
 export const useUpdatePerson = personHooks.useUpdate;
 export const useArchivePerson = personHooks.useArchive;
+export const useRestorePerson = personHooks.useRestore;
 export const useBulkArchivePeople = personHooks.useBulkArchive;
 
 export function usePeopleSearch(query: string) {

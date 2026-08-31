@@ -299,7 +299,7 @@ export function AssetFormDialog({
                     name="serialNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-semibold">Serial Number *</FormLabel>
+                        <FormLabel className="font-semibold">Serial Number</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g. ABC123XYZ" {...field} />
                         </FormControl>
@@ -377,7 +377,7 @@ export function AssetFormDialog({
                     name="locationId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-semibold">Location *</FormLabel>
+                        <FormLabel className="font-semibold">Location</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
@@ -493,7 +493,7 @@ export function AssetFormDialog({
                     name="purchaseDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-semibold">Purchase Date *</FormLabel>
+                        <FormLabel className="font-semibold">Purchase Date</FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />
                         </FormControl>

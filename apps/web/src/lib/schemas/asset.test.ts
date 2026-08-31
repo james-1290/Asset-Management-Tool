@@ -10,16 +10,30 @@ const validAsset = {
   purchaseDate: "2026-01-01",
 };
 
+/** What the API and the CSV importer actually require: a name and a type. */
+const minimalAsset = { name: "Laptop 1", assetTypeId: "type-1" };
+
 describe("assetSchema", () => {
   it("accepts a minimal valid asset", () => {
     expect(assetSchema.safeParse(validAsset).success).toBe(true);
   });
 
-  it("requires name, serialNumber, assetTypeId, locationId and purchaseDate", () => {
-    for (const field of ["name", "serialNumber", "assetTypeId", "locationId", "purchaseDate"] as const) {
+  it("requires only the fields the API requires", () => {
+    for (const field of ["name", "assetTypeId"] as const) {
       const result = assetSchema.safeParse({ ...validAsset, [field]: "" });
       expect(result.success, `expected ${field} to be required`).toBe(false);
     }
+  });
+
+  it("accepts an asset with only a name and a type, as the importer creates", () => {
+    // The form used to demand a serial number, location and purchase date that
+    // neither the API nor the importer required, which left every imported
+    // asset uneditable.
+    expect(assetSchema.safeParse(minimalAsset).success).toBe(true);
+  });
+
+  it("still accepts those fields when they are supplied", () => {
+    expect(assetSchema.safeParse(validAsset).success).toBe(true);
   });
 
   it("rejects a name longer than 200 characters", () => {

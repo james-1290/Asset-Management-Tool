@@ -23,6 +23,8 @@ interface ColumnActions {
   canWrite?: boolean;
   onEdit: (application: Application) => void;
   onArchive: (application: Application) => void;
+  /** Shown instead of Edit/Delete on an archived row. */
+  onRestore?: (application: Application) => void;
   onDeactivate?: (application: Application) => void;
 }
 
@@ -45,6 +47,7 @@ export function getApplicationColumns({
   canWrite = true,
   onEdit,
   onArchive,
+  onRestore,
   onDeactivate,
 }: ColumnActions): ColumnDef<Application, unknown>[] {
   const columns: ColumnDef<Application, unknown>[] = [
@@ -132,20 +135,30 @@ export function getApplicationColumns({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(application)}>
-                Edit
-              </DropdownMenuItem>
-              {onDeactivate && application.status !== "Inactive" && !application.isArchived && (
-                <DropdownMenuItem onClick={() => onDeactivate(application)}>
-                  Deactivate
+              {application.isArchived ? (
+                // An archived row can only be brought back; editing or
+                // deleting it again makes no sense.
+                <DropdownMenuItem onClick={() => onRestore?.(application)}>
+                  Restore
                 </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => onEdit(application)}>
+                    Edit
+                  </DropdownMenuItem>
+                  {onDeactivate && application.status !== "Inactive" && !application.isArchived && (
+                    <DropdownMenuItem onClick={() => onDeactivate(application)}>
+                      Deactivate
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onArchive(application)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </>
               )}
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => onArchive(application)}
-              >
-                Delete
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         );

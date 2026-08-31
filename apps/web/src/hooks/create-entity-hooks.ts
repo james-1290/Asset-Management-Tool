@@ -66,6 +66,8 @@ interface EntityApiLike<T, TCreate, TUpdate, TParams> {
   create: (data: TCreate) => Promise<T>;
   update: (id: string, data: TUpdate) => Promise<T>;
   archive: (id: string) => Promise<void>;
+  /** Undoes an archive. Present wherever the API offers a restore endpoint. */
+  restore?: (id: string) => Promise<T>;
   bulkArchive?: (ids: string[]) => Promise<BulkArchiveResult>;
 }
 
@@ -136,6 +138,15 @@ export function createEntityHooks<T, TCreate, TUpdate, TParams>(
     });
   }
 
+  function useRestore() {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (id: string) => api.restore!(id),
+      // A restore changes the same lists an archive does.
+      onSuccess: () => runInvalidations(queryClient, cfg, "archive"),
+    });
+  }
+
   function useBulkArchive() {
     const queryClient = useQueryClient();
     return useMutation({
@@ -144,5 +155,5 @@ export function createEntityHooks<T, TCreate, TUpdate, TParams>(
     });
   }
 
-  return { keys, useAll, usePaged, useDetail, useCreate, useUpdate, useArchive, useBulkArchive };
+  return { keys, useAll, usePaged, useDetail, useCreate, useUpdate, useArchive, useRestore, useBulkArchive };
 }

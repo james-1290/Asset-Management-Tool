@@ -44,9 +44,11 @@ class LocationsController(
 ) {
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
 
-    private fun buildSpec(search: String?): Specification<Location> = Specification { root, _, cb ->
+    private fun buildSpec(search: String?, includeArchived: Boolean = false): Specification<Location> = Specification { root, _, cb ->
         val predicates = mutableListOf<Predicate>()
-        predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+            // Archived rows are hidden by default but must be findable,
+            // or an archived record could never be restored.
+        if (!includeArchived) predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
         if (!search.isNullOrBlank()) {
             predicates.add(cb.like(cb.lower(root.get("name")), "%${SqlUtils.escapeLikePattern(search.lowercase())}%", '\\'))
         }
@@ -72,11 +74,12 @@ class LocationsController(
         @RequestParam(defaultValue = "25") pageSize: Int,
         @RequestParam(required = false) search: String?,
         @RequestParam(defaultValue = "name") sortBy: String,
-        @RequestParam(defaultValue = "asc") sortDir: String
+        @RequestParam(defaultValue = "asc") sortDir: String,
+        @RequestParam(defaultValue = "false") includeArchived: Boolean
     ): ResponseEntity<PagedResponse<LocationDto>> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
-        val spec = buildSpec(search)
+        val spec = buildSpec(search, includeArchived)
         val pageReq = PageRequest.of(p - 1, ps, sortOf(sortBy, sortDir))
         val result = locationRepository.findAll(spec, pageReq)
         val items = result.content.map { it.toDto() }
@@ -187,6 +190,26 @@ class LocationsController(
             if (changes.isNotEmpty()) changes else null))
 
         return ResponseEntity.ok(location.toDto())
+    }
+
+    /**
+     * Brings an archived location back. Archiving is a soft delete, so without this
+     * the record was recoverable only by hand-written SQL.
+     */
+    @PostMapping("/{id}/restore")
+    @Transactional
+    fun restore(@PathVariable id: UUID): ResponseEntity<Any> {
+        val entity = locationRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+        if (!entity.isArchived) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "This location is not archived."))
+        }
+        entity.isArchived = false
+        entity.updatedAt = Instant.now()
+        locationRepository.save(entity)
+        auditService.log(AuditEntry("Restored", "Location", entity.id.toString(), entity.name,
+            "Restored location \"${entity.name}\"", currentUserService.userId, currentUserService.userName))
+        return ResponseEntity.ok(entity.toDto())
     }
 
     @DeleteMapping("/{id}")

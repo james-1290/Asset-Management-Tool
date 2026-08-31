@@ -23,6 +23,7 @@ import {
   useCreateApplication,
   useUpdateApplication,
   useArchiveApplication,
+  useRestoreApplication,
   useDeactivateApplication,
   useBulkArchiveApplications,
   useBulkStatusApplications,
@@ -34,6 +35,7 @@ import { ExportButton } from "@/components/export-button";
 import { ViewModeToggle } from "@/components/view-mode-toggle";
 import { ColumnToggle } from "@/components/column-toggle";
 import { SavedViewSelector } from "@/components/saved-view-selector";
+import { ArchivedToggle } from "@/components/archived-toggle";
 import { useSavedViews } from "@/hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "@/types/saved-view";
 import { BulkActionBar } from "../components/bulk-action-bar";
@@ -80,6 +82,9 @@ export default function ApplicationsPage() {
   const includeInactive = searchParams.get("includeInactive") === "true";
   const typeIdParam = searchParams.get("typeId") ?? "";
   const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
+  // Archived rows are hidden until asked for; this is what makes a
+  // soft-deleted record findable again so it can be restored.
+  const showArchived = searchParams.get("includeArchived") === "true";
 
   // Exposes the grouped view, which the page already renders but had no control
   // to reach — it was previously only accessible by editing the URL by hand.
@@ -114,8 +119,9 @@ export default function ApplicationsPage() {
       costMin: costMinParam || undefined,
       costMax: costMaxParam || undefined,
       publisher: publisherParam || undefined,
+      includeArchived: showArchived || undefined,
     }),
-    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam, expiryFromParam, expiryToParam, licenceTypeParam, costMinParam, costMaxParam, publisherParam],
+    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam, expiryFromParam, expiryToParam, licenceTypeParam, costMinParam, costMaxParam, publisherParam, showArchived],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedApplications(queryParams);
@@ -126,6 +132,7 @@ export default function ApplicationsPage() {
   const checkDuplicatesMutation = useCheckApplicationDuplicates();
   const updateMutation = useUpdateApplication();
   const archiveMutation = useArchiveApplication();
+  const restoreMutation = useRestoreApplication();
   const deactivateMutation = useDeactivateApplication();
   const bulkArchiveMutation = useBulkArchiveApplications();
   const bulkStatusMutation = useBulkStatusApplications();
@@ -226,6 +233,14 @@ export default function ApplicationsPage() {
     costMaxParam, publisherParam,
   ]);
 
+  // Stable, so the columns memo that depends on it isn't rebuilt every render.
+  const handleRestore = useCallback((id: string, name: string) => {
+    restoreMutation.mutate(id, {
+      onSuccess: () => toast.success(`Restored ${name}`),
+      onError: (error) => toast.error(getApiErrorMessage(error, "Failed to restore")),
+    });
+  }, [restoreMutation]);
+
   const columns = useMemo(
     () => [
       getSelectionColumn<Application>(),
@@ -238,12 +253,13 @@ export default function ApplicationsPage() {
         onArchive: (application) => {
           setArchivingApplication(application);
         },
+        onRestore: (application) => handleRestore(application.id, application.name),
         onDeactivate: (application) => {
           setDeactivatingApplication(application);
         },
       }),
     ],
-    [canWrite],
+    [canWrite, handleRestore],
   );
 
   const [exporting, setExporting] = useState(false);
@@ -348,6 +364,7 @@ export default function ApplicationsPage() {
       );
     }
   }
+
 
   function handleArchive() {
     if (!archivingApplication) return;
@@ -491,6 +508,10 @@ export default function ApplicationsPage() {
               <div className="flex items-center gap-1">
                 {/* The column chooser every other list offers; without it the
                     custom-field columns cannot be shown. */}
+                <ArchivedToggle
+                  showArchived={showArchived}
+                  onShowArchivedChange={(v) => handleFilterChange("includeArchived", v ? "true" : "")}
+                />
                 <SavedViewSelector
                   entityType="applications"
                   activeViewId={activeViewId}

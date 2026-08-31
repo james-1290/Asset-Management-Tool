@@ -29,12 +29,12 @@ export function PeopleToolbar({
   departments,
 }: PeopleToolbarProps) {
   return (
-    <div className="flex flex-1 items-center gap-2">
+    <div className="flex flex-1 flex-wrap items-center gap-2">
       <Input
         placeholder="Search people..."
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        className="max-w-[240px]"
+        className="w-[220px] shrink-0"
       />
       <div className="flex items-center gap-1.5">
         <FilterChip
@@ -52,9 +52,7 @@ export function PeopleToolbar({
           allLabel="All departments"
         />
       </div>
-      <div className="ml-auto">
-        <ColumnToggle table={table} />
-      </div>
+      <ColumnToggle table={table} />
     </div>
   );
 }

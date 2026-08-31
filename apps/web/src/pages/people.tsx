@@ -21,6 +21,7 @@ import {
   useCreatePerson,
   useUpdatePerson,
   useArchivePerson,
+  useRestorePerson,
   useBulkArchivePeople,
   useCheckPersonDuplicates,
 } from "../hooks/use-people";
@@ -30,6 +31,7 @@ import { useLocations } from "../hooks/use-locations";
 import type { Person } from "../types/person";
 import type { PersonFormValues } from "../lib/schemas/person";
 import { SavedViewSelector } from "../components/saved-view-selector";
+import { ArchivedToggle } from "@/components/archived-toggle";
 import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
@@ -70,6 +72,12 @@ export default function PeoplePage() {
   } = useListPage({ sortFieldMap: SORT_FIELD_MAP, defaultSortBy: "fullname" });
 
   const locationIdParam = searchParams.get("locationId") ?? "";
+
+  // Archived rows are hidden until asked for; this is what makes a
+
+  // soft-deleted record findable again so it can be restored.
+
+  const showArchived = searchParams.get("includeArchived") === "true";
   const departmentParam = searchParams.get("department") ?? "";
 
   const queryParams = useMemo(
@@ -81,8 +89,9 @@ export default function PeoplePage() {
       sortDir: sortDirParam,
       locationId: locationIdParam || undefined,
       department: departmentParam || undefined,
+      includeArchived: showArchived || undefined,
     }),
-    [page, pageSize, searchParam, sortByParam, sortDirParam, locationIdParam, departmentParam],
+    [page, pageSize, searchParam, sortByParam, sortDirParam, locationIdParam, departmentParam, showArchived],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedPeople(queryParams);
@@ -92,6 +101,7 @@ export default function PeoplePage() {
   const checkDuplicatesMutation = useCheckPersonDuplicates();
   const updateMutation = useUpdatePerson();
   const archiveMutation = useArchivePerson();
+  const restoreMutation = useRestorePerson();
   const bulkArchiveMutation = useBulkArchivePeople();
 
   // Extract unique departments from all people
@@ -115,6 +125,14 @@ export default function PeoplePage() {
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const defaultViewApplied = useRef(false);
 
+  // Stable, so the columns memo that depends on it isn't rebuilt every render.
+  const handleRestore = useCallback((id: string, name: string) => {
+    restoreMutation.mutate(id, {
+      onSuccess: () => toast.success(`Restored ${name}`),
+      onError: (error) => toast.error(getApiErrorMessage(error, "Failed to restore")),
+    });
+  }, [restoreMutation]);
+
   const columns = useMemo(
     () => [
       getSelectionColumn<Person>(),
@@ -127,9 +145,10 @@ export default function PeoplePage() {
         onArchive: (person) => {
           setArchivingPerson(person);
         },
+        onRestore: (person) => handleRestore(person.id, person.fullName),
       }),
     ],
-    [canWrite],
+    [canWrite, handleRestore],
   );
 
   function handleBulkArchive() {
@@ -306,6 +325,7 @@ export default function PeoplePage() {
     }
   }
 
+
   function handleArchive() {
     if (!archivingPerson) return;
     archiveMutation.mutate(archivingPerson.id, {
@@ -404,6 +424,10 @@ export default function PeoplePage() {
                 departments={departments}
               />
               <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedIds.length} />
+              <ArchivedToggle
+                showArchived={showArchived}
+                onShowArchivedChange={(v) => handleFilterChange("includeArchived", v ? "true" : "")}
+              />
               <SavedViewSelector
                 entityType="people"
                 activeViewId={activeViewId}

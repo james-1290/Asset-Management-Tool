@@ -19,12 +19,15 @@ interface ColumnActions {
   canWrite?: boolean;
   onEdit: (model: AssetModel) => void;
   onArchive: (model: AssetModel) => void;
+  /** Shown instead of Edit/Delete on an archived row. */
+  onRestore?: (model: AssetModel) => void;
 }
 
 export function getAssetModelColumns({
   canWrite = true,
   onEdit,
   onArchive,
+  onRestore,
 }: ColumnActions): ColumnDef<AssetModel, unknown>[] {
   const columns: ColumnDef<AssetModel, unknown>[] = [
     {
@@ -65,15 +68,25 @@ export function getAssetModelColumns({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(model)}>
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => onArchive(model)}
-              >
-                Delete
-              </DropdownMenuItem>
+              {model.isArchived ? (
+                // An archived row can only be brought back; editing or
+                // deleting it again makes no sense.
+                <DropdownMenuItem onClick={() => onRestore?.(model)}>
+                  Restore
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => onEdit(model)}>
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onArchive(model)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );

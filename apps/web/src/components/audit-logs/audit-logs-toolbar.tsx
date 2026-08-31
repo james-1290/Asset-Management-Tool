@@ -214,9 +214,7 @@ export function AuditLogsToolbar({
       )}
 
       {/* Column toggle */}
-      <div className="ml-auto">
-        <ColumnToggle table={table} />
-      </div>
+      <ColumnToggle table={table} />
     </div>
   );
 }

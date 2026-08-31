@@ -20,12 +20,15 @@ interface ColumnActions {
   canWrite?: boolean;
   onEdit: (location: Location) => void;
   onArchive: (location: Location) => void;
+  /** Shown instead of Edit/Delete on an archived row. */
+  onRestore?: (location: Location) => void;
 }
 
 export function getLocationColumns({
   canWrite = true,
   onEdit,
   onArchive,
+  onRestore,
 }: ColumnActions): ColumnDef<Location, unknown>[] {
   const columns: ColumnDef<Location, unknown>[] = [
     {
@@ -77,15 +80,25 @@ export function getLocationColumns({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(location)}>
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => onArchive(location)}
-              >
-                Delete
-              </DropdownMenuItem>
+              {location.isArchived ? (
+                // An archived row can only be brought back; editing or
+                // deleting it again makes no sense.
+                <DropdownMenuItem onClick={() => onRestore?.(location)}>
+                  Restore
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => onEdit(location)}>
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onArchive(location)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );

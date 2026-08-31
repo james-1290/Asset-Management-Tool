@@ -35,6 +35,11 @@ export const assetModelsApi = {
     return apiClient.delete(`/asset-models/${id}`);
   },
 
+  /** Undoes an archive; these modules don't use createEntityApi. */
+  restore(id: string): Promise<AssetModel> {
+    return apiClient.post<AssetModel>(`/asset-models/${id}/restore`, {});
+  },
+
   uploadImage(id: string, file: File): Promise<AssetModel> {
     return apiClient.uploadFile<AssetModel>(`/asset-models/${id}/image`, file);
   },

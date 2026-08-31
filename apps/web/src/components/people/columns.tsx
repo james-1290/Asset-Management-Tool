@@ -21,12 +21,15 @@ interface ColumnActions {
   canWrite?: boolean;
   onEdit: (person: Person) => void;
   onArchive: (person: Person) => void;
+  /** Shown instead of Edit/Delete on an archived row. */
+  onRestore?: (person: Person) => void;
 }
 
 export function getPersonColumns({
   canWrite = true,
   onEdit,
   onArchive,
+  onRestore,
 }: ColumnActions): ColumnDef<Person, unknown>[] {
   const columns: ColumnDef<Person, unknown>[] = [
     {
@@ -81,18 +84,28 @@ export function getPersonColumns({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link to={`/people/${person.id}`}>View</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onEdit(person)}>
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => onArchive(person)}
-              >
-                Delete
-              </DropdownMenuItem>
+              {person.isArchived ? (
+                // An archived row can only be brought back; editing or
+                // deleting it again makes no sense.
+                <DropdownMenuItem onClick={() => onRestore?.(person)}>
+                  Restore
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link to={`/people/${person.id}`}>View</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onEdit(person)}>
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onArchive(person)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
