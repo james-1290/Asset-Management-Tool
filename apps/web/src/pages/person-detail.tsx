@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Pencil, Archive, UserMinus, UserRound, History, ChevronRight, Maximize2 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { SubListCapNote } from "@/components/sub-list-cap-note";
 import { Skeleton } from "../components/ui/skeleton";
 import { Badge } from "../components/ui/badge";
 import {
@@ -289,32 +290,35 @@ export default function PersonDetailPage() {
                   <p className="text-sm text-muted-foreground">No assets currently assigned.</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Asset Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Location</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {assignedAssets.map((asset) => (
-                      <TableRow key={asset.id}>
-                        <TableCell>
-                          <Link to={`/assets/${asset.id}`} className="font-medium text-primary hover:underline">
-                            {asset.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell>{asset.assetTypeName}</TableCell>
-                        <TableCell>
-                          <AssetStatusBadge status={asset.status} />
-                        </TableCell>
-                        <TableCell>{asset.locationName || "—"}</TableCell>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Asset Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Location</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {assignedAssets.map((asset) => (
+                        <TableRow key={asset.id}>
+                          <TableCell>
+                            <Link to={`/assets/${asset.id}`} className="font-medium text-primary hover:underline">
+                              {asset.name}
+                            </Link>
+                          </TableCell>
+                          <TableCell>{asset.assetTypeName}</TableCell>
+                          <TableCell>
+                            <AssetStatusBadge status={asset.status} />
+                          </TableCell>
+                          <TableCell>{asset.locationName || "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <SubListCapNote count={assignedAssets.length} href={`/assets?assignedPersonId=${id}`} noun="assets" />
+                </>
               )}
             </div>
           )}
@@ -332,32 +336,35 @@ export default function PersonDetailPage() {
                   <p className="text-sm text-muted-foreground">No certificates currently assigned.</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Expiry Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {certificates.map((cert) => (
-                      <TableRow key={cert.id}>
-                        <TableCell>
-                          <Link to={`/certificates/${cert.id}`} className="font-medium text-primary hover:underline">
-                            {cert.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell>{cert.certificateTypeName}</TableCell>
-                        <TableCell>
-                          <StatusBadge status={cert.status} />
-                        </TableCell>
-                        <TableCell>{formatDate(cert.expiryDate) || "—"}</TableCell>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Expiry Date</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {certificates.map((cert) => (
+                        <TableRow key={cert.id}>
+                          <TableCell>
+                            <Link to={`/certificates/${cert.id}`} className="font-medium text-primary hover:underline">
+                              {cert.name}
+                            </Link>
+                          </TableCell>
+                          <TableCell>{cert.certificateTypeName}</TableCell>
+                          <TableCell>
+                            <StatusBadge status={cert.status} />
+                          </TableCell>
+                          <TableCell>{formatDate(cert.expiryDate) || "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <SubListCapNote count={certificates.length} href={`/certificates?assignedPersonId=${id}`} noun="certificates" />
+                </>
               )}
             </div>
           )}
@@ -375,34 +382,37 @@ export default function PersonDetailPage() {
                   <p className="text-sm text-muted-foreground">No applications currently assigned.</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Licence</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Expiry Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {applications.map((app) => (
-                      <TableRow key={app.id}>
-                        <TableCell>
-                          <Link to={`/applications/${app.id}`} className="font-medium text-primary hover:underline">
-                            {app.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell>{app.applicationTypeName}</TableCell>
-                        <TableCell>{app.licenceType || "—"}</TableCell>
-                        <TableCell>
-                          <StatusBadge status={app.status} />
-                        </TableCell>
-                        <TableCell>{formatDate(app.expiryDate) || "—"}</TableCell>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Licence</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Expiry Date</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {applications.map((app) => (
+                        <TableRow key={app.id}>
+                          <TableCell>
+                            <Link to={`/applications/${app.id}`} className="font-medium text-primary hover:underline">
+                              {app.name}
+                            </Link>
+                          </TableCell>
+                          <TableCell>{app.applicationTypeName}</TableCell>
+                          <TableCell>{app.licenceType || "—"}</TableCell>
+                          <TableCell>
+                            <StatusBadge status={app.status} />
+                          </TableCell>
+                          <TableCell>{formatDate(app.expiryDate) || "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <SubListCapNote count={applications.length} href={`/applications?assignedPersonId=${id}`} noun="applications" />
+                </>
               )}
             </div>
           )}

@@ -42,6 +42,16 @@ class LocationsController(
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
+    companion object {
+        /**
+         * The most rows a detail-page sub-list will return. These lists exist to
+         * summarise what is at a location or held by a person; without a cap a
+         * single location with tens of thousands of assets would load them all
+         * into memory and serialise them into one response.
+         */
+        private const val SUB_LIST_LIMIT = 200
+    }
+
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
 
     private fun buildSpec(search: String?, includeArchived: Boolean = false): Specification<Location> = Specification { root, _, cb ->
@@ -131,7 +141,7 @@ class LocationsController(
                 cb.equal(root.get<Boolean>("isArchived"), false)
             )
         }
-        val assets = assetRepository.findAll(spec, Sort.by("name")).map { a ->
+        val assets = assetRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("name"))).content.map { a ->
             LocationAssetDto(a.id, a.name, a.assetType?.name, a.status.name, a.assignedPerson?.fullName)
         }
         return ResponseEntity.ok(assets)
@@ -147,7 +157,7 @@ class LocationsController(
                 cb.equal(root.get<Boolean>("isArchived"), false)
             )
         }
-        val people = personRepository.findAll(spec, Sort.by("fullName")).map { p ->
+        val people = personRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("fullName"))).content.map { p ->
             LocationPersonDto(p.id, p.fullName, p.email, p.department, p.jobTitle)
         }
         return ResponseEntity.ok(people)
@@ -262,7 +272,7 @@ class LocationsController(
                 cb.equal(root.get<Boolean>("isArchived"), false)
             )
         }
-        val certs = certificateRepository.findAll(spec, Sort.by("name")).map { c ->
+        val certs = certificateRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("name"))).content.map { c ->
             LocationCertificateDto(c.id, c.name, c.certificateType?.name, c.expiryDate)
         }
         return ResponseEntity.ok(certs)
@@ -278,7 +288,7 @@ class LocationsController(
                 cb.equal(root.get<Boolean>("isArchived"), false)
             )
         }
-        val apps = applicationRepository.findAll(spec, Sort.by("name")).map { a ->
+        val apps = applicationRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("name"))).content.map { a ->
             LocationApplicationDto(a.id, a.name, a.applicationType?.name, a.expiryDate)
         }
         return ResponseEntity.ok(apps)

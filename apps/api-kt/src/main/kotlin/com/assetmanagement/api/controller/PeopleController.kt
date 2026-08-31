@@ -40,6 +40,16 @@ class PeopleController(
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
+    companion object {
+        /**
+         * The most rows a detail-page sub-list will return. These lists exist to
+         * summarise what is at a location or held by a person; without a cap a
+         * single location with tens of thousands of assets would load them all
+         * into memory and serialise them into one response.
+         */
+        private const val SUB_LIST_LIMIT = 200
+    }
+
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
@@ -141,7 +151,7 @@ class PeopleController(
         // Fetch-join the to-one relations the DTO reads (matches the sibling list
         // endpoint) so a person's assets load in one query, not batched follow-ups.
         }.and(withFetch("assetType", "location"))
-        val assets = assetRepository.findAll(spec, Sort.by("name")).map { a ->
+        val assets = assetRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("name"))).content.map { a ->
             AssignedAssetDto(a.id, a.name, a.serialNumber, a.status.name, a.assetType?.name ?: "", a.location?.name)
         }
         return ResponseEntity.ok(assets)
@@ -328,7 +338,7 @@ class PeopleController(
         val spec = Specification<com.assetmanagement.api.model.Certificate> { root, _, cb ->
             cb.and(cb.equal(root.get<UUID>("personId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
         }
-        val certs = certificateRepository.findAll(spec, Sort.by("name")).map { c ->
+        val certs = certificateRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("name"))).content.map { c ->
             AssignedCertificateDto(c.id, c.name, c.certificateType?.name ?: "", c.status.name, c.expiryDate)
         }
         return ResponseEntity.ok(certs)
@@ -341,7 +351,7 @@ class PeopleController(
         val spec = Specification<com.assetmanagement.api.model.Application> { root, _, cb ->
             cb.and(cb.equal(root.get<UUID>("personId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
         }
-        val apps = applicationRepository.findAll(spec, Sort.by("name")).map { a ->
+        val apps = applicationRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("name"))).content.map { a ->
             AssignedApplicationDto(a.id, a.name, a.applicationType?.name ?: "", a.status.name, a.licenceType?.name, a.expiryDate)
         }
         return ResponseEntity.ok(apps)
