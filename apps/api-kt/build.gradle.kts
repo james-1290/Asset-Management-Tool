@@ -47,7 +47,7 @@ dependencies {
     implementation("com.azure:azure-storage-blob:12.29.0")
 
     // CSV
-    implementation("com.opencsv:opencsv:5.9")
+    implementation("com.opencsv:opencsv:5.12.0")
 
     // File content detection
     implementation("org.apache.tika:tika-core:2.9.1")
