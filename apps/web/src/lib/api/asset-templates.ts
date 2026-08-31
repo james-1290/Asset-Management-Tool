@@ -6,9 +6,14 @@ import type {
 } from "../../types/asset-template";
 
 export const assetTemplatesApi = {
-  getAll(assetTypeId?: string): Promise<AssetTemplate[]> {
-    const params = assetTypeId ? { assetTypeId } : undefined;
-    return apiClient.get<AssetTemplate[]>("/asset-templates", params as Record<string, string> | undefined);
+  getAll(assetTypeId?: string, includeArchived?: boolean): Promise<AssetTemplate[]> {
+    const params: Record<string, string> = {};
+    if (assetTypeId) params.assetTypeId = assetTypeId;
+    if (includeArchived) params.includeArchived = "true";
+    return apiClient.get<AssetTemplate[]>(
+      "/asset-templates",
+      Object.keys(params).length ? params : undefined,
+    );
   },
 
   create(data: CreateAssetTemplateRequest): Promise<AssetTemplate> {

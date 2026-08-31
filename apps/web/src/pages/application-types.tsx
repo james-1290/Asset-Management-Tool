@@ -19,6 +19,7 @@ import {
   useCreateApplicationType,
   useUpdateApplicationType,
   useArchiveApplicationType,
+  useRestoreApplicationType,
   useBulkArchiveApplicationTypes,
 } from "../hooks/use-application-types";
 import { getSelectionColumn } from "../components/data-table-selection-column";
@@ -39,6 +40,7 @@ const SORT_FIELD_MAP: Record<string, string> = {
 export default function ApplicationTypesPage() {
   const { canWrite } = useAuth();
   const {
+    searchParams,
     setSearchParams,
     page,
     pageSize,
@@ -56,6 +58,10 @@ export default function ApplicationTypesPage() {
     selectedIds,
   } = useListPage({ sortFieldMap: SORT_FIELD_MAP, defaultSortBy: "name" });
 
+  // Archived rows are hidden until asked for; without this an archived
+  // type could not be found in order to restore it.
+  const showArchived = searchParams.get("includeArchived") === "true";
+
   const queryParams = useMemo(
     () => ({
       page,
@@ -63,14 +69,16 @@ export default function ApplicationTypesPage() {
       search: searchParam || undefined,
       sortBy: sortByParam,
       sortDir: sortDirParam,
+      includeArchived: showArchived || undefined,
     }),
-    [page, pageSize, searchParam, sortByParam, sortDirParam],
+    [page, pageSize, searchParam, sortByParam, sortDirParam, showArchived],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedApplicationTypes(queryParams);
   const createMutation = useCreateApplicationType();
   const updateMutation = useUpdateApplicationType();
   const archiveMutation = useArchiveApplicationType();
+  const restoreMutation = useRestoreApplicationType();
   const bulkArchiveMutation = useBulkArchiveApplicationTypes();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -84,6 +92,14 @@ export default function ApplicationTypesPage() {
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const defaultViewApplied = useRef(false);
 
+  // Stable, so the columns memo that depends on it isn't rebuilt every render.
+  const handleRestore = useCallback((id: string, name: string) => {
+    restoreMutation.mutate(id, {
+      onSuccess: () => toast.success(`Restored ${name}`),
+      onError: () => toast.error("Failed to restore"),
+    });
+  }, [restoreMutation]);
+
   const columns = useMemo(
     () => [
       getSelectionColumn<ApplicationType>(),
@@ -92,12 +108,13 @@ export default function ApplicationTypesPage() {
           setEditingApplicationType(applicationType);
           setFormOpen(true);
         },
+        onRestore: (applicationType) => handleRestore(applicationType.id, applicationType.name),
         onArchive: (applicationType) => {
           setArchivingApplicationType(applicationType);
         },
       }),
     ],
-    [],
+    [handleRestore],
   );
 
   function handleBulkArchive() {
@@ -294,6 +311,15 @@ export default function ApplicationTypesPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <TypesToolbar
+                showArchived={showArchived}
+                onShowArchivedChange={(v) =>
+                  setSearchParams((prev) => {
+                    if (v) prev.set("includeArchived", "true");
+                    else prev.delete("includeArchived");
+                    prev.set("page", "1");
+                    return prev;
+                  })
+                }
                 table={table}
                 search={searchInput}
                 onSearchChange={setSearchInput}
