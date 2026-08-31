@@ -38,6 +38,10 @@ uploads/
 # Test output
 apps/web/test-results/
 apps/web/playwright-report/
+# Unanchored too: running Playwright from the repo root writes these here, and
+# one such file was committed before this rule existed.
+test-results/
+playwright-report/
 
 # Stray screenshots at repo root
 /*.png
