@@ -1,5 +1,7 @@
+import type { Table } from "@tanstack/react-table";
 import { Checkbox } from "../ui/checkbox";
 import { Input } from "../ui/input";
+import { ColumnToggle } from "../column-toggle";
 import {
   Select,
   SelectContent,
@@ -13,6 +15,7 @@ import { ListFilter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCurrencySymbol } from "@/lib/format";
 import { FilterChip } from "../filter-chip";
+import type { Asset } from "../../types/asset";
 import type { AssetType } from "../../types/asset-type";
 import type { Location } from "../../types/location";
 import type { Person } from "../../types/person";
@@ -25,6 +28,8 @@ const STATUS_OPTIONS = [
 ];
 
 interface AssetsToolbarProps {
+  /** Needed for the column chooser, which every other list already offers. */
+  table: Table<Asset>;
   search: string;
   onSearchChange: (value: string) => void;
   status: string;
@@ -57,6 +62,7 @@ interface AssetsToolbarProps {
 }
 
 export function AssetsToolbar({
+  table,
   search,
   onSearchChange,
   status,
@@ -243,6 +249,14 @@ export function AssetsToolbar({
           </button>
         </>
       )}
+      {/*
+        The column chooser, which every other list already offers. Without it
+        the custom-field columns — which default to hidden — could not be shown
+        on the one list most likely to have them.
+      */}
+      <div className="ml-auto">
+        <ColumnToggle table={table} />
+      </div>
     </div>
   );
 }

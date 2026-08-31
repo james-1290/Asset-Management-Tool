@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Archive, RefreshCw, Search } from "lucide-react";
 import type { VisibilityState } from "@tanstack/react-table";
@@ -32,6 +32,10 @@ import {
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { ExportButton } from "@/components/export-button";
 import { ViewModeToggle } from "@/components/view-mode-toggle";
+import { ColumnToggle } from "@/components/column-toggle";
+import { SavedViewSelector } from "@/components/saved-view-selector";
+import { useSavedViews } from "@/hooks/use-saved-views";
+import type { SavedView, ViewConfiguration } from "@/types/saved-view";
 import { BulkActionBar } from "../components/bulk-action-bar";
 import { useApplicationTypes } from "../hooks/use-application-types";
 import { useLocations } from "../hooks/use-locations";
@@ -55,6 +59,7 @@ export default function ApplicationsPage() {
   const { canWrite } = useAuth();
   const {
     searchParams,
+    setSearchParams,
     page,
     pageSize,
     searchParam,
@@ -147,6 +152,81 @@ export default function ApplicationsPage() {
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  // Saved views, as the other major lists offer.
+  const { data: savedViews = [] } = useSavedViews("applications");
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  const defaultViewApplied = useRef(false);
+
+  const applyView = useCallback((view: SavedView) => {
+    try {
+      const config: ViewConfiguration = JSON.parse(view.configuration);
+      setActiveViewId(view.id);
+      setColumnVisibility(config.columnVisibility ?? {});
+      setSearchParams((prev) => {
+        if (config.sortBy) prev.set("sortBy", config.sortBy);
+        if (config.sortDir) prev.set("sortDir", config.sortDir);
+        if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
+        else { prev.delete("search"); setSearchInput(""); }
+        if (config.status) prev.set("status", config.status); else prev.delete("status");
+        if (config.typeId) prev.set("typeId", config.typeId); else prev.delete("typeId");
+        if (config.viewMode && config.viewMode !== "list") prev.set("viewMode", config.viewMode);
+        else prev.delete("viewMode");
+        if (config.pageSize) prev.set("pageSize", String(config.pageSize));
+        for (const key of ["expiryFrom", "expiryTo", "licenceType", "costMin", "costMax", "publisher"]) {
+          const val = config.filters?.[key];
+          if (val) prev.set(key, String(val)); else prev.delete(key);
+        }
+        prev.set("page", "1");
+        return prev;
+      });
+    } catch { /* invalid config */ }
+  }, [setSearchParams, setSearchInput]);
+
+  // Apply the user's default saved view on first load.
+  useEffect(() => {
+    if (defaultViewApplied.current || savedViews.length === 0) return;
+    defaultViewApplied.current = true;
+    const defaultView = savedViews.find((v) => v.isDefault);
+    if (defaultView) applyView(defaultView);
+  }, [savedViews, applyView]);
+
+  function handleResetToDefault() {
+    setColumnVisibility({});
+    setActiveViewId(null);
+    setSearchParams((prev) => {
+      ["search", "status", "typeId", "viewMode", "expiryFrom", "expiryTo",
+       "licenceType", "costMin", "costMax", "publisher"].forEach((k) => prev.delete(k));
+      prev.set("sortBy", "name");
+      prev.set("sortDir", "asc");
+      prev.set("page", "1");
+      return prev;
+    });
+    setSearchInput("");
+  }
+
+  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
+    columnVisibility,
+    sortBy: sortByParam,
+    sortDir: sortDirParam,
+    search: searchParam || undefined,
+    status: statusParam || undefined,
+    typeId: typeIdParam || undefined,
+    viewMode: viewMode !== "list" ? viewMode : undefined,
+    pageSize,
+    filters: {
+      ...(expiryFromParam ? { expiryFrom: expiryFromParam } : {}),
+      ...(expiryToParam ? { expiryTo: expiryToParam } : {}),
+      ...(licenceTypeParam ? { licenceType: licenceTypeParam } : {}),
+      ...(costMinParam ? { costMin: costMinParam } : {}),
+      ...(costMaxParam ? { costMax: costMaxParam } : {}),
+      ...(publisherParam ? { publisher: publisherParam } : {}),
+    },
+  }), [
+    columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam,
+    viewMode, pageSize, expiryFromParam, expiryToParam, licenceTypeParam, costMinParam,
+    costMaxParam, publisherParam,
+  ]);
 
   const columns = useMemo(
     () => [
@@ -391,7 +471,7 @@ export default function ApplicationsPage() {
         sorting={sorting}
         onSortingChange={handleSortingChange}
         tableDensity={tableDensity}
-        toolbar={() => (
+        toolbar={(table) => (
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
@@ -439,6 +519,17 @@ export default function ApplicationsPage() {
                   </button>
                 </div>
                 <div className="w-px h-5 bg-border mx-1" />
+                {/* The column chooser every other list offers; without it the
+                    custom-field columns cannot be shown. */}
+                <SavedViewSelector
+                  entityType="applications"
+                  activeViewId={activeViewId}
+                  onApplyView={applyView}
+                  onResetToDefault={handleResetToDefault}
+                  getCurrentConfiguration={getCurrentConfiguration}
+                />
+                <div className="w-px h-5 bg-border mx-1" />
+                <ColumnToggle table={table} />
                 <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
                 <ExportButton onExport={handleExport} loading={exporting} />
               </div>

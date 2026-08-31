@@ -19,6 +19,7 @@ import { getAssetColumns } from "../components/assets/columns";
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { GroupedGridView } from "../components/grouped-grid-view";
 import { ViewModeToggle } from "../components/view-mode-toggle";
+import { SavedViewSelector } from "../components/saved-view-selector";
 import { AssetCard } from "../components/assets/asset-card";
 import {
   usePagedAssets,
@@ -159,6 +160,7 @@ export default function AssetsPage() {
   // Saved views
   const { data: savedViews = [] } = useSavedViews("assets");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const defaultViewApplied = useRef(false);
 
   // Gather all unique custom field definitions from loaded asset types
@@ -220,6 +222,7 @@ export default function AssetsPage() {
   const applyView = useCallback((view: SavedView) => {
     try {
       const config: ViewConfiguration = JSON.parse(view.configuration);
+      setActiveViewId(view.id);
       setColumnVisibility({ ...defaultColumnVisibility, ...config.columnVisibility });
       setSearchParams((prev) => {
         if (config.sortBy) prev.set("sortBy", config.sortBy);
@@ -255,6 +258,51 @@ export default function AssetsPage() {
     const defaultView = savedViews.find((v) => v.isDefault);
     if (defaultView) applyView(defaultView);
   }, [savedViews, applyView]);
+
+  function handleResetToDefault() {
+    setColumnVisibility(defaultColumnVisibility);
+    setActiveViewId(null);
+    setSearchParams((prev) => {
+      [
+        "search", "status", "typeId", "viewMode", "locationId", "assignedPersonId",
+        "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo",
+        "costMin", "costMax", "unassigned", "createdAfter",
+      ].forEach((k) => prev.delete(k));
+      prev.set("sortBy", "name");
+      prev.set("sortDir", "asc");
+      prev.set("page", "1");
+      return prev;
+    });
+    setSearchInput("");
+  }
+
+  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
+    columnVisibility,
+    sortBy: sortByParam,
+    sortDir: sortDirParam,
+    search: searchParam || undefined,
+    status: statusParam || undefined,
+    typeId: typeIdParam || undefined,
+    viewMode: viewMode !== "list" ? viewMode : undefined,
+    pageSize,
+    filters: {
+      ...(locationIdParam ? { locationId: locationIdParam } : {}),
+      ...(assignedPersonIdParam ? { assignedPersonId: assignedPersonIdParam } : {}),
+      ...(purchaseDateFromParam ? { purchaseDateFrom: purchaseDateFromParam } : {}),
+      ...(purchaseDateToParam ? { purchaseDateTo: purchaseDateToParam } : {}),
+      ...(warrantyExpiryFromParam ? { warrantyExpiryFrom: warrantyExpiryFromParam } : {}),
+      ...(warrantyExpiryToParam ? { warrantyExpiryTo: warrantyExpiryToParam } : {}),
+      ...(costMinParam ? { costMin: costMinParam } : {}),
+      ...(costMaxParam ? { costMax: costMaxParam } : {}),
+      ...(unassignedParam ? { unassigned: unassignedParam } : {}),
+      ...(createdAfterParam ? { createdAfter: createdAfterParam } : {}),
+    },
+  }), [
+    columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam,
+    viewMode, pageSize, locationIdParam, assignedPersonIdParam, purchaseDateFromParam,
+    purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam,
+    costMaxParam, unassignedParam, createdAfterParam,
+  ]);
 
 
   const handleStatusChange = useCallback(
@@ -525,6 +573,14 @@ export default function AssetsPage() {
         description={`Managing ${totalCount.toLocaleString()} total assets`}
         actions={
           <div className="flex items-center gap-3">
+            <SavedViewSelector
+              entityType="assets"
+              activeViewId={activeViewId}
+              onApplyView={applyView}
+              onResetToDefault={handleResetToDefault}
+              getCurrentConfiguration={getCurrentConfiguration}
+            />
+            <div className="w-px h-5 bg-border" />
             <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
             <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
             {canWrite && (
@@ -557,9 +613,10 @@ export default function AssetsPage() {
         rowCount={totalCount}
         sorting={sorting}
         onSortingChange={handleSortingChange}
-        toolbar={() => (
+        toolbar={(table) => (
           <div className="space-y-2">
             <AssetsToolbar
+              table={table}
               search={searchInput}
               onSearchChange={setSearchInput}
               status={statusParam}

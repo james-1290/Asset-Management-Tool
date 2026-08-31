@@ -73,3 +73,65 @@ Use shadcn/ui `Toast` for success/error notifications (to be added).
 ## Responsive Design
 
 Sidebar collapses on mobile via the shadcn/ui Sidebar component. All content should be usable on tablet and desktop screens.
+
+---
+
+# The list-page contract
+
+Every list page is built from the same parts, in the same order. A list that
+omits one of these is a bug unless the capability behind it genuinely does not
+exist in the API.
+
+## Required on every list
+
+| Part | Component | Notes |
+|---|---|---|
+| Title + breadcrumbs | `PageHeader` | `title`, `breadcrumbs`, `description` showing the total count |
+| Table | `DataTable` | `variant="borderless"`, server-side paging/sorting/filtering |
+| Pagination | `DataTablePagination` | Passed as the table's `pagination` slot |
+| Row actions | columns factory | Takes `canWrite`; a read-only viewer gets no actions column |
+
+## Required when the API supports it
+
+| Control | Component | Include when |
+|---|---|---|
+| Search box | `Input`, in the page's toolbar | the list endpoint takes a `search` parameter |
+| Column chooser | `ColumnToggle` | any column is hideable — always true where custom fields exist |
+| Saved views | `SavedViewSelector` | the list is one a user would return to with a set-up |
+| Export | `ExportButton` | an `/export` endpoint exists |
+| Grouped view | `ViewModeToggle` | the page renders `GroupedGridView` |
+| Bulk actions | `BulkActionBar` | a `bulk-archive` or `bulk-status` endpoint exists |
+| Active filters | `ActiveFilterChips` | the list has filters beyond a single chip |
+
+## Ordering within the toolbar
+
+Left group: search box, then filter chips, then a "More filters" popover for
+anything that does not fit. Right group, in this order: saved views, a divider,
+view-mode toggle, column chooser, export.
+
+## Copy
+
+Search placeholders name what is being searched — "Search assets…", not
+"Search...". Use the ellipsis character, not three dots.
+
+## Accessibility
+
+Icon-only controls need an accessible name. A tooltip is **not** an accessible
+name, and neither is a label that shows the current *value* (the saved-view
+button reads "Default", so it carries `aria-label="Saved views"`). Use
+`aria-label`, or an `sr-only` span where the codebase already does that for row
+menus.
+
+## How this is enforced
+
+`apps/web/e2e/qa/uniformity.spec.ts` holds the contract as a table of every list
+and which capabilities it has. It asserts the controls are present across the
+whole set, so a single page that drifts fails the suite. When a list genuinely
+should not have a control, set it to `false` there with the reason — the
+exception then has to be argued for rather than silently assumed.
+
+## Known divergence
+
+The Applications list has a **table density** toggle (Comfortable/Compact) that
+no other list offers. It should either be lifted into `DataTable` and offered
+everywhere, or dropped — it is left as-is pending that decision.
