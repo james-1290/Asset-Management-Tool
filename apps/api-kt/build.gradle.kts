@@ -2,7 +2,7 @@ plugins {
     // Line and branch coverage, so "the tests cover the code" is a number
     // rather than an impression.
     jacoco
-    id("org.springframework.boot") version "3.3.7"
+    id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.6"
     kotlin("jvm") version "1.9.23"
     kotlin("plugin.spring") version "1.9.23"
