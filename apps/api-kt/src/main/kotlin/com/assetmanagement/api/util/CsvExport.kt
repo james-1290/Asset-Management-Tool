@@ -21,6 +21,17 @@ object CsvExport {
     /** Hard cap on exported data rows, guarding heap and response size. */
     const val MAX_ROWS = 100_000
 
+    /**
+     * The byte-order mark, written at the start of every export.
+     *
+     * Excel on Windows decodes a CSV with the system code page unless the file
+     * starts with one, so "Café Münster" arrived as "CafÃ© MÃ¼nster" — in a
+     * product whose exports are the main way data leaves it, and whose records
+     * are people and places. Other tools tolerate or strip the mark, and this
+     * app's own importer strips it.
+     */
+    private const val UTF8_BOM = "\uFEFF"
+
     private val log = LoggerFactory.getLogger(CsvExport::class.java)
     private const val CONTENT_TYPE = "text/csv"
 
@@ -68,7 +79,9 @@ object CsvExport {
         response.contentType = CONTENT_TYPE
         response.characterEncoding = StandardCharsets.UTF_8.name()
         response.setHeader("Content-Disposition", "attachment; filename=$filename")
-        CSVWriter(OutputStreamWriter(response.outputStream, StandardCharsets.UTF_8)).use { writer ->
+        val out = OutputStreamWriter(response.outputStream, StandardCharsets.UTF_8)
+        out.write(UTF8_BOM)
+        CSVWriter(out).use { writer ->
             block(writer)
             writer.flush()
         }
@@ -78,7 +91,9 @@ object CsvExport {
      *  such as the report summaries). */
     fun toResponseEntity(filename: String, block: (CSVWriter) -> Unit): ResponseEntity<ByteArray> {
         val baos = ByteArrayOutputStream()
-        CSVWriter(OutputStreamWriter(baos, StandardCharsets.UTF_8)).use { writer ->
+        val out = OutputStreamWriter(baos, StandardCharsets.UTF_8)
+        out.write(UTF8_BOM)
+        CSVWriter(out).use { writer ->
             block(writer)
             writer.flush()
         }

@@ -1,7 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { Toaster } from 'sonner'
+// The local wrapper, not sonner's raw Toaster: it binds the toast colours to
+// the app's own theme variables and gives the toasts our icon set. It had been
+// written and then never wired in.
+import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from './contexts/auth-context'
 import { ErrorBoundary } from './components/error-boundary'
 import { queryClient } from './lib/query-client'

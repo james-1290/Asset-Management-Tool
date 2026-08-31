@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.util.HtmlUtils
 import java.time.Instant
-import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -362,7 +361,10 @@ class AlertProcessingService(
                         val licenceItems = personalItems.filter { it.entityType == "licence" }
                         val htmlBody = buildDigestHtml(orgName, warrantyItems, certificateItems, licenceItems)
                         emailService.sendDigestEmail(listOf(user.email), subject, htmlBody)
-                        log.info("Sent personal alert email to {} for rule {}", user.email, rule.id)
+                        // The user id, not the address: logs are retained and shipped
+                        // elsewhere, and an email address is personal data that
+                        // then has to be found and erased along with the record.
+                        log.info("Sent personal alert email to user {} for rule {}", user.id, rule.id)
                     }
                 } catch (e: Exception) {
                     log.error("Failed to send personal alert email for rule {}", rule.id, e)

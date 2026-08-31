@@ -15,12 +15,6 @@ export function useUsers(includeInactive = false) {
   });
 }
 
-export function useRoles() {
-  return useQuery({
-    queryKey: userKeys.roles,
-    queryFn: usersApi.getRoles,
-  });
-}
 
 export function useSetUserActive() {
   const queryClient = useQueryClient();

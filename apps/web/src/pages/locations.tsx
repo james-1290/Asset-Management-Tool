@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { useListPage } from "../hooks/use-list-page";
@@ -28,8 +28,7 @@ import type { Location, LocationItemCounts } from "../types/location";
 import type { LocationFormValues } from "../lib/schemas/location";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { ArchivedToggle } from "@/components/archived-toggle";
-import { useSavedViews } from "../hooks/use-saved-views";
-import type { SavedView, ViewConfiguration } from "../types/saved-view";
+import { useSavedViewState } from "../hooks/use-saved-view-state";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 import { useAuth } from "@/contexts/auth-context";
@@ -41,6 +40,9 @@ const SORT_FIELD_MAP: Record<string, string> = {
   country: "country",
   createdAt: "createdAt",
 };
+
+/** Filter params this list stores in a saved view. */
+const SAVED_VIEW_FILTER_KEYS = [] as const;
 
 export default function LocationsPage() {
   const { canWrite } = useAuth();
@@ -98,10 +100,20 @@ export default function LocationsPage() {
   } | null>(null);
 
   // Saved views
-  const { data: savedViews = [] } = useSavedViews("locations");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [activeViewId, setActiveViewId] = useState<string | null>(null);
-  const defaultViewApplied = useRef(false);
+
+  const { activeViewId, applyView, handleResetToDefault, getCurrentConfiguration } =
+    useSavedViewState({
+      entityType: "locations",
+      filterKeys: SAVED_VIEW_FILTER_KEYS,
+      defaultSortBy: "name",
+      searchParams,
+      setSearchParams,
+      setSearchInput,
+      columnVisibility,
+      setColumnVisibility,
+      pageSize,
+    });
 
   // Stable, so the columns memo that depends on it isn't rebuilt every render.
   const handleRestore = useCallback((id: string, name: string) => {
@@ -126,52 +138,6 @@ export default function LocationsPage() {
       }),
     [canWrite, handleRestore],
   );
-
-  const applyView = useCallback((view: SavedView) => {
-    try {
-      const config: ViewConfiguration = JSON.parse(view.configuration);
-      setColumnVisibility(config.columnVisibility ?? {});
-      setActiveViewId(view.id);
-      setSearchParams((prev) => {
-        if (config.sortBy) prev.set("sortBy", config.sortBy);
-        if (config.sortDir) prev.set("sortDir", config.sortDir);
-        if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
-        else { prev.delete("search"); setSearchInput(""); }
-        if (config.pageSize) prev.set("pageSize", String(config.pageSize));
-        prev.set("page", "1");
-        return prev;
-      });
-    } catch { /* invalid config */ }
-  }, [setSearchParams, setSearchInput]);
-
-  // Apply default saved view on first load
-  useEffect(() => {
-    if (defaultViewApplied.current || savedViews.length === 0) return;
-    defaultViewApplied.current = true;
-    const defaultView = savedViews.find((v) => v.isDefault);
-    if (defaultView) applyView(defaultView);
-  }, [savedViews, applyView]);
-
-  function handleResetToDefault() {
-    setColumnVisibility({});
-    setActiveViewId(null);
-    setSearchParams((prev) => {
-      prev.delete("search");
-      prev.set("sortBy", "name");
-      prev.set("sortDir", "asc");
-      prev.set("page", "1");
-      return prev;
-    });
-    setSearchInput("");
-  }
-
-  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
-    columnVisibility,
-    sortBy: sortByParam,
-    sortDir: sortDirParam,
-    search: searchParam || undefined,
-    pageSize,
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize]);
 
   const [exporting, setExporting] = useState(false);
   async function handleExport() {

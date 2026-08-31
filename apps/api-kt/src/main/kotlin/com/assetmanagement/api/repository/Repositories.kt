@@ -2,7 +2,6 @@ package com.assetmanagement.api.repository
 
 import com.assetmanagement.api.model.*
 import jakarta.persistence.LockModeType
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
@@ -235,4 +234,8 @@ interface ApplicationSeatAssignmentRepository : JpaRepository<ApplicationSeatAss
     @Transactional
     @Query("DELETE FROM ApplicationSeatAssignment s WHERE s.applicationId = :applicationId AND s.personId = :personId")
     fun deleteByApplicationIdAndPersonId(@Param("applicationId") applicationId: UUID, @Param("personId") personId: UUID): Int
+}
+
+interface ScheduledRunClaimRepository : JpaRepository<ScheduledRunClaim, UUID> {
+    fun deleteByClaimedAtBefore(cutoff: Instant): Int
 }

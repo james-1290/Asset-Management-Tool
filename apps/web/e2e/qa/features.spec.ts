@@ -25,11 +25,17 @@ test("Data table: sorting, pagination and page size", async ({ page }) => {
   await expect(page.getByRole("checkbox", { name: /select row/i }).first()).toBeVisible({ timeout: 15000 });
 
   // Sorting: the header toggles direction and the URL records it.
+  // Each click must be allowed to land before the next: the header toggles from
+  // the sort state the table currently holds, so clicking again while the
+  // refetch is still in flight toggles from the stale value and the direction
+  // never changes. This failed on CI, which is slower than this machine.
   const header = page.getByRole("button", { name: /full name/i }).first();
   await header.click();
   await expect(page).toHaveURL(/sortDir=desc/);
+  await page.waitForLoadState("networkidle");
   await header.click();
   await expect(page).toHaveURL(/sortDir=asc/);
+  await page.waitForLoadState("networkidle");
 
   // Pagination: Next advances the page, Previous comes back.
   await expect(page.getByText(/showing \d+ to \d+ of \d+ results/i)).toBeVisible();

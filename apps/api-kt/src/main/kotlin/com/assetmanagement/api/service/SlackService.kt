@@ -8,7 +8,6 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.web.client.RestTemplate
-import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
@@ -20,14 +19,26 @@ class SlackService(
     // Bounded timeouts so a dead/slow webhook host can't hang the alert-scheduler
     // thread (and hold the @Transactional alert run open) indefinitely.
     private val restTemplate = RestTemplate(
-        SimpleClientHttpRequestFactory().apply {
+        object : SimpleClientHttpRequestFactory() {
+            override fun prepareConnection(connection: java.net.HttpURLConnection, httpMethod: String) {
+                super.prepareConnection(connection, httpMethod)
+                // Do not follow redirects. The host allow-list in postToSlack is
+                // checked against the configured URL; a 3xx from that host would
+                // otherwise be followed to wherever it pointed — an internal
+                // address included — which is the usual way such a list is
+                // defeated. A Slack incoming webhook never legitimately
+                // redirects.
+                connection.instanceFollowRedirects = false
+            }
+        }.apply {
             setConnectTimeout(5_000)
             setReadTimeout(10_000)
         }
     )
-    private val dateFormatter = // UTC, like every other date in the app: the server's local zone
-    // would render an expiry a day out from what the screen shows.
-    DateTimeFormatter.ofPattern("dd MMM yyyy").withZone(ZoneOffset.UTC)
+    // UTC, like every other date in the app: the server's local zone would
+    // render an expiry a day out from what the screen shows.
+    private val dateFormatter =
+        DateTimeFormatter.ofPattern("dd MMM yyyy").withZone(ZoneOffset.UTC)
 
     private fun getWebhookUrl(): String =
         systemSettingRepository.findByKey("alerts.slack.webhookUrl")?.value ?: ""

@@ -684,7 +684,7 @@ def test_reports(s):
         body = s.raw(f"GET /reports/{name} as CSV",
                      api.get(f"/api/v1/reports/{name}?{params}{sep}format=csv"))
         if body is not None:
-            text = body.decode(errors="replace")
+            text = body.decode("utf-8-sig", errors="replace")
             s.assert_(f"/reports/{name} CSV has a header row",
                       "," in text.splitlines()[0] if text.splitlines() else False,
                       text.splitlines()[0][:60] if text.splitlines() else "empty")
@@ -699,7 +699,9 @@ def test_exports(s, f):
         body = s.raw(f"GET /{path}/export", api.get(f"/api/v1/{path}/export"))
         if body is None:
             continue
-        text = body.decode(errors="replace")
+        s.assert_(f"/{path}/export starts with a BOM, so Excel decodes it",
+                  body[:3] == b"\xef\xbb\xbf", repr(body[:6]))
+        text = body.decode("utf-8-sig", errors="replace")
         rows = list(csv.reader(io.StringIO(text)))
         s.assert_(f"/{path}/export is parseable CSV with a header",
                   len(rows) >= 1 and len(rows[0]) > 1, f"{len(rows)} rows")
@@ -708,7 +710,7 @@ def test_exports(s, f):
     body = s.raw("GET /assets/export?ids=<one asset>",
                  api.get(f"/api/v1/assets/export?ids={f['a1']['id']}"))
     if body:
-        rows = list(csv.reader(io.StringIO(body.decode(errors="replace"))))
+        rows = list(csv.reader(io.StringIO(body.decode("utf-8-sig", errors="replace"))))
         s.assert_("export?ids returns exactly the selected row",
                   len(rows) == 2, f"{len(rows)} rows including header")
         if len(rows) == 2:
@@ -718,7 +720,7 @@ def test_exports(s, f):
     body = s.raw("GET /assets/export?costMin=1000",
                  api.get("/api/v1/assets/export?costMin=1000"))
     if body:
-        text = body.decode(errors="replace")
+        text = body.decode("utf-8-sig", errors="replace")
         s.assert_("filtered export excludes the cheap asset",
                   f["a1"]["name"] not in text)
         s.assert_("filtered export includes the dear asset",
@@ -873,6 +875,106 @@ def test_settings_and_profile(s):
     s.check("GET /search?limit is honoured", api.get("/api/v1/search?q=Deep&limit=2"))
     s.check("GET /people/search", api.get("/api/v1/people/search?" + q(**{"q": f"Deep Alice {t}"})))
     s.check("GET /roles", api.get("/api/v1/roles"))
+
+
+def test_restore(s, f):
+    """Archiving is a soft delete, so every archive must be undoable."""
+    s.section("Archive and restore")
+    api, t = s.api, s.tag
+
+    cases = [
+        ("locations", {"name": f"Deep Restore Loc {t}"}),
+        ("people", {"fullName": f"Deep Restore Person {t}"}),
+        ("asset-types", {"name": f"Deep Restore AType {t}"}),
+        ("certificate-types", {"name": f"Deep Restore CType {t}"}),
+        ("application-types", {"name": f"Deep Restore AppType {t}"}),
+    ]
+    for path, payload in cases:
+        rec = s.check(f"create a {path} record to archive", api.post(f"/api/v1/{path}", payload), 201)
+        if not rec:
+            continue
+        rid = rec["id"]
+        s.check(f"archive the {path} record", api.delete(f"/api/v1/{path}/{rid}"), (200, 204))
+
+        listed = ids_of(jbody(api.get(f"/api/v1/{path}?pageSize=100&{q(search=t)}")[1]))
+        s.assert_(f"{path}: an archived record is hidden by default", rid not in listed)
+
+        listed = ids_of(jbody(api.get(
+            f"/api/v1/{path}?pageSize=100&includeArchived=true&{q(search=t)}")[1]))
+        s.assert_(f"{path}: includeArchived makes it findable again", rid in listed)
+
+        s.check(f"restore the {path} record", api.post(f"/api/v1/{path}/{rid}/restore"))
+        listed = ids_of(jbody(api.get(f"/api/v1/{path}?pageSize=100&{q(search=t)}")[1]))
+        s.assert_(f"{path}: the restored record is listed again", rid in listed)
+        s.check(f"{path}: restoring twice is refused",
+                api.post(f"/api/v1/{path}/{rid}/restore"), 400)
+
+    tpl = s.check("create a template to archive", api.post("/api/v1/asset-templates", {
+        "name": f"Deep Restore Tpl {t}", "assetTypeId": f["atA"]["id"]}), 201)
+    if tpl:
+        s.check("archive the template", api.delete(f"/api/v1/asset-templates/{tpl['id']}"), (200, 204))
+        listed = ids_of(jbody(api.get("/api/v1/asset-templates?includeArchived=true")[1]))
+        s.assert_("the archived template is findable", tpl["id"] in listed)
+        s.check("restore the template", api.post(f"/api/v1/asset-templates/{tpl['id']}/restore"))
+        listed = ids_of(jbody(api.get("/api/v1/asset-templates")[1]))
+        s.assert_("the restored template is listed again", tpl["id"] in listed)
+
+    # Certificates and applications restore too. Both get a record of their own:
+    # an application still holding seats cannot be archived at all, which is
+    # correct but would test the wrong thing here.
+    cert = s.check("create a certificate to archive", api.post("/api/v1/certificates", {
+        "name": f"Deep Restore Cert {t}", "certificateTypeId": f["ct"]["id"],
+        "expiryDate": "2031-01-01"}), 201)
+    app = s.check("create an application to archive", api.post("/api/v1/applications", {
+        "name": f"Deep Restore App {t}", "applicationTypeId": f["apt"]["id"],
+        "expiryDate": "2031-01-01"}), 201)
+    for path, rec in (("certificates", cert), ("applications", app)):
+        if not rec:
+            continue
+        s.check(f"archive a {path}", api.delete(f"/api/v1/{path}/{rec['id']}"), (200, 204))
+        listed = ids_of(jbody(api.get(
+            f"/api/v1/{path}?pageSize=100&includeArchived=true&{q(search=t)}")[1]))
+        s.assert_(f"{path}: the archived record is findable", rec["id"] in listed)
+        s.check(f"restore a {path}", api.post(f"/api/v1/{path}/{rec['id']}/restore"))
+
+
+def test_legacy_path_aliases(s):
+    """
+    The concatenated paths kept for older clients.
+
+    These are live routes. Nothing exercised them, so a change to the mapping
+    would have broken every old client with nothing to catch it — the handler
+    behind them being well tested says nothing about the alias resolving.
+    """
+    s.section("Legacy path aliases")
+    api, t = s.api, s.tag
+
+    ALIASES = [
+        ("/api/v1/asset-types", "/api/v1/assettypes", {"name": f"Alias AType {t}"}),
+        ("/api/v1/certificate-types", "/api/v1/certificatetypes", {"name": f"Alias CType {t}"}),
+        ("/api/v1/application-types", "/api/v1/applicationtypes", {"name": f"Alias AppType {t}"}),
+    ]
+    for canonical, legacy, payload in ALIASES:
+        made = s.check(f"create via {legacy}", api.post(legacy, payload), 201)
+        if not made:
+            continue
+        rid = made["id"]
+        s.check(f"list via {legacy}", api.get(f"{legacy}?pageSize=100&{q(search=t)}"))
+        s.check(f"read one via {legacy}", api.get(f"{legacy}/{rid}"))
+        s.check(f"read custom fields via {legacy}", api.get(f"{legacy}/{rid}/customfields"))
+        s.check(f"update via {legacy}", api.put(f"{legacy}/{rid}", {"name": payload["name"] + " edited"}))
+
+        # A record created through the alias must be visible on the canonical
+        # path: they are the same handler, not two stores.
+        listed = ids_of(jbody(api.get(f"{canonical}?pageSize=100&{q(search=t)}")[1]))
+        s.assert_(f"{legacy} and {canonical} are the same resource", rid in listed)
+
+        s.check(f"archive via {legacy}", api.delete(f"{legacy}/{rid}"), (200, 204))
+        s.check(f"restore via {legacy}", api.post(f"{legacy}/{rid}/restore"))
+        s.check(f"bulk-archive via {legacy}", api.post(f"{legacy}/bulk-archive", {"ids": [rid]}))
+
+    s.check("audit log via its legacy path", api.get("/api/v1/auditlogs?pageSize=5"))
+    s.raw("audit log export via its legacy path", api.get("/api/v1/auditlogs/export"))
 
 
 def test_bulk_operations(s, f):
@@ -1114,6 +1216,44 @@ def test_import(s, f):
             api.request("POST", "/api/v1/import/people/execute", raw=raw, content_type=ct))
     got = ids_of(jbody(api.get("/api/v1/people?pageSize=100&" + q(search=f"Deep Imp P {t}"))[1]))
     s.assert_("the imported person is now retrievable", len(got) >= 1, f"{len(got)} rows")
+
+    # Excel's "CSV UTF-8" — the format an administrator most likely produces —
+    # starts with a byte-order mark. It once made every row fail with
+    # "Name is required" while the name sat there in plain sight.
+    bom_csv = ("\ufeff" + f"Name,Address,City,Country\nDeep BOM {t},1 St,Town,UK\n").encode("utf-8")
+    raw, ct = multipart("file", "excel.csv", bom_csv, "text/csv")
+    res = s.check("validate a file saved by Excel (UTF-8 with BOM)",
+                  api.request("POST", "/api/v1/import/locations/validate", raw=raw, content_type=ct))
+    if res is not None:
+        s.assert_("the BOM does not break the header row",
+                  res.get("validRows") == 1 and res.get("invalidRows") == 0, json.dumps(res)[:200])
+    raw, ct = multipart("file", "excel.csv", bom_csv, "text/csv")
+    s.check("execute an Excel-saved import",
+            api.request("POST", "/api/v1/import/locations/execute", raw=raw, content_type=ct))
+    got = ids_of(jbody(api.get("/api/v1/locations?pageSize=100&" + q(search=f"Deep BOM {t}"))[1]))
+    s.assert_("the Excel-saved row is imported", len(got) >= 1, f"{len(got)} rows")
+
+    # Accented characters must survive, whatever the server's default charset is.
+    accented = f"Name,Address,City,Country\nDeep Café Münster {t},1 St,Town,FR\n".encode("utf-8")
+    raw, ct = multipart("file", "accents.csv", accented, "text/csv")
+    res = s.check("validate a file with accented characters",
+                  api.request("POST", "/api/v1/import/locations/validate", raw=raw, content_type=ct))
+    if res is not None:
+        name = ((res.get("rows") or [{}])[0].get("data") or {}).get("Name", "")
+        s.assert_("accented characters round-trip", "Café Münster" in name, name)
+
+    # Round trip: what the app exports, the app must be able to import — the
+    # export's BOM is exactly what the importer had choked on.
+    exported = s.raw("export the locations just imported",
+                     api.get("/api/v1/locations/export?" + q(search=f"Deep BOM {t}")))
+    if exported:
+        raw, ct = multipart("file", "roundtrip.csv", exported, "text/csv")
+        res = s.check("re-import the app's own export",
+                      api.request("POST", "/api/v1/import/locations/validate", raw=raw, content_type=ct))
+        if res is not None:
+            s.assert_("the app can read back what it wrote",
+                      res.get("invalidRows") == 0 and (res.get("validRows") or 0) >= 1,
+                      json.dumps(res)[:200])
 
     # A non-CSV upload must be refused rather than parsed.
     raw, ct = multipart("file", "notes.txt", b"this is not a csv", "text/plain")
@@ -1488,6 +1628,8 @@ def main():
     test_saved_views(s)
     test_alert_rules_and_notifications(s)
     test_settings_and_profile(s)
+    test_restore(s, f)
+    test_legacy_path_aliases(s)
     test_bulk_operations(s, f)
     test_duplicates(s, f)
     test_sub_resources(s, f)

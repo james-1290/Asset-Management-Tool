@@ -15,11 +15,15 @@ export interface TypeRow {
   name: string;
   description: string | null;
   customFields?: unknown[] | null;
+  /** Archived rows offer Restore in place of Edit and Delete. */
+  isArchived?: boolean;
 }
 
 interface TypeColumnActions<T> {
   onEdit: (row: T) => void;
   onArchive: (row: T) => void;
+  /** Shown instead of Edit/Delete on an archived row. */
+  onRestore?: (row: T) => void;
 }
 
 /** Shared columns (name / description / custom-field count / actions) for the
@@ -27,6 +31,7 @@ interface TypeColumnActions<T> {
 export function getTypeColumns<T extends TypeRow>({
   onEdit,
   onArchive,
+  onRestore,
 }: TypeColumnActions<T>): ColumnDef<T, unknown>[] {
   return [
     {
@@ -78,6 +83,14 @@ export function getTypeColumns<T extends TypeRow>({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {type.isArchived ? (
+                // An archived row can only be brought back; editing or deleting
+                // it again makes no sense.
+                <DropdownMenuItem onClick={() => onRestore?.(type)}>
+                  Restore
+                </DropdownMenuItem>
+              ) : (
+                <>
               <DropdownMenuItem onClick={() => onEdit(type)}>
                 Edit
               </DropdownMenuItem>
@@ -87,6 +100,8 @@ export function getTypeColumns<T extends TypeRow>({
               >
                 Delete
               </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );

@@ -5,7 +5,6 @@ import com.assetmanagement.api.model.SystemSetting
 import com.assetmanagement.api.repository.RoleRepository
 import com.assetmanagement.api.repository.SystemSettingRepository
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
 import org.springframework.stereotype.Component
 

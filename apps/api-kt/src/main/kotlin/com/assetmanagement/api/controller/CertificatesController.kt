@@ -10,7 +10,6 @@ import com.assetmanagement.api.util.computeStatus
 import com.assetmanagement.api.util.computedStatusPredicates
 import com.assetmanagement.api.util.orderByComputedStatus
 import com.assetmanagement.api.util.versionConflict
-import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.CertificateStatus
 import com.assetmanagement.api.repository.*
 import com.assetmanagement.api.service.AuditChange

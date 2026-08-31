@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 /** Must match SUB_LIST_LIMIT in the API's Locations/People controllers. */
-export const SUB_LIST_LIMIT = 200;
+const SUB_LIST_LIMIT = 200;
 
 interface SubListCapNoteProps {
   /** How many rows came back for this sub-list. */

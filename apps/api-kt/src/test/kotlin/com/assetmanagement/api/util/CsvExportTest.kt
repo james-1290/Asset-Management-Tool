@@ -25,7 +25,14 @@ class CsvExportTest {
             response.getHeader("Content-Disposition"),
         )
 
-        val lines = response.contentAsString.trim().lines()
+        // The file starts with a byte-order mark so Excel decodes it as UTF-8;
+        // without one it reads the system code page and mangles every accent.
+        assertTrue(
+            response.contentAsString.startsWith("\uFEFF"),
+            "exports must start with a BOM so Excel decodes them correctly",
+        )
+
+        val lines = response.contentAsString.removePrefix("\uFEFF").trim().lines()
         assertEquals("\"Name\",\"Note\"", lines[0])
         // Formula-trigger cell is prefixed with a single quote; null becomes empty.
         assertEquals("\"'=cmd\",\"safe\"", lines[1])
