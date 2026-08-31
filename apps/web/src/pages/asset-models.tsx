@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
+import { ArchivedToggle } from "@/components/archived-toggle";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
@@ -19,6 +20,7 @@ import { getAssetModelColumns } from "../components/asset-models/columns";
 import {
   useAssetModels,
   useArchiveAssetModel,
+  useRestoreAssetModel,
 } from "../hooks/use-asset-models";
 import { useAssetTypes } from "../hooks/use-asset-types";
 import type { AssetModel } from "../types/asset-model";
@@ -30,11 +32,15 @@ export default function AssetModelsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filterTypeId = searchParams.get("typeId") ?? "";
   const searchTerm = searchParams.get("search") ?? "";
+  // Archived rows are hidden until asked for; without this an archived
+  // record could not be found in order to restore it.
+  const showArchived = searchParams.get("includeArchived") === "true";
 
   const { data: assetTypes } = useAssetTypes();
   const { data: models, isLoading, isError } = useAssetModels(
     filterTypeId || undefined,
     searchTerm || undefined,
+    showArchived || undefined,
   );
 
   // Search, as every other searchable list offers. The API has always supported
@@ -49,9 +55,19 @@ export default function AssetModelsPage() {
 
   const archiveMutation = useArchiveAssetModel();
 
+  const restoreMutation = useRestoreAssetModel();
+
   const [formOpen, setFormOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<AssetModel | null>(null);
   const [archivingModel, setArchivingModel] = useState<AssetModel | null>(null);
+
+  // Stable, so the columns memo that depends on it isn't rebuilt every render.
+  const handleRestore = useCallback((id: string, name: string) => {
+    restoreMutation.mutate(id, {
+      onSuccess: () => toast.success(`Restored ${name}`),
+      onError: () => toast.error("Failed to restore"),
+    });
+  }, [restoreMutation]);
 
   const columns = useMemo(
     () =>
@@ -61,11 +77,12 @@ export default function AssetModelsPage() {
           setEditingModel(model);
           setFormOpen(true);
         },
+        onRestore: (model) => handleRestore(model.id, model.name),
         onArchive: (model) => {
           setArchivingModel(model);
         },
       }),
-    [canWrite],
+    [canWrite, handleRestore],
   );
 
   function handleArchive() {
@@ -151,6 +168,16 @@ export default function AssetModelsPage() {
         getRowId={(row) => row.id}
         toolbar={() => (
           <div className="flex items-center gap-2">
+            <ArchivedToggle
+              showArchived={showArchived}
+              onShowArchivedChange={(v) =>
+                setSearchParams((prev) => {
+                  if (v) prev.set("includeArchived", "true");
+                  else prev.delete("includeArchived");
+                  return prev;
+                })
+              }
+            />
             <Input
               placeholder="Search asset models…"
               value={searchTerm}

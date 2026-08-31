@@ -9,10 +9,10 @@ const assetModelKeys = {
   detail: (id: string) => ["asset-models", id] as const,
 };
 
-export function useAssetModels(assetTypeId?: string, search?: string) {
+export function useAssetModels(assetTypeId?: string, search?: string, includeArchived?: boolean) {
   return useQuery({
-    queryKey: assetModelKeys.list(assetTypeId, search),
-    queryFn: () => assetModelsApi.getAll(assetTypeId, search),
+    queryKey: [...assetModelKeys.list(assetTypeId, search), includeArchived ?? false],
+    queryFn: () => assetModelsApi.getAll(assetTypeId, search, includeArchived),
   });
 }
 
@@ -41,6 +41,15 @@ export function useArchiveAssetModel() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => assetModelsApi.archive(id),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: assetModelKeys.all }); },
+  });
+}
+
+/** Brings an archived record back; archiving is a soft delete. */
+export function useRestoreAssetModel() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => assetModelsApi.restore(id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: assetModelKeys.all }); },
   });
 }

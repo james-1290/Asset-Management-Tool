@@ -7,7 +7,7 @@ import type {
 import type { PagedResponse } from "../../types/paged-response";
 
 export const assetModelsApi = {
-  async getAll(assetTypeId?: string, search?: string): Promise<AssetModel[]> {
+  async getAll(assetTypeId?: string, search?: string, includeArchived?: boolean): Promise<AssetModel[]> {
     // Backend caps pageSize at 100 — page through for the full dropdown list.
     const items: AssetModel[] = [];
     let page = 1;
@@ -15,6 +15,7 @@ export const assetModelsApi = {
       const params: Record<string, string | number> = { page, pageSize: 100 };
       if (assetTypeId) params.assetTypeId = assetTypeId;
       if (search) params.search = search;
+      if (includeArchived) params.includeArchived = 'true';
       const r = await apiClient.get<PagedResponse<AssetModel>>("/asset-models", params);
       items.push(...r.items);
       if (r.items.length === 0 || items.length >= r.totalCount) break;

@@ -71,3 +71,6 @@ Browser → Vite dev server (port 5173)
                  → Proxy → Spring Boot API (port 5115)
                               └── MySQL (port 3306)
 ```
+
+See also [operations.md](operations.md) for backup, restore, personal-data
+handling and scaling.

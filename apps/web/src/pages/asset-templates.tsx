@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
+import { ArchivedToggle } from "@/components/archived-toggle";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
@@ -24,6 +25,7 @@ import {
   useCreateAssetTemplate,
   useUpdateAssetTemplate,
   useArchiveAssetTemplate,
+  useRestoreAssetTemplate,
 } from "../hooks/use-asset-templates";
 import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
@@ -34,16 +36,21 @@ export default function AssetTemplatesPage() {
   const { canWrite } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const filterTypeId = searchParams.get("typeId") ?? "";
+  // Archived rows are hidden until asked for; without this an archived
+  // template could not be found in order to restore it.
+  const showArchived = searchParams.get("includeArchived") === "true";
 
   const { data: assetTypes } = useAssetTypes();
   const { data: locations } = useLocations();
   const { data: templates, isLoading, isError } = useAssetTemplates(
     filterTypeId || undefined,
+    showArchived || undefined,
   );
 
   const createMutation = useCreateAssetTemplate();
   const updateMutation = useUpdateAssetTemplate();
   const archiveMutation = useArchiveAssetTemplate();
+  const restoreMutation = useRestoreAssetTemplate();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<AssetTemplate | null>(
@@ -51,6 +58,14 @@ export default function AssetTemplatesPage() {
   );
   const [archivingTemplate, setArchivingTemplate] =
     useState<AssetTemplate | null>(null);
+
+  // Stable, so the columns memo that depends on it isn't rebuilt every render.
+  const handleRestore = useCallback((id: string, name: string) => {
+    restoreMutation.mutate(id, {
+      onSuccess: () => toast.success(`Restored ${name}`),
+      onError: () => toast.error("Failed to restore"),
+    });
+  }, [restoreMutation]);
 
   const columns = useMemo(
     () =>
@@ -60,11 +75,12 @@ export default function AssetTemplatesPage() {
           setEditingTemplate(template);
           setFormOpen(true);
         },
+        onRestore: (template) => handleRestore(template.id, template.name),
         onArchive: (template) => {
           setArchivingTemplate(template);
         },
       }),
-    [canWrite],
+    [canWrite, handleRestore],
   );
 
   function handleFormSubmit(values: TemplateFormValues) {
@@ -220,6 +236,16 @@ export default function AssetTemplatesPage() {
         getRowId={(row) => row.id}
         toolbar={() => (
           <div className="flex items-center gap-2">
+            <ArchivedToggle
+              showArchived={showArchived}
+              onShowArchivedChange={(v) =>
+                setSearchParams((prev) => {
+                  if (v) prev.set("includeArchived", "true");
+                  else prev.delete("includeArchived");
+                  return prev;
+                })
+              }
+            />
             <Select
               value={filterTypeId || "all"}
               onValueChange={handleTypeFilterChange}

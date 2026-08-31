@@ -62,3 +62,32 @@ test("F-02: an archived record can be found and restored from the list", async (
   const res = await page.request.get(`/api/v1/locations/${loc.id}`);
   expect((await res.json()).isArchived).toBe(false);
 });
+
+test("sweep 7: an archived asset type can be restored from its own page", async ({ page }) => {
+  await signIn(page);
+  const tag = uid();
+  const name = `SweepType ${tag}`;
+  await apiPost(page, "/asset-types", { name });
+
+  await visit(page, `/asset-types?search=${encodeURIComponent(tag)}`);
+  await openRowMenu(page, name);
+  await page.getByRole("menuitem", { name: /delete|archive/i }).click();
+  const confirm = page.getByRole("alertdialog").or(page.getByRole("dialog")).first();
+  await confirm.getByRole("button", { name: /delete|archive|confirm/i }).last().click();
+  await expect(page.locator("table tbody")).not.toContainText(name, { timeout: 15000 });
+
+  // The restore path existed in the API before any of these lists offered a
+  // control for it — this is what pins the control being there.
+  await page.getByRole("button", { name: "Show archived" }).click();
+  await expect(page.locator("table tbody")).toContainText(name, { timeout: 15000 });
+  await openRowMenu(page, name);
+  await page.getByRole("menuitem", { name: /restore/i }).click();
+
+  await expect
+    .poll(async () => {
+      const r = await page.request.get(
+        `/api/v1/asset-types?pageSize=50&search=${encodeURIComponent(tag)}`);
+      return (await r.json()).items.length;
+    }, { timeout: 15000 })
+    .toBe(1);
+});

@@ -1,5 +1,48 @@
 # Changelog
 
+## 2026-08-31 — Stop improvising sweeps: an audit checklist, and the 8 defects its unchecked rows held
+
+Every sweep so far picked its own lenses, found real defects, and called that convergence — where convergence only meant nothing was left that anyone had happened to think of. Each one then found things the one before should have caught. That is a fault in the method, not the effort.
+
+`docs/audit-checklist.md` is now the list every sweep works, drawn from OWASP's categories plus correctness, performance, accessibility, quality and operability. A sweep is complete when every row has a verdict — and a row nobody has checked is recorded as a gap, never as a pass.
+
+Writing it down exposed **24 rows that had never been checked**. Working them found eight defects:
+
+**Accessibility** — contrast had never been measured. Secondary text was **2.4:1 where 4.5:1 is required**, on every screen: page descriptions, breadcrumbs, timestamps, placeholders, sidebar labels. White on the destructive red gave 3.76:1 on the notification badge. In dark mode the accent failed in *both* directions at once, being both a button background and accent text — fixed by inverting it there.
+
+**Security** — the Slack webhook post followed redirects, which is the usual way a host allow-list is defeated. CI actions were pinned to tags, which can be moved to point at different code. A user's email address was logged on every personal alert.
+
+**Verified clean** (14 rows, checked for the first time): path traversal, CORS, constant-time token comparison, secrets in URLs, log and header and command injection, deserialization, parser bombs, licences, index coverage, connection pool, keyboard operability and dialog focus trapping.
+
+**Recorded as genuine gaps** (2): Easy Auth session lifetime, which needs a real tenant; and personal-data erasure, which is a product decision — archiving a person hides them but does not remove their data, and the audit log keeps their name. `docs/operations.md` sets out the options and their costs, alongside backup and restore, where the trap is that a database point-in-time restore does not bring attachments with it.
+
+New specs pin the two accessibility areas: `keyboard.spec.ts` and `contrast.spec.ts`, the latter measuring rendered pixels in both themes.
+
+## 2026-08-31 — Seventh sweep: code quality, dead code, bugs, security
+
+A fresh pass with lenses the earlier sweeps had not applied. Ten findings, all fixed.
+
+**Bugs**
+
+- **A CSV saved by Excel failed on every row.** Excel's "CSV UTF-8" — the format an administrator is most likely to produce — starts with a byte-order mark. It is not whitespace, so `trim()` left it glued to the first header: "Name" arrived as "﻿Name" and every row failed with "Name is required" while the name sat there in plain sight.
+- **Excel could not read our exports either.** They were written as UTF-8 with no mark, so "Café Münster" displayed as "CafÃ© MÃ¼nster" — the exact mirror of the import bug. Both directions now agree, and the deep suite round-trips: what the app exports, the app can import.
+- **Negative numbers exported as text.** The formula-injection guard prefixed any leading `-`, which is right for `-1+1` and wrong for `-30`. The expiries report is mostly negative day counts, so a range starting in the past produced `"'-2009"` — a figure no spreadsheet would sum.
+- **Every instance sent the same scheduled alerts.** The scheduler runs in-process, so on App Service scaled beyond one instance each fires the same run and every recipient gets duplicates. An instance now claims the run window with a single insert against a unique key.
+- **Notification actions failed silently.** Mark-as-read, dismiss and snooze had no error handling, so a failure changed nothing on screen.
+- **Restore had no control on five lists.** The endpoints and hooks existed; the three type registers, asset models and asset templates never got the UI — found by the dead-code scan flagging three restore hooks nobody called.
+
+**Security**
+
+- The model-image response was `max-age=3600` with no scope on an endpoint requiring a session, so a shared cache could hold one user's response and hand it to another. Now `private`, with an ETag.
+- Nothing watched backend dependencies, while the frontend already failed on a high-severity advisory. Dependabot now covers Gradle, npm and the workflow's own actions.
+
+**Code quality and dead code**
+
+- The saved-view plumbing was copied across five list pages — about 550 lines differing only in entity type and filter keys. Now one `useSavedViewState` hook.
+- Removed an unused type module, an unused hook, 13 unused imports, and wired in a Toaster wrapper that had been written to theme the toasts and never used. `npm run deadcode` now exits clean, so the next addition stands out.
+
+Verified over clean-database cycles: 687 API capability checks, 197 smoke checks, 109 browser tests against both the dev server and the production build, backend, lint and build.
+
 ## 2026-08-31 — Fix all fourteen findings from the full review
 
 Every finding from the product/engineering/QA/security review, fixed and verified. No security defects were found in that review; these are correctness, data-safety, performance, accessibility and operability items.

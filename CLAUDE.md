@@ -121,6 +121,18 @@ Claude should follow an explore → plan → implement → verify loop.
 - If something breaks, stop and re-plan (don’t “push through” blindly).
 - Always define success criteria (tests passing, endpoint works, UI renders).
 
+## Sweeps and audits
+
+Work `docs/audit-checklist.md` top to bottom. Do not improvise the scope: the
+sweeps before it each picked their own lenses, found real defects, and called
+that convergence — where convergence only meant nothing was left that anyone had
+happened to think of. Each one then found things the one before should have
+caught.
+
+A sweep is complete when **every row has a verdict**, not when nothing new turns
+up. A row that has never been checked is recorded as a gap, never as a pass. Add
+a row whenever a new class of defect is found, so the next sweep starts from it.
+
 ## Verification before "done"
 
 - Never mark complete without proof:

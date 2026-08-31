@@ -9,9 +9,10 @@
  * *offer*, never what to allow.
  */
 
-export const ADMIN = "Admin";
-export const OPERATOR = "Operator";
-export const USER = "User";
+// The role names Entra issues, matched case-sensitively: a lowercase claim
+// from a mistyped app registration must not grant anything.
+const ADMIN = "Admin";
+const OPERATOR = "Operator";
 
 /** Administration: user management, settings, the audit log, imports. */
 export function isAdmin(roles: readonly string[] | null | undefined): boolean {

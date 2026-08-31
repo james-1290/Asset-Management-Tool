@@ -11,10 +11,10 @@ const assetTemplateKeys = {
   detail: (id: string) => ["asset-templates", id] as const,
 };
 
-export function useAssetTemplates(assetTypeId?: string) {
+export function useAssetTemplates(assetTypeId?: string, includeArchived?: boolean) {
   return useQuery({
     queryKey: assetTemplateKeys.list(assetTypeId),
-    queryFn: () => assetTemplatesApi.getAll(assetTypeId),
+    queryFn: () => assetTemplatesApi.getAll(assetTypeId, includeArchived),
   });
 }
 
@@ -47,6 +47,18 @@ export function useArchiveAssetTemplate() {
 
   return useMutation({
     mutationFn: (id: string) => assetTemplatesApi.archive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assetTemplateKeys.all });
+    },
+  });
+}
+
+/** Brings an archived record back; archiving is a soft delete. */
+export function useRestoreAssetTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => assetTemplatesApi.restore(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assetTemplateKeys.all });
     },

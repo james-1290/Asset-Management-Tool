@@ -110,6 +110,9 @@ export function AuditLogsToolbar({
           <Button
             variant="outline"
             className={`gap-2 font-normal ${selectedActions.size > 0 ? "border-primary/30 bg-primary/5" : ""}`}
+            // The visible text is the current selection ("All Activities", or
+            // "3 selected"), which names the value rather than the control.
+            aria-label="Activity"
           >
             <ListFilter className="h-4 w-4 text-muted-foreground" />
             {actionButtonLabel}
@@ -153,7 +156,7 @@ export function AuditLogsToolbar({
         value={entityType || "all"}
         onValueChange={onEntityTypeChange}
       >
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="w-[180px]" aria-label="Entity type">
           <SelectValue placeholder="All Entity Types" />
         </SelectTrigger>
         <SelectContent>

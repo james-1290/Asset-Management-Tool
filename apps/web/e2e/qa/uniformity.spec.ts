@@ -16,19 +16,19 @@ import { PageWatcher, visit } from "./helpers";
 
 /** Every list, and whether the API gives it the capability behind each control. */
 const LISTS = [
-  { path: "/assets", search: true, columns: true, savedViews: true, export: true, grouped: true },
-  { path: "/certificates", search: true, columns: true, savedViews: true, export: true, grouped: true },
-  { path: "/applications", search: true, columns: true, savedViews: true, export: true, grouped: true },
-  { path: "/people", search: true, columns: true, savedViews: true, export: true, grouped: false },
-  { path: "/locations", search: true, columns: true, savedViews: true, export: true, grouped: false },
-  { path: "/asset-types", search: true, columns: true, savedViews: true, export: false, grouped: false },
-  { path: "/certificate-types", search: true, columns: true, savedViews: true, export: false, grouped: false },
-  { path: "/application-types", search: true, columns: true, savedViews: true, export: false, grouped: false },
+  { path: "/assets", search: true, columns: true, savedViews: true, export: true, grouped: true, archives: true },
+  { path: "/certificates", search: true, columns: true, savedViews: true, export: true, grouped: true, archives: true },
+  { path: "/applications", search: true, columns: true, savedViews: true, export: true, grouped: true, archives: true },
+  { path: "/people", search: true, columns: true, savedViews: true, export: true, grouped: false, archives: true },
+  { path: "/locations", search: true, columns: true, savedViews: true, export: true, grouped: false, archives: true },
+  { path: "/asset-types", search: true, columns: true, savedViews: true, export: false, grouped: false, archives: true },
+  { path: "/certificate-types", search: true, columns: true, savedViews: true, export: false, grouped: false, archives: true },
+  { path: "/application-types", search: true, columns: true, savedViews: true, export: false, grouped: false, archives: true },
   // Asset models are searchable; templates are filtered by asset type only, and
   // neither has an export endpoint behind it.
-  { path: "/asset-models", search: true, columns: false, savedViews: false, export: false, grouped: false },
-  { path: "/asset-templates", search: false, columns: false, savedViews: false, export: false, grouped: false },
-  { path: "/audit-log", search: true, columns: true, savedViews: true, export: true, grouped: false },
+  { path: "/asset-models", search: true, columns: false, savedViews: false, export: false, grouped: false, archives: true },
+  { path: "/asset-templates", search: false, columns: false, savedViews: false, export: false, grouped: false, archives: true },
+  { path: "/audit-log", search: true, columns: true, savedViews: true, export: true, grouped: false, archives: false },
 ] as const;
 
 async function seedOne(page: Page) {
@@ -147,6 +147,22 @@ test.describe("List pages keep the shared design", () => {
     await expect(page.getByRole("button", { name: "Comfortable rows" }))
       .toHaveAttribute("aria-pressed", "true");
     w.assertClean("density persistence");
+  });
+
+  test("every list that can archive also offers a way to restore", async ({ page }) => {
+    const w = new PageWatcher(page);
+    await signIn(page);
+    // Archiving is a soft delete everywhere, which only means something if the
+    // archived record can be found again. The API gained restore before the UI
+    // did, on five of these lists, which is exactly the gap this pins.
+    for (const list of LISTS.filter((l) => l.archives)) {
+      await visit(page, list.path);
+      await expect(
+        page.getByRole("button", { name: "Show archived" }),
+        `${list.path} should offer the archived filter`,
+      ).toBeVisible({ timeout: 10000 });
+    }
+    w.assertClean("archived toggles");
   });
 
   test("a custom field column can be shown from the chooser", async ({ page }) => {

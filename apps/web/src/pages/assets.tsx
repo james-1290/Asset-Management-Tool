@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Archive, RefreshCw, Pencil } from "lucide-react";
 import { assetsApi } from "../lib/api/assets";
@@ -36,11 +36,10 @@ import {
 import { BulkActionBar } from "../components/bulk-action-bar";
 import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
-import { useSavedViews } from "../hooks/use-saved-views";
+import { useSavedViewState } from "../hooks/use-saved-view-state";
 import type { Asset, BulkEditAssetsRequest } from "../types/asset";
 import type { AssetFormValues } from "../lib/schemas/asset";
 import type { CustomFieldDefinition } from "../types/custom-field";
-import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 import { usePeople } from "../hooks/use-people";
@@ -58,6 +57,11 @@ const SORT_FIELD_MAP: Record<string, string> = {
   warrantyExpiryDate: "warrantyExpiryDate",
   createdAt: "createdAt",
 };
+
+/** Filter params this list stores in a saved view. */
+const SAVED_VIEW_FILTER_KEYS = ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo",
+   "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned",
+   "createdAfter", "includeArchived"] as const;
 
 export default function AssetsPage() {
   const { canWrite } = useAuth();
@@ -165,10 +169,8 @@ export default function AssetsPage() {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
 
   // Saved views
-  const { data: savedViews = [] } = useSavedViews("assets");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [activeViewId, setActiveViewId] = useState<string | null>(null);
-  const defaultViewApplied = useRef(false);
+
 
   // Gather all unique custom field definitions from loaded asset types
   const allCustomFieldDefs = useMemo(() => {
@@ -222,6 +224,20 @@ export default function AssetsPage() {
     return vis;
   }, [allCustomFieldDefs]);
 
+  const { activeViewId, applyView, handleResetToDefault, getCurrentConfiguration } =
+    useSavedViewState({
+      entityType: "assets",
+      filterKeys: SAVED_VIEW_FILTER_KEYS,
+      defaultSortBy: "name",
+      defaultColumnVisibility,
+      searchParams,
+      setSearchParams,
+      setSearchInput,
+      columnVisibility,
+      setColumnVisibility,
+      pageSize,
+    });
+
   // When custom field defs load, hide them by default
   useEffect(() => {
     if (allCustomFieldDefs.length === 0) return;
@@ -234,91 +250,6 @@ export default function AssetsPage() {
       return next;
     });
   }, [allCustomFieldDefs]);
-
-  const applyView = useCallback((view: SavedView) => {
-    try {
-      const config: ViewConfiguration = JSON.parse(view.configuration);
-      setActiveViewId(view.id);
-      setColumnVisibility({ ...defaultColumnVisibility, ...config.columnVisibility });
-      setSearchParams((prev) => {
-        if (config.sortBy) prev.set("sortBy", config.sortBy);
-        if (config.sortDir) prev.set("sortDir", config.sortDir);
-        if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
-        else { prev.delete("search"); setSearchInput(""); }
-        if (config.status) prev.set("status", config.status);
-        else prev.delete("status");
-        if (config.typeId) prev.set("typeId", config.typeId);
-        else prev.delete("typeId");
-        if (config.viewMode && config.viewMode !== "list") prev.set("viewMode", config.viewMode);
-        else prev.delete("viewMode");
-        if (config.pageSize) prev.set("pageSize", String(config.pageSize));
-
-        // Restore advanced filters
-        const filterKeys = ["locationId", "assignedPersonId", "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo", "costMin", "costMax", "unassigned", "createdAfter"];
-        for (const key of filterKeys) {
-          const val = config.filters?.[key];
-          if (val) prev.set(key, val);
-          else prev.delete(key);
-        }
-
-        prev.set("page", "1");
-        return prev;
-      });
-    } catch { /* invalid config */ }
-  }, [setSearchParams, setSearchInput, defaultColumnVisibility]);
-
-  // Apply user's default saved view on first load
-  useEffect(() => {
-    if (defaultViewApplied.current || savedViews.length === 0) return;
-    defaultViewApplied.current = true;
-    const defaultView = savedViews.find((v) => v.isDefault);
-    if (defaultView) applyView(defaultView);
-  }, [savedViews, applyView]);
-
-  function handleResetToDefault() {
-    setColumnVisibility(defaultColumnVisibility);
-    setActiveViewId(null);
-    setSearchParams((prev) => {
-      [
-        "search", "status", "typeId", "viewMode", "locationId", "assignedPersonId",
-        "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo",
-        "costMin", "costMax", "unassigned", "createdAfter",
-      ].forEach((k) => prev.delete(k));
-      prev.set("sortBy", "name");
-      prev.set("sortDir", "asc");
-      prev.set("page", "1");
-      return prev;
-    });
-    setSearchInput("");
-  }
-
-  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
-    columnVisibility,
-    sortBy: sortByParam,
-    sortDir: sortDirParam,
-    search: searchParam || undefined,
-    status: statusParam || undefined,
-    typeId: typeIdParam || undefined,
-    viewMode: viewMode !== "list" ? viewMode : undefined,
-    pageSize,
-    filters: {
-      ...(locationIdParam ? { locationId: locationIdParam } : {}),
-      ...(assignedPersonIdParam ? { assignedPersonId: assignedPersonIdParam } : {}),
-      ...(purchaseDateFromParam ? { purchaseDateFrom: purchaseDateFromParam } : {}),
-      ...(purchaseDateToParam ? { purchaseDateTo: purchaseDateToParam } : {}),
-      ...(warrantyExpiryFromParam ? { warrantyExpiryFrom: warrantyExpiryFromParam } : {}),
-      ...(warrantyExpiryToParam ? { warrantyExpiryTo: warrantyExpiryToParam } : {}),
-      ...(costMinParam ? { costMin: costMinParam } : {}),
-      ...(costMaxParam ? { costMax: costMaxParam } : {}),
-      ...(unassignedParam ? { unassigned: unassignedParam } : {}),
-      ...(createdAfterParam ? { createdAfter: createdAfterParam } : {}),
-    },
-  }), [
-    columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam,
-    viewMode, pageSize, locationIdParam, assignedPersonIdParam, purchaseDateFromParam,
-    purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam,
-    costMaxParam, unassignedParam, createdAfterParam,
-  ]);
 
 
   const handleStatusChange = useCallback(
