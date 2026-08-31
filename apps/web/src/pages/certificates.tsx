@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Archive, RefreshCw } from "lucide-react";
 import type { VisibilityState } from "@tanstack/react-table";
@@ -36,8 +36,7 @@ import type { Certificate } from "../types/certificate";
 import type { CertificateFormValues } from "../lib/schemas/certificate";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { ArchivedToggle } from "@/components/archived-toggle";
-import { useSavedViews } from "../hooks/use-saved-views";
-import type { SavedView, ViewConfiguration } from "../types/saved-view";
+import { useSavedViewState } from "../hooks/use-saved-view-state";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 import { ActiveFilterChips } from "../components/filters/active-filter-chips";
@@ -51,6 +50,9 @@ const SORT_FIELD_MAP: Record<string, string> = {
   expiryDate: "expiryDate",
   status: "status",
 };
+
+/** Filter params this list stores in a saved view. */
+const SAVED_VIEW_FILTER_KEYS = ["expiryFrom", "expiryTo"] as const;
 
 export default function CertificatesPage() {
   const { canWrite } = useAuth();
@@ -158,10 +160,20 @@ export default function CertificatesPage() {
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   // Saved views
-  const { data: savedViews = [] } = useSavedViews("certificates");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [activeViewId, setActiveViewId] = useState<string | null>(null);
-  const defaultViewApplied = useRef(false);
+
+  const { activeViewId, applyView, handleResetToDefault, getCurrentConfiguration } =
+    useSavedViewState({
+      entityType: "certificates",
+      filterKeys: SAVED_VIEW_FILTER_KEYS,
+      defaultSortBy: "name",
+      searchParams,
+      setSearchParams,
+      setSearchInput,
+      columnVisibility,
+      setColumnVisibility,
+      pageSize,
+    });
 
   // Stable, so the columns memo that depends on it isn't rebuilt every render.
   const handleRestore = useCallback((id: string, name: string) => {
@@ -189,79 +201,6 @@ export default function CertificatesPage() {
     [canWrite, handleRestore],
   );
 
-  const applyView = useCallback((view: SavedView) => {
-    try {
-      const config: ViewConfiguration = JSON.parse(view.configuration);
-      setColumnVisibility(config.columnVisibility ?? {});
-      setActiveViewId(view.id);
-      setSearchParams((prev) => {
-        if (config.sortBy) prev.set("sortBy", config.sortBy);
-        if (config.sortDir) prev.set("sortDir", config.sortDir);
-        if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
-        else { prev.delete("search"); setSearchInput(""); }
-        if (config.status) prev.set("status", config.status);
-        else prev.delete("status");
-        if (config.typeId) prev.set("typeId", config.typeId);
-        else prev.delete("typeId");
-        if (config.viewMode && config.viewMode !== "list") prev.set("viewMode", config.viewMode);
-        else prev.delete("viewMode");
-        if (config.pageSize) prev.set("pageSize", String(config.pageSize));
-
-        // Restore advanced filters
-        const filterKeys = ["expiryFrom", "expiryTo"];
-        for (const key of filterKeys) {
-          const val = config.filters?.[key];
-          if (val) prev.set(key, val);
-          else prev.delete(key);
-        }
-
-        prev.set("page", "1");
-        return prev;
-      });
-    } catch { /* invalid config */ }
-  }, [setSearchParams, setSearchInput]);
-
-  // Apply default saved view on first load
-  useEffect(() => {
-    if (defaultViewApplied.current || savedViews.length === 0) return;
-    defaultViewApplied.current = true;
-    const defaultView = savedViews.find((v) => v.isDefault);
-    if (defaultView) applyView(defaultView);
-  }, [savedViews, applyView]);
-
-  function handleResetToDefault() {
-    setColumnVisibility({});
-    setActiveViewId(null);
-    setSearchParams((prev) => {
-      prev.delete("search");
-      prev.delete("status");
-      prev.delete("typeId");
-      prev.delete("viewMode");
-      prev.delete("expiryFrom");
-      prev.delete("expiryTo");
-      prev.set("sortBy", "name");
-      prev.set("sortDir", "asc");
-      prev.set("page", "1");
-      return prev;
-    });
-    setSearchInput("");
-  }
-
-
-  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
-    columnVisibility,
-    sortBy: sortByParam,
-    sortDir: sortDirParam,
-    search: searchParam || undefined,
-    status: statusParam || undefined,
-    typeId: typeIdParam || undefined,
-    viewMode: viewMode !== "list" ? viewMode : undefined,
-    pageSize,
-    filters: {
-      ...(expiryFromParam ? { expiryFrom: expiryFromParam } : {}),
-      ...(expiryToParam ? { expiryTo: expiryToParam } : {}),
-    },
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam, viewMode, pageSize, expiryFromParam, expiryToParam]);
 
   const activeFilters = useMemo(() => {
     const filters: ActiveFilter[] = [];

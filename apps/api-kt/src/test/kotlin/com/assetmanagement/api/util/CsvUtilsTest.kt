@@ -10,8 +10,29 @@ class CsvUtilsTest {
     fun `prefixes formula-trigger characters with a single quote`() {
         assertEquals("'=1+1", CsvUtils.sanitize("=1+1"))
         assertEquals("'+cmd", CsvUtils.sanitize("+cmd"))
-        assertEquals("'-2", CsvUtils.sanitize("-2"))
+        // "-1+1" is a formula; a bare "-2" is not — see the numbers test below.
+        assertEquals("'-1+1", CsvUtils.sanitize("-1+1"))
         assertEquals("'@SUM(A1)", CsvUtils.sanitize("@SUM(A1)"))
+    }
+
+    @Test
+    fun `leaves numbers alone, including negative ones`() {
+        // Prefixing these turned every negative figure in an export into text
+        // that spreadsheets will not sum or sort — and the expiries report is
+        // mostly negative day counts, its whole point being what has expired.
+        assertEquals("-30", CsvUtils.sanitize("-30"))
+        assertEquals("-2009", CsvUtils.sanitize("-2009"))
+        assertEquals("-1234.56", CsvUtils.sanitize("-1234.56"))
+        assertEquals("+7", CsvUtils.sanitize("+7"))
+        assertEquals("42", CsvUtils.sanitize("42"))
+    }
+
+    @Test
+    fun `still guards a formula that merely looks numeric`() {
+        assertEquals("'-1+1", CsvUtils.sanitize("-1+1"))
+        assertEquals("'=1-2", CsvUtils.sanitize("=1-2"))
+        assertEquals("'-2-3", CsvUtils.sanitize("-2-3"))
+        assertEquals("'+1e2+cmd", CsvUtils.sanitize("+1e2+cmd"))
     }
 
     @Test

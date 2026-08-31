@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Bell, Eye, Clock, X, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -112,7 +113,7 @@ function NotificationRow({
           size="icon"
           className="h-6 w-6"
           title="Mark as read"
-          onClick={() => markRead.mutate(notification.id)}
+          onClick={() => markRead.mutate(notification.id, { onError: notifyFailed("mark as read") })}
         >
           <Eye className="h-3.5 w-3.5" />
         </Button>
@@ -130,22 +131,34 @@ function NotificationRow({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-36">
             <DropdownMenuItem
-              onClick={() => snooze.mutate({ id: notification.id, duration: "1d" })}
+              onClick={() => snooze.mutate(
+                  { id: notification.id, duration: "1d" },
+                  { onError: notifyFailed("snooze") },
+                )}
             >
               1 day
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => snooze.mutate({ id: notification.id, duration: "3d" })}
+              onClick={() => snooze.mutate(
+                  { id: notification.id, duration: "3d" },
+                  { onError: notifyFailed("snooze") },
+                )}
             >
               3 days
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => snooze.mutate({ id: notification.id, duration: "1w" })}
+              onClick={() => snooze.mutate(
+                  { id: notification.id, duration: "1w" },
+                  { onError: notifyFailed("snooze") },
+                )}
             >
               1 week
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => snooze.mutate({ id: notification.id, duration: "until_expiry" })}
+              onClick={() => snooze.mutate(
+                  { id: notification.id, duration: "until_expiry" },
+                  { onError: notifyFailed("snooze") },
+                )}
             >
               Until expiry
             </DropdownMenuItem>
@@ -157,13 +170,21 @@ function NotificationRow({
           size="icon"
           className="h-6 w-6"
           title="Dismiss"
-          onClick={() => dismiss.mutate(notification.id)}
+          onClick={() => dismiss.mutate(notification.id, { onError: notifyFailed("dismiss") })}
         >
           <X className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
   );
+}
+
+/**
+ * Reports a failed notification action. Without this they failed silently — the
+ * bell simply did not change, which reads as the click not registering.
+ */
+function notifyFailed(action: string) {
+  return () => toast.error(`Could not ${action}. Please try again.`);
 }
 
 export function NotificationsBell() {
@@ -213,7 +234,7 @@ export function NotificationsBell() {
               variant="ghost"
               size="sm"
               className="h-7 text-xs gap-1"
-              onClick={() => markAllRead.mutate()}
+              onClick={() => markAllRead.mutate(undefined, { onError: notifyFailed("mark all as read") })}
             >
               <CheckCheck className="h-3.5 w-3.5" />
               Mark all read

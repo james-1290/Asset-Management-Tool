@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { peopleApi } from "../lib/api/people";
@@ -32,8 +32,7 @@ import type { Person } from "../types/person";
 import type { PersonFormValues } from "../lib/schemas/person";
 import { SavedViewSelector } from "../components/saved-view-selector";
 import { ArchivedToggle } from "@/components/archived-toggle";
-import { useSavedViews } from "../hooks/use-saved-views";
-import type { SavedView, ViewConfiguration } from "../types/saved-view";
+import { useSavedViewState } from "../hooks/use-saved-view-state";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
 import { ActiveFilterChips } from "../components/filters/active-filter-chips";
@@ -48,6 +47,9 @@ const SORT_FIELD_MAP: Record<string, string> = {
   locationName: "locationname",
   createdAt: "createdAt",
 };
+
+/** Filter params this list stores in a saved view. */
+const SAVED_VIEW_FILTER_KEYS = ["locationId", "department"] as const;
 
 export default function PeoplePage() {
   const { canWrite } = useAuth();
@@ -120,10 +122,20 @@ export default function PeoplePage() {
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   // Saved views
-  const { data: savedViews = [] } = useSavedViews("people");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [activeViewId, setActiveViewId] = useState<string | null>(null);
-  const defaultViewApplied = useRef(false);
+
+  const { activeViewId, applyView, handleResetToDefault, getCurrentConfiguration } =
+    useSavedViewState({
+      entityType: "people",
+      filterKeys: SAVED_VIEW_FILTER_KEYS,
+      defaultSortBy: "fullname",
+      searchParams,
+      setSearchParams,
+      setSearchInput,
+      columnVisibility,
+      setColumnVisibility,
+      pageSize,
+    });
 
   // Stable, so the columns memo that depends on it isn't rebuilt every render.
   const handleRestore = useCallback((id: string, name: string) => {
@@ -165,67 +177,6 @@ export default function PeoplePage() {
     });
   }
 
-  const applyView = useCallback((view: SavedView) => {
-    try {
-      const config: ViewConfiguration = JSON.parse(view.configuration);
-      setColumnVisibility(config.columnVisibility ?? {});
-      setActiveViewId(view.id);
-      setSearchParams((prev) => {
-        if (config.sortBy) prev.set("sortBy", config.sortBy);
-        if (config.sortDir) prev.set("sortDir", config.sortDir);
-        if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
-        else { prev.delete("search"); setSearchInput(""); }
-        if (config.pageSize) prev.set("pageSize", String(config.pageSize));
-
-        // Restore advanced filters
-        const filterKeys = ["locationId", "department"];
-        for (const key of filterKeys) {
-          const val = config.filters?.[key];
-          if (val) prev.set(key, val);
-          else prev.delete(key);
-        }
-
-        prev.set("page", "1");
-        return prev;
-      });
-    } catch { /* invalid config */ }
-  }, [setSearchParams, setSearchInput]);
-
-  // Apply default saved view on first load
-  useEffect(() => {
-    if (defaultViewApplied.current || savedViews.length === 0) return;
-    defaultViewApplied.current = true;
-    const defaultView = savedViews.find((v) => v.isDefault);
-    if (defaultView) applyView(defaultView);
-  }, [savedViews, applyView]);
-
-  function handleResetToDefault() {
-    setColumnVisibility({});
-    setActiveViewId(null);
-    setSearchParams((prev) => {
-      prev.delete("search");
-      prev.delete("locationId");
-      prev.delete("department");
-      prev.set("sortBy", "fullname");
-      prev.set("sortDir", "asc");
-      prev.set("page", "1");
-      return prev;
-    });
-    setSearchInput("");
-  }
-
-
-  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
-    columnVisibility,
-    sortBy: sortByParam,
-    sortDir: sortDirParam,
-    search: searchParam || undefined,
-    pageSize,
-    filters: {
-      ...(locationIdParam ? { locationId: locationIdParam } : {}),
-      ...(departmentParam ? { department: departmentParam } : {}),
-    },
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize, locationIdParam, departmentParam]);
 
   const activeFilters = useMemo(() => {
     const filters: ActiveFilter[] = [];
