@@ -38,5 +38,8 @@ class AssetType(
     var assets: MutableList<Asset> = mutableListOf(),
 
     @OneToMany(mappedBy = "assetType", cascade = [CascadeType.ALL], orphanRemoval = true)
-    override var customFieldDefinitions: MutableList<CustomFieldDefinition> = mutableListOf()
+    override var customFieldDefinitions: MutableList<CustomFieldDefinition> = mutableListOf(),
+    @Version
+    @Column(name = "version", nullable = false)
+    var entityVersion: Long = 0
 ) : ArchivableType

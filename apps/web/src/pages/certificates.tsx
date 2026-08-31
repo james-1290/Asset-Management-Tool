@@ -23,6 +23,7 @@ import {
   useCreateCertificate,
   useUpdateCertificate,
   useArchiveCertificate,
+  useRestoreCertificate,
   useBulkArchiveCertificates,
   useBulkStatusCertificates,
   useCheckCertificateDuplicates,
@@ -34,6 +35,7 @@ import { useLocations } from "../hooks/use-locations";
 import type { Certificate } from "../types/certificate";
 import type { CertificateFormValues } from "../lib/schemas/certificate";
 import { SavedViewSelector } from "../components/saved-view-selector";
+import { ArchivedToggle } from "@/components/archived-toggle";
 import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
@@ -75,6 +77,9 @@ export default function CertificatesPage() {
   const statusParam = searchParams.get("status") ?? "";
   const typeIdParam = searchParams.get("typeId") ?? "";
   const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
+  // Archived rows are hidden until asked for; this is what makes a
+  // soft-deleted record findable again so it can be restored.
+  const showArchived = searchParams.get("includeArchived") === "true";
   const expiryFromParam = searchParams.get("expiryFrom") ?? "";
   const expiryToParam = searchParams.get("expiryTo") ?? "";
 
@@ -127,8 +132,9 @@ export default function CertificatesPage() {
       typeId: typeIdParam || undefined,
       expiryFrom: expiryFromParam || undefined,
       expiryTo: expiryToParam || undefined,
+      includeArchived: showArchived || undefined,
     }),
-    [page, pageSize, searchParam, statusParam, sortByParam, sortDirParam, typeIdParam, expiryFromParam, expiryToParam],
+    [page, pageSize, searchParam, statusParam, sortByParam, sortDirParam, typeIdParam, expiryFromParam, expiryToParam, showArchived],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedCertificates(queryParams);
@@ -138,6 +144,7 @@ export default function CertificatesPage() {
   const checkDuplicatesMutation = useCheckCertificateDuplicates();
   const updateMutation = useUpdateCertificate();
   const archiveMutation = useArchiveCertificate();
+  const restoreMutation = useRestoreCertificate();
   const bulkArchiveMutation = useBulkArchiveCertificates();
   const bulkStatusMutation = useBulkStatusCertificates();
 
@@ -156,6 +163,14 @@ export default function CertificatesPage() {
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const defaultViewApplied = useRef(false);
 
+  // Stable, so the columns memo that depends on it isn't rebuilt every render.
+  const handleRestore = useCallback((id: string, name: string) => {
+    restoreMutation.mutate(id, {
+      onSuccess: () => toast.success(`Restored ${name}`),
+      onError: (error) => toast.error(getApiErrorMessage(error, "Failed to restore")),
+    });
+  }, [restoreMutation]);
+
   const columns = useMemo(
     () => [
       getSelectionColumn<Certificate>(),
@@ -168,9 +183,10 @@ export default function CertificatesPage() {
         onArchive: (certificate) => {
           setArchivingCertificate(certificate);
         },
+        onRestore: (certificate) => handleRestore(certificate.id, certificate.name),
       }),
     ],
-    [canWrite],
+    [canWrite, handleRestore],
   );
 
   const applyView = useCallback((view: SavedView) => {
@@ -358,6 +374,7 @@ export default function CertificatesPage() {
     }
   }
 
+
   function handleArchive() {
     if (!archivingCertificate) return;
     archiveMutation.mutate(archivingCertificate.id, {
@@ -487,6 +504,10 @@ export default function CertificatesPage() {
                 onExpiryToChange={(v) => handleFilterChange("expiryTo", v)}
               />
               <div className="flex items-center gap-1.5">
+                <ArchivedToggle
+                  showArchived={showArchived}
+                  onShowArchivedChange={(v) => handleFilterChange("includeArchived", v ? "true" : "")}
+                />
                 <SavedViewSelector
                   entityType="certificates"
                   activeViewId={activeViewId}

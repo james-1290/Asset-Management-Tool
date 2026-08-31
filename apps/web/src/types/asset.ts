@@ -44,11 +44,11 @@ export interface Asset {
 
 export interface CreateAssetRequest {
   name: string;
-  serialNumber: string;
+  serialNumber?: string | null;
   status?: string | null;
   assetTypeId: string;
   assetModelId?: string | null;
-  locationId: string;
+  locationId?: string | null;
   assignedPersonId?: string | null;
   purchaseDate?: string | null;
   purchaseCost?: number | null;
@@ -90,11 +90,11 @@ export interface BulkEditAssetsRequest {
 export interface UpdateAssetRequest {
   entityVersion?: number;
   name: string;
-  serialNumber: string;
+  serialNumber?: string | null;
   status?: string | null;
   assetTypeId: string;
   assetModelId?: string | null;
-  locationId: string;
+  locationId?: string | null;
   assignedPersonId?: string | null;
   purchaseDate?: string | null;
   purchaseCost?: number | null;

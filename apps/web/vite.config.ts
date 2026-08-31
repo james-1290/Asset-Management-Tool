@@ -41,6 +41,20 @@ const proxy = {
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      output: {
+        // Split the big third-party libraries out of the entry chunk. They
+        // change far less often than application code, so a release doesn't
+        // invalidate them in everyone's browser cache.
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          charts: ["recharts"],
+          table: ["@tanstack/react-table", "@tanstack/react-query"],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

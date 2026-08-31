@@ -14,6 +14,8 @@ import type { AssetHistory } from "../../types/asset-history";
 import type { DuplicateCheckResult, CheckAssetDuplicatesRequest } from "../../types/duplicate-check";
 
 export interface AssetQueryParams {
+  /** Include archived (soft-deleted) rows, so they can be restored. */
+  includeArchived?: boolean;
   page?: number;
   pageSize?: number;
   search?: string;

@@ -26,6 +26,7 @@ export const useAsset = assetHooks.useDetail;
 export const useCreateAsset = assetHooks.useCreate;
 export const useUpdateAsset = assetHooks.useUpdate;
 export const useArchiveAsset = assetHooks.useArchive;
+export const useRestoreAsset = assetHooks.useRestore;
 export const useBulkArchiveAssets = assetHooks.useBulkArchive;
 
 // Actions that mutate a single asset invalidate the same keys as an update.

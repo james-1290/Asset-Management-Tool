@@ -12,6 +12,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogTitle,
 } from "../ui/dialog";
 import {
   Select,
@@ -89,14 +91,19 @@ export function ReassignLocationDialog({
               <ArrowRightLeft className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold leading-tight">
+              {/*
+                These are the dialog's real title and description, so they use
+                the Radix primitives: a plain <h3>/<p> left the dialog unnamed
+                to a screen reader (and Radix warns about it in the console).
+              */}
+              <DialogTitle className="text-2xl font-bold leading-tight">
                 Reassign &amp; Delete Location
-              </h3>
-              <p className="text-muted-foreground">
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
                 Relocate active items from{" "}
                 <span className="font-semibold text-foreground">{location.name}</span>{" "}
                 before deletion.
-              </p>
+              </DialogDescription>
             </div>
           </div>
         </div>

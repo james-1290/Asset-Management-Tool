@@ -195,7 +195,7 @@ export function AuditLogsToolbar({
       <div className="relative flex-1 min-w-[160px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search..."
+          placeholder="Search audit log…"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-9"
@@ -214,9 +214,7 @@ export function AuditLogsToolbar({
       )}
 
       {/* Column toggle */}
-      <div className="ml-auto">
-        <ColumnToggle table={table} />
-      </div>
+      <ColumnToggle table={table} />
     </div>
   );
 }

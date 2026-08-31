@@ -23,6 +23,7 @@ export const usePagedApplicationTypes = applicationTypeHooks.usePaged;
 export const useCreateApplicationType = applicationTypeHooks.useCreate;
 export const useUpdateApplicationType = applicationTypeHooks.useUpdate;
 export const useArchiveApplicationType = applicationTypeHooks.useArchive;
+export const useRestoreApplicationType = applicationTypeHooks.useRestore;
 export const useBulkArchiveApplicationTypes = applicationTypeHooks.useBulkArchive;
 
 export function useApplicationCustomFieldDefinitions(applicationTypeId: string | undefined) {

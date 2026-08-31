@@ -243,4 +243,5 @@ Claude should follow an explore → plan → implement → verify loop.
 - Backend: `cd apps/api-kt && ./gradlew test` (JUnit unit tests + Testcontainers integration suite; needs Docker. Locally may require `DOCKER_API_VERSION=1.44`).
 - Frontend unit: `cd apps/web && npm run test` (Vitest).
 - Frontend e2e: `cd apps/web && npx playwright test` (needs the dev server on :5173 and the API on :5115 running).
+- Full QA sweep from a clean database: `scripts/qa/full_sweep.sh` — wipes the schema, restarts the API, then runs backend, frontend, both API suites and the browser suite (against the dev server *and* the production build). See `docs/qa.md`, including what these suites deliberately do not cover.
 - CI runs backend `./gradlew build`, frontend build + Vitest + lint on every PR/push (`.github/workflows/ci.yml`).

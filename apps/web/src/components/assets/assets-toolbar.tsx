@@ -1,4 +1,7 @@
+import type { Table } from "@tanstack/react-table";
 import { Checkbox } from "../ui/checkbox";
+import { Input } from "../ui/input";
+import { ColumnToggle } from "../column-toggle";
 import {
   Select,
   SelectContent,
@@ -12,6 +15,7 @@ import { ListFilter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCurrencySymbol } from "@/lib/format";
 import { FilterChip } from "../filter-chip";
+import type { Asset } from "../../types/asset";
 import type { AssetType } from "../../types/asset-type";
 import type { Location } from "../../types/location";
 import type { Person } from "../../types/person";
@@ -24,6 +28,8 @@ const STATUS_OPTIONS = [
 ];
 
 interface AssetsToolbarProps {
+  /** Needed for the column chooser, which every other list already offers. */
+  table: Table<Asset>;
   search: string;
   onSearchChange: (value: string) => void;
   status: string;
@@ -56,6 +62,7 @@ interface AssetsToolbarProps {
 }
 
 export function AssetsToolbar({
+  table,
   search,
   onSearchChange,
   status,
@@ -106,7 +113,19 @@ export function AssetsToolbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-1 flex-wrap items-center gap-2">
+      {/*
+        The list's own search. The page has always passed `search`/`onSearchChange`
+        (and a saved view can set them), but nothing rendered them, leaving Assets
+        the one list with no search box — and a saved view's search term applied
+        invisibly, with no way to see or clear it.
+      */}
+      <Input
+        placeholder="Search assets…"
+        value={search}
+        onChange={(e) => onSearchChange(e.target.value)}
+        className="w-[220px] shrink-0"
+      />
       <FilterChip
         label="Type"
         value={typeId}
@@ -230,6 +249,12 @@ export function AssetsToolbar({
           </button>
         </>
       )}
+      {/*
+        The column chooser, which every other list already offers. Without it
+        the custom-field columns — which default to hidden — could not be shown
+        on the one list most likely to have them.
+      */}
+      <ColumnToggle table={table} />
     </div>
   );
 }

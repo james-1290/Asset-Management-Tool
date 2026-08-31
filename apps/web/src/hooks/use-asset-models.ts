@@ -4,14 +4,15 @@ import type { CreateAssetModelRequest, UpdateAssetModelRequest } from "../types/
 
 const assetModelKeys = {
   all: ["asset-models"] as const,
-  list: (assetTypeId?: string) => ["asset-models", { assetTypeId }] as const,
+  list: (assetTypeId?: string, search?: string) =>
+    ["asset-models", { assetTypeId, search }] as const,
   detail: (id: string) => ["asset-models", id] as const,
 };
 
-export function useAssetModels(assetTypeId?: string) {
+export function useAssetModels(assetTypeId?: string, search?: string) {
   return useQuery({
-    queryKey: assetModelKeys.list(assetTypeId),
-    queryFn: () => assetModelsApi.getAll(assetTypeId),
+    queryKey: assetModelKeys.list(assetTypeId, search),
+    queryFn: () => assetModelsApi.getAll(assetTypeId, search),
   });
 }
 

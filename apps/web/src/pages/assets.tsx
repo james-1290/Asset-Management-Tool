@@ -18,12 +18,16 @@ import { AssetsToolbar } from "../components/assets/assets-toolbar";
 import { getAssetColumns } from "../components/assets/columns";
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { GroupedGridView } from "../components/grouped-grid-view";
+import { ViewModeToggle } from "../components/view-mode-toggle";
+import { SavedViewSelector } from "../components/saved-view-selector";
+import { ArchivedToggle } from "@/components/archived-toggle";
 import { AssetCard } from "../components/assets/asset-card";
 import {
   usePagedAssets,
   useCreateAsset,
   useUpdateAsset,
   useArchiveAsset,
+  useRestoreAsset,
   useBulkArchiveAssets,
   useBulkStatusAssets,
   useBulkEditAssets,
@@ -83,6 +87,15 @@ export default function AssetsPage() {
   const includeSold = searchParams.get("includeSold") === "true";
   const typeIdParam = searchParams.get("typeId") ?? "";
   const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
+  // Archived rows are hidden until asked for; this is what makes a
+  // soft-deleted record findable again so it can be restored.
+  const showArchived = searchParams.get("includeArchived") === "true";
+
+  // Exposes the grouped view, which the page already renders but had no control
+  // to reach — it was previously only accessible by editing the URL by hand.
+  const handleViewModeChange = (mode: "list" | "grouped") =>
+    handleFilterChange("viewMode", mode === "list" ? "" : mode);
+
   const locationIdParam = searchParams.get("locationId") ?? "";
   const assignedPersonIdParam = searchParams.get("assignedPersonId") ?? "";
   const purchaseDateFromParam = searchParams.get("purchaseDateFrom") ?? "";
@@ -123,8 +136,9 @@ export default function AssetsPage() {
       costMax: costMaxParam || undefined,
       unassigned: unassignedParam || undefined,
       createdAfter: createdAfterParam || undefined,
+      includeArchived: showArchived || undefined,
     }),
-    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam, createdAfterParam],
+    [page, pageSize, searchParam, statusParam, includeStatuses, sortByParam, sortDirParam, typeIdParam, locationIdParam, assignedPersonIdParam, purchaseDateFromParam, purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam, costMaxParam, unassignedParam, createdAfterParam, showArchived],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedAssets(queryParams);
@@ -135,6 +149,7 @@ export default function AssetsPage() {
   const checkDuplicatesMutation = useCheckAssetDuplicates();
   const updateMutation = useUpdateAsset();
   const archiveMutation = useArchiveAsset();
+  const restoreMutation = useRestoreAsset();
   const bulkArchiveMutation = useBulkArchiveAssets();
   const bulkStatusMutation = useBulkStatusAssets();
   const bulkEditMutation = useBulkEditAssets();
@@ -152,6 +167,7 @@ export default function AssetsPage() {
   // Saved views
   const { data: savedViews = [] } = useSavedViews("assets");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const defaultViewApplied = useRef(false);
 
   // Gather all unique custom field definitions from loaded asset types
@@ -170,6 +186,14 @@ export default function AssetsPage() {
     return defs;
   }, [assetTypes]);
 
+  // Stable, so the columns memo that depends on it isn't rebuilt every render.
+  const handleRestore = useCallback((id: string, name: string) => {
+    restoreMutation.mutate(id, {
+      onSuccess: () => toast.success(`Restored ${name}`),
+      onError: (error) => toast.error(getApiErrorMessage(error, "Failed to restore")),
+    });
+  }, [restoreMutation]);
+
   const columns = useMemo(
     () => [
       getSelectionColumn<Asset>(),
@@ -182,10 +206,11 @@ export default function AssetsPage() {
         onArchive: (asset) => {
           setArchivingAsset(asset);
         },
+        onRestore: (asset) => handleRestore(asset.id, asset.name),
         customFieldDefinitions: allCustomFieldDefs,
       }),
     ],
-    [allCustomFieldDefs, canWrite],
+    [allCustomFieldDefs, canWrite, handleRestore],
   );
 
   // Hide custom field columns by default
@@ -213,6 +238,7 @@ export default function AssetsPage() {
   const applyView = useCallback((view: SavedView) => {
     try {
       const config: ViewConfiguration = JSON.parse(view.configuration);
+      setActiveViewId(view.id);
       setColumnVisibility({ ...defaultColumnVisibility, ...config.columnVisibility });
       setSearchParams((prev) => {
         if (config.sortBy) prev.set("sortBy", config.sortBy);
@@ -248,6 +274,51 @@ export default function AssetsPage() {
     const defaultView = savedViews.find((v) => v.isDefault);
     if (defaultView) applyView(defaultView);
   }, [savedViews, applyView]);
+
+  function handleResetToDefault() {
+    setColumnVisibility(defaultColumnVisibility);
+    setActiveViewId(null);
+    setSearchParams((prev) => {
+      [
+        "search", "status", "typeId", "viewMode", "locationId", "assignedPersonId",
+        "purchaseDateFrom", "purchaseDateTo", "warrantyExpiryFrom", "warrantyExpiryTo",
+        "costMin", "costMax", "unassigned", "createdAfter",
+      ].forEach((k) => prev.delete(k));
+      prev.set("sortBy", "name");
+      prev.set("sortDir", "asc");
+      prev.set("page", "1");
+      return prev;
+    });
+    setSearchInput("");
+  }
+
+  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
+    columnVisibility,
+    sortBy: sortByParam,
+    sortDir: sortDirParam,
+    search: searchParam || undefined,
+    status: statusParam || undefined,
+    typeId: typeIdParam || undefined,
+    viewMode: viewMode !== "list" ? viewMode : undefined,
+    pageSize,
+    filters: {
+      ...(locationIdParam ? { locationId: locationIdParam } : {}),
+      ...(assignedPersonIdParam ? { assignedPersonId: assignedPersonIdParam } : {}),
+      ...(purchaseDateFromParam ? { purchaseDateFrom: purchaseDateFromParam } : {}),
+      ...(purchaseDateToParam ? { purchaseDateTo: purchaseDateToParam } : {}),
+      ...(warrantyExpiryFromParam ? { warrantyExpiryFrom: warrantyExpiryFromParam } : {}),
+      ...(warrantyExpiryToParam ? { warrantyExpiryTo: warrantyExpiryToParam } : {}),
+      ...(costMinParam ? { costMin: costMinParam } : {}),
+      ...(costMaxParam ? { costMax: costMaxParam } : {}),
+      ...(unassignedParam ? { unassigned: unassignedParam } : {}),
+      ...(createdAfterParam ? { createdAfter: createdAfterParam } : {}),
+    },
+  }), [
+    columnVisibility, sortByParam, sortDirParam, searchParam, statusParam, typeIdParam,
+    viewMode, pageSize, locationIdParam, assignedPersonIdParam, purchaseDateFromParam,
+    purchaseDateToParam, warrantyExpiryFromParam, warrantyExpiryToParam, costMinParam,
+    costMaxParam, unassignedParam, createdAfterParam,
+  ]);
 
 
   const handleStatusChange = useCallback(
@@ -420,6 +491,7 @@ export default function AssetsPage() {
     }
   }
 
+
   function handleArchive() {
     if (!archivingAsset) return;
     archiveMutation.mutate(archivingAsset.id, {
@@ -518,7 +590,6 @@ export default function AssetsPage() {
         description={`Managing ${totalCount.toLocaleString()} total assets`}
         actions={
           <div className="flex items-center gap-3">
-            <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
             {canWrite && (
               <Button
                 onClick={() => {
@@ -549,39 +620,58 @@ export default function AssetsPage() {
         rowCount={totalCount}
         sorting={sorting}
         onSortingChange={handleSortingChange}
-        toolbar={() => (
+        toolbar={(table) => (
           <div className="space-y-2">
-            <AssetsToolbar
-              search={searchInput}
-              onSearchChange={setSearchInput}
-              status={statusParam}
-              onStatusChange={handleStatusChange}
-              includeRetired={includeRetired}
-              onIncludeRetiredChange={handleIncludeRetiredChange}
-              includeSold={includeSold}
-              onIncludeSoldChange={handleIncludeSoldChange}
-              typeId={typeIdParam}
-              onTypeIdChange={handleTypeIdChange}
-              assetTypes={assetTypes ?? []}
-              locationId={locationIdParam}
-              onLocationIdChange={(v) => handleFilterChange("locationId", v)}
-              locations={locations ?? []}
-              assignedPersonId={assignedPersonIdParam}
-              onAssignedPersonIdChange={(v) => handleFilterChange("assignedPersonId", v)}
-              people={people ?? []}
-              purchaseDateFrom={purchaseDateFromParam}
-              purchaseDateTo={purchaseDateToParam}
-              onPurchaseDateFromChange={(v) => handleFilterChange("purchaseDateFrom", v)}
-              onPurchaseDateToChange={(v) => handleFilterChange("purchaseDateTo", v)}
-              warrantyExpiryFrom={warrantyExpiryFromParam}
-              warrantyExpiryTo={warrantyExpiryToParam}
-              onWarrantyExpiryFromChange={(v) => handleFilterChange("warrantyExpiryFrom", v)}
-              onWarrantyExpiryToChange={(v) => handleFilterChange("warrantyExpiryTo", v)}
-              costMin={costMinParam}
-              costMax={costMaxParam}
-              onCostMinChange={(v) => handleFilterChange("costMin", v)}
-              onCostMaxChange={(v) => handleFilterChange("costMax", v)}
-            />
+            <div className="flex items-center justify-between gap-4">
+              <AssetsToolbar
+                table={table}
+                search={searchInput}
+                onSearchChange={setSearchInput}
+                status={statusParam}
+                onStatusChange={handleStatusChange}
+                includeRetired={includeRetired}
+                onIncludeRetiredChange={handleIncludeRetiredChange}
+                includeSold={includeSold}
+                onIncludeSoldChange={handleIncludeSoldChange}
+                typeId={typeIdParam}
+                onTypeIdChange={handleTypeIdChange}
+                assetTypes={assetTypes ?? []}
+                locationId={locationIdParam}
+                onLocationIdChange={(v) => handleFilterChange("locationId", v)}
+                locations={locations ?? []}
+                assignedPersonId={assignedPersonIdParam}
+                onAssignedPersonIdChange={(v) => handleFilterChange("assignedPersonId", v)}
+                people={people ?? []}
+                purchaseDateFrom={purchaseDateFromParam}
+                purchaseDateTo={purchaseDateToParam}
+                onPurchaseDateFromChange={(v) => handleFilterChange("purchaseDateFrom", v)}
+                onPurchaseDateToChange={(v) => handleFilterChange("purchaseDateTo", v)}
+                warrantyExpiryFrom={warrantyExpiryFromParam}
+                warrantyExpiryTo={warrantyExpiryToParam}
+                onWarrantyExpiryFromChange={(v) => handleFilterChange("warrantyExpiryFrom", v)}
+                onWarrantyExpiryToChange={(v) => handleFilterChange("warrantyExpiryTo", v)}
+                costMin={costMinParam}
+                costMax={costMaxParam}
+                onCostMinChange={(v) => handleFilterChange("costMin", v)}
+                onCostMaxChange={(v) => handleFilterChange("costMax", v)}
+              />
+              <div className="flex items-center gap-1.5">
+                <ArchivedToggle
+                  showArchived={showArchived}
+                  onShowArchivedChange={(v) => handleFilterChange("includeArchived", v ? "true" : "")}
+                />
+                <SavedViewSelector
+                  entityType="assets"
+                  activeViewId={activeViewId}
+                  onApplyView={applyView}
+                  onResetToDefault={handleResetToDefault}
+                  getCurrentConfiguration={getCurrentConfiguration}
+                />
+                <div className="w-px h-5 bg-border" />
+                <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+                <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
+              </div>
+            </div>
             {/* Bulk actions (only when selected) */}
             <BulkActionBar
               canWrite={canWrite}

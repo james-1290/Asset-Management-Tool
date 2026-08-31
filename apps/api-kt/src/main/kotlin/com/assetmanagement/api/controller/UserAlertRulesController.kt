@@ -42,7 +42,9 @@ class UserAlertRulesController(
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
         val rule = userAlertRuleRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
-        if (rule.userId != userId) return ResponseEntity.status(403).build()
+        // 404, not 403: a 403 confirms the record exists, which lets someone
+        // probe for other users' rules. Matches SavedViewsController.
+        if (rule.userId != userId) return ResponseEntity.notFound().build()
         rule.name = request.name.trim()
         rule.entityTypes = request.entityTypes
         rule.thresholds = request.thresholds
@@ -58,7 +60,9 @@ class UserAlertRulesController(
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
         val rule = userAlertRuleRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
-        if (rule.userId != userId) return ResponseEntity.status(403).build()
+        // 404, not 403: a 403 confirms the record exists, which lets someone
+        // probe for other users' rules. Matches SavedViewsController.
+        if (rule.userId != userId) return ResponseEntity.notFound().build()
         userAlertRuleRepository.delete(rule)
         return ResponseEntity.noContent().build()
     }

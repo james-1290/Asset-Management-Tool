@@ -8,6 +8,7 @@ import com.assetmanagement.api.util.withFetch
 import com.assetmanagement.api.util.today
 import com.assetmanagement.api.util.computeStatus
 import com.assetmanagement.api.util.computedStatusPredicates
+import com.assetmanagement.api.util.orderByComputedStatus
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.CertificateStatus
@@ -60,10 +61,12 @@ class CertificatesController(
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
-    private fun buildSpec(search: String?, status: String?, typeId: UUID?, expiryFrom: String? = null, expiryTo: String? = null): Specification<Certificate> =
+    private fun buildSpec(search: String?, status: String?, typeId: UUID?, expiryFrom: String? = null, expiryTo: String? = null, includeArchived: Boolean = false): Specification<Certificate> =
         Specification { root, _, cb ->
             val predicates = mutableListOf<Predicate>()
-            predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+            // Archived rows are hidden by default but must be findable, or an
+            // archived record could never be restored.
+            if (!includeArchived) predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
 
             if (!search.isNullOrBlank()) {
                 val pattern = "%${SqlUtils.escapeLikePattern(search.lowercase())}%"
@@ -116,12 +119,32 @@ class CertificatesController(
             cb.and(*predicates.toTypedArray())
         }
 
+    /**
+     * Ordering for the "Status" column. The list shows a computed status, so it
+     * cannot be ordered by the stored column — see [orderByComputedStatus].
+     * Contributes nothing for any other sort key.
+     */
+    private fun statusOrder(sortBy: String, sortDir: String): Specification<Certificate> =
+        if (sortBy.lowercase() != "status") {
+            Specification { _, _, _ -> null }
+        } else {
+            orderByComputedStatus(
+                statuses = CertificateStatus.entries.toList(),
+                active = CertificateStatus.Active,
+                expired = CertificateStatus.Expired,
+                pendingRenewal = CertificateStatus.PendingRenewal,
+                descending = sortDir.equals("desc", ignoreCase = true),
+            )
+        }
+
     private fun sortOf(sortBy: String, sortDir: String): Sort {
+        if (sortBy.lowercase() == "status") return Sort.unsorted()
         val dir = if (sortDir.equals("desc", ignoreCase = true)) Sort.Direction.DESC else Sort.Direction.ASC
         val prop = when (sortBy.lowercase()) {
             "issuer" -> "issuer"
             "subject" -> "subject"
-            "status" -> "status"
+            // "status" is deliberately absent: the displayed status is computed,
+            // so its ordering comes from statusOrder() instead of this column.
             "issueddate" -> "issuedDate"
             "expirydate" -> "expiryDate"
             "autorenewal" -> "autoRenewal"
@@ -267,12 +290,14 @@ class CertificatesController(
         @RequestParam(required = false) expiryFrom: String?,
         @RequestParam(required = false) expiryTo: String?,
         @RequestParam(defaultValue = "name") sortBy: String,
-        @RequestParam(defaultValue = "asc") sortDir: String
+        @RequestParam(defaultValue = "asc") sortDir: String,
+        @RequestParam(defaultValue = "false") includeArchived: Boolean
     ): ResponseEntity<PagedResponse<CertificateDto>> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
-        val spec = buildSpec(search, status, typeId, expiryFrom, expiryTo)
+        val spec = buildSpec(search, status, typeId, expiryFrom, expiryTo, includeArchived)
             .and(withFetch("certificateType", "asset", "person", "location"))
+            .and(statusOrder(sortBy, sortDir))
         val pageReq = PageRequest.of(p - 1, ps, sortOf(sortBy, sortDir))
         val result = certificateRepository.findAll(spec, pageReq)
 
@@ -304,11 +329,13 @@ class CertificatesController(
             val spec = Specification<Certificate> { root, _, cb ->
                 cb.and(cb.equal(root.get<Boolean>("isArchived"), false), root.get<UUID>("id").`in`(idList))
             }.and(withFetch("certificateType"))
-            certificateRepository.findAll(spec, sortOf(sortBy, sortDir))
+            certificateRepository.findAll(spec.and(statusOrder(sortBy, sortDir)), sortOf(sortBy, sortDir))
         } else {
             certificateRepository.findAll(
                 // Fetch-join the to-one relation the CSV denormalises (N+1 guard).
-                buildSpec(search, status, typeId, expiryFrom, expiryTo).and(withFetch("certificateType")),
+                buildSpec(search, status, typeId, expiryFrom, expiryTo)
+                    .and(withFetch("certificateType"))
+                    .and(statusOrder(sortBy, sortDir)),
                 PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir)),
             ).content
         }
@@ -620,6 +647,26 @@ class CertificatesController(
             )
         }
         return ResponseEntity.ok(BulkActionResponse(succeeded, failed))
+    }
+
+    /**
+     * Brings an archived certificate back. Archiving is a soft delete, so without this
+     * the record was recoverable only by hand-written SQL.
+     */
+    @PostMapping("/{id}/restore")
+    @Transactional
+    fun restore(@PathVariable id: UUID): ResponseEntity<Any> {
+        val entity = certificateRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+        if (!entity.isArchived) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "This certificate is not archived."))
+        }
+        entity.isArchived = false
+        entity.updatedAt = Instant.now()
+        certificateRepository.save(entity)
+        auditService.log(AuditEntry("Restored", "Certificate", entity.id.toString(), entity.name,
+            "Restored certificate \"${entity.name}\"", currentUserService.userId, currentUserService.userName))
+        return ResponseEntity.ok(entity.toDto(buildCustomFieldValueDtos(entity.id)))
     }
 
     @DeleteMapping("/{id}")

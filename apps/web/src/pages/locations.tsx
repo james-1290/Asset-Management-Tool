@@ -21,11 +21,13 @@ import {
   useCreateLocation,
   useUpdateLocation,
   useArchiveLocation,
+  useRestoreLocation,
   useCheckLocationDuplicates,
 } from "../hooks/use-locations";
 import type { Location, LocationItemCounts } from "../types/location";
 import type { LocationFormValues } from "../lib/schemas/location";
 import { SavedViewSelector } from "../components/saved-view-selector";
+import { ArchivedToggle } from "@/components/archived-toggle";
 import { useSavedViews } from "../hooks/use-saved-views";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
@@ -43,6 +45,7 @@ const SORT_FIELD_MAP: Record<string, string> = {
 export default function LocationsPage() {
   const { canWrite } = useAuth();
   const {
+    searchParams,
     setSearchParams,
     page,
     pageSize,
@@ -57,6 +60,10 @@ export default function LocationsPage() {
     handlePageSizeChange,
   } = useListPage({ sortFieldMap: SORT_FIELD_MAP, defaultSortBy: "name" });
 
+  // Archived rows are hidden until asked for; this is what makes a soft-deleted
+  // record findable again so it can be restored.
+  const showArchived = searchParams.get("includeArchived") === "true";
+
   const queryParams = useMemo(
     () => ({
       page,
@@ -64,8 +71,9 @@ export default function LocationsPage() {
       search: searchParam || undefined,
       sortBy: sortByParam,
       sortDir: sortDirParam,
+      includeArchived: showArchived || undefined,
     }),
-    [page, pageSize, searchParam, sortByParam, sortDirParam],
+    [page, pageSize, searchParam, sortByParam, sortDirParam, showArchived],
   );
 
   const { data: pagedResult, isLoading, isError } = usePagedLocations(queryParams);
@@ -73,6 +81,7 @@ export default function LocationsPage() {
   const checkDuplicatesMutation = useCheckLocationDuplicates();
   const updateMutation = useUpdateLocation();
   const archiveMutation = useArchiveLocation();
+  const restoreMutation = useRestoreLocation();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
@@ -94,6 +103,14 @@ export default function LocationsPage() {
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const defaultViewApplied = useRef(false);
 
+  // Stable, so the columns memo that depends on it isn't rebuilt every render.
+  const handleRestore = useCallback((id: string, name: string) => {
+    restoreMutation.mutate(id, {
+      onSuccess: () => toast.success(`Restored ${name}`),
+      onError: (error) => toast.error(getApiErrorMessage(error, "Failed to restore")),
+    });
+  }, [restoreMutation]);
+
   const columns = useMemo(
     () =>
       getLocationColumns({
@@ -105,8 +122,9 @@ export default function LocationsPage() {
         onArchive: (location) => {
           setArchivingLocation(location);
         },
+        onRestore: (location) => handleRestore(location.id, location.name),
       }),
-    [canWrite],
+    [canWrite, handleRestore],
   );
 
   const applyView = useCallback((view: SavedView) => {
@@ -223,6 +241,7 @@ export default function LocationsPage() {
     }
   }
 
+
   function handleArchive() {
     if (!archivingLocation) return;
     archiveMutation.mutate(archivingLocation.id, {
@@ -319,6 +338,17 @@ export default function LocationsPage() {
               onSearchChange={setSearchInput}
             />
             <ExportButton onExport={handleExport} loading={exporting} />
+            <ArchivedToggle
+              showArchived={showArchived}
+              onShowArchivedChange={(v) =>
+                setSearchParams((prev) => {
+                  if (v) prev.set("includeArchived", "true");
+                  else prev.delete("includeArchived");
+                  prev.set("page", "1");
+                  return prev;
+                })
+              }
+            />
             <SavedViewSelector
               entityType="locations"
               activeViewId={activeViewId}

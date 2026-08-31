@@ -42,11 +42,23 @@ class LocationsController(
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
+    companion object {
+        /**
+         * The most rows a detail-page sub-list will return. These lists exist to
+         * summarise what is at a location or held by a person; without a cap a
+         * single location with tens of thousands of assets would load them all
+         * into memory and serialise them into one response.
+         */
+        private const val SUB_LIST_LIMIT = 200
+    }
+
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
 
-    private fun buildSpec(search: String?): Specification<Location> = Specification { root, _, cb ->
+    private fun buildSpec(search: String?, includeArchived: Boolean = false): Specification<Location> = Specification { root, _, cb ->
         val predicates = mutableListOf<Predicate>()
-        predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+            // Archived rows are hidden by default but must be findable,
+            // or an archived record could never be restored.
+        if (!includeArchived) predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
         if (!search.isNullOrBlank()) {
             predicates.add(cb.like(cb.lower(root.get("name")), "%${SqlUtils.escapeLikePattern(search.lowercase())}%", '\\'))
         }
@@ -72,11 +84,12 @@ class LocationsController(
         @RequestParam(defaultValue = "25") pageSize: Int,
         @RequestParam(required = false) search: String?,
         @RequestParam(defaultValue = "name") sortBy: String,
-        @RequestParam(defaultValue = "asc") sortDir: String
+        @RequestParam(defaultValue = "asc") sortDir: String,
+        @RequestParam(defaultValue = "false") includeArchived: Boolean
     ): ResponseEntity<PagedResponse<LocationDto>> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
-        val spec = buildSpec(search)
+        val spec = buildSpec(search, includeArchived)
         val pageReq = PageRequest.of(p - 1, ps, sortOf(sortBy, sortDir))
         val result = locationRepository.findAll(spec, pageReq)
         val items = result.content.map { it.toDto() }
@@ -128,7 +141,7 @@ class LocationsController(
                 cb.equal(root.get<Boolean>("isArchived"), false)
             )
         }
-        val assets = assetRepository.findAll(spec, Sort.by("name")).map { a ->
+        val assets = assetRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("name"))).content.map { a ->
             LocationAssetDto(a.id, a.name, a.assetType?.name, a.status.name, a.assignedPerson?.fullName)
         }
         return ResponseEntity.ok(assets)
@@ -144,7 +157,7 @@ class LocationsController(
                 cb.equal(root.get<Boolean>("isArchived"), false)
             )
         }
-        val people = personRepository.findAll(spec, Sort.by("fullName")).map { p ->
+        val people = personRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("fullName"))).content.map { p ->
             LocationPersonDto(p.id, p.fullName, p.email, p.department, p.jobTitle)
         }
         return ResponseEntity.ok(people)
@@ -187,6 +200,26 @@ class LocationsController(
             if (changes.isNotEmpty()) changes else null))
 
         return ResponseEntity.ok(location.toDto())
+    }
+
+    /**
+     * Brings an archived location back. Archiving is a soft delete, so without this
+     * the record was recoverable only by hand-written SQL.
+     */
+    @PostMapping("/{id}/restore")
+    @Transactional
+    fun restore(@PathVariable id: UUID): ResponseEntity<Any> {
+        val entity = locationRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+        if (!entity.isArchived) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "This location is not archived."))
+        }
+        entity.isArchived = false
+        entity.updatedAt = Instant.now()
+        locationRepository.save(entity)
+        auditService.log(AuditEntry("Restored", "Location", entity.id.toString(), entity.name,
+            "Restored location \"${entity.name}\"", currentUserService.userId, currentUserService.userName))
+        return ResponseEntity.ok(entity.toDto())
     }
 
     @DeleteMapping("/{id}")
@@ -239,7 +272,7 @@ class LocationsController(
                 cb.equal(root.get<Boolean>("isArchived"), false)
             )
         }
-        val certs = certificateRepository.findAll(spec, Sort.by("name")).map { c ->
+        val certs = certificateRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("name"))).content.map { c ->
             LocationCertificateDto(c.id, c.name, c.certificateType?.name, c.expiryDate)
         }
         return ResponseEntity.ok(certs)
@@ -255,7 +288,7 @@ class LocationsController(
                 cb.equal(root.get<Boolean>("isArchived"), false)
             )
         }
-        val apps = applicationRepository.findAll(spec, Sort.by("name")).map { a ->
+        val apps = applicationRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("name"))).content.map { a ->
             LocationApplicationDto(a.id, a.name, a.applicationType?.name, a.expiryDate)
         }
         return ResponseEntity.ok(apps)

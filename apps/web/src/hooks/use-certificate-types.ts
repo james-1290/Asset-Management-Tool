@@ -23,6 +23,7 @@ export const usePagedCertificateTypes = certificateTypeHooks.usePaged;
 export const useCreateCertificateType = certificateTypeHooks.useCreate;
 export const useUpdateCertificateType = certificateTypeHooks.useUpdate;
 export const useArchiveCertificateType = certificateTypeHooks.useArchive;
+export const useRestoreCertificateType = certificateTypeHooks.useRestore;
 export const useBulkArchiveCertificateTypes = certificateTypeHooks.useBulkArchive;
 
 export function useCertificateCustomFieldDefinitions(certificateTypeId: string | undefined) {

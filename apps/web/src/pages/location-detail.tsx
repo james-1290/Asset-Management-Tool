@@ -5,6 +5,7 @@ import { ApiError } from "../lib/api-client";
 import type { Location, LocationItemCounts } from "../types/location";
 import { Pencil, Trash2, MapPin, Package, Users, ChevronRight } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { SubListCapNote } from "@/components/sub-list-cap-note";
 import { Skeleton } from "../components/ui/skeleton";
 import {
   Table,
@@ -201,33 +202,36 @@ export default function LocationDetailPage() {
               No assets at this location.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {assets.map((asset) => (
-                  <TableRow key={asset.id}>
-                    <TableCell>
-                      <Link
-                        to={`/assets/${asset.id}`}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        {asset.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{asset.assetTypeName || "—"}</TableCell>
-                    <TableCell>
-                      <AssetStatusBadge status={asset.status} />
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {assets.map((asset) => (
+                    <TableRow key={asset.id}>
+                      <TableCell>
+                        <Link
+                          to={`/assets/${asset.id}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {asset.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell>{asset.assetTypeName || "—"}</TableCell>
+                      <TableCell>
+                        <AssetStatusBadge status={asset.status} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <SubListCapNote count={assets.length} href={`/assets?locationId=${id}`} noun="assets" />
+            </>
           )}
         </DetailCard>
 
@@ -252,31 +256,34 @@ export default function LocationDetailPage() {
               No people at this location.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Job Title</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {people.map((person) => (
-                  <TableRow key={person.id}>
-                    <TableCell>
-                      <Link
-                        to={`/people/${person.id}`}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        {person.fullName}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{person.department || "—"}</TableCell>
-                    <TableCell>{person.jobTitle || "—"}</TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Job Title</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {people.map((person) => (
+                    <TableRow key={person.id}>
+                      <TableCell>
+                        <Link
+                          to={`/people/${person.id}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {person.fullName}
+                        </Link>
+                      </TableCell>
+                      <TableCell>{person.department || "—"}</TableCell>
+                      <TableCell>{person.jobTitle || "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <SubListCapNote count={people.length} href={`/people?locationId=${id}`} noun="people" />
+            </>
           )}
         </DetailCard>
       </div>

@@ -23,5 +23,10 @@ test("a create through the UI succeeds with CSRF protection enabled", async ({ p
 
   const response = await created;
   expect(response.status(), `create failed: ${await response.text().catch(() => "")}`).toBeLessThan(300);
-  await expect(page.getByText(name).first()).toBeVisible();
+
+  // Lists page at 25, so a new row is usually not on the first page — filter to
+  // it rather than assuming it landed somewhere visible.
+  await page.goto(`${BASE_URL}/locations?search=${encodeURIComponent(name)}`);
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByText(name).first()).toBeVisible({ timeout: 10000 });
 });

@@ -51,5 +51,8 @@ class AssetTemplate(
 
     @OneToMany(cascade = [CascadeType.ALL], orphanRemoval = true)
     @JoinColumn(name = "entity_id")
-    var customFieldValues: MutableList<CustomFieldValue> = mutableListOf()
+    var customFieldValues: MutableList<CustomFieldValue> = mutableListOf(),
+    @Version
+    @Column(name = "version", nullable = false)
+    var entityVersion: Long = 0
 )

@@ -25,6 +25,7 @@ export const usePagedAssetTypes = assetTypeHooks.usePaged;
 export const useCreateAssetType = assetTypeHooks.useCreate;
 export const useUpdateAssetType = assetTypeHooks.useUpdate;
 export const useArchiveAssetType = assetTypeHooks.useArchive;
+export const useRestoreAssetType = assetTypeHooks.useRestore;
 export const useBulkArchiveAssetTypes = assetTypeHooks.useBulkArchive;
 
 export function useCustomFieldDefinitions(assetTypeId: string | undefined) {

@@ -21,6 +21,8 @@ interface ColumnActions {
   canWrite?: boolean;
   onEdit: (asset: Asset) => void;
   onArchive: (asset: Asset) => void;
+  /** Shown instead of Edit/Delete on an archived row. */
+  onRestore?: (asset: Asset) => void;
   customFieldDefinitions?: CustomFieldDefinition[];
 }
 
@@ -31,6 +33,7 @@ function formatCurrency(amount: number): string {
 export function getAssetColumns({
   onEdit,
   onArchive,
+  onRestore,
   customFieldDefinitions = [],
   canWrite = true,
 }: ColumnActions): ColumnDef<Asset, unknown>[] {
@@ -150,15 +153,25 @@ export function getAssetColumns({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit(asset)}>
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={() => onArchive(asset)}
-            >
-              Delete
-            </DropdownMenuItem>
+            {asset.isArchived ? (
+              // An archived row can only be brought back; editing or
+              // deleting it again makes no sense.
+              <DropdownMenuItem onClick={() => onRestore?.(asset)}>
+                Restore
+              </DropdownMenuItem>
+            ) : (
+              <>
+                <DropdownMenuItem onClick={() => onEdit(asset)}>
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onArchive(asset)}
+                >
+                  Delete
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       );

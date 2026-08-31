@@ -138,7 +138,12 @@ export function SavedViewSelector({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="h-8 gap-1.5">
+          {/*
+            The visible text is the *active view's* name, which is not a name for
+            the control — a screen reader announced only "Default". Label the
+            button itself and let the text stay as the current value.
+          */}
+          <Button variant="outline" size="sm" className="h-8 gap-1.5" aria-label="Saved views">
             <Bookmark className="h-3.5 w-3.5" />
             {activeView ? activeView.name : "Default"}
           </Button>

@@ -48,12 +48,12 @@ export function CertificatesToolbar({
   const hasAdvancedFilters = !!(expiryFrom || expiryTo);
 
   return (
-    <div className="flex flex-1 items-center gap-2">
+    <div className="flex flex-1 flex-wrap items-center gap-2">
       <Input
         placeholder="Search certificates..."
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        className="max-w-[240px]"
+        className="w-[220px] shrink-0"
       />
       <div className="flex items-center gap-1.5">
         <FilterChip
@@ -98,9 +98,7 @@ export function CertificatesToolbar({
           </PopoverContent>
         </Popover>
       </div>
-      <div className="ml-auto">
-        <ColumnToggle table={table} />
-      </div>
+      <ColumnToggle table={table} />
     </div>
   );
 }

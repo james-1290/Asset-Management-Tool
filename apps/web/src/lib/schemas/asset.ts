@@ -5,16 +5,20 @@ export const assetSchema = z.object({
     .string()
     .min(1, "Name is required")
     .max(200, "Name must be 200 characters or less"),
+  // Optional, matching the API and the CSV importer, which both accept an asset
+  // with only a name and a type. Requiring these three here made every imported
+  // record uneditable: the form demanded data the import had never asked for.
   serialNumber: z
     .string()
-    .min(1, "Serial number is required")
-    .max(200, "Serial number must be 200 characters or less"),
+    .max(200, "Serial number must be 200 characters or less")
+    .optional()
+    .or(z.literal("")),
   status: z.string().optional(),
   assetTypeId: z.string().min(1, "Asset type is required"),
   assetModelId: z.string().optional().or(z.literal("")),
-  locationId: z.string().min(1, "Location is required"),
+  locationId: z.string().optional().or(z.literal("")),
   assignedPersonId: z.string().optional().or(z.literal("")),
-  purchaseDate: z.string().min(1, "Purchase date is required"),
+  purchaseDate: z.string().optional().or(z.literal("")),
   purchaseCost: z
     .string()
     .optional()

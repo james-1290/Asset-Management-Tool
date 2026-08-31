@@ -65,3 +65,98 @@ jobs:
         run: npm run test
       - name: Lint
         run: npm run lint
+
+  e2e:
+    name: End-to-end — API capability & browser suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # These are the suites that actually catch regressions in behaviour: the
+    # unit tests and the build never would have found the defects this job
+    # guards against. Without it they only ran when someone remembered to.
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: assetmgmt
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s --health-timeout=5s --health-retries=20
+      mailhog:
+        image: mailhog/mailhog:latest
+        ports: ["1025:1025", "8025:8025"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Build the API
+        working-directory: apps/api-kt
+        run: |
+          chmod +x ./gradlew
+          ./gradlew bootJar --no-daemon
+
+      - name: Start the API
+        working-directory: apps/api-kt
+        env:
+          SPRING_PROFILES_ACTIVE: dev
+        run: |
+          nohup java -jar build/libs/asset-management-api-1.0.0.jar > /tmp/api.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:5115/api/v1/health > /dev/null; then
+              echo "API up after ${i}0s"; exit 0
+            fi
+            sleep 10
+          done
+          echo "API failed to start"; tail -100 /tmp/api.log; exit 1
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: API smoke suite — every endpoint answers
+        run: python3 scripts/qa/api_smoke.py
+
+      - name: API deep suite — every endpoint behaves
+        run: python3 scripts/qa/api_deep.py
+
+      - name: Start the web app
+        working-directory: apps/web
+        run: |
+          nohup npm run dev > /tmp/web.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5173/ > /dev/null; then
+              echo "web up"; exit 0
+            fi
+            sleep 5
+          done
+          echo "web failed to start"; tail -50 /tmp/web.log; exit 1
+
+      - name: Install Playwright browsers
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser suite
+        working-directory: apps/web
+        run: npx playwright test --reporter=line
+
+      - name: Upload failure artefacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failures
+          path: |
+            apps/web/test-results/
+            /tmp/api.log
+            /tmp/web.log
+          retention-days: 7

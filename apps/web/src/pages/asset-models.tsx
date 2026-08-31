@@ -22,17 +22,30 @@ import {
 } from "../hooks/use-asset-models";
 import { useAssetTypes } from "../hooks/use-asset-types";
 import type { AssetModel } from "../types/asset-model";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 
 export default function AssetModelsPage() {
   const { canWrite } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const filterTypeId = searchParams.get("typeId") ?? "";
+  const searchTerm = searchParams.get("search") ?? "";
 
   const { data: assetTypes } = useAssetTypes();
   const { data: models, isLoading, isError } = useAssetModels(
     filterTypeId || undefined,
+    searchTerm || undefined,
   );
+
+  // Search, as every other searchable list offers. The API has always supported
+  // it here; only the control was missing.
+  function handleSearchChange(value: string) {
+    setSearchParams((prev) => {
+      if (value) prev.set("search", value);
+      else prev.delete("search");
+      return prev;
+    }, { replace: true });
+  }
 
   const archiveMutation = useArchiveAssetModel();
 
@@ -138,6 +151,12 @@ export default function AssetModelsPage() {
         getRowId={(row) => row.id}
         toolbar={() => (
           <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search asset models…"
+              value={searchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="max-w-[240px]"
+            />
             <Select
               value={filterTypeId || "all"}
               onValueChange={handleTypeFilterChange}

@@ -3,9 +3,11 @@ package com.assetmanagement.api.util
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
+import org.springframework.data.jpa.domain.Specification
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
+import java.util.UUID
 
 /** Today's calendar date in UTC — the reference point for all date-only comparisons. */
 fun today(): LocalDate = LocalDate.now(ZoneOffset.UTC)
@@ -90,4 +92,74 @@ fun <T> computedStatusPredicates(
         )
         else -> listOf(cb.equal(statusPath, requested))
     }
+}
+
+/**
+ * A `Specification` that orders certificates and applications by the status the
+ * list actually shows.
+ *
+ * Both entities display a *computed* status ([computeStatus]) — a stored `Active`
+ * row reads as `Expired` or `PendingRenewal` once its expiry date comes into
+ * range — but the stored column still says `Active`. Ordering on that column
+ * therefore produces an order the user cannot see any logic in: an item shown as
+ * `PendingRenewal` sorts among the `Active` ones. The status *filter* already
+ * accounts for this (see [computedStatusPredicates]); this is its ordering
+ * counterpart, so the two agree.
+ *
+ * The rank is the alphabetical position of the computed status name, matching how
+ * the column reads on screen. Pass an unsorted `Pageable` when using this, or
+ * Spring Data's own `Sort` will be appended ahead of it.
+ */
+fun <T> orderByComputedStatus(
+    statuses: List<Enum<*>>,
+    active: Enum<*>,
+    expired: Enum<*>,
+    pendingRenewal: Enum<*>,
+    descending: Boolean,
+    pendingDays: Long = 30,
+): Specification<T> = Specification { root, query, cb ->
+    // Ordering is meaningless on the count query, and Hibernate rejects it there.
+    val resultType = query?.resultType
+    if (query == null || resultType == java.lang.Long::class.java || resultType == java.lang.Long.TYPE) {
+        return@Specification null
+    }
+
+    val rank = statuses.map { it.name }.sorted()
+        .withIndex().associate { (index, name) -> name to index }
+    val statusPath = root.get<Enum<*>>("status")
+    val expiryPath = root.get<LocalDate>("expiryDate")
+    val now = today()
+    val pendingCutoff = now.plusDays(pendingDays)
+
+    val case = cb.selectCase<Int>()
+        // A stored-Active row takes the rank of whatever it computes to.
+        .`when`(
+            cb.and(
+                cb.equal(statusPath, active),
+                cb.isNotNull(expiryPath),
+                cb.lessThan(expiryPath, now),
+            ),
+            rank.getValue(expired.name),
+        )
+        .`when`(
+            cb.and(
+                cb.equal(statusPath, active),
+                cb.isNotNull(expiryPath),
+                cb.greaterThanOrEqualTo(expiryPath, now),
+                cb.lessThan(expiryPath, pendingCutoff),
+            ),
+            rank.getValue(pendingRenewal.name),
+        )
+
+    // Every other stored status ranks as itself.
+    val ranked = statuses.fold(case) { acc, status ->
+        acc.`when`(cb.equal(statusPath, status), rank.getValue(status.name))
+    }.otherwise(rank.size)
+
+    query.orderBy(
+        if (descending) cb.desc(ranked) else cb.asc(ranked),
+        // A stable tiebreak, so paging through equal statuses can't repeat a row.
+        cb.asc(root.get<UUID>("id")),
+    )
+    null // contributes no predicate
 }

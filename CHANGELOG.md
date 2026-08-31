@@ -1,5 +1,78 @@
 # Changelog
 
+## 2026-08-31 — Fix all fourteen findings from the full review
+
+Every finding from the product/engineering/QA/security review, fixed and verified. No security defects were found in that review; these are correctness, data-safety, performance, accessibility and operability items.
+
+**Fix first**
+
+- **Imported assets could not be edited.** The importer and API accept an asset with only a name and a type; the edit form demanded a serial number, location and purchase date as well, so every imported record was uneditable without inventing data. The form now requires what the API requires.
+- **Archiving was one-way for eleven of thirteen record types.** Restore endpoints added for certificates, applications, people, locations, templates and all three type registers, each audited and each refusing a record that is not archived. Lists gained `includeArchived`, and the UI a shared "Archived" toggle plus a Restore row action that replaces Edit/Delete on an archived row.
+- **The test suites did not run in the pipeline.** A CI job now stands up MySQL and MailHog, starts the API and web app, and runs both API suites and the browser suite on every pull request.
+
+**Should fix**
+
+- Seven sub-list endpoints returned every matching row; now capped at 200, with the UI saying so and linking to the full filtered list rather than truncating silently.
+- The bundle shipped as one file; routes are now fetched on first visit and the big libraries split out. Entry chunk **393 KB → 131 KB gzipped**.
+- Three controls had no accessible name (settings gear, notifications bell, audit-log detail button) and the dashboard had no heading. A new accessibility spec sweeps all sixteen screens.
+- Alert sends are audited.
+- The permission rules moved into `lib/permissions` as pure functions with tests, and the remaining form schemas gained tests. 57 → 69 frontend unit tests.
+
+**Polish**
+
+Another user's alert rule returns 404 rather than 403; alert dates use UTC like the rest of the app; version columns for the five entities that lacked optimistic locking (V019); a request id in the logging context, echoed on the response; a container HEALTHCHECK; and the error envelope documented in `docs/api.md`.
+
+Two problems surfaced while fixing these, both fixed: moving a handler into a columns memo created a temporal dead zone that TypeScript and lint both passed and only the browser suite caught, and the extra toolbar control tipped the row over its width so the density toggle covered the export button.
+
+## 2026-08-31 — Lift the table-density toggle into DataTable
+
+The Comfortable/Compact control existed on the Applications list alone, hand-rolled from bare `<button>` elements against the house rule of building on shadcn primitives.
+
+`DataTable` now owns it and renders `DensityToggle` itself, so every list gets the control without opting in — which is how the divergence arose in the first place. The choice is one app-wide setting (`useDensity`, persisted to `localStorage` and broadcast so tables mounted together stay in step), because someone who wants dense rows wants them everywhere. A page may still pass `tableDensity` to control it, in which case the table renders no control of its own. Compact now tightens the header row as well as the body.
+
+`DensityToggle` is built to the same shape as `ViewModeToggle`, with real accessible names and `aria-pressed` rather than tooltip-only labels.
+
+Screenshotting the result showed two further layout divergences, also fixed:
+
+- **Assets kept its saved views, view-mode toggle and export in the page header**, while Applications and Certificates kept them in the toolbar. They have moved to the toolbar's right group, so all three major lists now read identically.
+- **The Assets toolbar wrapped onto a second line**, being the only one using `flex-wrap`.
+
+`docs/ux-guidelines.md` records the toolbar as a single row with a fixed order, and that the page header holds only the title, count and primary "Add …" button — never the view controls. `e2e/qa/uniformity.spec.ts` asserts the toggle on every list and that the choice carries between lists and across a reload.
+
+## 2026-08-31 — Make the list pages keep one design, and hold them to it
+
+An audit of all eleven list pages against each other found several with the plumbing for a feature but no control to reach it — the same class of defect as the missing Assets search box earlier today.
+
+- **No column chooser on Assets or Applications.** Both build custom-field columns that default to hidden and both hold `columnVisibility` state, but neither rendered `ColumnToggle` — so a custom field could be defined on a type and then never shown as a column, on the two lists most likely to have them.
+- **No saved-view selector on Assets**, although the page loads saved views and silently applies the user's default. Views could take effect but not be created, chosen or cleared.
+- **No saved views at all on Applications**, alone among the major lists. Added.
+- **No search box on Asset models**, though the endpoint has always accepted a `search` parameter.
+- The audit log's placeholder read "Search..." rather than naming what it searches.
+- The saved-view button's only accessible name was the *active view's* name ("Default" when there is none), naming the value rather than the control.
+
+`e2e/qa/uniformity.spec.ts` now holds the contract as a table of every list and the capabilities its API actually has, asserting the controls across the whole set — so a single page that drifts fails the suite. `docs/ux-guidelines.md` records the contract, toolbar ordering, copy and accessibility rules, and the one divergence left open for a decision: Applications has a table-density toggle no other list offers.
+
+## 2026-08-31 — Exhaustive feature sweep: capability testing, and the five defects it found
+
+The previous sweeps proved every endpoint was *reachable* and every page *loaded*. This one tests every feature to its full capability — that filters filter, sorts sort, validation rejects, business rules hold, and every control the UI implies actually exists.
+
+**New harnesses**
+
+- `scripts/qa/api_deep.py` — 628 checks that assert behaviour rather than status codes: every filter parameter proved by inclusion *and* exclusion, every documented sort field checked for real ordering in both directions, validation and malformed input, lifecycle invariants (check-out/in, retire, sell, seat limits, safe deletes), all seven custom field types round-tripped, every dashboard widget and report in JSON and CSV, CSV import validated and executed, and the full role matrix across Admin/Operator/User/no-role/anonymous.
+- `e2e/qa/deep-filters.spec.ts`, `deep-dialogs.spec.ts`, `deep-features.spec.ts` — 27 tests driving the search boxes, filter chips, advanced filter panel, view modes, column chooser, command search, and every dialog in the app, each verified against the record afterwards rather than against a toast.
+
+**Defects found and fixed**
+
+- **Sorting by Status did nothing sensible on certificates and applications.** Both display a *computed* status (a stored `Active` row reads as `Expired` or `PendingRenewal` once its expiry comes into range), but the sort ordered by the stored column — so an item shown as PendingRenewal sorted in among the Active ones, and ascending and descending returned the same sequence. The status *filter* was already computed-aware, which is what marks this as an oversight. Added `orderByComputedStatus`, applied to both controllers' list and export paths, with an integration test that fails without it.
+- **The Assets list had no search box.** The page passed `search`/`onSearchChange` into a toolbar that never rendered an input, leaving the app's primary list the only one without search — and a saved view's search term applied invisibly, with no way to see or clear it.
+- **The grouped view was unreachable on Assets and Applications.** Both render `GroupedGridView`, but only Certificates rendered the toggle, so it could only be reached by editing the URL by hand.
+- **Three elements had no accessible name**: the reassign-location dialog (a visible heading but no `DialogTitle`, which Radix had been warning about on every open), the notifications action menu, and the dashboard expiring-items row link.
+
+**Harness reliability**
+
+- The e2e suite now runs with a single worker. Every spec shares one database and several change user-global state (alert settings, saved views, theme), so in parallel it failed a different three tests on each run — noise that buries real regressions.
+- The CSRF write test asserted a new row was visible without filtering to it; it only passed while the database was small.
+
 ## 2026-08-30 — Complete the read-only permission fix (it was only a quarter done)
 
 The previous change hid the **create** buttons from a read-only `User`, but a check with the browser showed the rest were still there: Edit/Delete row menus, the bulk action bar's Edit/Archive/status buttons, and every action on a record's own page — Check out, Retire, Sold, Clone, Edit, Upload. The API refused all of them, so a read-only user could still walk into a dialog, fill it in, and be told "Access denied".

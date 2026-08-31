@@ -146,7 +146,10 @@ export const auditLogColumns: ColumnDef<AuditLogEntry, unknown>[] = [
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button className="text-muted-foreground hover:text-primary transition-colors">
+              <button
+                className="text-muted-foreground hover:text-primary transition-colors"
+                aria-label="Show change details"
+              >
                 <Info className="h-4 w-4" />
               </button>
             </TooltipTrigger>

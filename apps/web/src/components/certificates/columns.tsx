@@ -23,12 +23,15 @@ interface ColumnActions {
   canWrite?: boolean;
   onEdit: (certificate: Certificate) => void;
   onArchive: (certificate: Certificate) => void;
+  /** Shown instead of Edit/Delete on an archived row. */
+  onRestore?: (certificate: Certificate) => void;
 }
 
 export function getCertificateColumns({
   canWrite = true,
   onEdit,
   onArchive,
+  onRestore,
 }: ColumnActions): ColumnDef<Certificate, unknown>[] {
   const columns: ColumnDef<Certificate, unknown>[] = [
     {
@@ -112,15 +115,25 @@ export function getCertificateColumns({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(certificate)}>
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => onArchive(certificate)}
-              >
-                Delete
-              </DropdownMenuItem>
+              {certificate.isArchived ? (
+                // An archived row can only be brought back; editing or
+                // deleting it again makes no sense.
+                <DropdownMenuItem onClick={() => onRestore?.(certificate)}>
+                  Restore
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => onEdit(certificate)}>
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onArchive(certificate)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );

@@ -44,5 +44,9 @@ export function createEntityApi<T, TCreate, TUpdate, TParams>(path: string) {
       apiClient.put<T>(`${path}/${id}`, data),
 
     archive: (id: string): Promise<void> => apiClient.delete(`${path}/${id}`),
+
+    // Archiving is a soft delete, so it has to be undoable. Without this the
+    // only way back was hand-written SQL.
+    restore: (id: string): Promise<T> => apiClient.post<T>(`${path}/${id}/restore`, {}),
   };
 }

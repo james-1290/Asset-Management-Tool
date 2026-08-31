@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.web.client.RestTemplate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 @Service
@@ -24,7 +25,9 @@ class SlackService(
             setReadTimeout(10_000)
         }
     )
-    private val dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy").withZone(ZoneId.systemDefault())
+    private val dateFormatter = // UTC, like every other date in the app: the server's local zone
+    // would render an expiry a day out from what the screen shows.
+    DateTimeFormatter.ofPattern("dd MMM yyyy").withZone(ZoneOffset.UTC)
 
     private fun getWebhookUrl(): String =
         systemSettingRepository.findByKey("alerts.slack.webhookUrl")?.value ?: ""

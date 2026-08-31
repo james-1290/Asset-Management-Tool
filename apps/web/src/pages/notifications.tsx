@@ -183,6 +183,9 @@ function NotificationCard({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                  {/* Named like the row menus elsewhere; icon-only left it
+                      unannounced to a screen reader. */}
+                  <span className="sr-only">Open menu</span>
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

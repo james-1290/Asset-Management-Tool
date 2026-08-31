@@ -63,3 +63,30 @@ request/response shapes; this page is an orientation map only.
 - `POST /people/{id}/offboard` — check in/transfer assets, release licence seats
 - `POST .../bulk-archive`, `POST .../bulk-status` — bulk operations
 - `GET .../export` — CSV export of the current filtered view
+
+## Error responses
+
+Every error returns JSON with an `error` key holding a message written for the
+person who will read it:
+
+```json
+{ "error": "Asset must be Available to check out. Current status: CheckedOut" }
+```
+
+Some responses add fields on top of that, deliberately:
+
+| Extra field | Where | Why |
+|---|---|---|
+| `code` | Sign-in refusals (401/403) | Lets the app tell "no role assigned" from "account deactivated" and show the right screen, rather than parsing the message |
+| `errorId` | Unhandled 500s | Correlates the response with the logged stack trace; quote it in a bug report |
+| `message` and `counts` | `DELETE /locations/{id}` returning 409 | The app uses the counts to offer reassignment instead of a dead end, so it needs the numbers, not prose |
+| `fields` | Validation failures (400) | Per-field messages, so a form can mark the offending inputs |
+
+The rule: `error` is always present and always safe to show. Anything else is
+additive, and a client that ignores the extras still behaves correctly. Never
+remove `error` from a response "because the richer field says the same thing" —
+every client reads `error` first.
+
+Responses also carry an `X-Request-Id` header. It is echoed from the request if
+one was supplied and generated otherwise, and every log line written while
+handling that request is tagged with it.

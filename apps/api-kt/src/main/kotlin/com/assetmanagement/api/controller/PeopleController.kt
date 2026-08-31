@@ -40,6 +40,16 @@ class PeopleController(
     private val auditService: AuditService,
     private val currentUserService: CurrentUserService
 ) {
+    companion object {
+        /**
+         * The most rows a detail-page sub-list will return. These lists exist to
+         * summarise what is at a location or held by a person; without a cap a
+         * single location with tens of thousands of assets would load them all
+         * into memory and serialise them into one response.
+         */
+        private const val SUB_LIST_LIMIT = 200
+    }
+
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
@@ -60,11 +70,12 @@ class PeopleController(
         @RequestParam(required = false) locationId: UUID?,
         @RequestParam(required = false) department: String?,
         @RequestParam(defaultValue = "fullname") sortBy: String,
-        @RequestParam(defaultValue = "asc") sortDir: String
+        @RequestParam(defaultValue = "asc") sortDir: String,
+        @RequestParam(defaultValue = "false") includeArchived: Boolean
     ): ResponseEntity<PagedResponse<PersonDto>> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
-        val spec = buildSpec(search, locationId, department).and(withFetch("location"))
+        val spec = buildSpec(search, locationId, department, includeArchived).and(withFetch("location"))
         val sort = sortOf(sortBy, sortDir)
         val result = personRepository.findAll(spec, PageRequest.of(p - 1, ps, sort))
         val items = result.content.map { it.toDto() }
@@ -140,7 +151,7 @@ class PeopleController(
         // Fetch-join the to-one relations the DTO reads (matches the sibling list
         // endpoint) so a person's assets load in one query, not batched follow-ups.
         }.and(withFetch("assetType", "location"))
-        val assets = assetRepository.findAll(spec, Sort.by("name")).map { a ->
+        val assets = assetRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("name"))).content.map { a ->
             AssignedAssetDto(a.id, a.name, a.serialNumber, a.status.name, a.assetType?.name ?: "", a.location?.name)
         }
         return ResponseEntity.ok(assets)
@@ -236,6 +247,26 @@ class PeopleController(
         return ResponseEntity.ok(BulkActionResponse(succeeded, failed))
     }
 
+    /**
+     * Brings an archived person back. Archiving is a soft delete, so without this
+     * the record was recoverable only by hand-written SQL.
+     */
+    @PostMapping("/{id}/restore")
+    @Transactional
+    fun restore(@PathVariable id: UUID): ResponseEntity<Any> {
+        val entity = personRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+        if (!entity.isArchived) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "This person is not archived."))
+        }
+        entity.isArchived = false
+        entity.updatedAt = Instant.now()
+        personRepository.save(entity)
+        auditService.log(AuditEntry("Restored", "Person", entity.id.toString(), entity.fullName,
+            "Restored person \"${entity.fullName}\"", currentUserService.userId, currentUserService.userName))
+        return ResponseEntity.ok(entity.toDto())
+    }
+
     @DeleteMapping("/{id}")
     @Transactional
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
@@ -307,7 +338,7 @@ class PeopleController(
         val spec = Specification<com.assetmanagement.api.model.Certificate> { root, _, cb ->
             cb.and(cb.equal(root.get<UUID>("personId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
         }
-        val certs = certificateRepository.findAll(spec, Sort.by("name")).map { c ->
+        val certs = certificateRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("name"))).content.map { c ->
             AssignedCertificateDto(c.id, c.name, c.certificateType?.name ?: "", c.status.name, c.expiryDate)
         }
         return ResponseEntity.ok(certs)
@@ -320,7 +351,7 @@ class PeopleController(
         val spec = Specification<com.assetmanagement.api.model.Application> { root, _, cb ->
             cb.and(cb.equal(root.get<UUID>("personId"), id), cb.equal(root.get<Boolean>("isArchived"), false))
         }
-        val apps = applicationRepository.findAll(spec, Sort.by("name")).map { a ->
+        val apps = applicationRepository.findAll(spec, PageRequest.of(0, SUB_LIST_LIMIT, Sort.by("name"))).content.map { a ->
             AssignedApplicationDto(a.id, a.name, a.applicationType?.name ?: "", a.status.name, a.licenceType?.name, a.expiryDate)
         }
         return ResponseEntity.ok(apps)
@@ -471,9 +502,11 @@ class PeopleController(
         return ResponseEntity.ok(OffboardResultDto(results))
     }
 
-    private fun buildSpec(search: String?, locationId: UUID? = null, department: String? = null): Specification<Person> = Specification { root, _, cb ->
+    private fun buildSpec(search: String?, locationId: UUID? = null, department: String? = null, includeArchived: Boolean = false): Specification<Person> = Specification { root, _, cb ->
         val predicates = mutableListOf<Predicate>()
-        predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+        // Archived rows are hidden by default but must be findable, or an
+        // archived record could never be restored.
+        if (!includeArchived) predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
         if (!search.isNullOrBlank()) {
             val pattern = "%${SqlUtils.escapeLikePattern(search.lowercase())}%"
             predicates.add(cb.or(

@@ -33,11 +33,17 @@ class AssetTemplatesController(
     // GET / — List all (optionally filter by assetTypeId)
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
-    fun getAll(@RequestParam(required = false) assetTypeId: UUID?): ResponseEntity<List<AssetTemplateDto>> {
-        val templates = if (assetTypeId != null) {
-            assetTemplateRepository.findByAssetTypeIdAndIsArchivedFalse(assetTypeId)
-        } else {
-            assetTemplateRepository.findByIsArchivedFalse()
+    fun getAll(
+        @RequestParam(required = false) assetTypeId: UUID?,
+        @RequestParam(defaultValue = "false") includeArchived: Boolean,
+    ): ResponseEntity<List<AssetTemplateDto>> {
+        // Archived templates are hidden by default but must be findable, or an
+        // archived one could never be restored.
+        val templates = when {
+            assetTypeId != null && includeArchived -> assetTemplateRepository.findAll().filter { it.assetTypeId == assetTypeId }
+            assetTypeId != null -> assetTemplateRepository.findByAssetTypeIdAndIsArchivedFalse(assetTypeId)
+            includeArchived -> assetTemplateRepository.findAll()
+            else -> assetTemplateRepository.findByIsArchivedFalse()
         }
 
         val templateIds = templates.map { it.id }
@@ -163,6 +169,36 @@ class AssetTemplatesController(
     }
 
     // DELETE /{id} — Archive (soft delete)
+    /**
+     * Brings an archived template back. Archiving is a soft delete, so without
+     * this the record was recoverable only by hand-written SQL.
+     */
+    @PostMapping("/{id}/restore")
+    @Transactional
+    fun restore(@PathVariable id: UUID): ResponseEntity<Any> {
+        val template = assetTemplateRepository.findById(id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+        if (!template.isArchived) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "This template is not archived."))
+        }
+        template.isArchived = false
+        template.updatedAt = Instant.now()
+        assetTemplateRepository.save(template)
+        auditService.log(
+            AuditEntry(
+                action = "Restored",
+                entityType = "AssetTemplate",
+                entityId = template.id.toString(),
+                entityName = template.name,
+                details = "Restored asset template \"${template.name}\"",
+                actorId = currentUserService.userId,
+                actorName = currentUserService.userName
+            )
+        )
+        val cfvs = customFieldValueRepository.findByEntityId(template.id)
+        return ResponseEntity.ok(toDto(template, cfvs))
+    }
+
     @DeleteMapping("/{id}")
     fun archive(@PathVariable id: UUID): ResponseEntity<Any> {
         val template = assetTemplateRepository.findById(id).orElse(null)
