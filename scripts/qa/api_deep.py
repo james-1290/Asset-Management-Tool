@@ -17,7 +17,9 @@ import io
 import json
 import os
 import sys
+import time
 import urllib.parse
+import urllib.request
 import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -79,9 +81,11 @@ def build_fixtures(s):
     f = {}
 
     f["locA"] = s.check("location A", api.post("/api/v1/locations", {
-        "name": f"DeepLocA {t}", "city": f"Alpha{t}", "country": "UK"}), 201)
+        "name": f"DeepLocA {t}", "address": f"1 Alpha Street {t}",
+        "city": f"Alpha{t}", "country": "UK"}), 201)
     f["locB"] = s.check("location B", api.post("/api/v1/locations", {
-        "name": f"DeepLocB {t}", "city": f"Beta{t}", "country": "FR"}), 201)
+        "name": f"DeepLocB {t}", "address": f"2 Beta Street {t}",
+        "city": f"Beta{t}", "country": "FR"}), 201)
     f["atA"] = s.check("asset type A", api.post("/api/v1/asset-types", {"name": f"DeepTypeA {t}"}), 201)
     f["atB"] = s.check("asset type B", api.post("/api/v1/asset-types", {"name": f"DeepTypeB {t}"}), 201)
     f["ct"] = s.check("certificate type", api.post("/api/v1/certificate-types", {"name": f"DeepCType {t}"}), 201)
@@ -340,8 +344,12 @@ def test_sorting(s):
     for path, fields in SORT_FIELDS.items():
         for sort_by, dto_field in fields.items():
             for direction in ("asc", "desc"):
+                # Scoped to this run's fixtures: on a large database an
+                # unscoped page can contain nothing but nulls for a column,
+                # leaving the ordering unverifiable.
                 page = jbody(api.get(
-                    f"/api/v1/{path}?pageSize=100&sortBy={sort_by}&sortDir={direction}")[1])
+                    f"/api/v1/{path}?pageSize=100&sortBy={sort_by}"
+                    f"&sortDir={direction}&{q(search=s.tag)}")[1])
                 if page is None:
                     s.r.fail(f"{path} sortBy={sort_by} {direction}", "no response")
                     continue
@@ -1389,6 +1397,26 @@ def test_scim_depth(s, base):
               after.get("active") is False, json.dumps(after)[:140])
 
 
+def mailhog_count(base="http://localhost:8025"):
+    """How many messages MailHog is holding, or None if it isn't running."""
+    try:
+        with urllib.request.urlopen(f"{base}/api/v2/messages", timeout=3) as r:
+            return json.loads(r.read()).get("total")
+    except Exception:
+        return None
+
+
+def wait_for_mail(before, base="http://localhost:8025", timeout=15):
+    """Waits for the mailbox to grow; SMTP delivery is not instantaneous."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        now = mailhog_count(base)
+        if now is not None and now > before:
+            return True
+        time.sleep(0.5)
+    return False
+
+
 def test_users_and_alerts(s):
     s.section("User administration and alert delivery")
     api = s.api
@@ -1414,11 +1442,19 @@ def test_users_and_alerts(s):
     s.check("POST /alerts/send-now", api.post("/api/v1/alerts/send-now"))
     hist = s.check("GET /alerts/history", api.get("/api/v1/alerts/history"))
     s.check("GET /alerts/history paginates", api.get("/api/v1/alerts/history?page=1&pageSize=5"))
+    # Delivery, not just a 200: the message must actually arrive at the local
+    # MailHog. Without this the alert path can be "green" while sending nothing.
+    before = mailhog_count()
     res = s.check("POST /alerts/test-email",
                   api.post("/api/v1/alerts/test-email", {"recipient": "qa@example.com"}))
     if res is not None:
         s.assert_("the test email reports an outcome", "success" in res or "message" in res,
                   json.dumps(res)[:140])
+    if before is None:
+        s.r.skip("test email is delivered to the mailbox", "MailHog is not reachable on :8025")
+    else:
+        s.assert_("the test email is actually delivered to the mailbox",
+                  wait_for_mail(before), f"MailHog held {before} messages and did not grow")
     st, body = api.post("/api/v1/alerts/test-slack")
     s.assert_("POST /alerts/test-slack answers (success or a clear failure)",
               st in (200, 400, 503), f"got {st}: {body.decode(errors='replace')[:120]}")
