@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-08-31 — Seventh sweep: code quality, dead code, bugs, security
+
+A fresh pass with lenses the earlier sweeps had not applied. Ten findings, all fixed.
+
+**Bugs**
+
+- **A CSV saved by Excel failed on every row.** Excel's "CSV UTF-8" — the format an administrator is most likely to produce — starts with a byte-order mark. It is not whitespace, so `trim()` left it glued to the first header: "Name" arrived as "﻿Name" and every row failed with "Name is required" while the name sat there in plain sight.
+- **Excel could not read our exports either.** They were written as UTF-8 with no mark, so "Café Münster" displayed as "CafÃ© MÃ¼nster" — the exact mirror of the import bug. Both directions now agree, and the deep suite round-trips: what the app exports, the app can import.
+- **Negative numbers exported as text.** The formula-injection guard prefixed any leading `-`, which is right for `-1+1` and wrong for `-30`. The expiries report is mostly negative day counts, so a range starting in the past produced `"'-2009"` — a figure no spreadsheet would sum.
+- **Every instance sent the same scheduled alerts.** The scheduler runs in-process, so on App Service scaled beyond one instance each fires the same run and every recipient gets duplicates. An instance now claims the run window with a single insert against a unique key.
+- **Notification actions failed silently.** Mark-as-read, dismiss and snooze had no error handling, so a failure changed nothing on screen.
+- **Restore had no control on five lists.** The endpoints and hooks existed; the three type registers, asset models and asset templates never got the UI — found by the dead-code scan flagging three restore hooks nobody called.
+
+**Security**
+
+- The model-image response was `max-age=3600` with no scope on an endpoint requiring a session, so a shared cache could hold one user's response and hand it to another. Now `private`, with an ETag.
+- Nothing watched backend dependencies, while the frontend already failed on a high-severity advisory. Dependabot now covers Gradle, npm and the workflow's own actions.
+
+**Code quality and dead code**
+
+- The saved-view plumbing was copied across five list pages — about 550 lines differing only in entity type and filter keys. Now one `useSavedViewState` hook.
+- Removed an unused type module, an unused hook, 13 unused imports, and wired in a Toaster wrapper that had been written to theme the toasts and never used. `npm run deadcode` now exits clean, so the next addition stands out.
+
+Verified over clean-database cycles: 687 API capability checks, 197 smoke checks, 109 browser tests against both the dev server and the production build, backend, lint and build.
+
 ## 2026-08-31 — Fix all fourteen findings from the full review
 
 Every finding from the product/engineering/QA/security review, fixed and verified. No security defects were found in that review; these are correctness, data-safety, performance, accessibility and operability items.

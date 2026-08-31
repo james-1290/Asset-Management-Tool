@@ -14,9 +14,10 @@ every suite below, printing a pass/fail line per suite.
 |---|---|---|
 | `scripts/qa/api_smoke.py` | Every one of the 178 endpoints is reachable and answers | `python3 scripts/qa/api_smoke.py` |
 | `scripts/qa/api_deep.py` | Every endpoint *behaves*: filters filter, sorts sort, rules hold | `python3 scripts/qa/api_deep.py` |
+| `npm run deadcode` | No unused files, exports or dependencies | `cd apps/web && npm run deadcode` |
 | `apps/web/e2e/` | The screens people use are wired to all of it | `cd apps/web && npx playwright test` |
 
-All three run in CI on every pull request (`.github/workflows/ci.yml`, the
+The three test suites run in CI on every pull request (`.github/workflows/ci.yml`, the
 `e2e` job), which stands up MySQL and MailHog as services, starts the API and
 the web app, and uploads logs and traces on failure. Before that job existed the
 suites only ran when someone remembered to run them locally.
@@ -44,6 +45,10 @@ role, and anonymous.
   shares one database and several change state that is global to the signed-in
   user (alert settings, saved views, theme). In parallel the suite failed a
   different three tests on each run.
+- **`npm run deadcode`** is configured to ignore the vendored shadcn primitives
+  in `src/components/ui`, which keep their full API surface by design. Without
+  that, fifty unused exports from them drown any real finding. It exits clean,
+  so a genuinely unused file or export shows up immediately.
 - **`e2e/qa/accessibility.spec.ts`** sweeps every screen for unnamed controls,
   images without alt text, unlabelled fields, and pages without exactly one
   `h1`. It is a floor, not a substitute for testing with real assistive
