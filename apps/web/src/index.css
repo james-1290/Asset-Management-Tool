@@ -61,12 +61,16 @@
   --secondary-foreground: #0F172A;
   /* Muted */
   --muted: #F1F5F9;
-  --muted-foreground: #94A3B8;
+  /* WCAG AA: the previous slate-400 gave 2.4:1 on the page background where
+     4.5:1 is required, and this token carries most of the secondary text in the
+     app — descriptions, breadcrumbs, timestamps, placeholders. 5.4:1 here. */
+  --muted-foreground: #5A6675;
   /* Accent — primary-tinted */
   --accent: rgba(41, 24, 220, 0.08);
   --accent-foreground: #2918dc;
   /* Destructive */
-  --destructive: #EF4444;
+  /* White text on the old red gave 3.76:1 on the notification badge. 4.8:1. */
+  --destructive: #DC2626;
   /* Foreground sits ON the destructive fill — must be white, not the same red
      (which rendered destructive-foreground text invisible on destructive bg). */
   --destructive-foreground: #FFFFFF;
@@ -98,8 +102,12 @@
   --card-foreground: #E9ECEF;
   --popover: #191C22;
   --popover-foreground: #E9ECEF;
-  --primary: #6366F1;
-  --primary-foreground: #FFFFFF;
+  /* Inverted for dark: this token is used both as a button background and as
+     accent text on a dark surface, and indigo-500 failed AA in both directions
+     (4.47:1 with white text on it, 3.8-4.2:1 as text). A lighter accent with
+     dark text on it clears 5.4:1 either way. */
+  --primary: #818CF8;
+  --primary-foreground: #1E1B4B;
   --secondary: #252830;
   --secondary-foreground: #E9ECEF;
   --muted: #252830;
