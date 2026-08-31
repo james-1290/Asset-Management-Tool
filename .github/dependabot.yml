@@ -1,0 +1,54 @@
+# Dependency advisories for every ecosystem in the repo.
+#
+# The frontend build already fails on a high-severity npm advisory, but nothing
+# watched the backend at all: Gradle dependencies were only ever updated by
+# hand, so a published advisory against Spring Boot or a transitive library
+# could sit unnoticed indefinitely. Dependabot raises a pull request instead,
+# which the CI suites then have to pass.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /apps/api-kt
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Spring's modules move in lockstep; one PR per release, not twenty.
+      spring:
+        patterns:
+          - "org.springframework*"
+          - "org.springframework.boot*"
+      test-libraries:
+        patterns:
+          - "org.testcontainers*"
+          - "org.junit*"
+          - "io.mockk*"
+
+  - package-ecosystem: npm
+    directory: /apps/web
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "react-router*"
+          - "@types/react*"
+      radix:
+        patterns:
+          - "@radix-ui/*"
+      tooling:
+        patterns:
+          - "eslint*"
+          - "@typescript-eslint/*"
+          - "vite"
+          - "@vitejs/*"
+          - "typescript*"
+
+  # The workflow's own actions pin to major versions and still need watching.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

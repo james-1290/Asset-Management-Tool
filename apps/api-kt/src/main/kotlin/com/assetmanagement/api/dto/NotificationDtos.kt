@@ -1,6 +1,5 @@
 package com.assetmanagement.api.dto
 
-import java.time.Instant
 import java.time.LocalDate
 import java.util.*
 
