@@ -1,4 +1,7 @@
 plugins {
+    // Line and branch coverage, so "the tests cover the code" is a number
+    // rather than an impression.
+    jacoco
     id("org.springframework.boot") version "3.3.7"
     id("io.spring.dependency-management") version "1.1.6"
     kotlin("jvm") version "1.9.23"
@@ -76,4 +79,64 @@ tasks.withType<Test> {
     // Desktop, whose MinAPIVersion can reject docker-java's default negotiation),
     // pin docker-java's API version. Unset in CI, so default negotiation is used.
     System.getenv("DOCKER_API_VERSION")?.let { systemProperty("api.version", it) }
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+    classDirectories.setFrom(
+        files(classDirectories.files.map {
+            fileTree(it) {
+                // Generated and declarative code: DTOs and entities are data
+                // holders, and configuration classes are exercised by the app
+                // starting at all. Counting them inflates the number without
+                // saying anything about whether the logic is tested.
+                exclude(
+                    "**/dto/**",
+                    "**/model/**",
+                    "**/AssetManagementApiApplication*",
+                )
+            }
+        })
+    )
+}
+
+/**
+ * Coverage including the running application.
+ *
+ * `jacocoTestReport` only sees the test JVM, so the controllers looked 19%
+ * covered while the API suites were exercising every one of them against the
+ * running jar. This merges an execution file produced by the agent attached to
+ * that jar (see scripts/qa/full_sweep.sh) with the test run's own.
+ */
+tasks.register<JacocoReport>("jacocoRuntimeReport") {
+    group = "verification"
+    description = "Coverage from the unit/integration tests plus the running API."
+    executionData.setFrom(
+        files(
+            layout.buildDirectory.file("jacoco/test.exec"),
+            file("/tmp/jacoco-api.exec"),
+        ).filter { it.exists() }
+    )
+    sourceDirectories.setFrom(files("src/main/kotlin"))
+    classDirectories.setFrom(
+        files(layout.buildDirectory.dir("classes/kotlin/main")).map {
+            fileTree(it) { exclude("**/dto/**", "**/model/**", "**/AssetManagementApiApplication*") }
+        }
+    )
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }

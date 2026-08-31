@@ -29,7 +29,7 @@ has to be applied to. It is measured, not asserted:
 |---|---|---|
 | Every API endpoint reached by a suite | `scripts/qa/endpoint_coverage.py`, against what the running API records it served | Yes — the sweep fails if any route is never reached |
 | Every GUI control named by a spec | `e2e/qa/inventory.spec.ts` → `scripts/qa/gui_coverage.py` | Reported by the sweep |
-| Every source file exercised | Backend and frontend test suites | Partly — see 14.7 |
+| Every line of code exercised | JaCoCo (tests **and** the running API) and Vitest | Reported by the sweep, not gated |
 
 Both run in `scripts/qa/full_sweep.sh`. A concern marked OK without a subject
 count behind it is an opinion.
@@ -178,6 +178,7 @@ count behind it is an opinion.
 | 14.6 | Consistent design across equivalent screens | Fixed — uniformity contract |
 | 14.7 | Every endpoint reached by a suite | Fixed — measured, not assumed: 27 of 212 had never been reached (26 legacy aliases, 1 real). Now 212/212, enforced by the sweep |
 | 14.8 | Every GUI control named by a spec | Fixed — 25 controls no spec had ever named (dashboard drill-downs, column sort headers, report tabs, three filters). Now 552/552 |
+| 14.9 | Line and branch coverage measured | Fixed — **backend 82.7% lines, 52.7% branches** with the running API included (the test JVM alone reads 27%, which is why it had to be merged). **Frontend unit tests 11.9%**, scoped to pure logic on purpose — the screens are covered behaviourally by 14.8. Reported, never gated: a coverage target rewards tests written to raise a number. Branch coverage is the honest weak spot: error paths |
 
 ## 15. Operability and compliance
 

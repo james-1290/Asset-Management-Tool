@@ -49,7 +49,13 @@ restart_api() {
   cd "$ROOT/apps/api-kt" || return 1
   ./gradlew bootJar -q || return 1
   rm -f "$COVERAGE_FILE"
+  local agent=""
+  if [ -f /tmp/jacoco-agent/jacocoagent.jar ]; then
+    rm -f /tmp/jacoco-api.exec
+    agent="-javaagent:/tmp/jacoco-agent/jacocoagent.jar=destfile=/tmp/jacoco-api.exec,output=file,append=false"
+  fi
   SPRING_PROFILES_ACTIVE=dev nohup "$JAVA_HOME/bin/java" \
+    ${agent:+$agent} \
     "-Dendpoint.coverage.file=$COVERAGE_FILE" \
     -jar build/libs/asset-management-api-1.0.0.jar > /tmp/qa-api-$LABEL.log 2>&1 &
   for _ in $(seq 1 60); do
@@ -115,6 +121,15 @@ step "GUI inventory + coverage (every control named by a spec)" \
 
 step "Endpoint coverage (every route reached by a suite)" \
   bash -c "cd '$ROOT' && python3 scripts/qa/endpoint_coverage.py '$COVERAGE_FILE'"
+
+if [ -f /tmp/jacoco-api.exec ]; then
+  echo ""
+  echo "=================================================================="
+  echo "== Code coverage (reported, not gated)"
+  echo "=================================================================="
+  (cd "$ROOT/apps/api-kt" && ./gradlew jacocoRuntimeReport -q 2>/dev/null) || true
+  python3 "$ROOT/scripts/qa/coverage_summary.py" || true
+fi
 
 echo ""
 echo "=================================================================="
