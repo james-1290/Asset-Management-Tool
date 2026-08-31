@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-08-31 — Lift the table-density toggle into DataTable
+
+The Comfortable/Compact control existed on the Applications list alone, hand-rolled from bare `<button>` elements against the house rule of building on shadcn primitives.
+
+`DataTable` now owns it and renders `DensityToggle` itself, so every list gets the control without opting in — which is how the divergence arose in the first place. The choice is one app-wide setting (`useDensity`, persisted to `localStorage` and broadcast so tables mounted together stay in step), because someone who wants dense rows wants them everywhere. A page may still pass `tableDensity` to control it, in which case the table renders no control of its own. Compact now tightens the header row as well as the body.
+
+`DensityToggle` is built to the same shape as `ViewModeToggle`, with real accessible names and `aria-pressed` rather than tooltip-only labels.
+
+Screenshotting the result showed two further layout divergences, also fixed:
+
+- **Assets kept its saved views, view-mode toggle and export in the page header**, while Applications and Certificates kept them in the toolbar. They have moved to the toolbar's right group, so all three major lists now read identically.
+- **The Assets toolbar wrapped onto a second line**, being the only one using `flex-wrap`.
+
+`docs/ux-guidelines.md` records the toolbar as a single row with a fixed order, and that the page header holds only the title, count and primary "Add …" button — never the view controls. `e2e/qa/uniformity.spec.ts` asserts the toggle on every list and that the choice carries between lists and across a reload.
+
 ## 2026-08-31 — Make the list pages keep one design, and hold them to it
 
 An audit of all eleven list pages against each other found several with the plumbing for a feature but no control to reach it — the same class of defect as the missing Assets search box earlier today.
