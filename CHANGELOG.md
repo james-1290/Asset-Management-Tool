@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-08-31 — Fix all fourteen findings from the full review
+
+Every finding from the product/engineering/QA/security review, fixed and verified. No security defects were found in that review; these are correctness, data-safety, performance, accessibility and operability items.
+
+**Fix first**
+
+- **Imported assets could not be edited.** The importer and API accept an asset with only a name and a type; the edit form demanded a serial number, location and purchase date as well, so every imported record was uneditable without inventing data. The form now requires what the API requires.
+- **Archiving was one-way for eleven of thirteen record types.** Restore endpoints added for certificates, applications, people, locations, templates and all three type registers, each audited and each refusing a record that is not archived. Lists gained `includeArchived`, and the UI a shared "Archived" toggle plus a Restore row action that replaces Edit/Delete on an archived row.
+- **The test suites did not run in the pipeline.** A CI job now stands up MySQL and MailHog, starts the API and web app, and runs both API suites and the browser suite on every pull request.
+
+**Should fix**
+
+- Seven sub-list endpoints returned every matching row; now capped at 200, with the UI saying so and linking to the full filtered list rather than truncating silently.
+- The bundle shipped as one file; routes are now fetched on first visit and the big libraries split out. Entry chunk **393 KB → 131 KB gzipped**.
+- Three controls had no accessible name (settings gear, notifications bell, audit-log detail button) and the dashboard had no heading. A new accessibility spec sweeps all sixteen screens.
+- Alert sends are audited.
+- The permission rules moved into `lib/permissions` as pure functions with tests, and the remaining form schemas gained tests. 57 → 69 frontend unit tests.
+
+**Polish**
+
+Another user's alert rule returns 404 rather than 403; alert dates use UTC like the rest of the app; version columns for the five entities that lacked optimistic locking (V019); a request id in the logging context, echoed on the response; a container HEALTHCHECK; and the error envelope documented in `docs/api.md`.
+
+Two problems surfaced while fixing these, both fixed: moving a handler into a columns memo created a temporal dead zone that TypeScript and lint both passed and only the browser suite caught, and the extra toolbar control tipped the row over its width so the density toggle covered the export button.
+
 ## 2026-08-31 — Lift the table-density toggle into DataTable
 
 The Comfortable/Compact control existed on the Applications list alone, hand-rolled from bare `<button>` elements against the house rule of building on shadcn primitives.
