@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-08-31 — Make the list pages keep one design, and hold them to it
+
+An audit of all eleven list pages against each other found several with the plumbing for a feature but no control to reach it — the same class of defect as the missing Assets search box earlier today.
+
+- **No column chooser on Assets or Applications.** Both build custom-field columns that default to hidden and both hold `columnVisibility` state, but neither rendered `ColumnToggle` — so a custom field could be defined on a type and then never shown as a column, on the two lists most likely to have them.
+- **No saved-view selector on Assets**, although the page loads saved views and silently applies the user's default. Views could take effect but not be created, chosen or cleared.
+- **No saved views at all on Applications**, alone among the major lists. Added.
+- **No search box on Asset models**, though the endpoint has always accepted a `search` parameter.
+- The audit log's placeholder read "Search..." rather than naming what it searches.
+- The saved-view button's only accessible name was the *active view's* name ("Default" when there is none), naming the value rather than the control.
+
+`e2e/qa/uniformity.spec.ts` now holds the contract as a table of every list and the capabilities its API actually has, asserting the controls across the whole set — so a single page that drifts fails the suite. `docs/ux-guidelines.md` records the contract, toolbar ordering, copy and accessibility rules, and the one divergence left open for a decision: Applications has a table-density toggle no other list offers.
+
 ## 2026-08-31 — Exhaustive feature sweep: capability testing, and the five defects it found
 
 The previous sweeps proved every endpoint was *reachable* and every page *loaded*. This one tests every feature to its full capability — that filters filter, sorts sort, validation rejects, business rules hold, and every control the UI implies actually exists.
