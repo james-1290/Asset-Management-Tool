@@ -9,6 +9,7 @@ import com.assetmanagement.api.util.withFetch
 import com.assetmanagement.api.util.today
 import com.assetmanagement.api.util.computeStatus
 import com.assetmanagement.api.util.computedStatusPredicates
+import com.assetmanagement.api.util.orderByComputedStatus
 import com.assetmanagement.api.util.versionConflict
 import com.assetmanagement.api.model.CustomFieldValue
 import com.assetmanagement.api.model.enums.ApplicationStatus
@@ -86,6 +87,7 @@ class ApplicationsController(
 
         val spec = buildSpec(search, status, includeStatuses, typeId, expiryFrom, expiryTo, licenceType, costMin, costMax)
             .and(withFetch("applicationType", "asset", "person", "location"))
+            .and(statusOrder(sortBy, sortDir))
         val sort = sortOf(sortBy, sortDir)
         val result = applicationRepository.findAll(spec, PageRequest.of(p - 1, ps, sort))
 
@@ -127,11 +129,12 @@ class ApplicationsController(
             val spec = Specification<Application> { root, _, cb ->
                 cb.and(cb.equal(root.get<Boolean>("isArchived"), false), root.get<UUID>("id").`in`(idList))
             }.and(withFetch("applicationType"))
-            applicationRepository.findAll(spec, sortOf(sortBy, sortDir))
+            applicationRepository.findAll(spec.and(statusOrder(sortBy, sortDir)), sortOf(sortBy, sortDir))
         } else {
             val spec = buildSpec(search, status, includeStatuses, typeId, expiryFrom, expiryTo, licenceType, costMin, costMax)
                 // Fetch-join the to-one relation the CSV denormalises (N+1 guard).
                 .and(withFetch("applicationType"))
+                .and(statusOrder(sortBy, sortDir))
             applicationRepository.findAll(spec, PageRequest.of(0, CsvExport.MAX_ROWS + 1, sortOf(sortBy, sortDir))).content
         }
 
@@ -930,13 +933,33 @@ class ApplicationsController(
         cb.and(*predicates.toTypedArray())
     }
 
+    /**
+     * Ordering for the "Status" column. The list shows a computed status, so it
+     * cannot be ordered by the stored column — see [orderByComputedStatus].
+     * Contributes nothing for any other sort key.
+     */
+    private fun statusOrder(sortBy: String, sortDir: String): Specification<Application> =
+        if (sortBy.lowercase() != "status") {
+            Specification { _, _, _ -> null }
+        } else {
+            orderByComputedStatus(
+                statuses = ApplicationStatus.entries.toList(),
+                active = ApplicationStatus.Active,
+                expired = ApplicationStatus.Expired,
+                pendingRenewal = ApplicationStatus.PendingRenewal,
+                descending = sortDir.equals("desc", ignoreCase = true),
+            )
+        }
+
     private fun sortOf(sortBy: String, sortDir: String): Sort {
+        if (sortBy.lowercase() == "status") return Sort.unsorted()
         val dir = if (sortDir.equals("desc", ignoreCase = true)) Sort.Direction.DESC else Sort.Direction.ASC
         val prop = when (sortBy.lowercase()) {
             "publisher" -> "publisher"
             "licencetype" -> "licenceType"
             "expirydate" -> "expiryDate"
-            "status" -> "status"
+            // "status" is deliberately absent: the displayed status is computed,
+            // so its ordering comes from statusOrder() instead of this column.
             "applicationtypename" -> "applicationType.name"
             "createdat" -> "createdAt"
             else -> "name"
