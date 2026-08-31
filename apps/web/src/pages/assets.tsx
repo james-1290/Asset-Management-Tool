@@ -573,16 +573,6 @@ export default function AssetsPage() {
         description={`Managing ${totalCount.toLocaleString()} total assets`}
         actions={
           <div className="flex items-center gap-3">
-            <SavedViewSelector
-              entityType="assets"
-              activeViewId={activeViewId}
-              onApplyView={applyView}
-              onResetToDefault={handleResetToDefault}
-              getCurrentConfiguration={getCurrentConfiguration}
-            />
-            <div className="w-px h-5 bg-border" />
-            <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
-            <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
             {canWrite && (
               <Button
                 onClick={() => {
@@ -615,38 +605,52 @@ export default function AssetsPage() {
         onSortingChange={handleSortingChange}
         toolbar={(table) => (
           <div className="space-y-2">
-            <AssetsToolbar
-              table={table}
-              search={searchInput}
-              onSearchChange={setSearchInput}
-              status={statusParam}
-              onStatusChange={handleStatusChange}
-              includeRetired={includeRetired}
-              onIncludeRetiredChange={handleIncludeRetiredChange}
-              includeSold={includeSold}
-              onIncludeSoldChange={handleIncludeSoldChange}
-              typeId={typeIdParam}
-              onTypeIdChange={handleTypeIdChange}
-              assetTypes={assetTypes ?? []}
-              locationId={locationIdParam}
-              onLocationIdChange={(v) => handleFilterChange("locationId", v)}
-              locations={locations ?? []}
-              assignedPersonId={assignedPersonIdParam}
-              onAssignedPersonIdChange={(v) => handleFilterChange("assignedPersonId", v)}
-              people={people ?? []}
-              purchaseDateFrom={purchaseDateFromParam}
-              purchaseDateTo={purchaseDateToParam}
-              onPurchaseDateFromChange={(v) => handleFilterChange("purchaseDateFrom", v)}
-              onPurchaseDateToChange={(v) => handleFilterChange("purchaseDateTo", v)}
-              warrantyExpiryFrom={warrantyExpiryFromParam}
-              warrantyExpiryTo={warrantyExpiryToParam}
-              onWarrantyExpiryFromChange={(v) => handleFilterChange("warrantyExpiryFrom", v)}
-              onWarrantyExpiryToChange={(v) => handleFilterChange("warrantyExpiryTo", v)}
-              costMin={costMinParam}
-              costMax={costMaxParam}
-              onCostMinChange={(v) => handleFilterChange("costMin", v)}
-              onCostMaxChange={(v) => handleFilterChange("costMax", v)}
-            />
+            <div className="flex items-center justify-between gap-4">
+              <AssetsToolbar
+                table={table}
+                search={searchInput}
+                onSearchChange={setSearchInput}
+                status={statusParam}
+                onStatusChange={handleStatusChange}
+                includeRetired={includeRetired}
+                onIncludeRetiredChange={handleIncludeRetiredChange}
+                includeSold={includeSold}
+                onIncludeSoldChange={handleIncludeSoldChange}
+                typeId={typeIdParam}
+                onTypeIdChange={handleTypeIdChange}
+                assetTypes={assetTypes ?? []}
+                locationId={locationIdParam}
+                onLocationIdChange={(v) => handleFilterChange("locationId", v)}
+                locations={locations ?? []}
+                assignedPersonId={assignedPersonIdParam}
+                onAssignedPersonIdChange={(v) => handleFilterChange("assignedPersonId", v)}
+                people={people ?? []}
+                purchaseDateFrom={purchaseDateFromParam}
+                purchaseDateTo={purchaseDateToParam}
+                onPurchaseDateFromChange={(v) => handleFilterChange("purchaseDateFrom", v)}
+                onPurchaseDateToChange={(v) => handleFilterChange("purchaseDateTo", v)}
+                warrantyExpiryFrom={warrantyExpiryFromParam}
+                warrantyExpiryTo={warrantyExpiryToParam}
+                onWarrantyExpiryFromChange={(v) => handleFilterChange("warrantyExpiryFrom", v)}
+                onWarrantyExpiryToChange={(v) => handleFilterChange("warrantyExpiryTo", v)}
+                costMin={costMinParam}
+                costMax={costMaxParam}
+                onCostMinChange={(v) => handleFilterChange("costMin", v)}
+                onCostMaxChange={(v) => handleFilterChange("costMax", v)}
+              />
+              <div className="flex items-center gap-1.5">
+                <SavedViewSelector
+                  entityType="assets"
+                  activeViewId={activeViewId}
+                  onApplyView={applyView}
+                  onResetToDefault={handleResetToDefault}
+                  getCurrentConfiguration={getCurrentConfiguration}
+                />
+                <div className="w-px h-5 bg-border" />
+                <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+                <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
+              </div>
+            </div>
             {/* Bulk actions (only when selected) */}
             <BulkActionBar
               canWrite={canWrite}

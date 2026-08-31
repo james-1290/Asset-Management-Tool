@@ -43,7 +43,6 @@ import type { Application } from "../types/application";
 import type { ApplicationFormValues } from "../lib/schemas/application";
 import type { DuplicateCheckResult } from "../types/duplicate-check";
 import { DuplicateWarningDialog } from "../components/shared/duplicate-warning-dialog";
-import { cn } from "../lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 
 const SORT_FIELD_MAP: Record<string, string> = {
@@ -94,7 +93,6 @@ export default function ApplicationsPage() {
   const costMaxParam = searchParams.get("costMax") ?? "";
   const publisherParam = searchParams.get("publisher") ?? "";
 
-  const [tableDensity, setTableDensity] = useState<"comfortable" | "compact">("comfortable");
 
   const includeStatuses = useMemo(() => {
     return includeInactive ? "Inactive" : undefined;
@@ -470,7 +468,6 @@ export default function ApplicationsPage() {
         rowCount={totalCount}
         sorting={sorting}
         onSortingChange={handleSortingChange}
-        tableDensity={tableDensity}
         toolbar={(table) => (
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-4">
@@ -492,33 +489,6 @@ export default function ApplicationsPage() {
                 />
               </div>
               <div className="flex items-center gap-1">
-                <div className="flex items-center rounded-lg border bg-card">
-                  <button
-                    type="button"
-                    onClick={() => setTableDensity("comfortable")}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-l-lg transition-colors",
-                      tableDensity === "comfortable"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Comfortable
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTableDensity("compact")}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-r-lg transition-colors",
-                      tableDensity === "compact"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Compact
-                  </button>
-                </div>
-                <div className="w-px h-5 bg-border mx-1" />
                 {/* The column chooser every other list offers; without it the
                     custom-field columns cannot be shown. */}
                 <SavedViewSelector
@@ -529,8 +499,8 @@ export default function ApplicationsPage() {
                   getCurrentConfiguration={getCurrentConfiguration}
                 />
                 <div className="w-px h-5 bg-border mx-1" />
-                <ColumnToggle table={table} />
                 <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+                <ColumnToggle table={table} />
                 <ExportButton onExport={handleExport} loading={exporting} />
               </div>
             </div>

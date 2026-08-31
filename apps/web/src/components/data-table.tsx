@@ -20,6 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
+import { DensityToggle } from "./density-toggle";
+import { useDensity, type Density } from "@/hooks/use-density";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -42,7 +44,12 @@ interface DataTableProps<TData, TValue> {
   hideTable?: boolean;
   children?: ReactNode;
   variant?: "default" | "borderless";
-  tableDensity?: "comfortable" | "compact";
+  /**
+   * Row density. Omit it and the table manages its own, remembered app-wide,
+   * and renders the control for it — which is how every list gets the same
+   * behaviour without each page having to opt in.
+   */
+  tableDensity?: Density;
 }
 
 export function DataTable<TData, TValue>({
@@ -65,7 +72,7 @@ export function DataTable<TData, TValue>({
   paginationControls,
   hideTable,
   children,
-  tableDensity = "comfortable",
+  tableDensity,
 }: DataTableProps<TData, TValue>) {
   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialColumnFilters ?? []);
@@ -98,9 +105,23 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  const { density: storedDensity, setDensity: setStoredDensity } = useDensity();
+
+  // A page may still control density itself; otherwise the table owns it.
+  const isControlled = tableDensity !== undefined;
+  const density = isControlled ? tableDensity : storedDensity;
+  const compact = density === "compact";
+
   return (
     <div className="space-y-4">
-      {toolbar && toolbar(table)}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">{toolbar && toolbar(table)}</div>
+        {!isControlled && !hideTable && (
+          <div className="shrink-0">
+            <DensityToggle density={density} onDensityChange={setStoredDensity} />
+          </div>
+        )}
+      </div>
       {hideTable ? (
         children
       ) : (
@@ -110,7 +131,7 @@ export function DataTable<TData, TValue>({
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className={compact ? "py-1.5" : undefined}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -127,7 +148,7 @@ export function DataTable<TData, TValue>({
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className={tableDensity === "compact" ? "py-1" : undefined}>
+                      <TableCell key={cell.id} className={compact ? "py-1" : undefined}>
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),

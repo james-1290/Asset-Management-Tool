@@ -103,11 +103,21 @@ exist in the API.
 | Bulk actions | `BulkActionBar` | a `bulk-archive` or `bulk-status` endpoint exists |
 | Active filters | `ActiveFilterChips` | the list has filters beyond a single chip |
 
+Row density is **not** in that table: `DataTable` renders `DensityToggle`
+itself, so every list has it without opting in. The choice is one app-wide
+setting (`useDensity`, persisted to `localStorage`), because someone who wants
+dense rows wants them everywhere — and a per-page choice is how this control
+came to exist on exactly one list.
+
 ## Ordering within the toolbar
 
-Left group: search box, then filter chips, then a "More filters" popover for
-anything that does not fit. Right group, in this order: saved views, a divider,
-view-mode toggle, column chooser, export.
+One row. Left group: search box, then filter chips, then a "More filters"
+popover for anything that does not fit, then the column chooser. Right group, in
+this order: saved views, a divider, view-mode toggle, export. The density toggle
+is appended by `DataTable` beyond the right group.
+
+The page header holds only the title, breadcrumbs, record count and the primary
+"Add …" button — never the view controls.
 
 ## Copy
 
@@ -130,8 +140,12 @@ whole set, so a single page that drifts fails the suite. When a list genuinely
 should not have a control, set it to `false` there with the reason — the
 exception then has to be argued for rather than silently assumed.
 
-## Known divergence
+## Resolved divergences
 
-The Applications list has a **table density** toggle (Comfortable/Compact) that
-no other list offers. It should either be lifted into `DataTable` and offered
-everywhere, or dropped — it is left as-is pending that decision.
+The table-density toggle was once on Applications alone, hand-rolled from bare
+`<button>` elements. It now lives in `DataTable`, built on the shared shadcn
+primitives to the same shape as `ViewModeToggle`, and every list has it.
+
+The Assets list kept its saved views, view-mode toggle and export in the *page
+header* rather than the toolbar. They have moved to the toolbar's right group,
+so all three major lists now read identically.

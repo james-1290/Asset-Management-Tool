@@ -113,7 +113,7 @@ export function AssetsToolbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-1 items-center gap-2">
       {/*
         The list's own search. The page has always passed `search`/`onSearchChange`
         (and a saved view can set them), but nothing rendered them, leaving Assets

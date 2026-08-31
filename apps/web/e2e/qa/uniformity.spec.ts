@@ -104,6 +104,51 @@ test.describe("List pages keep the shared design", () => {
     w.assertClean("view mode toggles");
   });
 
+  test("every list offers the row-density toggle", async ({ page }) => {
+    const w = new PageWatcher(page);
+    await signIn(page);
+    for (const list of LISTS) {
+      await visit(page, list.path);
+      await expect(
+        page.getByRole("button", { name: "Compact rows" }),
+        `${list.path} should offer the density toggle`,
+      ).toBeVisible({ timeout: 10000 });
+    }
+    w.assertClean("density toggles");
+  });
+
+  test("the density choice is one setting, kept across lists and reloads", async ({ page }) => {
+    const w = new PageWatcher(page);
+    await signIn(page);
+    await seedOne(page);
+    await visit(page, "/assets");
+
+    const compact = page.getByRole("button", { name: "Compact rows" });
+    await compact.click();
+    await expect(compact).toHaveAttribute("aria-pressed", "true");
+
+    // Carried to another list...
+    await visit(page, "/certificates");
+    await expect(
+      page.getByRole("button", { name: "Compact rows" }),
+      "density should carry between lists",
+    ).toHaveAttribute("aria-pressed", "true");
+
+    // ...and across a reload.
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await expect(
+      page.getByRole("button", { name: "Compact rows" }),
+      "density should survive a reload",
+    ).toHaveAttribute("aria-pressed", "true");
+
+    // Put it back, so it does not leak into other specs.
+    await page.getByRole("button", { name: "Comfortable rows" }).click();
+    await expect(page.getByRole("button", { name: "Comfortable rows" }))
+      .toHaveAttribute("aria-pressed", "true");
+    w.assertClean("density persistence");
+  });
+
   test("a custom field column can be shown from the chooser", async ({ page }) => {
     const w = new PageWatcher(page);
     await signIn(page);
