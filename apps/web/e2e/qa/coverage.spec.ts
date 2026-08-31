@@ -74,16 +74,18 @@ test("Saved views: create, apply and delete from the toolbar", async ({ page }) 
   await visit(page, "/locations");
 
   const viewName = `QA View ${uid()}`;
-  await page.getByRole("button", { name: /^default$/i }).click();
+  // The button is named for the control, not for the view it currently shows.
+  const savedViews = page.getByRole("button", { name: "Saved views" });
+  await savedViews.click();
   await page.getByRole("menuitem", { name: /save as new view/i }).click();
   await dialog(page).locator("input").first().fill(viewName);
   await dialog(page).getByRole("button", { name: /save|create/i }).last().click();
   await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15000 });
 
-  // The new view becomes the selected one and is listed.
-  await expect(page.getByRole("button", { name: viewName })).toBeVisible({ timeout: 10000 });
+  // The new view becomes the selected one, which the button shows as its value.
+  await expect(savedViews).toHaveText(new RegExp(viewName), { timeout: 10000 });
 
-  await page.getByRole("button", { name: viewName }).click();
+  await savedViews.click();
   await expect(page.getByRole("menuitem", { name: viewName })).toBeVisible();
   await page.keyboard.press("Escape");
 
