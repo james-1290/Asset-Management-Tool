@@ -6,15 +6,23 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.scheduling.support.CronTrigger
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.ScheduledFuture
 
 @Service
 class AlertSchedulerService(
     private val taskScheduler: TaskScheduler,
     private val alertProcessingService: AlertProcessingService,
-    private val systemSettingRepository: SystemSettingRepository
+    private val systemSettingRepository: SystemSettingRepository,
+    private val runClaims: ScheduledRunClaimService,
 ) {
     private val log = LoggerFactory.getLogger(AlertSchedulerService::class.java)
+
+    companion object {
+        private const val JOB_NAME = "alerts"
+    }
     private var scheduledTask: ScheduledFuture<*>? = null
 
     private fun getSetting(key: String, default: String = ""): String =
@@ -49,6 +57,12 @@ class AlertSchedulerService(
 
         scheduledTask = taskScheduler.schedule(
             {
+                // Only one instance may run this window. The scheduler runs
+                // in-process on every instance, so scaled out, each would fire
+                // the same run and every recipient would get duplicate emails.
+                val runKey = LocalDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.MINUTES).toString()
+                if (!runClaims.claim(JOB_NAME, runKey)) return@schedule
+
                 try {
                     log.info("Running scheduled alert processing")
                     val result = alertProcessingService.processAlerts()
@@ -63,6 +77,11 @@ class AlertSchedulerService(
                     alertProcessingService.processPersonalAlerts()
                 } catch (e: Exception) {
                     log.error("Scheduled personal alert processing failed", e)
+                }
+                try {
+                    runClaims.pruneOldClaims()
+                } catch (e: Exception) {
+                    log.warn("Could not prune old scheduled-run claims", e)
                 }
             },
             CronTrigger(cronExpression)

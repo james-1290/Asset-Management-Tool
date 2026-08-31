@@ -236,3 +236,7 @@ interface ApplicationSeatAssignmentRepository : JpaRepository<ApplicationSeatAss
     @Query("DELETE FROM ApplicationSeatAssignment s WHERE s.applicationId = :applicationId AND s.personId = :personId")
     fun deleteByApplicationIdAndPersonId(@Param("applicationId") applicationId: UUID, @Param("personId") personId: UUID): Int
 }
+
+interface ScheduledRunClaimRepository : JpaRepository<ScheduledRunClaim, UUID> {
+    fun deleteByClaimedAtBefore(cutoff: Instant): Int
+}
