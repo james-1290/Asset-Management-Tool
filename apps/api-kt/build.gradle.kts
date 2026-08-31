@@ -62,7 +62,7 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     // Pin a recent Testcontainers (newer docker-java) for Docker Desktop compatibility;
     // overrides the older version Spring Boot 3.2 would otherwise manage.
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:2.0.5"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:mysql")
 }
