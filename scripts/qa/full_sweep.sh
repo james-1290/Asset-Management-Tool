@@ -122,13 +122,27 @@ step "GUI inventory + coverage (every control named by a spec)" \
 step "Endpoint coverage (every route reached by a suite)" \
   bash -c "cd '$ROOT' && python3 scripts/qa/endpoint_coverage.py '$COVERAGE_FILE'"
 
-if [ -f /tmp/jacoco-api.exec ]; then
+if [ -f /tmp/jacoco-agent/jacocoagent.jar ]; then
   echo ""
   echo "=================================================================="
   echo "== Code coverage (reported, not gated)"
   echo "=================================================================="
+  # The agent writes its execution file when the JVM exits, so the API has to
+  # be stopped before the report is generated — reading it while the app is
+  # still running yields the test JVM's figures only, which understate the
+  # controllers badly.
+  pkill -f 'asset-management-api-1.0.0.jar' 2>/dev/null
+  for _ in $(seq 1 20); do
+    [ -s /tmp/jacoco-api.exec ] && break
+    sleep 1
+  done
   (cd "$ROOT/apps/api-kt" && ./gradlew jacocoRuntimeReport -q 2>/dev/null) || true
   python3 "$ROOT/scripts/qa/coverage_summary.py" || true
+
+  # Leave the stack as it was found.
+  echo ""
+  echo "-- restarting the API --"
+  restart_api > /dev/null && echo "API back up"
 fi
 
 echo ""
