@@ -46,8 +46,13 @@ test.describe("Filtering through the UI", () => {
 
     const search = page.getByPlaceholder(/search assets/i);
     await search.fill(`FAsset Dear ${f.tag}`);
+    // The box is debounced into the URL and then refetched. Without waiting for
+    // that, the "Cheap" row is still on screen from the unfiltered list and the
+    // assertion below fails intermittently.
+    await expect(page).toHaveURL(/search=FAsset\+Dear/, { timeout: 10000 });
+    await page.waitForLoadState("networkidle");
     await expect(page.locator("table tbody")).toContainText("FAsset Dear", { timeout: 10000 });
-    expect(await rowText(page)).not.toContain("FAsset Cheap");
+    await expect(page.locator("table tbody")).not.toContainText("FAsset Cheap", { timeout: 10000 });
 
     // Widening the term to the shared tag brings the other one back, which
     // proves the box drives the query rather than just hiding rows.

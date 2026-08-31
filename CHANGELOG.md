@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-08-31 — Exhaustive feature sweep: capability testing, and the five defects it found
+
+The previous sweeps proved every endpoint was *reachable* and every page *loaded*. This one tests every feature to its full capability — that filters filter, sorts sort, validation rejects, business rules hold, and every control the UI implies actually exists.
+
+**New harnesses**
+
+- `scripts/qa/api_deep.py` — 628 checks that assert behaviour rather than status codes: every filter parameter proved by inclusion *and* exclusion, every documented sort field checked for real ordering in both directions, validation and malformed input, lifecycle invariants (check-out/in, retire, sell, seat limits, safe deletes), all seven custom field types round-tripped, every dashboard widget and report in JSON and CSV, CSV import validated and executed, and the full role matrix across Admin/Operator/User/no-role/anonymous.
+- `e2e/qa/deep-filters.spec.ts`, `deep-dialogs.spec.ts`, `deep-features.spec.ts` — 27 tests driving the search boxes, filter chips, advanced filter panel, view modes, column chooser, command search, and every dialog in the app, each verified against the record afterwards rather than against a toast.
+
+**Defects found and fixed**
+
+- **Sorting by Status did nothing sensible on certificates and applications.** Both display a *computed* status (a stored `Active` row reads as `Expired` or `PendingRenewal` once its expiry comes into range), but the sort ordered by the stored column — so an item shown as PendingRenewal sorted in among the Active ones, and ascending and descending returned the same sequence. The status *filter* was already computed-aware, which is what marks this as an oversight. Added `orderByComputedStatus`, applied to both controllers' list and export paths, with an integration test that fails without it.
+- **The Assets list had no search box.** The page passed `search`/`onSearchChange` into a toolbar that never rendered an input, leaving the app's primary list the only one without search — and a saved view's search term applied invisibly, with no way to see or clear it.
+- **The grouped view was unreachable on Assets and Applications.** Both render `GroupedGridView`, but only Certificates rendered the toggle, so it could only be reached by editing the URL by hand.
+- **Three elements had no accessible name**: the reassign-location dialog (a visible heading but no `DialogTitle`, which Radix had been warning about on every open), the notifications action menu, and the dashboard expiring-items row link.
+
+**Harness reliability**
+
+- The e2e suite now runs with a single worker. Every spec shares one database and several change user-global state (alert settings, saved views, theme), so in parallel it failed a different three tests on each run — noise that buries real regressions.
+- The CSRF write test asserted a new row was visible without filtering to it; it only passed while the database was small.
+
 ## 2026-08-30 — Complete the read-only permission fix (it was only a quarter done)
 
 The previous change hid the **create** buttons from a read-only `User`, but a check with the browser showed the rest were still there: Edit/Delete row menus, the bulk action bar's Edit/Archive/status buttons, and every action on a record's own page — Check out, Retire, Sold, Clone, Edit, Upload. The API refused all of them, so a read-only user could still walk into a dialog, fill it in, and be told "Access denied".
