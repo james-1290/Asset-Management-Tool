@@ -47,4 +47,27 @@ class CsvUtilsTest {
         val row = CsvUtils.sanitizeRow(arrayOf("=danger", "safe", null))
         assertArrayEquals(arrayOf("'=danger", "safe", ""), row)
     }
+
+    @Test
+    fun `reader strips the byte-order mark Excel writes`() {
+        // A "CSV UTF-8" file from Excel starts with a BOM. It is not whitespace,
+        // so trim() left it glued to the first header: "Name" arrived as
+        // "\uFEFFName", matched no column, and every row failed with
+        // "Name is required" while the name sat there in plain sight.
+        val withBom = "\uFEFFName,City\nLondon office,London\n".toByteArray(Charsets.UTF_8)
+        val text = CsvUtils.reader(withBom.inputStream()).readText()
+        assertEquals("Name,City\nLondon office,London\n", text)
+    }
+
+    @Test
+    fun `reader leaves a file without a mark untouched`() {
+        val plain = "Name,City\nLondon office,London\n".toByteArray(Charsets.UTF_8)
+        assertEquals("Name,City\nLondon office,London\n", CsvUtils.reader(plain.inputStream()).readText())
+    }
+
+    @Test
+    fun `reader decodes as UTF-8 regardless of the platform default`() {
+        val accented = "Name\nCafé Münster\n".toByteArray(Charsets.UTF_8)
+        assertEquals("Name\nCafé Münster\n", CsvUtils.reader(accented.inputStream()).readText())
+    }
 }

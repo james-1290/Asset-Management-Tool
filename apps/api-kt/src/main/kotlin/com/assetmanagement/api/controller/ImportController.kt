@@ -15,7 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
-import java.io.InputStreamReader
+import com.assetmanagement.api.util.CsvUtils
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -105,7 +105,7 @@ class ImportController(
 
         // `use` closes the CSVReader — and with it the InputStreamReader and the
         // multipart file-backed stream — so repeated imports don't leak FDs.
-        val allRows = CSVReaderBuilder(InputStreamReader(file.inputStream))
+        val allRows = CSVReaderBuilder(CsvUtils.reader(file.inputStream))
             .withSkipLines(0)
             .build()
             .use { it.readAll() }
@@ -177,7 +177,7 @@ class ImportController(
 
         // `use` closes the CSVReader — and with it the InputStreamReader and the
         // multipart file-backed stream — so repeated imports don't leak FDs.
-        val allRows = CSVReaderBuilder(InputStreamReader(file.inputStream))
+        val allRows = CSVReaderBuilder(CsvUtils.reader(file.inputStream))
             .withSkipLines(0)
             .build()
             .use { it.readAll() }

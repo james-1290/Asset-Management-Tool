@@ -875,6 +875,57 @@ def test_settings_and_profile(s):
     s.check("GET /roles", api.get("/api/v1/roles"))
 
 
+def test_restore(s, f):
+    """Archiving is a soft delete, so every archive must be undoable."""
+    s.section("Archive and restore")
+    api, t = s.api, s.tag
+
+    cases = [
+        ("locations", {"name": f"Deep Restore Loc {t}"}),
+        ("people", {"fullName": f"Deep Restore Person {t}"}),
+        ("asset-types", {"name": f"Deep Restore AType {t}"}),
+        ("certificate-types", {"name": f"Deep Restore CType {t}"}),
+        ("application-types", {"name": f"Deep Restore AppType {t}"}),
+    ]
+    for path, payload in cases:
+        rec = s.check(f"create a {path} record to archive", api.post(f"/api/v1/{path}", payload), 201)
+        if not rec:
+            continue
+        rid = rec["id"]
+        s.check(f"archive the {path} record", api.delete(f"/api/v1/{path}/{rid}"), (200, 204))
+
+        listed = ids_of(jbody(api.get(f"/api/v1/{path}?pageSize=100&{q(search=t)}")[1]))
+        s.assert_(f"{path}: an archived record is hidden by default", rid not in listed)
+
+        listed = ids_of(jbody(api.get(
+            f"/api/v1/{path}?pageSize=100&includeArchived=true&{q(search=t)}")[1]))
+        s.assert_(f"{path}: includeArchived makes it findable again", rid in listed)
+
+        s.check(f"restore the {path} record", api.post(f"/api/v1/{path}/{rid}/restore"))
+        listed = ids_of(jbody(api.get(f"/api/v1/{path}?pageSize=100&{q(search=t)}")[1]))
+        s.assert_(f"{path}: the restored record is listed again", rid in listed)
+        s.check(f"{path}: restoring twice is refused",
+                api.post(f"/api/v1/{path}/{rid}/restore"), 400)
+
+    # Certificates and applications restore too. Both get a record of their own:
+    # an application still holding seats cannot be archived at all, which is
+    # correct but would test the wrong thing here.
+    cert = s.check("create a certificate to archive", api.post("/api/v1/certificates", {
+        "name": f"Deep Restore Cert {t}", "certificateTypeId": f["ct"]["id"],
+        "expiryDate": "2031-01-01"}), 201)
+    app = s.check("create an application to archive", api.post("/api/v1/applications", {
+        "name": f"Deep Restore App {t}", "applicationTypeId": f["apt"]["id"],
+        "expiryDate": "2031-01-01"}), 201)
+    for path, rec in (("certificates", cert), ("applications", app)):
+        if not rec:
+            continue
+        s.check(f"archive a {path}", api.delete(f"/api/v1/{path}/{rec['id']}"), (200, 204))
+        listed = ids_of(jbody(api.get(
+            f"/api/v1/{path}?pageSize=100&includeArchived=true&{q(search=t)}")[1]))
+        s.assert_(f"{path}: the archived record is findable", rec["id"] in listed)
+        s.check(f"restore a {path}", api.post(f"/api/v1/{path}/{rec['id']}/restore"))
+
+
 def test_bulk_operations(s, f):
     """Bulk edit/status/archive must apply to every id given, and only those."""
     s.section("Bulk operations")
@@ -1114,6 +1165,31 @@ def test_import(s, f):
             api.request("POST", "/api/v1/import/people/execute", raw=raw, content_type=ct))
     got = ids_of(jbody(api.get("/api/v1/people?pageSize=100&" + q(search=f"Deep Imp P {t}"))[1]))
     s.assert_("the imported person is now retrievable", len(got) >= 1, f"{len(got)} rows")
+
+    # Excel's "CSV UTF-8" — the format an administrator most likely produces —
+    # starts with a byte-order mark. It once made every row fail with
+    # "Name is required" while the name sat there in plain sight.
+    bom_csv = ("\ufeff" + f"Name,Address,City,Country\nDeep BOM {t},1 St,Town,UK\n").encode("utf-8")
+    raw, ct = multipart("file", "excel.csv", bom_csv, "text/csv")
+    res = s.check("validate a file saved by Excel (UTF-8 with BOM)",
+                  api.request("POST", "/api/v1/import/locations/validate", raw=raw, content_type=ct))
+    if res is not None:
+        s.assert_("the BOM does not break the header row",
+                  res.get("validRows") == 1 and res.get("invalidRows") == 0, json.dumps(res)[:200])
+    raw, ct = multipart("file", "excel.csv", bom_csv, "text/csv")
+    s.check("execute an Excel-saved import",
+            api.request("POST", "/api/v1/import/locations/execute", raw=raw, content_type=ct))
+    got = ids_of(jbody(api.get("/api/v1/locations?pageSize=100&" + q(search=f"Deep BOM {t}"))[1]))
+    s.assert_("the Excel-saved row is imported", len(got) >= 1, f"{len(got)} rows")
+
+    # Accented characters must survive, whatever the server's default charset is.
+    accented = f"Name,Address,City,Country\nDeep Café Münster {t},1 St,Town,FR\n".encode("utf-8")
+    raw, ct = multipart("file", "accents.csv", accented, "text/csv")
+    res = s.check("validate a file with accented characters",
+                  api.request("POST", "/api/v1/import/locations/validate", raw=raw, content_type=ct))
+    if res is not None:
+        name = ((res.get("rows") or [{}])[0].get("data") or {}).get("Name", "")
+        s.assert_("accented characters round-trip", "Café Münster" in name, name)
 
     # A non-CSV upload must be refused rather than parsed.
     raw, ct = multipart("file", "notes.txt", b"this is not a csv", "text/plain")
@@ -1488,6 +1564,7 @@ def main():
     test_saved_views(s)
     test_alert_rules_and_notifications(s)
     test_settings_and_profile(s)
+    test_restore(s, f)
     test_bulk_operations(s, f)
     test_duplicates(s, f)
     test_sub_resources(s, f)
