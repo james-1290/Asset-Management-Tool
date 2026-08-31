@@ -25,8 +25,8 @@ here — say what would be needed).
 | 1.2 | Object-level authorization: one user cannot read or change another's records | OK — saved views, alert rules, notifications all scoped by owner |
 | 1.3 | Consistent not-found vs forbidden, so existence cannot be probed | Fixed — alert rules returned 403 where saved views returned 404 |
 | 1.4 | Role escalation: a lower role cannot reach a higher role's function | OK — full role matrix in `api_deep.py` |
-| 1.5 | Path traversal in any user-controlled path segment or filename | — |
-| 1.6 | CORS origins are explicit, not reflected or wildcarded with credentials | — |
+| 1.5 | Path traversal in any user-controlled path segment or filename | OK — entity type allow-listed, id is a UUID, filename strips separators and `..` |
+| 1.6 | CORS origins are explicit, not reflected or wildcarded with credentials | OK — explicit list, `allowCredentials = false` |
 | 1.7 | Forced browsing: UI-hidden actions are still refused by the API | OK — read-only role gating proved at both layers |
 
 ## 2. Cryptography and secrets (A02)
@@ -35,8 +35,8 @@ here — say what would be needed).
 |---|---|---|
 | 2.1 | No secrets committed; `.env` ignored; history clean | OK |
 | 2.2 | The app refuses to start on default credentials | OK — `SecurityStartupValidator` |
-| 2.3 | Secret comparison is constant-time where a token is checked | — |
-| 2.4 | Sensitive values never placed in URLs or query strings | — |
+| 2.3 | Secret comparison is constant-time where a token is checked | OK — SCIM bearer uses `MessageDigest.isEqual` |
+| 2.4 | Sensitive values never placed in URLs or query strings | OK — no token/secret query parameters |
 | 2.5 | TLS/HSTS configured for production | OK — HSTS with preload-length max-age |
 
 ## 3. Injection (A03)
@@ -47,9 +47,9 @@ here — say what would be needed).
 | 3.2 | LIKE-wildcard injection in search terms | OK — `SqlUtils.escapeLikePattern` |
 | 3.3 | XSS — no `dangerouslySetInnerHTML`, no `eval` | OK |
 | 3.4 | CSV formula injection in exports | Fixed — guard existed; it also mangled negative numbers |
-| 3.5 | Log injection — user input cannot forge log lines | — |
-| 3.6 | Header injection via user-controlled response headers | — |
-| 3.7 | Command injection — no shell invocation with user input | — |
+| 3.5 | Log injection — user input cannot forge log lines | OK — SLF4J placeholders throughout; the one caller-supplied header (`X-Request-Id`) is charset-validated |
+| 3.6 | Header injection via user-controlled response headers | OK — export filenames are literals; attachment names URL-encoded |
+| 3.7 | Command injection — no shell invocation with user input | OK — no process execution anywhere |
 
 ## 4. Insecure design (A04)
 
@@ -76,8 +76,8 @@ here — say what would be needed).
 |---|---|---|
 | 6.1 | Frontend dependency advisories, blocking in CI | OK |
 | 6.2 | Backend dependency advisories | Fixed — nothing watched them; Dependabot added |
-| 6.3 | CI actions pinned so a moved tag cannot change the build | — |
-| 6.4 | Dependency licences compatible with distribution | — |
+| 6.3 | CI actions pinned so a moved tag cannot change the build | Fixed — were tags, now commit SHAs |
+| 6.4 | Dependency licences compatible with distribution | OK — all permissive (MIT/ISC/Apache/BSD/MPL); no GPL, AGPL or SSPL |
 
 ## 7. Authentication and session (A07)
 
@@ -85,20 +85,20 @@ here — say what would be needed).
 |---|---|---|
 | 7.1 | A user with no role is refused rather than defaulted | OK |
 | 7.2 | Deactivated accounts refused even with a valid session | OK — integration test |
-| 7.3 | Session cookie flags: HttpOnly, Secure, SameSite | — |
-| 7.4 | Session expiry and idle timeout | — |
-| 7.5 | Sign-out invalidates the session server-side | — |
+| 7.3 | Session cookie flags: HttpOnly, Secure, SameSite | OK — the only app-set cookie is the dev emulator's (HttpOnly, SameSite=Lax; no Secure because local dev is HTTP, and it refuses to run outside dev profiles). In production the cookie is App Service's |
+| 7.4 | Session expiry and idle timeout | N/A to the app — it is stateless and authenticates per request from Easy Auth headers. Lifetime is the platform's. **Gap**: not verifiable without a tenant |
+| 7.5 | Sign-out invalidates the session server-side | N/A — no app-side session to invalidate; `/.auth/logout` is the platform's. Revocation is in fact immediate: a deactivated user is refused on the next request |
 | 7.6 | CSRF defence cannot go stale | OK — required custom header |
 
 ## 8. Data integrity and supply chain (A08)
 
 | # | Check | Verdict |
 |---|---|---|
-| 8.1 | No unsafe deserialization of user input | — |
+| 8.1 | No unsafe deserialization of user input | OK — no Java serialization, XMLDecoder or unsafe YAML |
 | 8.2 | Optimistic locking on concurrently edited records | Fixed — five entities lacked it |
 | 8.3 | Migrations forward-only and never edited after apply | OK |
 | 8.4 | Uploads validated by content, not just declared type | OK — content-sniffed, extension and MIME allow-lists |
-| 8.5 | Decompression/parser bombs on upload | — |
+| 8.5 | Decompression/parser bombs on upload | OK — uploads are stored as bytes, never decoded or decompressed server-side; CSV is row-capped |
 
 ## 9. Logging and monitoring (A09)
 
@@ -106,15 +106,15 @@ here — say what would be needed).
 |---|---|---|
 | 9.1 | Every write is audited | Fixed — alert sends were not |
 | 9.2 | Requests correlatable across log lines | Fixed — request id added |
-| 9.3 | Personal data not written to logs | — |
+| 9.3 | Personal data not written to logs | Fixed — an email address was logged on every personal alert. SCIM still logs a username once per provisioning event, kept deliberately for diagnosis and noted in operations.md |
 | 9.4 | Health endpoint reports readiness, not just liveness | Fixed — container health check added |
 
 ## 10. SSRF (A10)
 
 | # | Check | Verdict |
 |---|---|---|
-| 10.1 | Server-side requests to user-supplied URLs are constrained | — |
-| 10.2 | Outbound requests cannot reach internal addresses or metadata endpoints | — |
+| 10.1 | Server-side requests to user-supplied URLs are constrained | Fixed — host allow-list and HTTPS were already enforced; redirects were not, which is the usual way an allow-list is defeated |
+| 10.2 | Outbound requests cannot reach internal addresses or metadata endpoints | OK for Slack (allow-listed host, no redirects). SMTP host is admin-configurable by design — pointing at your own mail server is the feature; noted as accepted |
 
 ## 11. Correctness and data handling
 
@@ -133,9 +133,9 @@ here — say what would be needed).
 |---|---|---|
 | 12.1 | No unbounded queries | Fixed |
 | 12.2 | N+1 queries on list and detail paths | OK — fetch joins; sub-lists capped |
-| 12.3 | Indexes cover the columns actually filtered and sorted | — |
+| 12.3 | Indexes cover the columns actually filtered and sorted | OK — composite `(is_archived, sort column)` indexes in V017. One exception by nature: sorting by *computed* status uses a CASE expression and cannot use an index, so it filesorts |
 | 12.4 | Frontend bundle split so first paint is not the whole app | Fixed — 393 KB → 131 KB gzipped |
-| 12.5 | Connection pool sized and bounded | — |
+| 12.5 | Connection pool sized and bounded | OK — Hikari sized, with connection timeout and max-lifetime below MySQL's wait_timeout |
 
 ## 13. Accessibility
 
@@ -143,9 +143,9 @@ here — say what would be needed).
 |---|---|---|
 | 13.1 | Every control has an accessible name | OK — swept on all screens, enforced by a spec |
 | 13.2 | One `h1` per page; heading order sensible | OK |
-| 13.3 | Keyboard reachable and operable, visible focus | — |
-| 13.4 | Colour contrast meets WCAG AA | — |
-| 13.5 | Dialogs trap focus and restore it on close | — |
+| 13.3 | Keyboard reachable and operable, visible focus | OK — `keyboard.spec.ts` |
+| 13.4 | Colour contrast meets WCAG AA | Fixed — secondary text was 2.4:1 across every screen; dark-theme accent failed in both directions. `contrast.spec.ts` measures rendered pixels in both themes |
+| 13.5 | Dialogs trap focus and restore it on close | OK — `keyboard.spec.ts` |
 
 ## 14. Code quality
 
@@ -163,6 +163,6 @@ here — say what would be needed).
 | # | Check | Verdict |
 |---|---|---|
 | 15.1 | Graceful shutdown | OK |
-| 15.2 | Backup and restore documented | — |
-| 15.3 | Personal data: retention, and erasure as distinct from archive | — |
+| 15.2 | Backup and restore documented | Fixed — `operations.md`, including that a database point-in-time restore does not bring attachments with it |
+| 15.3 | Personal data: retention, and erasure as distinct from archive | **Gap** — there is no erasure function; archiving hides a person but does not remove their data, and the audit log keeps their name. Options and their costs are set out in `operations.md`; the choice is a product decision |
 | 15.4 | Configuration documented for the target environment | OK — `infra/azure` |
