@@ -684,7 +684,7 @@ def test_reports(s):
         body = s.raw(f"GET /reports/{name} as CSV",
                      api.get(f"/api/v1/reports/{name}?{params}{sep}format=csv"))
         if body is not None:
-            text = body.decode(errors="replace")
+            text = body.decode("utf-8-sig", errors="replace")
             s.assert_(f"/reports/{name} CSV has a header row",
                       "," in text.splitlines()[0] if text.splitlines() else False,
                       text.splitlines()[0][:60] if text.splitlines() else "empty")
@@ -699,7 +699,9 @@ def test_exports(s, f):
         body = s.raw(f"GET /{path}/export", api.get(f"/api/v1/{path}/export"))
         if body is None:
             continue
-        text = body.decode(errors="replace")
+        s.assert_(f"/{path}/export starts with a BOM, so Excel decodes it",
+                  body[:3] == b"\xef\xbb\xbf", repr(body[:6]))
+        text = body.decode("utf-8-sig", errors="replace")
         rows = list(csv.reader(io.StringIO(text)))
         s.assert_(f"/{path}/export is parseable CSV with a header",
                   len(rows) >= 1 and len(rows[0]) > 1, f"{len(rows)} rows")
@@ -708,7 +710,7 @@ def test_exports(s, f):
     body = s.raw("GET /assets/export?ids=<one asset>",
                  api.get(f"/api/v1/assets/export?ids={f['a1']['id']}"))
     if body:
-        rows = list(csv.reader(io.StringIO(body.decode(errors="replace"))))
+        rows = list(csv.reader(io.StringIO(body.decode("utf-8-sig", errors="replace"))))
         s.assert_("export?ids returns exactly the selected row",
                   len(rows) == 2, f"{len(rows)} rows including header")
         if len(rows) == 2:
@@ -718,7 +720,7 @@ def test_exports(s, f):
     body = s.raw("GET /assets/export?costMin=1000",
                  api.get("/api/v1/assets/export?costMin=1000"))
     if body:
-        text = body.decode(errors="replace")
+        text = body.decode("utf-8-sig", errors="replace")
         s.assert_("filtered export excludes the cheap asset",
                   f["a1"]["name"] not in text)
         s.assert_("filtered export includes the dear asset",
@@ -1190,6 +1192,19 @@ def test_import(s, f):
     if res is not None:
         name = ((res.get("rows") or [{}])[0].get("data") or {}).get("Name", "")
         s.assert_("accented characters round-trip", "Café Münster" in name, name)
+
+    # Round trip: what the app exports, the app must be able to import — the
+    # export's BOM is exactly what the importer had choked on.
+    exported = s.raw("export the locations just imported",
+                     api.get("/api/v1/locations/export?" + q(search=f"Deep BOM {t}")))
+    if exported:
+        raw, ct = multipart("file", "roundtrip.csv", exported, "text/csv")
+        res = s.check("re-import the app's own export",
+                      api.request("POST", "/api/v1/import/locations/validate", raw=raw, content_type=ct))
+        if res is not None:
+            s.assert_("the app can read back what it wrote",
+                      res.get("invalidRows") == 0 and (res.get("validRows") or 0) >= 1,
+                      json.dumps(res)[:200])
 
     # A non-CSV upload must be refused rather than parsed.
     raw, ct = multipart("file", "notes.txt", b"this is not a csv", "text/plain")

@@ -331,7 +331,15 @@ class AssetModelsController(
 
         return ResponseEntity.ok()
             .contentType(mediaType)
-            .header(HttpHeaders.CACHE_CONTROL, "max-age=3600")
+            // `private`: this endpoint requires a session, so a shared cache —
+            // Front Door, a corporate proxy — must not hold the response and
+            // hand it to a different user. `must-revalidate` with the ETag
+            // below means a re-uploaded image is picked up rather than served
+            // stale for the rest of the hour.
+            .header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600, must-revalidate")
+            // The storage key changes on every upload, so it identifies the
+            // image content.
+            .eTag("\"${model.imageUrl}\"")
             .body(InputStreamResource(inputStream))
     }
 
