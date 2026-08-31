@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
+import { isAdmin as isAdminRole, canWrite as canWriteRole } from "@/lib/permissions"
 import type { UserProfile } from "@/types/auth"
 import { redirectToLogout } from "@/lib/auth-urls"
 
@@ -92,8 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     syncTheme(profile.themePreference)
   }, [])
 
-  const isAdmin = user?.roles?.includes("Admin") ?? false
-  const canWrite = user?.roles?.some((r) => r === "Admin" || r === "Operator") ?? false
+  // The rules live in lib/permissions so they can be unit-tested directly.
+  const isAdmin = isAdminRole(user?.roles)
+  const canWrite = canWriteRole(user?.roles)
 
   return (
     <AuthContext.Provider

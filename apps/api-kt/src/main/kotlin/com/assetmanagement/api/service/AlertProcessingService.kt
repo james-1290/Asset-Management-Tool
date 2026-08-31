@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.util.HtmlUtils
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.*
 
@@ -42,7 +43,9 @@ class AlertProcessingService(
     private val userRepository: UserRepository
 ) {
     private val log = LoggerFactory.getLogger(AlertProcessingService::class.java)
-    private val dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy").withZone(ZoneId.systemDefault())
+    private val dateFormatter = // UTC, like every other date in the app: the server's local zone
+    // would render an expiry a day out from what the screen shows.
+    DateTimeFormatter.ofPattern("dd MMM yyyy").withZone(ZoneOffset.UTC)
 
     private fun getSetting(key: String, default: String = ""): String =
         systemSettingRepository.findByKey(key)?.value ?: default

@@ -22,6 +22,13 @@ COPY --from=build /build/build/libs/asset-management-api-1.0.0.jar app.jar
 RUN mkdir -p /app/uploads && chown -R app:app /app
 USER app
 
+# Report readiness, not just liveness: without this an orchestrator keeps
+# sending traffic to a container whose process is up but whose application is
+# wedged. The runtime image is Alpine, so busybox wget is already present — no
+# extra package, and nothing added to the attack surface.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD wget -qO- http://localhost:5115/api/v1/health || exit 1
+
 EXPOSE 5115
 
 # SIGTERM triggers Spring's graceful shutdown (see server.shutdown in

@@ -16,6 +16,11 @@ every suite below, printing a pass/fail line per suite.
 | `scripts/qa/api_deep.py` | Every endpoint *behaves*: filters filter, sorts sort, rules hold | `python3 scripts/qa/api_deep.py` |
 | `apps/web/e2e/` | The screens people use are wired to all of it | `cd apps/web && npx playwright test` |
 
+All three run in CI on every pull request (`.github/workflows/ci.yml`, the
+`e2e` job), which stands up MySQL and MailHog as services, starts the API and
+the web app, and uploads logs and traces on failure. Before that job existed the
+suites only ran when someone remembered to run them locally.
+
 Prerequisites: Docker infrastructure up, the API on :5115 with
 `SPRING_PROFILES_ACTIVE=dev`, and the web app on :5173.
 
@@ -39,6 +44,10 @@ role, and anonymous.
   shares one database and several change state that is global to the signed-in
   user (alert settings, saved views, theme). In parallel the suite failed a
   different three tests on each run.
+- **`e2e/qa/accessibility.spec.ts`** sweeps every screen for unnamed controls,
+  images without alt text, unlabelled fields, and pages without exactly one
+  `h1`. It is a floor, not a substitute for testing with real assistive
+  technology.
 - **The browser suite is run twice** by the sweep: against the Vite dev server,
   and against `vite preview`, which serves the built bundle with the real
   production header suite including the CSP. Only the second would catch a CSP

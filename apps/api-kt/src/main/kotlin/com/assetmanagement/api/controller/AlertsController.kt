@@ -8,6 +8,9 @@ import com.assetmanagement.api.repository.AlertHistoryRepository
 import com.assetmanagement.api.service.AlertProcessingService
 import com.assetmanagement.api.service.EmailService
 import com.assetmanagement.api.service.SlackService
+import com.assetmanagement.api.service.AuditEntry
+import com.assetmanagement.api.service.AuditService
+import com.assetmanagement.api.service.CurrentUserService
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -22,7 +25,9 @@ class AlertsController(
     private val alertProcessingService: AlertProcessingService,
     private val emailService: EmailService,
     private val slackService: SlackService,
-    private val alertHistoryRepository: AlertHistoryRepository
+    private val alertHistoryRepository: AlertHistoryRepository,
+    private val auditService: AuditService,
+    private val currentUserService: CurrentUserService,
 ) {
     private val log = LoggerFactory.getLogger(AlertsController::class.java)
 
@@ -31,6 +36,15 @@ class AlertsController(
         if (!emailService.isConfigured() && !slackService.isConfigured()) {
             return ResponseEntity.badRequest().body(mapOf("error" to "Neither email nor Slack is configured. Please configure at least one delivery channel in Alert Settings."))
         }
+
+        // Sending alerts is a write with an outward effect — mail leaving the
+        // organisation — so it belongs in the audit log like any other.
+        auditService.log(AuditEntry(
+            action = "AlertsSent", entityType = "Alert", entityId = "manual",
+            entityName = "Manual alert run",
+            details = "Ran the alert processor on demand",
+            actorId = currentUserService.userId, actorName = currentUserService.userName,
+        ))
 
         val result = alertProcessingService.processAlerts()
         // Also run per-user personal alert rules (best-effort — a failure here
@@ -45,6 +59,13 @@ class AlertsController(
 
     @PostMapping("/test-email")
     fun testEmail(@RequestBody request: TestEmailRequest): ResponseEntity<TestEmailResponse> {
+        // The recipient is caller-supplied, so record who asked and where it went.
+        auditService.log(AuditEntry(
+            action = "TestEmailSent", entityType = "Alert", entityId = "test-email",
+            entityName = request.recipient,
+            details = "Sent a test email to \"${request.recipient}\"",
+            actorId = currentUserService.userId, actorName = currentUserService.userName,
+        ))
         return try {
             emailService.sendTestEmail(request.recipient)
             ResponseEntity.ok(TestEmailResponse(true, "Test email sent to ${request.recipient}"))
@@ -55,6 +76,12 @@ class AlertsController(
 
     @PostMapping("/test-slack")
     fun testSlack(): ResponseEntity<TestEmailResponse> {
+        auditService.log(AuditEntry(
+            action = "TestSlackSent", entityType = "Alert", entityId = "test-slack",
+            entityName = "Slack webhook",
+            details = "Sent a test message to the configured Slack webhook",
+            actorId = currentUserService.userId, actorName = currentUserService.userName,
+        ))
         return try {
             slackService.sendTestMessage()
             ResponseEntity.ok(TestEmailResponse(true, "Test message sent to Slack"))

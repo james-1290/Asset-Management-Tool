@@ -144,3 +144,10 @@ management:
       group:
         readiness:
           include: readinessState,db
+
+logging:
+  pattern:
+    # The request id set by RequestIdFilter, so every line written while
+    # handling one request can be pulled together. Blank for work that happens
+    # outside a request, such as the scheduled alert run.
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%X{requestId:-}] %-40.40logger{39} : %m%n"

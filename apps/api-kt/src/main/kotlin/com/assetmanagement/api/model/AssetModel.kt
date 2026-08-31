@@ -36,5 +36,8 @@ class AssetModel(
 
     @org.hibernate.annotations.UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    var updatedAt: Instant = Instant.now()
+    var updatedAt: Instant = Instant.now(),
+    @Version
+    @Column(name = "version", nullable = false)
+    var entityVersion: Long = 0
 )

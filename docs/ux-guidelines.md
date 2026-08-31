@@ -149,3 +149,24 @@ primitives to the same shape as `ViewModeToggle`, and every list has it.
 The Assets list kept its saved views, view-mode toggle and export in the *page
 header* rather than the toolbar. They have moved to the toolbar's right group,
 so all three major lists now read identically.
+
+## Archived records
+
+Archiving is a soft delete everywhere, which only means something if the record
+can be found again. Every list that can archive must also offer:
+
+- the shared **`ArchivedToggle`**, which sets `includeArchived` in the URL, and
+- a **Restore** row action that *replaces* Edit and Delete on an archived row —
+  editing something that has been archived makes no sense, and offering it only
+  leads to a confusing save.
+
+The API side of this is `POST /{entity}/{id}/restore`, audited as "Restored",
+refusing a record that is not archived.
+
+## Accessibility
+
+Beyond naming controls (above), the floor every screen must clear is in
+`e2e/qa/accessibility.spec.ts`: exactly one `h1`, no unnamed interactive
+elements, no images without alt text, no unlabelled fields. A tooltip is not an
+accessible name; neither is a label that shows the current *value* rather than
+naming the control.
