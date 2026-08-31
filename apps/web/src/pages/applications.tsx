@@ -31,6 +31,7 @@ import {
 
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { ExportButton } from "@/components/export-button";
+import { ViewModeToggle } from "@/components/view-mode-toggle";
 import { BulkActionBar } from "../components/bulk-action-bar";
 import { useApplicationTypes } from "../hooks/use-application-types";
 import { useLocations } from "../hooks/use-locations";
@@ -75,6 +76,12 @@ export default function ApplicationsPage() {
   const includeInactive = searchParams.get("includeInactive") === "true";
   const typeIdParam = searchParams.get("typeId") ?? "";
   const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
+
+  // Exposes the grouped view, which the page already renders but had no control
+  // to reach — it was previously only accessible by editing the URL by hand.
+  const handleViewModeChange = (mode: "list" | "grouped") =>
+    handleFilterChange("viewMode", mode === "list" ? "" : mode);
+
   const expiryFromParam = searchParams.get("expiryFrom") ?? "";
   const expiryToParam = searchParams.get("expiryTo") ?? "";
   const licenceTypeParam = searchParams.get("licenceType") ?? "";
@@ -432,6 +439,7 @@ export default function ApplicationsPage() {
                   </button>
                 </div>
                 <div className="w-px h-5 bg-border mx-1" />
+                <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
                 <ExportButton onExport={handleExport} loading={exporting} />
               </div>
             </div>

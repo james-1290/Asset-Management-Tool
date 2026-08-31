@@ -1,4 +1,5 @@
 import { Checkbox } from "../ui/checkbox";
+import { Input } from "../ui/input";
 import {
   Select,
   SelectContent,
@@ -107,6 +108,18 @@ export function AssetsToolbar({
 
   return (
     <div className="flex flex-wrap items-center gap-3">
+      {/*
+        The list's own search. The page has always passed `search`/`onSearchChange`
+        (and a saved view can set them), but nothing rendered them, leaving Assets
+        the one list with no search box — and a saved view's search term applied
+        invisibly, with no way to see or clear it.
+      */}
+      <Input
+        placeholder="Search assets…"
+        value={search}
+        onChange={(e) => onSearchChange(e.target.value)}
+        className="max-w-[240px]"
+      />
       <FilterChip
         label="Type"
         value={typeId}

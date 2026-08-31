@@ -20,6 +20,10 @@ export function ViewModeToggle({ viewMode, onViewModeChange }: ViewModeTogglePro
             variant="ghost"
             size="sm"
             className={`h-8 rounded-r-none px-2.5 ${viewMode === "list" ? "bg-muted" : ""}`}
+            // The tooltip is not an accessible name, so these icon-only buttons
+            // were unnamed to a screen reader.
+            aria-label="List view"
+            aria-pressed={viewMode === "list"}
             onClick={() => onViewModeChange("list")}
           >
             <List className="h-4 w-4" />
@@ -33,6 +37,8 @@ export function ViewModeToggle({ viewMode, onViewModeChange }: ViewModeTogglePro
             variant="ghost"
             size="sm"
             className={`h-8 rounded-l-none px-2.5 ${viewMode === "grouped" ? "bg-muted" : ""}`}
+            aria-label="Grouped view"
+            aria-pressed={viewMode === "grouped"}
             onClick={() => onViewModeChange("grouped")}
           >
             <LayoutGrid className="h-4 w-4" />

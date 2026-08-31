@@ -18,6 +18,7 @@ import { AssetsToolbar } from "../components/assets/assets-toolbar";
 import { getAssetColumns } from "../components/assets/columns";
 import { getSelectionColumn } from "../components/data-table-selection-column";
 import { GroupedGridView } from "../components/grouped-grid-view";
+import { ViewModeToggle } from "../components/view-mode-toggle";
 import { AssetCard } from "../components/assets/asset-card";
 import {
   usePagedAssets,
@@ -83,6 +84,12 @@ export default function AssetsPage() {
   const includeSold = searchParams.get("includeSold") === "true";
   const typeIdParam = searchParams.get("typeId") ?? "";
   const viewMode = (searchParams.get("viewMode") as "list" | "grouped") || "list";
+
+  // Exposes the grouped view, which the page already renders but had no control
+  // to reach — it was previously only accessible by editing the URL by hand.
+  const handleViewModeChange = (mode: "list" | "grouped") =>
+    handleFilterChange("viewMode", mode === "list" ? "" : mode);
+
   const locationIdParam = searchParams.get("locationId") ?? "";
   const assignedPersonIdParam = searchParams.get("assignedPersonId") ?? "";
   const purchaseDateFromParam = searchParams.get("purchaseDateFrom") ?? "";
@@ -518,6 +525,7 @@ export default function AssetsPage() {
         description={`Managing ${totalCount.toLocaleString()} total assets`}
         actions={
           <div className="flex items-center gap-3">
+            <ViewModeToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
             <ExportButton onExport={handleExport} loading={exporting} selectedCount={selectedCount} />
             {canWrite && (
               <Button
