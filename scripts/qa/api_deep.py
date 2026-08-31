@@ -909,6 +909,16 @@ def test_restore(s, f):
         s.check(f"{path}: restoring twice is refused",
                 api.post(f"/api/v1/{path}/{rid}/restore"), 400)
 
+    tpl = s.check("create a template to archive", api.post("/api/v1/asset-templates", {
+        "name": f"Deep Restore Tpl {t}", "assetTypeId": f["atA"]["id"]}), 201)
+    if tpl:
+        s.check("archive the template", api.delete(f"/api/v1/asset-templates/{tpl['id']}"), (200, 204))
+        listed = ids_of(jbody(api.get("/api/v1/asset-templates?includeArchived=true")[1]))
+        s.assert_("the archived template is findable", tpl["id"] in listed)
+        s.check("restore the template", api.post(f"/api/v1/asset-templates/{tpl['id']}/restore"))
+        listed = ids_of(jbody(api.get("/api/v1/asset-templates")[1]))
+        s.assert_("the restored template is listed again", tpl["id"] in listed)
+
     # Certificates and applications restore too. Both get a record of their own:
     # an application still holding seats cannot be archived at all, which is
     # correct but would test the wrong thing here.
@@ -926,6 +936,45 @@ def test_restore(s, f):
             f"/api/v1/{path}?pageSize=100&includeArchived=true&{q(search=t)}")[1]))
         s.assert_(f"{path}: the archived record is findable", rec["id"] in listed)
         s.check(f"restore a {path}", api.post(f"/api/v1/{path}/{rec['id']}/restore"))
+
+
+def test_legacy_path_aliases(s):
+    """
+    The concatenated paths kept for older clients.
+
+    These are live routes. Nothing exercised them, so a change to the mapping
+    would have broken every old client with nothing to catch it — the handler
+    behind them being well tested says nothing about the alias resolving.
+    """
+    s.section("Legacy path aliases")
+    api, t = s.api, s.tag
+
+    ALIASES = [
+        ("/api/v1/asset-types", "/api/v1/assettypes", {"name": f"Alias AType {t}"}),
+        ("/api/v1/certificate-types", "/api/v1/certificatetypes", {"name": f"Alias CType {t}"}),
+        ("/api/v1/application-types", "/api/v1/applicationtypes", {"name": f"Alias AppType {t}"}),
+    ]
+    for canonical, legacy, payload in ALIASES:
+        made = s.check(f"create via {legacy}", api.post(legacy, payload), 201)
+        if not made:
+            continue
+        rid = made["id"]
+        s.check(f"list via {legacy}", api.get(f"{legacy}?pageSize=100&{q(search=t)}"))
+        s.check(f"read one via {legacy}", api.get(f"{legacy}/{rid}"))
+        s.check(f"read custom fields via {legacy}", api.get(f"{legacy}/{rid}/customfields"))
+        s.check(f"update via {legacy}", api.put(f"{legacy}/{rid}", {"name": payload["name"] + " edited"}))
+
+        # A record created through the alias must be visible on the canonical
+        # path: they are the same handler, not two stores.
+        listed = ids_of(jbody(api.get(f"{canonical}?pageSize=100&{q(search=t)}")[1]))
+        s.assert_(f"{legacy} and {canonical} are the same resource", rid in listed)
+
+        s.check(f"archive via {legacy}", api.delete(f"{legacy}/{rid}"), (200, 204))
+        s.check(f"restore via {legacy}", api.post(f"{legacy}/{rid}/restore"))
+        s.check(f"bulk-archive via {legacy}", api.post(f"{legacy}/bulk-archive", {"ids": [rid]}))
+
+    s.check("audit log via its legacy path", api.get("/api/v1/auditlogs?pageSize=5"))
+    s.raw("audit log export via its legacy path", api.get("/api/v1/auditlogs/export"))
 
 
 def test_bulk_operations(s, f):
@@ -1580,6 +1629,7 @@ def main():
     test_alert_rules_and_notifications(s)
     test_settings_and_profile(s)
     test_restore(s, f)
+    test_legacy_path_aliases(s)
     test_bulk_operations(s, f)
     test_duplicates(s, f)
     test_sub_resources(s, f)

@@ -15,6 +15,25 @@ Verdicts: **OK** (checked, nothing found) · **Fixed** (defect found and
 resolved) · **N/A** (does not apply, with the reason) · **Gap** (not verifiable
 here — say what would be needed).
 
+## Two axes, not one
+
+This list is the **concerns** axis: the kinds of problem to look for. On its own
+it is not coverage, because a row can be satisfied by checking one endpoint out
+of two hundred and still read as done — which is exactly what happened when
+"path traversal: OK" meant "checked on attachments".
+
+The **subjects** axis is every endpoint, screen, control and file the concern
+has to be applied to. It is measured, not asserted:
+
+| Axis | Measured by | Enforced |
+|---|---|---|
+| Every API endpoint reached by a suite | `scripts/qa/endpoint_coverage.py`, against what the running API records it served | Yes — the sweep fails if any route is never reached |
+| Every GUI control named by a spec | `e2e/qa/inventory.spec.ts` → `scripts/qa/gui_coverage.py` | Reported by the sweep |
+| Every source file exercised | Backend and frontend test suites | Partly — see 14.7 |
+
+Both run in `scripts/qa/full_sweep.sh`. A concern marked OK without a subject
+count behind it is an opinion.
+
 ---
 
 ## 1. Access control (OWASP A01)
@@ -157,6 +176,8 @@ here — say what would be needed).
 | 14.4 | Duplication extracted where it drives drift | Fixed — saved-view plumbing |
 | 14.5 | Unused imports | Fixed |
 | 14.6 | Consistent design across equivalent screens | Fixed — uniformity contract |
+| 14.7 | Every endpoint reached by a suite | Fixed — measured, not assumed: 27 of 212 had never been reached (26 legacy aliases, 1 real). Now 212/212, enforced by the sweep |
+| 14.8 | Every GUI control named by a spec | Fixed — 25 controls no spec had ever named (dashboard drill-downs, column sort headers, report tabs, three filters). Now 552/552 |
 
 ## 15. Operability and compliance
 
@@ -164,5 +185,5 @@ here — say what would be needed).
 |---|---|---|
 | 15.1 | Graceful shutdown | OK |
 | 15.2 | Backup and restore documented | Fixed — `operations.md`, including that a database point-in-time restore does not bring attachments with it |
-| 15.3 | Personal data: retention, and erasure as distinct from archive | **Gap** — there is no erasure function; archiving hides a person but does not remove their data, and the audit log keeps their name. Options and their costs are set out in `operations.md`; the choice is a product decision |
+| 15.3 | Personal data: retention, and erasure as distinct from archive | N/A — **decided**: the product holds internal employee records only, so subject erasure is not a requirement. Archive remains the only removal. Revisit if it is ever used for contractors, customers or anyone outside the organisation |
 | 15.4 | Configuration documented for the target environment | OK — `infra/azure` |

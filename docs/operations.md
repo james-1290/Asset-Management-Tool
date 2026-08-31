@@ -32,6 +32,10 @@ People records hold names, email addresses, departments and job titles. The
 audit log and the per-record history hold names alongside what was changed, so
 personal data is spread across three places.
 
+**Decided: erasure is not required.** The product holds internal employee
+records only, so there is no subject-erasure obligation to satisfy. What follows
+records the position and what would change it, rather than an open action.
+
 **There is no erasure function.** Archiving a person hides them and frees their
 assignments; it does not remove their data, and the audit log keeps their name
 against everything they did. That is deliberate — an audit trail that can be
@@ -47,9 +51,10 @@ what the audit log should say afterwards, and the honest options are:
 3. **Delete outright.** Removes the person and cascades through history.
    Destroys the audit trail for their actions.
 
-None of these is implemented. Treat it as an open item before the product holds
-real personal data under a retention policy, not as an oversight to be patched
-in quietly.
+None of these is implemented, and none needs to be while the records are
+internal employees only. What would change that: using the product for
+contractors, customers, or anyone outside the organisation. At that point the
+choice above has to be made before the data arrives, not after.
 
 ## Scaling
 

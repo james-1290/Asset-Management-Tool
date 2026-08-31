@@ -17,6 +17,10 @@ export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@21}"
 # Docker Engine 29 rejects the API version docker-java negotiates by default.
 export DOCKER_API_VERSION="${DOCKER_API_VERSION:-1.44}"
 
+# Where the API records the routes it actually serves, so endpoint coverage can
+# be measured rather than assumed.
+COVERAGE_FILE="/tmp/qa-endpoint-coverage-$LABEL.txt"
+
 fail=0
 declare -a RESULTS=()
 
@@ -44,7 +48,9 @@ restart_api() {
   sleep 3
   cd "$ROOT/apps/api-kt" || return 1
   ./gradlew bootJar -q || return 1
+  rm -f "$COVERAGE_FILE"
   SPRING_PROFILES_ACTIVE=dev nohup "$JAVA_HOME/bin/java" \
+    "-Dendpoint.coverage.file=$COVERAGE_FILE" \
     -jar build/libs/asset-management-api-1.0.0.jar > /tmp/qa-api-$LABEL.log 2>&1 &
   for _ in $(seq 1 60); do
     sleep 2
@@ -103,6 +109,12 @@ step "API smoke suite"      bash -c "cd '$ROOT' && python3 scripts/qa/api_smoke.
 step "API deep suite"       bash -c "cd '$ROOT' && python3 scripts/qa/api_deep.py"
 step "Browser suite (dev server)" bash -c "cd '$ROOT/apps/web' && ./node_modules/.bin/playwright test --reporter=line"
 step "Browser suite (production build)" run_preview_suite
+
+step "GUI inventory + coverage (every control named by a spec)" \
+  bash -c "cd '$ROOT/apps/web' && ./node_modules/.bin/playwright test e2e/qa/inventory.spec.ts --reporter=line && cd '$ROOT' && python3 scripts/qa/gui_coverage.py"
+
+step "Endpoint coverage (every route reached by a suite)" \
+  bash -c "cd '$ROOT' && python3 scripts/qa/endpoint_coverage.py '$COVERAGE_FILE'"
 
 echo ""
 echo "=================================================================="
