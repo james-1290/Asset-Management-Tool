@@ -263,6 +263,9 @@ export function ExpiringItemsTable() {
                     <div className="col-span-2 text-right">
                       <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
                         <Link to={item.href}>
+                          {/* Icon-only links need a name, and naming it after
+                              the row makes the destination clear. */}
+                          <span className="sr-only">{`View ${item.name}`}</span>
                           <MoreVertical className="h-4 w-4 text-muted-foreground" />
                         </Link>
                       </Button>
