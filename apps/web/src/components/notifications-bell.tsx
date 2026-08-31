@@ -189,7 +189,14 @@ export function NotificationsBell() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-8 w-8">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative h-8 w-8"
+          // The unread count is decoration; the control itself needs a name,
+          // and one that says how many are waiting.
+          aria-label={count > 0 ? `Notifications, ${count} unread` : "Notifications"}
+        >
           <Bell className="h-4 w-4" />
           {count > 0 && (
             <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-destructive-foreground">

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { PageHeader } from "@/components/page-header";
 import {
   Package,
   PoundSterling,
@@ -92,6 +93,16 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/*
+        The dashboard was the one page with no heading at all: it jumped
+        straight into the stat cards, so a screen reader had nothing naming
+        the page and the h1 landmark was missing.
+      */}
+      <PageHeader
+        title="Dashboard"
+        breadcrumbs={[{ label: "Dashboard" }]}
+        description="Assets, certificates and licences that need attention."
+      />
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <StatCard
           title="Total Assets"

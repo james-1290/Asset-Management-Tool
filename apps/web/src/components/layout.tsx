@@ -25,7 +25,9 @@ export function Layout() {
           <div className="flex items-center gap-1">
             <NotificationsBell />
             <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-              <Link to="/settings">
+              <Link to="/settings" title="Settings">
+                {/* Icon-only, so it needs a name of its own. */}
+                <span className="sr-only">Settings</span>
                 <Settings className="h-4 w-4" />
               </Link>
             </Button>
