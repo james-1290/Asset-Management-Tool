@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-08-31 — Stop improvising sweeps: an audit checklist, and the 8 defects its unchecked rows held
+
+Every sweep so far picked its own lenses, found real defects, and called that convergence — where convergence only meant nothing was left that anyone had happened to think of. Each one then found things the one before should have caught. That is a fault in the method, not the effort.
+
+`docs/audit-checklist.md` is now the list every sweep works, drawn from OWASP's categories plus correctness, performance, accessibility, quality and operability. A sweep is complete when every row has a verdict — and a row nobody has checked is recorded as a gap, never as a pass.
+
+Writing it down exposed **24 rows that had never been checked**. Working them found eight defects:
+
+**Accessibility** — contrast had never been measured. Secondary text was **2.4:1 where 4.5:1 is required**, on every screen: page descriptions, breadcrumbs, timestamps, placeholders, sidebar labels. White on the destructive red gave 3.76:1 on the notification badge. In dark mode the accent failed in *both* directions at once, being both a button background and accent text — fixed by inverting it there.
+
+**Security** — the Slack webhook post followed redirects, which is the usual way a host allow-list is defeated. CI actions were pinned to tags, which can be moved to point at different code. A user's email address was logged on every personal alert.
+
+**Verified clean** (14 rows, checked for the first time): path traversal, CORS, constant-time token comparison, secrets in URLs, log and header and command injection, deserialization, parser bombs, licences, index coverage, connection pool, keyboard operability and dialog focus trapping.
+
+**Recorded as genuine gaps** (2): Easy Auth session lifetime, which needs a real tenant; and personal-data erasure, which is a product decision — archiving a person hides them but does not remove their data, and the audit log keeps their name. `docs/operations.md` sets out the options and their costs, alongside backup and restore, where the trap is that a database point-in-time restore does not bring attachments with it.
+
+New specs pin the two accessibility areas: `keyboard.spec.ts` and `contrast.spec.ts`, the latter measuring rendered pixels in both themes.
+
 ## 2026-08-31 — Seventh sweep: code quality, dead code, bugs, security
 
 A fresh pass with lenses the earlier sweeps had not applied. Ten findings, all fixed.
