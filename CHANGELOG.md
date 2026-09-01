@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-01 — lucide-react 1.x, and a check for icons that quietly stop drawing
+
+lucide-react 0.563.0 -> 1.35.0, a major version. All 117 icons the app imports
+across 85 files still exist, and the `LucideIcon` type survives, so the build,
+lint and unit tests were green immediately.
+
+That is exactly the problem. An icon library can rename or drop a glyph and
+still export the old name — the component renders, occupies its space, and draws
+nothing. TypeScript sees a valid import, lint sees valid code, and the browser
+specs assert on labels and roles rather than on pixels, so a screen full of
+blank gaps passes every gate we had.
+
+`e2e/qa/icons.spec.ts` now walks fourteen screens and asserts that each rendered
+icon actually contains geometry — 664 of them on this run, none blank. It also
+asserts the count is non-trivial, so a selector that silently matches nothing
+cannot pass it.
 ## 2026-09-01 — Testcontainers 2.0.5, and one less local workaround
 
 Testcontainers 1.20.4 -> 2.0.5. The 2.x line renamed every module with a

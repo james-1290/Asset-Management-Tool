@@ -66,6 +66,11 @@ role, and anonymous.
   That produces a *different* handful of failures on each run, which read as
   real defects and are not. If browser failures are all timeouts and network
   errors, and the run took far longer than usual, suspect this before the code.
+- **`e2e/qa/icons.spec.ts`** walks every screen and asserts each rendered icon
+  actually contains geometry. An icon renamed or dropped by an upstream library
+  can still export under its old name and simply draw nothing — a blank gap that
+  the build, lint and every other spec pass straight over. Added when upgrading
+  lucide-react across a major version.
 - **The browser suite is run twice** by the sweep: against the Vite dev server,
   and against `vite preview`, which serves the built bundle with the real
   production header suite including the CSP. Only the second would catch a CSP
