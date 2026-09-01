@@ -55,6 +55,23 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+/**
+ * The message to show the user for a failed request.
+ *
+ * The API returns a specific `error` for the cases a person can act on — most
+ * importantly a 409, which means someone else saved this record while the form
+ * was open. Every caller used to show its own generic "Failed to update X",
+ * throwing that away and leaving a conflict looking like a random failure.
+ */
+export function errorMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    const body = err.body as { error?: unknown; message?: unknown } | undefined;
+    const detail = body?.error ?? body?.message;
+    if (typeof detail === "string" && detail.trim()) return detail;
+  }
+  return fallback;
+}
+
 export const apiClient = {
   get<T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> {
     let url = `${BASE_URL}${path}`;

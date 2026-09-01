@@ -14,6 +14,7 @@ export interface AssetTemplate {
   createdAt: string;
   updatedAt: string;
   customFieldValues: CustomFieldValueDto[];
+  entityVersion: number;
 }
 
 export interface CreateAssetTemplateRequest {
@@ -33,4 +34,5 @@ export interface UpdateAssetTemplateRequest {
   locationId?: string | null;
   notes?: string | null;
   customFieldValues?: CustomFieldValueInput[];
+  entityVersion?: number;
 }

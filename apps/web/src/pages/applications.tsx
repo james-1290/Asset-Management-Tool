@@ -10,7 +10,7 @@ import { PageHeader } from "../components/page-header";
 import { DataTable } from "../components/data-table";
 import { DataTablePagination } from "../components/data-table-pagination";
 import { applicationsApi } from "../lib/api/applications";
-import { getApiErrorMessage } from "../lib/api-client";
+import { getApiErrorMessage, errorMessage} from "../lib/api-client";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import { DeactivateApplicationDialog } from "../components/applications/deactivate-application-dialog";
 import { ApplicationFormDialog } from "../components/applications/application-form-dialog";
@@ -269,8 +269,8 @@ export default function ApplicationsPage() {
             setFormOpen(false);
             setEditingApplication(null);
           },
-          onError: () => {
-            toast.error("Failed to update application");
+          onError: (err) => {
+            toast.error(errorMessage(err, "Failed to update application"));
           },
         },
       );
@@ -360,8 +360,8 @@ export default function ApplicationsPage() {
         toast.success(`Updated ${result.succeeded} application(s) to ${status}`);
         setRowSelection({});
       },
-      onError: () => {
-        toast.error("Failed to update status");
+      onError: (err) => {
+        toast.error(errorMessage(err, "Failed to update status"));
       },
     });
   }

@@ -8,6 +8,7 @@ export interface ApplicationType {
   createdAt: string;
   updatedAt: string;
   customFields: CustomFieldDefinition[];
+  entityVersion: number;
 }
 
 export interface CreateApplicationTypeRequest {
@@ -20,4 +21,5 @@ export interface UpdateApplicationTypeRequest {
   name: string;
   description?: string | null;
   customFields?: CustomFieldDefinitionInput[];
+  entityVersion?: number;
 }

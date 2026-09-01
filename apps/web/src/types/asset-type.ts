@@ -10,6 +10,7 @@ export interface AssetType {
   createdAt: string;
   updatedAt: string;
   customFields: CustomFieldDefinition[];
+  entityVersion: number;
 }
 
 export interface CreateAssetTypeRequest {
@@ -26,4 +27,5 @@ export interface UpdateAssetTypeRequest {
   defaultDepreciationMonths?: number | null;
   nameTemplate?: string | null;
   customFields?: CustomFieldDefinitionInput[];
+  entityVersion?: number;
 }

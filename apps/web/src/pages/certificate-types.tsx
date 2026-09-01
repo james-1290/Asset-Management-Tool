@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { getApiErrorMessage } from "../lib/api-client";
+import { getApiErrorMessage, errorMessage} from "../lib/api-client";
 import { Plus, Trash2 } from "lucide-react";
 import type { VisibilityState } from "@tanstack/react-table";
 import { useListPage } from "../hooks/use-list-page";
@@ -199,15 +199,15 @@ export default function CertificateTypesPage() {
 
     if (editingCertificateType) {
       updateMutation.mutate(
-        { id: editingCertificateType.id, data },
+        { id: editingCertificateType.id, data: { ...data, entityVersion: editingCertificateType.entityVersion } },
         {
           onSuccess: () => {
             toast.success("Certificate type updated");
             setFormOpen(false);
             setEditingCertificateType(null);
           },
-          onError: () => {
-            toast.error("Failed to update certificate type");
+          onError: (err) => {
+            toast.error(errorMessage(err, "Failed to update certificate type"));
           },
         },
       );

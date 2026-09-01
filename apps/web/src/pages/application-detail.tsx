@@ -43,6 +43,7 @@ import {
   isExpired,
 } from "../lib/format";
 import { useAuth } from "@/contexts/auth-context";
+import { errorMessage } from "../lib/api-client";
 
 function formatCurrency(value: number | null): string | null {
   if (value == null) return null;
@@ -144,8 +145,8 @@ export default function ApplicationDetailPage() {
           toast.success("Application updated");
           setFormOpen(false);
         },
-        onError: () => {
-          toast.error("Failed to update application");
+        onError: (err) => {
+          toast.error(errorMessage(err, "Failed to update application"));
         },
       },
     );

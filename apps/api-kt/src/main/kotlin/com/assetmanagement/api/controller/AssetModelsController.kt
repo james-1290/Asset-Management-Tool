@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile
 import java.net.URI
 import java.time.Instant
 import java.util.*
+import com.assetmanagement.api.util.versionConflict
 
 @RestController
 @RequestMapping("/api/v1/asset-models")
@@ -169,6 +170,8 @@ class AssetModelsController(
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateAssetModelRequest): ResponseEntity<Any> {
         val model = assetModelRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
+
+        versionConflict(request.entityVersion, model.entityVersion)?.let { return it }
 
         if (request.name.isBlank()) {
             return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
@@ -392,7 +395,8 @@ class AssetModelsController(
             imageUrl = model.imageUrl,
             isArchived = model.isArchived,
             createdAt = model.createdAt,
-            updatedAt = model.updatedAt
+            updatedAt = model.updatedAt,
+            entityVersion = model.entityVersion,
         )
     }
 }

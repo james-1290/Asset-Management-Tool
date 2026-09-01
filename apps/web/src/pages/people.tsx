@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { peopleApi } from "../lib/api/people";
-import { getApiErrorMessage } from "../lib/api-client";
+import { getApiErrorMessage, errorMessage} from "../lib/api-client";
 import { ExportButton } from "../components/export-button";
 import type { VisibilityState } from "@tanstack/react-table";
 import { useListPage } from "../hooks/use-list-page";
@@ -238,8 +238,8 @@ export default function PeoplePage() {
             setFormOpen(false);
             setEditingPerson(null);
           },
-          onError: () => {
-            toast.error("Failed to update person");
+          onError: (err) => {
+            toast.error(errorMessage(err, "Failed to update person"));
           },
         },
       );

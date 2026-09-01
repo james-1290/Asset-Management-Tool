@@ -8,6 +8,7 @@ export interface CertificateType {
   createdAt: string;
   updatedAt: string;
   customFields: CustomFieldDefinition[];
+  entityVersion: number;
 }
 
 export interface CreateCertificateTypeRequest {
@@ -20,4 +21,5 @@ export interface UpdateCertificateTypeRequest {
   name: string;
   description?: string | null;
   customFields?: CustomFieldDefinitionInput[];
+  entityVersion?: number;
 }

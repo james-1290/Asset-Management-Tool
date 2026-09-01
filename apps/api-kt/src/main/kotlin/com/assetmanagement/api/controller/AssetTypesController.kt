@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException
 import java.net.URI
 import java.time.Instant
 import java.util.*
+import com.assetmanagement.api.util.versionConflict
 
 @RestController
 @RequestMapping(value = ["/api/v1/asset-types", "/api/v1/assettypes"]) // legacy concatenated path kept as an alias
@@ -44,6 +45,7 @@ class AssetTypesController(
         entity.isArchived, entity.createdAt, entity.updatedAt,
         entity.customFieldDefinitions.filter { !it.isArchived }.sortedBy { it.sortOrder }
             .map { CustomFieldDefinitionDto(it.id, it.name, it.fieldType.name, it.options, it.isRequired, it.sortOrder) },
+        entity.entityVersion,
     )
 
     private fun newDefinition(typeId: UUID) = { ft: CustomFieldType, f: CustomFieldDefinitionInput ->
@@ -100,6 +102,8 @@ class AssetTypesController(
     @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateAssetTypeRequest): ResponseEntity<Any> {
         val type = assetTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+
+        versionConflict(request.entityVersion, type.entityVersion)?.let { return it }
         type.name = request.name
         type.description = request.description
         type.defaultDepreciationMonths = request.defaultDepreciationMonths

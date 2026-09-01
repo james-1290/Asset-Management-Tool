@@ -284,6 +284,7 @@ export function AssetModelFormDialog({
           data: {
             name: values.name,
             manufacturer: values.manufacturer || null,
+            entityVersion: model.entityVersion,
           },
         });
         toast.success("Model updated");

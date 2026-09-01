@@ -17,7 +17,10 @@ data class AssetTemplateDto(
     val isArchived: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
-    val customFieldValues: List<CustomFieldValueDto>
+    val customFieldValues: List<CustomFieldValueDto>,
+    // Round-tripped by the client so a stale edit is refused (409) rather
+    // than silently overwriting someone else's change.
+    val entityVersion: Long
 )
 
 data class CreateAssetTemplateRequest(
@@ -36,5 +39,8 @@ data class UpdateAssetTemplateRequest(
     val depreciationMonths: Int? = null,
     val locationId: UUID? = null,
     val notes: String? = null,
-    val customFieldValues: List<CustomFieldValueInput>? = null
+    val customFieldValues: List<CustomFieldValueInput>? = null,
+    // Optional: when absent the conflict check is skipped, which keeps
+    // scripted API callers working as before.
+    val entityVersion: Long? = null
 )

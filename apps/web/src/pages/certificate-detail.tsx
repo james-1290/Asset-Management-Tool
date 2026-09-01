@@ -38,6 +38,7 @@ import {
   isExpired,
 } from "../lib/format";
 import { useAuth } from "@/contexts/auth-context";
+import { errorMessage } from "../lib/api-client";
 
 const HISTORY_PREVIEW_LIMIT = 5;
 
@@ -117,8 +118,8 @@ export default function CertificateDetailPage() {
           toast.success("Certificate updated");
           setFormOpen(false);
         },
-        onError: () => {
-          toast.error("Failed to update certificate");
+        onError: (err) => {
+          toast.error(errorMessage(err, "Failed to update certificate"));
         },
       },
     );
