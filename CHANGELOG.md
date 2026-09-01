@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-09-01 — The GUI matrix: the second attempt, the invalid one, the cancelled one
+
+The API matrix covered every action in every variation. The browser suite still
+covered mostly happy paths — 102 specs that create, edit and act, and rarely ask
+what happens the second time or when the input is wrong.
+
+`e2e/qa/matrix.spec.ts` covers that ground:
+
+- a blank required field keeps the create dialog open on every form, and saves
+  nothing
+- a cancelled dialog leaves no record behind
+- **all eight archivable lists** archive a row and restore it again *through the
+  UI* — the journey that was impossible for assets until this morning
+- an asset is checked out, checked in, and checked out again to a different
+  person, with the current holder read from the list row rather than the detail
+  page, because the history timeline legitimately still names the previous one
+- a filter matching nothing shows an empty state rather than a bare table
+- two tabs edit the same record and the second save says *"modified by another
+  user"* — the end-to-end proof that the conflict message now reaches a person,
+  which it did not before `errorMessage()`
+
+Four of the six failed on their first run, and all four were the harness: a
+`<main>` nested inside a `<main>`, a helper that waits for a dialog to close
+being used where the dialog must stay open, an asset type that could not be
+archived because it was legitimately in use, and an assertion that the previous
+holder's name had vanished from a page that correctly keeps it in history.
+
+One small inconsistency found on the way: the confirm button in create dialogs is
+labelled "Create" on some forms and "Add Asset Type" on others.
+
 ## 2026-09-01 — An action-and-variation matrix, and the archived assets nobody could reach
 
 The eighth sweep was static: every handler read, every class of defect probed,
