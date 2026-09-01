@@ -241,6 +241,10 @@ export default function AssetsPage() {
   // When custom field defs load, hide them by default
   useEffect(() => {
     if (allCustomFieldDefs.length === 0) return;
+  // Reacts to data that arrives asynchronously; removing the effect needs a
+  // real refactor, tracked separately rather than folded into a dependency
+  // upgrade.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
     setColumnVisibility((prev) => {
       const next = { ...prev };
       for (const cf of allCustomFieldDefs) {

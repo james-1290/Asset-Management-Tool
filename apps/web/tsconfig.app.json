@@ -25,7 +25,9 @@
     "noUncheckedSideEffectImports": true,
 
     /* Path aliases */
-    "baseUrl": ".",
+    // TypeScript 7 removed `baseUrl`. `paths` entries are resolved relative to
+    // this file's directory instead, which is what the "./src/*" form already
+    // meant here — so the alias is unchanged.
     "paths": {
       "@/*": ["./src/*"]
     }

@@ -47,10 +47,19 @@ export default defineConfig({
         // Split the big third-party libraries out of the entry chunk. They
         // change far less often than application code, so a release doesn't
         // invalidate them in everyone's browser cache.
-        manualChunks: {
-          react: ["react", "react-dom", "react-router-dom"],
-          charts: ["recharts"],
-          table: ["@tanstack/react-table", "@tanstack/react-query"],
+        //
+        // Rollup 5 (Vite 8) dropped the object form of `manualChunks`; the
+        // function form is the supported equivalent. Matching on a path segment
+        // rather than a bare `includes` so a package like `react-router-dom`
+        // cannot be captured by an unrelated dependency whose path merely
+        // contains the word.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          const inPackage = (name: string) =>
+            id.includes(`/node_modules/${name}/`);
+          if (["react", "react-dom", "react-router-dom"].some(inPackage)) return "react";
+          if (inPackage("recharts")) return "charts";
+          if (["@tanstack/react-table", "@tanstack/react-query"].some(inPackage)) return "table";
         },
       },
     },
