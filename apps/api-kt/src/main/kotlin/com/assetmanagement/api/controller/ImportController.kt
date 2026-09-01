@@ -677,7 +677,7 @@ class ImportController(
         else -> Lookups()
     }
 
-    private fun <T> nonArchivedSpec(): org.springframework.data.jpa.domain.Specification<T> =
+    private fun <T : Any> nonArchivedSpec(): org.springframework.data.jpa.domain.Specification<T> =
         org.springframework.data.jpa.domain.Specification { root, _, cb ->
             cb.equal(root.get<Boolean>("isArchived"), false)
         }

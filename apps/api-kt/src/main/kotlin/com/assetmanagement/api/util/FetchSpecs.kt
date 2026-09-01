@@ -14,7 +14,7 @@ import org.springframework.data.jpa.domain.Specification
  * be passed — fetch-joining a collection with `Pageable` forces Hibernate to
  * paginate in memory.
  */
-fun <T> withFetch(vararg attributes: String): Specification<T> =
+fun <T : Any> withFetch(vararg attributes: String): Specification<T> =
     Specification { root, query, _ ->
         // Spring Data 3.3+ types `query` as nullable (it's absent on some
         // non-SELECT paths). A fetch join only matters for a data SELECT, so if

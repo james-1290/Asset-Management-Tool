@@ -79,6 +79,9 @@ class LocationsController(
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
         @RequestParam(defaultValue = "25") pageSize: Int,
@@ -125,6 +128,9 @@ class LocationsController(
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun getById(@PathVariable id: UUID): ResponseEntity<LocationDto> {
         val location = locationRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
@@ -133,6 +139,9 @@ class LocationsController(
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/assets")
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun getAssets(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!locationRepository.existsById(id)) return ResponseEntity.notFound().build()
         val spec = Specification<com.assetmanagement.api.model.Asset> { root, _, cb ->
@@ -264,6 +273,9 @@ class LocationsController(
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/certificates")
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun getCertificates(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!locationRepository.existsById(id)) return ResponseEntity.notFound().build()
         val spec = Specification<com.assetmanagement.api.model.Certificate> { root, _, cb ->

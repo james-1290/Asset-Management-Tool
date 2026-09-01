@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-08-31 — Kotlin 2.4.10 and Spring Boot 4.1.1, and the three breaking changes that hid behind a clean compile
+
+Kotlin 1.9.23 -> 2.4.10 (K2 compiler), Spring Boot 3.3.7 -> 4.1.1 (Spring Framework 7, Hibernate 7, Jackson 3), Gradle 8.7 -> 8.14.3 (Boot 4 requires 8.14+).
+
+The compiler found the easy half: Spring Data 4 tightened its generic bounds, so `JpaRepository`/`Specification` type parameters need `: Any`, and `CommandLineRunner.run` is no longer nullable. The interesting half compiled cleanly and failed at runtime.
+
+**Flyway silently stopped running.** Boot 4 split auto-configuration out of the core jar, and `FlywayAutoConfiguration` now lives in `spring-boot-flyway`. Without that module Flyway sits on the classpath doing nothing: the app starts against an unmigrated database and Hibernate's `validate` fails on whichever table it checks first. Nothing warns you.
+
+**Jackson 3 changed group and package.** Boot 4 ships Jackson 3 under `tools.jackson.*`; the Jackson 2 artifacts remain on the classpath transitively (via the Azure SDKs), so injecting `com.fasterxml.jackson.databind.ObjectMapper` still *compiles* and then fails at startup with no qualifying bean. `jackson-module-kotlin` had to move group too, or Kotlin data classes stop deserialising. Annotations stayed in `com.fasterxml.jackson.annotation` and needed no change. `Jackson2ObjectMapperBuilderCustomizer` becomes `JsonMapperBuilderCustomizer`, and `WRITE_DATES_AS_TIMESTAMPS` moved off `SerializationFeature` to `DateTimeFeature` — which Boot 4 exposes through no property at all, so `spring.jackson.serialization.write-dates-as-timestamps` is now a startup failure. It is set in `JacksonConfig` instead.
+
+**Hibernate 7 stopped tolerating lazy reads outside a session.** Open-session-in-view has always been off here, and 23 read handlers mapped entities to DTOs without a transaction — walking a lazy `assetType`/`certificateType`/`person` proxy after the repository call had already closed its session. Hibernate 6 let this pass; Hibernate 7 throws `LazyInitializationException`, so those endpoints returned 500. All 23 now carry `@Transactional(readOnly = true)`.
+
+Boot 4 also removed `TestRestTemplate` and moved `RestTemplateBuilder` into `spring-boot-restclient`. `AbstractIntegrationTest` is rebuilt on a plain `RestTemplate` configured the way `TestRestTemplate` configured itself — rooted at the random port, and never throwing on 4xx/5xx, since these tests assert on status codes. Every test helper kept its signature, so no test file changed.
+
+**springdoc broke too, invisibly.** The OpenAPI spec is served only when `SWAGGER_ENABLED` is set, and it is not by default — so no suite had ever fetched it. Under Boot 4, springdoc 2.6.0 starts and registers its routes but throws while building the spec: a 500 that nobody would meet until someone turned the docs on in a deployed environment. 2.8.6 is the floor that works. `OpenApiDocsIntegrationTest` now switches the docs on for one test, so the spec is actually built on every run; it fails on 2.6.0 and passes on 2.8.6.
+
+**How the runtime breakages were found, and what that says about the suites.** The backend suite caught one of the 23 lazy-loading failures. The deep API suite, running against the built jar, caught four more and then confirmed the rest of the class was fixed. The remaining 18 were found by fixing the *class* of defect rather than the instances the tests happened to reach — a reminder that green tests bound what is covered, not what is correct.
+
 ## 2026-08-31 — Stop improvising sweeps: an audit checklist, and the 8 defects its unchecked rows held
 
 Every sweep so far picked its own lenses, found real defects, and called that convergence — where convergence only meant nothing was left that anyone had happened to think of. Each one then found things the one before should have caught. That is a fault in the method, not the effort.

@@ -42,7 +42,10 @@ class CertificateDateIntegrationTest : AbstractIntegrationTest() {
         assertEquals(HttpStatus.OK, renew.statusCode)
 
         val after = getAs("/api/v1/certificates/$certId", token).body!!
-        assertTrue(after.contains("\"expiryDate\":\"2029-06-30\""), "renewed expiry should be 2029-06-30")
+        assertTrue(
+            after.contains("\"expiryDate\":\"2029-06-30\""),
+            "renewed expiry should be 2029-06-30, got: $after",
+        )
     }
 
     @Test

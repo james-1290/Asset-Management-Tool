@@ -1,11 +1,13 @@
 package com.assetmanagement.api.integration
 
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.web.client.RestTemplateBuilder
+import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.boot.restclient.RestTemplateBuilder
+import org.springframework.http.client.ClientHttpResponse
 import org.springframework.http.client.SimpleClientHttpRequestFactory
+import org.springframework.web.client.ResponseErrorHandler
+import org.springframework.web.client.RestTemplate
 import java.net.HttpURLConnection
-import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
@@ -29,27 +31,45 @@ import org.testcontainers.utility.DockerImageName
 @ActiveProfiles("test")
 abstract class AbstractIntegrationTest {
 
-    @Autowired
-    protected lateinit var rest: TestRestTemplate
+    @LocalServerPort
+    protected var port: Int = 0
+
+    /**
+     * Spring Boot 4 removed `TestRestTemplate`, so these are plain
+     * `RestTemplate`s configured the way it configured itself: rooted at the
+     * random test port, and — importantly — never throwing on a 4xx or 5xx,
+     * because these tests assert on status codes rather than catching
+     * exceptions.
+     */
+    private val neverThrows = object : ResponseErrorHandler {
+        override fun hasError(response: ClientHttpResponse) = false
+    }
+
+    protected val rest: RestTemplate by lazy {
+        RestTemplateBuilder()
+            .rootUri("http://localhost:$port")
+            .errorHandler(neverThrows)
+            .build()
+    }
 
     /**
      * A client that does *not* follow redirects, so a test can inspect a 302 and
      * the cookies it sets. The default [rest] follows them, which would silently
      * turn a sign-in redirect into a request for the target page.
      */
-    protected val restNoRedirect: TestRestTemplate by lazy {
+    protected val restNoRedirect: RestTemplate by lazy {
         val factory = object : SimpleClientHttpRequestFactory() {
             override fun prepareConnection(connection: HttpURLConnection, httpMethod: String) {
                 super.prepareConnection(connection, httpMethod)
                 connection.instanceFollowRedirects = false
             }
         }
-        TestRestTemplate(
-            RestTemplateBuilder()
-                // Disambiguate: requestFactory is overloaded on Supplier and Function.
-                .requestFactory(java.util.function.Supplier { factory })
-                .rootUri(rest.rootUri)
-        )
+        RestTemplateBuilder()
+            // Disambiguate: requestFactory is overloaded on Supplier and Function.
+            .requestFactory(java.util.function.Supplier { factory })
+            .rootUri("http://localhost:$port")
+            .errorHandler(neverThrows)
+            .build()
     }
 
     /**

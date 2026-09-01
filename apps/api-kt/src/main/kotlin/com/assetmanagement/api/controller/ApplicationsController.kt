@@ -61,6 +61,9 @@ class ApplicationsController(
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
         @RequestParam(defaultValue = "25") pageSize: Int,
@@ -176,6 +179,9 @@ class ApplicationsController(
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun getById(@PathVariable id: UUID): ResponseEntity<Any> {
         val app = applicationRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
@@ -623,6 +629,9 @@ class ApplicationsController(
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}/seats")
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun listSeats(@PathVariable id: UUID): ResponseEntity<Any> {
         if (!applicationRepository.existsById(id)) return ResponseEntity.notFound().build()
         val seats = seatAssignmentRepository.findByApplicationIdOrderByAssignedAtDesc(id).map {

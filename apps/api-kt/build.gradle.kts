@@ -2,11 +2,11 @@ plugins {
     // Line and branch coverage, so "the tests cover the code" is a number
     // rather than an impression.
     jacoco
-    id("org.springframework.boot") version "3.3.7"
-    id("io.spring.dependency-management") version "1.1.6"
-    kotlin("jvm") version "1.9.23"
-    kotlin("plugin.spring") version "1.9.23"
-    kotlin("plugin.jpa") version "1.9.23"
+    id("org.springframework.boot") version "4.1.1"
+    id("io.spring.dependency-management") version "1.1.7"
+    kotlin("jvm") version "2.4.10"
+    kotlin("plugin.spring") version "2.4.10"
+    kotlin("plugin.jpa") version "2.4.10"
 }
 
 group = "com.assetmanagement"
@@ -30,13 +30,20 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-mail")
 
     // Kotlin
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    // Spring Boot 4 ships Jackson 3, whose artifacts live under the `tools.jackson`
+    // group. The old com.fasterxml module would sit on the classpath doing nothing,
+    // and Kotlin data classes would fail to deserialise.
+    implementation("tools.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 
     // Database
     runtimeOnly("com.mysql:mysql-connector-j")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-mysql")
+    // Boot 4 split auto-configuration out of the core jar. Without this module
+    // Flyway is on the classpath but never runs, so the app starts against an
+    // unmigrated database and Hibernate's `validate` fails on the first table.
+    implementation("org.springframework.boot:spring-boot-flyway")
 
     // Microsoft Graph API (email via Entra ID)
     implementation("com.microsoft.graph:microsoft-graph:6.21.0")
@@ -53,12 +60,19 @@ dependencies {
     implementation("org.apache.tika:tika-core:2.9.1")
 
     // API Docs
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+    // 2.8.6 is the floor for Spring Boot 4: on 2.6.0 the app starts and the
+    // routes register, but /v3/api-docs throws while building the spec. Swagger
+    // is disabled by default (SWAGGER_ENABLED), so nothing surfaces that until
+    // someone turns it on — OpenApiDocsIntegrationTest pins it instead.
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
 
     // BCrypt (included via spring-security)
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    // Spring Boot 4 split the monolith: RestTemplate and RestTemplateBuilder now
+    // live in their own module rather than coming with the core starters.
+    implementation("org.springframework.boot:spring-boot-restclient")
     testImplementation("org.springframework.security:spring-security-test")
     // Pin a recent Testcontainers (newer docker-java) for Docker Desktop compatibility;
     // overrides the older version Spring Boot 3.2 would otherwise manage.

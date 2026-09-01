@@ -33,6 +33,9 @@ class AssetTemplatesController(
     // GET / — List all (optionally filter by assetTypeId)
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun getAll(
         @RequestParam(required = false) assetTypeId: UUID?,
         @RequestParam(defaultValue = "false") includeArchived: Boolean,
@@ -57,6 +60,9 @@ class AssetTemplatesController(
     // GET /{id} — Get by ID with custom field values
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun getById(@PathVariable id: UUID): ResponseEntity<Any> {
         val template = assetTemplateRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
