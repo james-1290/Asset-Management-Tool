@@ -23,7 +23,7 @@ import java.util.*
 import com.assetmanagement.api.util.versionConflict
 
 @RestController
-@RequestMapping(value = ["/api/v1/certificate-types", "/api/v1/certificatetypes"]) // legacy concatenated path kept as an alias
+@RequestMapping("/api/v1/certificate-types")
 @PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class CertificateTypesController(
     private val certificateTypeRepository: CertificateTypeRepository,
@@ -98,7 +98,7 @@ class CertificateTypesController(
         customFieldDefinitionService.createDefinitions(request.customFields, newDefinition(type.id))
         auditService.log(AuditEntry("Created", auditEntityType, type.id.toString(), type.name,
             "Created certificate type \"${type.name}\"", currentUserService.userId, currentUserService.userName))
-        return ResponseEntity.created(URI("/api/v1/certificatetypes/${type.id}"))
+        return ResponseEntity.created(URI("/api/v1/certificate-types/${type.id}"))
             .body(toDto(certificateTypeRepository.findById(type.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }))
     }
 

@@ -16,9 +16,6 @@ class Asset(
     @Column(name = "name", nullable = false)
     var name: String = "",
 
-    @Column(name = "asset_tag")
-    var assetTag: String? = null,
-
     @Column(name = "serial_number")
     var serialNumber: String? = null,
 

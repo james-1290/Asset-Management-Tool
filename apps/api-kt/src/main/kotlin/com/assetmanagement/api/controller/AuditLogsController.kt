@@ -19,7 +19,7 @@ import java.time.format.DateTimeFormatter
 import org.springframework.transaction.annotation.Transactional
 
 @RestController
-@RequestMapping(value = ["/api/v1/audit-logs", "/api/v1/auditlogs"]) // legacy concatenated path kept as an alias
+@RequestMapping("/api/v1/audit-logs")
 @PreAuthorize("hasRole('Admin')")
 class AuditLogsController(
     private val auditLogRepository: AuditLogRepository

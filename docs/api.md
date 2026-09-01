@@ -48,10 +48,13 @@ request/response shapes; this page is an orientation map only.
   `/user-notifications`, `/alerts`, `/user-alert-rules`, `/saved-views`,
   `/search`, `/dashboard`, `/reports`, `/import`, `/settings`, `/health`
 
-> **URL naming**: newer resources use kebab-case (`/asset-types`). A few older
-> routes were historically concatenated (`/assettypes`, `/applicationtypes`,
-> `/certificatetypes`, `/auditlogs`); these now respond to the kebab-case path
-> as primary while keeping the old path as a backward-compatible alias.
+> **URL naming**: every resource uses kebab-case (`/asset-types`). Four routes
+> were historically concatenated (`/assettypes`, `/applicationtypes`,
+> `/certificatetypes`, `/auditlogs`) and were kept as aliases; they have been
+> removed. The frontend never used them and there is no external consumer, and
+> a path that answers is a path that has to be secured, tested and kept working.
+> One exception remains for the same historical reason: custom field definitions
+> are read from `/{id}/customfields`, not `/{id}/custom-fields`.
 
 ## Common actions (beyond CRUD)
 

@@ -12,7 +12,6 @@ import type { CustomFieldValueDto, CustomFieldValueInput } from "./custom-field"
 export interface Asset {
   id: string;
   name: string;
-  assetTag?: string | null;
   serialNumber: string | null;
   status: AssetStatus;
   assetTypeId: string;

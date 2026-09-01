@@ -23,7 +23,7 @@ import java.util.*
 import com.assetmanagement.api.util.versionConflict
 
 @RestController
-@RequestMapping(value = ["/api/v1/application-types", "/api/v1/applicationtypes"]) // legacy concatenated path kept as an alias
+@RequestMapping("/api/v1/application-types")
 @PreAuthorize("hasAnyRole('Admin', 'Operator')")
 class ApplicationTypesController(
     private val applicationTypeRepository: ApplicationTypeRepository,
@@ -98,7 +98,7 @@ class ApplicationTypesController(
         customFieldDefinitionService.createDefinitions(request.customFields, newDefinition(type.id))
         auditService.log(AuditEntry("Created", auditEntityType, type.id.toString(), type.name,
             "Created application type \"${type.name}\"", currentUserService.userId, currentUserService.userName))
-        return ResponseEntity.created(URI("/api/v1/applicationtypes/${type.id}"))
+        return ResponseEntity.created(URI("/api/v1/application-types/${type.id}"))
             .body(toDto(applicationTypeRepository.findById(type.id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }))
     }
 

@@ -1,5 +1,40 @@
 # Changelog
 
+## 2026-09-01 — Four decisions taken, and the dead weight removed
+
+**The exhaustive control pass leaves the default run.** It operates 757 controls
+and costs ten minutes; it earned that while the app was still turning up defects
+that only appear when a control is used, but it is a build-out tool rather than a
+per-commit gate. `npm run test:exhaustive` runs it after broad UI work.
+
+**`assetTag` is gone.** V005 began this removal in February — it made the column
+nullable and dropped its unique index — and left the column, the entity field,
+the DTO field and the frontend type in place. The result was a capability the
+code advertised and did not have: no endpoint could set it, no screen showed it.
+V021 drops the column. Physical labelling belongs with the deferred barcode
+feature, which deserves its own design rather than an orphaned string inherited
+from the first schema.
+
+**A retired asset can now be sold.** Retiring kit and then selling it is the
+ordinary end of an asset's life; refusing it left the only route to "sold"
+running through an asset still in service, so a genuinely retired item could
+never be recorded as sold. Both suites asserted the old rule, and both now assert
+the new one.
+
+**The four legacy path aliases are gone** — `/assettypes`, `/certificatetypes`,
+`/applicationtypes`, `/auditlogs`. The frontend never used them and there is no
+external consumer; surface that answers is surface that must be secured, tested
+and kept working. The deep suite now asserts they return 404 rather than
+exercising them. Removing them turned up something that would have broken
+quietly: the three type controllers returned a `Location` header pointing at the
+legacy path on create, which would have 404'd the moment the alias went. One
+concatenated path stays, `/{id}/customfields`, because the frontend calls it.
+
+Audit coverage was reviewed and left as it is: alert-rule changes and
+notification dismiss/snooze are audited because they change or suppress what the
+system warns about; saved views and mark-as-read are not, because neither changes
+what anyone is told and both happen in bulk.
+
 ## 2026-09-01 — Operating every control, not naming it
 
 `gui_coverage.py` asked whether some spec *names* each control. Naming is the

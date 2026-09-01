@@ -191,10 +191,13 @@ def matrix_assets(api, r, fx, tag):
         st, ret = api("GET", f"/api/v1/assets/{aid}")
         r.check("the status says retired", "retire" in str(ret.get("status")).lower(), str(ret.get("status")))
 
-        st, refused = api("POST", f"/api/v1/assets/{aid}/sell", {"salePrice": 50, "saleDate": today()})
-        r.check("selling an already-retired asset is refused, by design", st == 400, str(refused)[:70])
+        st, _ = api("POST", f"/api/v1/assets/{aid}/sell", {"salePrice": 50, "saleDate": today()})
+        r.check("a retired asset can be sold — the ordinary end of its life", st in (200, 204), str(st))
+        st, retired_sold = api("GET", f"/api/v1/assets/{aid}")
+        r.check("and lands in the sold state", "sold" in str(retired_sold.get("status")).lower(),
+                str(retired_sold.get("status")))
 
-        # Sell a different asset, from an active state.
+        # And selling straight from an active state still works.
         st, sellable = api("POST", "/api/v1/assets",
                            {"name": f"MX Sell {tag}", "assetTypeId": fx["bareType"], "status": "Available"})
         sell_id = sellable["id"]
@@ -421,12 +424,12 @@ def matrix_applications(api, r, fx, tag):
         api("DELETE", f"/api/v1/applications/{aid}/seats/{pid}")
     st, _ = api("DELETE", f"/api/v1/applications/{aid}")
     r.check("archiving once the seats are released", st in (200, 204), str(st))
-    st, listed = api("GET", "/api/v1/applications?pageSize=200")
+    st, listed = api("GET", f"/api/v1/applications?search=MX+App+{tag}")
     r.check("an archived licence leaves the list",
             aid not in [i["id"] for i in listed.get("items", [])], "")
-    st, arch = api("GET", "/api/v1/applications?includeArchived=true&pageSize=200")
+    st, arch = api("GET", f"/api/v1/applications?includeArchived=true&search=MX+App+{tag}")
     r.check("and is visible when archived rows are asked for",
-            aid in [i["id"] for i in arch.get("items", [])], "")
+            aid in [i["id"] for i in arch.get("items", [])], f"{arch.get('totalCount')} matched")
     api("POST", f"/api/v1/applications/{aid}/restore")
 
 
@@ -468,9 +471,9 @@ def matrix_certificates(api, r, fx, tag):
     r.check("bulk status change applies", str(rev.get("status")) == "Revoked", str(rev.get("status")))
 
     st, _ = api("DELETE", f"/api/v1/certificates/{cid}")
-    st, arch = api("GET", "/api/v1/certificates?includeArchived=true&pageSize=200")
+    st, arch = api("GET", f"/api/v1/certificates?includeArchived=true&search=MX+Cert+{tag}")
     r.check("an archived certificate is visible when asked for",
-            cid in [i["id"] for i in arch.get("items", [])], "")
+            cid in [i["id"] for i in arch.get("items", [])], f"{arch.get('totalCount')} matched")
     st, _ = api("POST", f"/api/v1/certificates/{cid}/restore")
     r.check("restore", st in (200, 204), str(st))
 

@@ -755,8 +755,10 @@ class AssetsController(
             return ResponseEntity.badRequest().body(mapOf("error" to "Cannot sell an archived asset."))
         if (asset.status == AssetStatus.Sold)
             return ResponseEntity.badRequest().body(mapOf("error" to "Asset is already sold."))
-        if (asset.status == AssetStatus.Retired)
-            return ResponseEntity.badRequest().body(mapOf("error" to "Cannot sell a retired asset."))
+        // Selling a retired asset used to be refused. Retiring kit and then
+        // selling it is the ordinary end of an asset's life, and blocking it
+        // left the only route to "sold" running through an asset still in
+        // service — so a genuinely retired item could never be recorded as sold.
 
         val changes = mutableListOf<AuditChange>()
         changes.add(AuditChange("Status", asset.status.name, AssetStatus.Sold.name))
@@ -1346,7 +1348,6 @@ class AssetsController(
         return AssetDto(
             id = asset.id,
             name = asset.name,
-            assetTag = asset.assetTag,
             serialNumber = asset.serialNumber,
             status = asset.status.name,
             assetTypeId = asset.assetTypeId,

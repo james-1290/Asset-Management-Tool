@@ -1,0 +1,12 @@
+-- Drop the vestigial asset_tag column.
+--
+-- V005 began this removal in 2026: it made the column nullable and dropped its
+-- unique index, but left the column, the entity field and the DTO in place. The
+-- result was a field that existed in the database, the entity, the read DTO and
+-- the frontend type, while no endpoint could set it and no screen showed it —
+-- a capability the code advertised and did not have.
+--
+-- Physical asset labelling is a real requirement, but it belongs with the
+-- deferred barcode/QR feature, which will want its own design rather than an
+-- orphaned string column inherited from the first schema.
+ALTER TABLE assets DROP COLUMN asset_tag;
