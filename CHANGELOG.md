@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-09-01 — Operating every control, not naming it
+
+`gui_coverage.py` asked whether some spec *names* each control. Naming is the
+weaker standard, and it is precisely what let the Assets list ship an "Archived"
+toggle wired to a parameter the API ignored: a spec named the toggle and asserted
+it was visible.
+
+`e2e/qa/exhaustive.spec.ts` operates them instead. It tags every visible, enabled
+control in the DOM, clicks each one, and asserts the app answered — no console
+error, no failed request, and a heading, dialog or menu still on screen.
+
+**757 controls across all sixteen screens. None broke its page.**
+
+    /                27      /asset-types        52
+    /assets          64      /certificate-types  50
+    /certificates    63      /application-types  50
+    /applications    59      /asset-models       96
+    /people          57      /asset-templates    65
+    /locations       50      /reports            22
+    /audit-log       49      /tools/import       14
+    /settings        21      /notifications      18
+
+The first attempt matched controls by accessible name and operated 17 of 58 on
+the assets screen — names wrap, repeat, and change as the page re-renders, so it
+silently skipped two thirds of the page and passed. Tagging each control in the
+DOM and clicking the tag, re-tagging after every click, is what makes the number
+mean something. An exhaustive pass that quietly skips most of its subject is
+worse than none, because it reports a figure nobody checks.
+
+Five controls cannot be clicked: dropdown options that close along with their
+menu. They are reported rather than hidden.
+
+This costs about ten minutes in the browser suite, which is a real price on every
+pull request. It is worth it while the app is still finding defects of the kind
+that only appear when a control is actually used.
+
 ## 2026-09-01 — The GUI matrix: the second attempt, the invalid one, the cancelled one
 
 The API matrix covered every action in every variation. The browser suite still
