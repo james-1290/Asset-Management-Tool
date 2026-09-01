@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-09-01 — The tooling majors, and why TypeScript 7 could not come with them
+
+ESLint 9 -> 10, Vite 7 -> 8, `@vitejs/plugin-react` 5 -> 6, typescript-eslint
+8.46 -> 8.69, the two React ESLint plugins, and TypeScript 5.9 -> **6.0.3**.
+
+**TypeScript 7 is held back deliberately.** Dependabot's grouped PR pinned
+`typescript@7.0.2` alongside `typescript-eslint@8.68.0`, and those two cannot
+coexist: typescript-eslint's peer range is `>=4.8.4 <6.1.0`. `npm ci` fails on
+that PR's own lockfile with ERESOLVE, so it could never have installed, and no
+published typescript-eslint — including the latest alpha — supports TypeScript 7
+yet. Taking TypeScript 6.0.3 gets the major version bump the toolchain actually
+supports; 7 waits for the linter.
+
+Two things broke and needed real changes rather than version bumps:
+
+- **`baseUrl` was removed in TypeScript.** The `paths` entry here already used
+  the `./src/*` form, which resolves relative to the tsconfig's own directory,
+  so deleting `baseUrl` leaves the alias meaning exactly what it did.
+- **Rollup 5 (Vite 8) dropped the object form of `manualChunks`.** Rewritten as
+  the function form, matching on `/node_modules/<name>/` rather than a bare
+  substring so a package cannot be captured by an unrelated dependency whose
+  path merely contains its name. The split improved as a side effect: the entry
+  chunk fell from **135 KB gzipped to 41 KB**.
+
+ESLint 10 also ships `react-hooks/set-state-in-effect`, which found four genuine
+cascading-render sites. `useIsMobile` is fixed properly — it rendered once as
+"not mobile" and then immediately re-rendered, which is the bug the rule
+describes. The other three set state in response to data that arrives
+asynchronously; unwinding those is a refactor, not upgrade work, so they carry a
+justified suppression and are recorded as checklist row 6.10.
+
 ## 2026-09-01 — Nine dependency updates, batched
 
 React 19.2.0 -> 19.2.8 and its types, Playwright 1.58.2 -> 1.62.1, Tailwind

@@ -101,6 +101,10 @@ export default function AuditLogPage() {
     if (defaultViewApplied.current || savedViews.length === 0) return;
     defaultViewApplied.current = true;
     const defaultView = savedViews.find((v) => v.isDefault);
+  // Reacts to data that arrives asynchronously; removing the effect needs a
+  // real refactor, tracked separately rather than folded into a dependency
+  // upgrade.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
     if (defaultView) applyView(defaultView);
   }, [savedViews, applyView]);
 
