@@ -6,6 +6,9 @@ import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
+import org.springframework.web.HttpMediaTypeNotAcceptableException
+import org.springframework.web.HttpMediaTypeNotSupportedException
+import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.servlet.resource.NoResourceFoundException
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -99,6 +102,34 @@ class GlobalExceptionHandler {
         // noisy for something as ordinary as a browser asking for /favicon.ico.
         return ResponseEntity.status(404).body(mapOf("error" to "Not found"))
     }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
+    fun handleMethodNotSupported(ex: HttpRequestMethodNotSupportedException): ResponseEntity<Map<String, Any>> {
+        // The same trap `NoResourceFoundException` above was added for: using the
+        // wrong verb on a real path fell through to the generic handler, so every
+        // one answered 500 "An internal error occurred" and logged a stack trace.
+        // It is a client mistake — 405 — and the Allow header says what is valid.
+        val builder = ResponseEntity.status(405)
+        ex.supportedHttpMethods?.let { builder.allow(*it.toTypedArray()) }
+        return builder.body(mapOf(
+            "error" to "Method not allowed",
+            "message" to "${ex.method} is not supported for this path",
+        ))
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException::class)
+    fun handleMediaTypeNotSupported(ex: HttpMediaTypeNotSupportedException): ResponseEntity<Map<String, Any>> =
+        ResponseEntity.status(415).body(mapOf(
+            "error" to "Unsupported media type",
+            "message" to "This endpoint accepts application/json",
+        ))
+
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException::class)
+    fun handleMediaTypeNotAcceptable(ex: HttpMediaTypeNotAcceptableException): ResponseEntity<Map<String, Any>> =
+        ResponseEntity.status(406).body(mapOf(
+            "error" to "Not acceptable",
+            "message" to "This endpoint can only produce application/json",
+        ))
 
     @ExceptionHandler(Exception::class)
     fun handleGenericException(e: Exception): ResponseEntity<Map<String, String>> {

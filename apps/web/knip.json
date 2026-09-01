@@ -14,9 +14,6 @@
     "tw-animate-css",
     "tailwindcss"
   ],
-  "ignoreBinaries": [
-    "knip"
-  ],
   "ignoreExportsUsedInFile": true,
   "includeEntryExports": false
 }

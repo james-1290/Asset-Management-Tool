@@ -100,9 +100,11 @@ count behind it is an opinion.
 | 6.5 | After a major framework upgrade, behaviour changes that still compile | Fixed — Boot 4 silently dropped Flyway auto-config, moved Jackson to `tools.jackson`, and Hibernate 7 stopped tolerating lazy reads outside a session (22 endpoints 500ing). None was a compile error. Run the deep API suite against the built jar, not just `./gradlew test`. |
 | 6.6 | Features disabled by default are still exercised somewhere | Fixed — the OpenAPI spec is off unless `SWAGGER_ENABLED` is set, so no suite ever built it and Boot 4 broke it unnoticed; a test now enables it. Anything behind a default-off flag has the same blind spot. |
 | 6.7 | QA results are trustworthy — no environmental failures read as defects | Fixed — a sleeping machine made the browser suite fail differently on every run (`ERR_NETWORK_IO_SUSPENDED`, 30s timeouts); the sweep now runs under `caffeinate`. |
-| 6.8 | Every check the docs claim to run actually runs | **GAP** — `npm run deadcode` is listed in docs/qa.md as one of the suites, but `knip` is in no dependency list (so the script fails on a clean checkout) and neither the sweep nor CI invokes it. The dead-code check has not been running at all. Not fixed here: unrelated to the framework upgrade. |
+| 6.8 | Every check the docs claim to run actually runs | Fixed — `npm run deadcode` failed on a clean checkout (`knip` was in no dependency list) and nothing invoked it. knip is now a devDependency and runs in both the sweep and CI. Worse was next to it: the sweep's "Frontend typecheck" step ran `tsc --noEmit`, which on a solution-style tsconfig compiles **nothing** and exited 0 on a deliberate type error — a step that could never fail. Now `tsc -b --noEmit`. |
 | 6.9 | Dependency upgrades that fail silently rather than loudly | OK — icon-library majors can export a name that draws nothing; `e2e/qa/icons.spec.ts` asserts every rendered icon has geometry (664 across 14 screens). |
 | 6.10 | Lint suppressions are justified and tracked, not silent | **GAP** — ESLint 10's `react-hooks/set-state-in-effect` found four real cascading-render sites. One is fixed (`use-mobile`); three set state in response to asynchronously loaded data and carry a justified disable, because unwinding them is a refactor rather than upgrade work. They should be revisited. |
+| 6.11 | Client mistakes are reported as client errors, not 500s | Fixed — the wrong verb on a real path, and an unsupported content type, both fell through to the catch-all and answered **500** with a logged stack trace. Now 405 (with `Allow`) and 415. The noise had been burying genuine server faults. |
+| 6.12 | Write paths do not undo the masking their read paths apply | Fixed — `GET /settings/alerts` masks the SMTP password, Graph secret and webhook URLs; `PUT` returned the request object it was handed, echoing the plaintext straight back. Both now return the same masked view. |
 
 ## 7. Authentication and session (A07)
 
@@ -120,7 +122,7 @@ count behind it is an opinion.
 | # | Check | Verdict |
 |---|---|---|
 | 8.1 | No unsafe deserialization of user input | OK — no Java serialization, XMLDecoder or unsafe YAML |
-| 8.2 | Optimistic locking on concurrently edited records | Fixed — five entities lacked it |
+| 8.2 | Optimistic locking on concurrently edited records | **GAP** — ten entities carry `@Version` and the handler maps `ObjectOptimisticLockingFailureException` to 409, but no DTO exposes the version and no update accepts one, so the client cannot send back the version it read. The check only ever fires for writes that are literally in flight together; the case it was added for — two people editing the same record minutes apart — still loses the first edit silently. Demonstrated: B saves, A saves a stale copy, A gets **200** and B's change is gone. Wiring it through is a feature-sized change (DTOs, update handlers, and conflict UX on the forms), not a sweep fix. |
 | 8.3 | Migrations forward-only and never edited after apply | OK |
 | 8.4 | Uploads validated by content, not just declared type | OK — content-sniffed, extension and MIME allow-lists |
 | 8.5 | Decompression/parser bombs on upload | OK — uploads are stored as bytes, never decoded or decompressed server-side; CSV is row-capped |

@@ -7,7 +7,6 @@ import com.assetmanagement.api.repository.UserRepository
 import com.assetmanagement.api.repository.UserRoleRepository
 import com.assetmanagement.api.security.EasyAuthPrincipal
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertSame

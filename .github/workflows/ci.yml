@@ -70,6 +70,8 @@ jobs:
         run: npm run test
       - name: Lint
         run: npm run lint
+      - name: Dead code (unused files, exports, dependencies)
+        run: npm run deadcode
 
   e2e:
     name: End-to-end — API capability & browser suites
