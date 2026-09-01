@@ -1,5 +1,55 @@
 # Changelog
 
+## 2026-09-01 — Seventh sweep: a check that could never fail, a 500 for every wrong verb, and a lock that locks nothing
+
+Worked `docs/audit-checklist.md` top to bottom rather than picking lenses. Five
+defects, one of them in the sweep's own tooling.
+
+**A typecheck step that could not fail.** The sweep ran `tsc --noEmit`. The root
+`tsconfig.json` is solution-style — it lists `references` and nothing else — so
+without `-b` there are no files to check. It compiled nothing and exited 0. Given
+a deliberate type error it still passed, while `npm run build` caught it
+immediately. Now `tsc -b --noEmit`.
+
+**Dead code had never actually been looked for.** `npm run deadcode` was listed
+in the docs as one of the suites, but `knip` was in no dependency list, so the
+script failed on any clean checkout, and neither the sweep nor CI ever invoked
+it. knip is now a devDependency and runs in both. It reports clean — verified
+against a planted unused file, because a tool reported clean while absent is
+exactly how this went unnoticed. The backend has no equivalent, so its dead code
+was found by hand: **five repository methods nothing calls** (three left over
+from the local-auth removal) and one unused import. No unreferenced Kotlin types
+or functions otherwise.
+
+**Every wrong verb answered 500.** `DELETE /api/v1/assets`, `PUT` on a read-only
+path, any wrong method on a real route — all returned "An internal error
+occurred" with a stack trace and an error id in the log. So did an unsupported
+`Content-Type`. They are client mistakes: now 405 with an `Allow` header, and
+415. This is the same trap a previous sweep fixed for unknown *paths*, missed for
+unknown *methods* — and while it lasted, every wrong-verb request was noise that
+buried genuine 500s.
+
+**The settings write path handed secrets back.** `GET /settings/alerts`
+carefully masks the SMTP password, the Graph client secret and the Slack webhook
+URLs. `PUT` returned the request object it had just been given, echoing the
+plaintext password and full webhook URL in the response body. Both paths now
+return one shared masked view.
+
+**Optimistic locking does not lock anything — recorded as a gap, not fixed.**
+Ten entities carry `@Version` and the exception handler maps a lock failure to
+409, so it reads as done. But no DTO exposes the version and no update accepts
+one, so a client cannot send back the version it read. The check can only fire
+for writes literally in flight together. The case it exists for still loses data:
+two admins open the same asset, B saves, A saves a stale copy — A gets **200**
+and B's change is gone. Wiring it through means DTOs, update handlers and
+conflict UX on every form, which is a feature, not a sweep fix.
+
+Also aligned the API's CSP with the frontend's (`base-uri`, `form-action`,
+`object-src`), which matters when the OpenAPI UI is switched on.
+
+Verified: 78 backend tests, 197 smoke and 721 deep API checks, 124 browser tests,
+212/212 endpoints reached, 557/557 controls named, lint and dead-code clean.
+
 ## 2026-09-01 — The tooling majors, and why TypeScript 7 could not come with them
 
 ESLint 9 -> 10, Vite 7 -> 8, `@vitejs/plugin-react` 5 -> 6, typescript-eslint

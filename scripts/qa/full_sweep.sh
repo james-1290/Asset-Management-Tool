@@ -120,7 +120,12 @@ step "Rebuild + restart API (Flyway migrates from clean)" restart_api
 step "Backend tests"        bash -c "cd '$ROOT/apps/api-kt' && ./gradlew test"
 step "Frontend unit tests"  bash -c "cd '$ROOT/apps/web' && npm run test -- --run"
 step "Frontend lint"        bash -c "cd '$ROOT/apps/web' && npm run lint"
-step "Frontend typecheck"   bash -c "cd '$ROOT/apps/web' && npx tsc --noEmit"
+step "Frontend dead code"   bash -c "cd '$ROOT/apps/web' && npm run deadcode"
+# `tsc --noEmit` (without -b) compiled *nothing* here and always exited 0: the
+# root tsconfig.json is solution-style, listing only `references`, so there are
+# no files to check without building the referenced projects. This step passed
+# on a deliberate type error until it was tested.
+step "Frontend typecheck"   bash -c "cd '$ROOT/apps/web' && npx tsc -b --noEmit"
 step "Frontend production build" bash -c "cd '$ROOT/apps/web' && npm run build"
 step "API smoke suite"      bash -c "cd '$ROOT' && python3 scripts/qa/api_smoke.py"
 step "API deep suite"       bash -c "cd '$ROOT' && python3 scripts/qa/api_deep.py"

@@ -76,9 +76,17 @@ class SettingsController(
 
     @GetMapping("/alerts")
     @PreAuthorize("hasRole('Admin')")
-    fun getAlerts(): ResponseEntity<Any> {
+    fun getAlerts(): ResponseEntity<Any> = ResponseEntity.ok(currentAlertSettings())
 
-        val dto = AlertSettingsDto(
+    /**
+     * The alert settings as they may be shown: secrets masked, webhook URLs
+     * truncated to scheme and host. Both the read and the write path return
+     * this, so a response can never carry a secret back out — the write path
+     * used to echo the request it was given, which handed the plaintext
+     * password and the full webhook URL straight back in the response body.
+     */
+    private fun currentAlertSettings(): AlertSettingsDto {
+        return AlertSettingsDto(
             warrantyEnabled = getSetting("alerts.warranty.enabled", "true") == "true",
             certificateEnabled = getSetting("alerts.certificate.enabled", "true") == "true",
             licenceEnabled = getSetting("alerts.licence.enabled", "true") == "true",
@@ -102,7 +110,6 @@ class SettingsController(
             scheduleTime = getSetting("alerts.schedule.time", "09:00"),
             scheduleDay = getSetting("alerts.schedule.day", "MONDAY")
         )
-        return ResponseEntity.ok(dto)
     }
 
     @PutMapping("/alerts")
@@ -143,6 +150,6 @@ class SettingsController(
             log.error("Failed to reschedule alerts", e)
         }
 
-        return ResponseEntity.ok(request)
+        return ResponseEntity.ok(currentAlertSettings())
     }
 }

@@ -18,16 +18,11 @@ import java.util.*
 interface UserRepository : JpaRepository<User, UUID> {
     fun findByUsername(username: String): User?
     fun findByEmail(email: String): User?
-    fun existsByUsername(username: String): Boolean
-    fun existsByEmail(email: String): Boolean
     fun findByExternalId(externalId: String): User?
     fun findByIsActiveTrue(): List<User>
 
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.userRoles ur LEFT JOIN FETCH ur.role WHERE u.id = :id")
     fun findWithRolesById(@Param("id") id: UUID): User?
-
-    @Query("SELECT u FROM User u LEFT JOIN FETCH u.userRoles ur LEFT JOIN FETCH ur.role WHERE u.username = :username")
-    fun findWithRolesByUsername(@Param("username") username: String): User?
 }
 
 @Repository
@@ -170,7 +165,6 @@ interface AuditLogRepository : JpaRepository<AuditLog, UUID>, JpaSpecificationEx
 @Repository
 interface SavedViewRepository : JpaRepository<SavedView, UUID> {
     fun findByUserIdAndEntityType(userId: UUID, entityType: String): List<SavedView>
-    fun findByUserIdAndEntityTypeAndIsDefaultTrue(userId: UUID, entityType: String): SavedView?
 }
 
 @Repository
@@ -197,7 +191,6 @@ interface AssetTemplateRepository : JpaRepository<AssetTemplate, UUID> {
 @Repository
 interface UserNotificationRepository : JpaRepository<UserNotification, UUID>, JpaSpecificationExecutor<UserNotification> {
     fun countByUserIdAndIsReadFalseAndIsDismissedFalse(userId: UUID): Long
-    fun existsByEntityTypeAndEntityIdAndUserIdAndThresholdDays(entityType: String, entityId: UUID, userId: UUID, thresholdDays: Int): Boolean
     fun findByEntityIdIn(entityIds: Collection<UUID>): List<UserNotification>
     fun findByUserId(userId: UUID): List<UserNotification>
 
