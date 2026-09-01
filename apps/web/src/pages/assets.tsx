@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Archive, RefreshCw, Pencil } from "lucide-react";
 import { assetsApi } from "../lib/api/assets";
-import { getApiErrorMessage } from "../lib/api-client";
+import { getApiErrorMessage, errorMessage} from "../lib/api-client";
 import { ExportButton } from "../components/export-button";
 import type { VisibilityState } from "@tanstack/react-table";
 import { useListPage } from "../hooks/use-list-page";
@@ -388,8 +388,8 @@ export default function AssetsPage() {
             setFormOpen(false);
             setEditingAsset(null);
           },
-          onError: () => {
-            toast.error("Failed to update asset");
+          onError: (err) => {
+            toast.error(errorMessage(err, "Failed to update asset"));
           },
         },
       );
@@ -475,8 +475,8 @@ export default function AssetsPage() {
         toast.success(`Updated ${result.succeeded} asset(s) to ${status}`);
         setRowSelection({});
       },
-      onError: () => {
-        toast.error("Failed to update status");
+      onError: (err) => {
+        toast.error(errorMessage(err, "Failed to update status"));
       },
     });
   }

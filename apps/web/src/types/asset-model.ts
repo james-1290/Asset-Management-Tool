@@ -8,6 +8,7 @@ export interface AssetModel {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+  entityVersion: number;
 }
 
 export interface CreateAssetModelRequest {
@@ -19,4 +20,5 @@ export interface CreateAssetModelRequest {
 export interface UpdateAssetModelRequest {
   name: string;
   manufacturer?: string | null;
+  entityVersion?: number;
 }

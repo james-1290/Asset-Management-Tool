@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException
 import java.net.URI
 import java.time.Instant
 import java.util.*
+import com.assetmanagement.api.util.versionConflict
 
 @RestController
 @RequestMapping(value = ["/api/v1/application-types", "/api/v1/applicationtypes"]) // legacy concatenated path kept as an alias
@@ -43,6 +44,7 @@ class ApplicationTypesController(
         entity.id, entity.name, entity.description, entity.isArchived, entity.createdAt, entity.updatedAt,
         entity.customFieldDefinitions.filter { !it.isArchived }.sortedBy { it.sortOrder }
             .map { CustomFieldDefinitionDto(it.id, it.name, it.fieldType.name, it.options, it.isRequired, it.sortOrder) },
+        entity.entityVersion,
     )
 
     private fun newDefinition(typeId: UUID) = { ft: CustomFieldType, f: CustomFieldDefinitionInput ->
@@ -98,6 +100,8 @@ class ApplicationTypesController(
     @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateApplicationTypeRequest): ResponseEntity<Any> {
         val type = applicationTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+
+        versionConflict(request.entityVersion, type.entityVersion)?.let { return it }
         type.name = request.name
         type.description = request.description
         type.updatedAt = Instant.now()

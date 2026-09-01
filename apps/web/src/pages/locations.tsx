@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { useListPage } from "../hooks/use-list-page";
 import { locationsApi } from "../lib/api/locations";
-import { ApiError, getApiErrorMessage } from "../lib/api-client";
+import { ApiError, getApiErrorMessage, errorMessage} from "../lib/api-client";
 import { ExportButton } from "../components/export-button";
 import type { VisibilityState } from "@tanstack/react-table";
 import { Button } from "../components/ui/button";
@@ -172,8 +172,8 @@ export default function LocationsPage() {
             setFormOpen(false);
             setEditingLocation(null);
           },
-          onError: () => {
-            toast.error("Failed to update location");
+          onError: (err) => {
+            toast.error(errorMessage(err, "Failed to update location"));
           },
         },
       );

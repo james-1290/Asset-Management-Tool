@@ -19,6 +19,7 @@ import {
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import type { SavedView, ViewConfiguration } from "../types/saved-view";
+import { errorMessage } from "../lib/api-client";
 import {
   useSavedViews,
   useCreateSavedView,
@@ -88,7 +89,7 @@ export function SavedViewSelector({
       },
       {
         onSuccess: () => toast.success(`View "${view.name}" updated`),
-        onError: () => toast.error("Failed to update view"),
+        onError: (err) => toast.error(errorMessage(err, "Failed to update view")),
       },
     );
   }
@@ -130,7 +131,7 @@ export function SavedViewSelector({
             : `"${updated.name}" is no longer default`,
         );
       },
-      onError: () => toast.error("Failed to update default view"),
+      onError: (err) => toast.error(errorMessage(err, "Failed to update default view")),
     });
   }
 

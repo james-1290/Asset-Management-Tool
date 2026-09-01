@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-09-01 — Optimistic locking wired through, and the message that never reached anyone
+
+Two defects, one of them mine.
+
+**Five catalogue types were last-write-wins.** Asset types, application types,
+certificate types, asset models and asset templates all carried a `@Version`
+column — so the schema said "protected" — but exposed it in no DTO and checked it
+in no update. Two people editing the same asset type minutes apart: the second
+save silently discarded the first. They now round-trip `entityVersion` like the
+other five entities and answer 409, with a test per type that fails if the guard
+is removed.
+
+**The conflict message never reached the user.** The API returns "This record was
+modified by another user. Please refresh and try again." Every form's `onError`
+threw that away and showed its own "Failed to update X" — so even for the five
+entities where locking already worked, a conflict was indistinguishable from a
+network error. `errorMessage()` in the API client now surfaces the server's
+message where there is one, across 14 files.
+
+The check remains opt-in: an update that sends no version skips it, which keeps
+scripted API callers working and is covered by its own test.
+
+**A correction.** The previous entry claimed optimistic locking "protects
+nothing" and demonstrated a lost update. That was wrong: the field is
+`entityVersion`, the probe sent `version`, and so it exercised the documented
+opt-out rather than the feature. The five main entities were protected end to
+end the whole time, frontend included. The real gap was the five catalogue types
+above — narrower than reported, and now closed.
+
 ## 2026-09-01 — Seventh sweep: a check that could never fail, a 500 for every wrong verb, and a lock that locks nothing
 
 Worked `docs/audit-checklist.md` top to bottom rather than picking lenses. Five
@@ -35,14 +64,16 @@ URLs. `PUT` returned the request object it had just been given, echoing the
 plaintext password and full webhook URL in the response body. Both paths now
 return one shared masked view.
 
-**Optimistic locking does not lock anything — recorded as a gap, not fixed.**
-Ten entities carry `@Version` and the exception handler maps a lock failure to
-409, so it reads as done. But no DTO exposes the version and no update accepts
-one, so a client cannot send back the version it read. The check can only fire
-for writes literally in flight together. The case it exists for still loses data:
-two admins open the same asset, B saves, A saves a stale copy — A gets **200**
-and B's change is gone. Wiring it through means DTOs, update handlers and
-conflict UX on every form, which is a feature, not a sweep fix.
+**Optimistic locking: a wrong finding, corrected.** This sweep first reported
+that optimistic locking "protects nothing" and demonstrated a lost update. That
+demonstration was wrong: the field is `entityVersion`, the probe sent `version`,
+and so it exercised the opt-out path rather than the feature. Sending the real
+field, a stale save returns **409** as intended, and the frontend round-trips it
+from every edit form for Asset, Application, Person, Certificate and Location.
+
+What is actually missing is narrower: **AssetType, ApplicationType,
+CertificateType, AssetModel and AssetTemplate** carry `@Version` columns but
+expose nothing and check nothing, so edits to those five are last-write-wins.
 
 Also aligned the API's CSP with the frontend's (`base-uri`, `form-action`,
 `object-src`), which matters when the OpenAPI UI is switched on.

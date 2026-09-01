@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*
 import java.net.URI
 import java.time.Instant
 import java.util.*
+import com.assetmanagement.api.util.versionConflict
 
 @RestController
 @RequestMapping("/api/v1/asset-templates")
@@ -130,6 +131,8 @@ class AssetTemplatesController(
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateAssetTemplateRequest): ResponseEntity<Any> {
         val template = assetTemplateRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
+
+        versionConflict(request.entityVersion, template.entityVersion)?.let { return it }
 
         if (request.name.isBlank())
             return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
@@ -254,7 +257,8 @@ class AssetTemplatesController(
             isArchived = template.isArchived,
             createdAt = template.createdAt,
             updatedAt = template.updatedAt,
-            customFieldValues = cfvDtos
+            customFieldValues = cfvDtos,
+            entityVersion = template.entityVersion,
         )
     }
 }

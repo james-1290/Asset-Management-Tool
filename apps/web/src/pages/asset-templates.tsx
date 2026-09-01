@@ -31,6 +31,7 @@ import { useAssetTypes } from "../hooks/use-asset-types";
 import { useLocations } from "../hooks/use-locations";
 import type { AssetTemplate } from "../types/asset-template";
 import { useAuth } from "@/contexts/auth-context";
+import { errorMessage } from "../lib/api-client";
 
 export default function AssetTemplatesPage() {
   const { canWrite } = useAuth();
@@ -109,6 +110,7 @@ export default function AssetTemplatesPage() {
                 : null,
             notes: values.notes || null,
             customFieldValues,
+            entityVersion: editingTemplate.entityVersion,
           },
         },
         {
@@ -117,8 +119,8 @@ export default function AssetTemplatesPage() {
             setFormOpen(false);
             setEditingTemplate(null);
           },
-          onError: () => {
-            toast.error("Failed to update template");
+          onError: (err) => {
+            toast.error(errorMessage(err, "Failed to update template"));
           },
         },
       );

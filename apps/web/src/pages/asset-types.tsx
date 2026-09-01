@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { getApiErrorMessage } from "../lib/api-client";
+import { getApiErrorMessage, errorMessage} from "../lib/api-client";
 import { Plus, Trash2 } from "lucide-react";
 import type { VisibilityState } from "@tanstack/react-table";
 import { useListPage } from "../hooks/use-list-page";
@@ -213,15 +213,15 @@ export default function AssetTypesPage() {
 
     if (editingAssetType) {
       updateMutation.mutate(
-        { id: editingAssetType.id, data },
+        { id: editingAssetType.id, data: { ...data, entityVersion: editingAssetType.entityVersion } },
         {
           onSuccess: () => {
             toast.success("Asset type updated");
             setFormOpen(false);
             setEditingAssetType(null);
           },
-          onError: () => {
-            toast.error("Failed to update asset type");
+          onError: (err) => {
+            toast.error(errorMessage(err, "Failed to update asset type"));
           },
         },
       );

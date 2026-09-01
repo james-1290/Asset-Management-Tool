@@ -35,6 +35,7 @@ import { useLocations } from "../hooks/use-locations";
 import type { PersonFormValues } from "../lib/schemas/person";
 import { formatDateOrNull as formatDate } from "../lib/format";
 import { useAuth } from "@/contexts/auth-context";
+import { errorMessage } from "../lib/api-client";
 
 function StatusBadge({ status }: { status: string }) {
   const variant = status === "Active" ? "default"
@@ -95,8 +96,8 @@ export default function PersonDetailPage() {
           toast.success("Person updated");
           setFormOpen(false);
         },
-        onError: () => {
-          toast.error("Failed to update person");
+        onError: (err) => {
+          toast.error(errorMessage(err, "Failed to update person"));
         },
       },
     );

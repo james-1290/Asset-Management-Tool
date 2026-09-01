@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { ApiError } from "../lib/api-client";
+import { ApiError, errorMessage} from "../lib/api-client";
 import type { Location, LocationItemCounts } from "../types/location";
 import { Pencil, Trash2, MapPin, Package, Users, ChevronRight } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -65,8 +65,8 @@ export default function LocationDetailPage() {
           toast.success("Location updated");
           setFormOpen(false);
         },
-        onError: () => {
-          toast.error("Failed to update location");
+        onError: (err) => {
+          toast.error(errorMessage(err, "Failed to update location"));
         },
       },
     );

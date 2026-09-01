@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { getApiErrorMessage } from "../lib/api-client";
+import { getApiErrorMessage, errorMessage} from "../lib/api-client";
 import { Plus, Trash2 } from "lucide-react";
 import type { VisibilityState } from "@tanstack/react-table";
 import { useListPage } from "../hooks/use-list-page";
@@ -199,15 +199,15 @@ export default function ApplicationTypesPage() {
 
     if (editingApplicationType) {
       updateMutation.mutate(
-        { id: editingApplicationType.id, data },
+        { id: editingApplicationType.id, data: { ...data, entityVersion: editingApplicationType.entityVersion } },
         {
           onSuccess: () => {
             toast.success("Application type updated");
             setFormOpen(false);
             setEditingApplicationType(null);
           },
-          onError: () => {
-            toast.error("Failed to update application type");
+          onError: (err) => {
+            toast.error(errorMessage(err, "Failed to update application type"));
           },
         },
       );
