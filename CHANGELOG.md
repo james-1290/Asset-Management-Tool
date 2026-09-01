@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-01 — Testcontainers 2.0.5, and one less local workaround
+
+Testcontainers 1.20.4 -> 2.0.5. The 2.x line renamed every module with a
+`testcontainers-` prefix, so `org.testcontainers:junit-jupiter` and
+`:mysql` become `:testcontainers-junit-jupiter` and `:testcontainers-mysql` —
+a resolution failure, not a compile error, so it fails before anything builds.
+
+The upside: **`DOCKER_API_VERSION=1.44` is no longer needed.** Docker Engine 29
+rejected the API version docker-java negotiated on Testcontainers 1.x, and
+without the pin every integration test died at startup with "Could not find a
+valid Docker environment" — a failure that looked like broken code and was not,
+and which the setup docs had to warn about. 2.x ships a docker-java that
+negotiates correctly; the whole suite passes with the variable unset. The build
+still honours it if set, for anyone on an older daemon, but the docs no longer
+tell people it is required.
+
 ## 2026-08-31 — Kotlin 2.4.10 and Spring Boot 4.1.1, and the three breaking changes that hid behind a clean compile
 
 Kotlin 1.9.23 -> 2.4.10 (K2 compiler), Spring Boot 3.3.7 -> 4.1.1 (Spring Framework 7, Hibernate 7, Jackson 3), Gradle 8.7 -> 8.14.3 (Boot 4 requires 8.14+).
