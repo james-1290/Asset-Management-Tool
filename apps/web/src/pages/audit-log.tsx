@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { VisibilityState } from "@tanstack/react-table";
 import { useListPage } from "../hooks/use-list-page";
@@ -12,10 +12,11 @@ import { usePagedAuditLogs } from "../hooks/use-audit-logs";
 import { auditLogsApi } from "../lib/api/audit-logs";
 import { ExportButton } from "../components/export-button";
 import { SavedViewSelector } from "../components/saved-view-selector";
-import { useSavedViews } from "../hooks/use-saved-views";
-import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import { ActiveFilterChips } from "../components/filters/active-filter-chips";
 import type { ActiveFilter } from "../components/filters/active-filter-chips";
+import { useSavedViewState } from "../hooks/use-saved-view-state";
+
+const SAVED_VIEW_FILTER_KEYS = ["entityType", "action", "dateFrom", "dateTo"] as const;
 
 const SORT_FIELD_MAP: Record<string, string> = {
   timestamp: "timestamp",
@@ -48,10 +49,7 @@ export default function AuditLogPage() {
   const dateToParam = searchParams.get("dateTo") ?? "";
 
   // Saved views
-  const { data: savedViews = [] } = useSavedViews("audit-log");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [activeViewId, setActiveViewId] = useState<string | null>(null);
-  const defaultViewApplied = useRef(false);
 
   const queryParams = useMemo(
     () => ({
@@ -70,73 +68,24 @@ export default function AuditLogPage() {
 
   const { data: pagedResult, isLoading, isError } = usePagedAuditLogs(queryParams);
 
-  const applyView = useCallback((view: SavedView) => {
-    try {
-      const config: ViewConfiguration = JSON.parse(view.configuration);
-      setColumnVisibility(config.columnVisibility ?? {});
-      setActiveViewId(view.id);
-      setSearchParams((prev) => {
-        if (config.sortBy) prev.set("sortBy", config.sortBy);
-        if (config.sortDir) prev.set("sortDir", config.sortDir);
-        if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
-        else { prev.delete("search"); setSearchInput(""); }
-        if (config.pageSize) prev.set("pageSize", String(config.pageSize));
-
-        // Restore advanced filters
-        const filterKeys = ["dateFrom", "dateTo"];
-        for (const key of filterKeys) {
-          const val = config.filters?.[key];
-          if (val) prev.set(key, val);
-          else prev.delete(key);
-        }
-
-        prev.set("page", "1");
-        return prev;
-      });
-    } catch { /* invalid config */ }
-  }, [setSearchParams, setSearchInput]);
-
-  // Apply default saved view on first load
-  useEffect(() => {
-    if (defaultViewApplied.current || savedViews.length === 0) return;
-    defaultViewApplied.current = true;
-    const defaultView = savedViews.find((v) => v.isDefault);
-  // Reacts to data that arrives asynchronously; removing the effect needs a
-  // real refactor, tracked separately rather than folded into a dependency
-  // upgrade.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (defaultView) applyView(defaultView);
-  }, [savedViews, applyView]);
-
-  function handleResetToDefault() {
-    setColumnVisibility({});
-    setActiveViewId(null);
-    setSearchParams((prev) => {
-      prev.delete("search");
-      prev.delete("entityType");
-      prev.delete("action");
-      prev.delete("dateFrom");
-      prev.delete("dateTo");
-      prev.set("sortBy", "timestamp");
-      prev.set("sortDir", "desc");
-      prev.set("page", "1");
-      return prev;
+  // The saved-view plumbing every other list page uses. This page had its own
+  // near-copy, which had already drifted: its reset cleared the entity-type and
+  // action filters but a saved view never captured them, so applying a view left
+  // whichever filters happened to be set.
+  const { activeViewId, applyView, handleResetToDefault, getCurrentConfiguration } =
+    useSavedViewState({
+      entityType: "audit-log",
+      filterKeys: SAVED_VIEW_FILTER_KEYS,
+      defaultSortBy: "timestamp",
+      defaultSortDir: "desc",
+      searchParams,
+      setSearchParams,
+      setSearchInput,
+      columnVisibility,
+      setColumnVisibility,
+      pageSize,
     });
-    setSearchInput("");
-  }
 
-
-  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
-    columnVisibility,
-    sortBy: sortByParam,
-    sortDir: sortDirParam,
-    search: searchParam || undefined,
-    pageSize,
-    filters: {
-      ...(dateFromParam ? { dateFrom: dateFromParam } : {}),
-      ...(dateToParam ? { dateTo: dateToParam } : {}),
-    },
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize, dateFromParam, dateToParam]);
 
   const handleEntityTypeChange = useCallback(
     (value: string) => {

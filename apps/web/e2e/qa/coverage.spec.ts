@@ -274,10 +274,17 @@ test("Attachments: download and delete through the UI", async ({ page }) => {
   await page.locator('input[type="file"]').first().setInputFiles({
     name: fileName, mimeType: "text/plain", buffer: Buffer.from("qa attachment"),
   });
-  await expect(page.getByText(fileName).first()).toBeVisible({ timeout: 15000 });
+  // Scope to the page body, not the whole document: uploading and deleting both
+  // raise a toast that *contains the file name* ("Uploaded qa-….txt"), and sonner
+  // renders it in a portal outside <main>. Matching the whole page let the row
+  // locator resolve against the toast instead of the list row, so the buttons
+  // clicked were the toast's — which is why this test failed intermittently and
+  // always passed when re-run alone, once the toast had gone.
+  const list = page.locator("main");
+  await expect(list.getByText(fileName).first()).toBeVisible({ timeout: 15000 });
 
   // The row's controls sit a few levels above the file name.
-  const row = page.getByText(fileName).first().locator("xpath=ancestor::*[.//button][1]");
+  const row = list.getByText(fileName).first().locator("xpath=ancestor::*[.//button][1]");
 
   const download = page.waitForEvent("download", { timeout: 15000 });
   await row.getByRole("button").first().click();
@@ -288,7 +295,7 @@ test("Attachments: download and delete through the UI", async ({ page }) => {
   await row.getByRole("button").last().click();
   const confirm = page.getByRole("button", { name: /delete|remove|confirm/i }).last();
   if (await confirm.count()) await confirm.click();
-  await expect(page.getByText(fileName)).toHaveCount(0, { timeout: 15000 });
+  await expect(list.getByText(fileName)).toHaveCount(0, { timeout: 15000 });
 
   watcher.assertClean("attachment download and delete");
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { daysUntilDate } from "../lib/format";
 import { toast } from "sonner";
@@ -238,14 +238,19 @@ function NotificationList({
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  // After marking-read/dismissing reduces the count, don't strand the user on
-  // an empty page past the end. Reconciling page state to the new bound is a
-  // legitimate data-driven sync.
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
+  // Marking read or dismissing can shrink the list under the reader's feet, so
+  // don't strand them on a page past the end.
+  //
+  // Adjusted during render rather than from an effect: the effect version
+  // committed a render showing an empty page and only then corrected it, which
+  // is the flash the lint rule is about. The page number cannot simply be
+  // derived, because it is the query's *input* and the bound comes back in the
+  // query's result.
+  const [lastTotalPages, setLastTotalPages] = useState(totalPages);
+  if (totalPages !== lastTotalPages) {
+    setLastTotalPages(totalPages);
     if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  }
 
   if (isLoading) {
     return (

@@ -59,13 +59,22 @@ export function useListPage({ sortFieldMap, defaultSortBy, defaultSortDir = "asc
     };
   }, [searchInput, searchParam, setSearchParams]);
 
-  useEffect(() => {
-  // Reacts to data that arrives asynchronously; removing the effect needs a
-  // real refactor, tracked separately rather than folded into a dependency
-  // upgrade.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  // Keep the box in step with the URL when the URL changes underneath it — back
+  // and forward navigation, a saved view being applied, filters being cleared.
+  //
+  // Adjusting the state during render rather than from an effect: React's
+  // documented pattern for deriving state from a changing input. The effect
+  // version rendered once with the stale text and then immediately re-rendered
+  // with the new value, which is the cascading render the lint rule names.
+  //
+  // Typing does not fight this: the debounce above writes the box's value to the
+  // URL, so `searchParam` arrives already equal to `searchInput` and the
+  // assignment is a no-op React discards.
+  const [lastSearchParam, setLastSearchParam] = useState(searchParam);
+  if (searchParam !== lastSearchParam) {
+    setLastSearchParam(searchParam);
     setSearchInput(searchParam);
-  }, [searchParam]);
+  }
 
   // Reverse of sortFieldMap (backend field -> column id). The controlled sort
   // state must carry the TanStack *column id* — that's what `column.getIsSorted()`
