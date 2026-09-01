@@ -481,8 +481,13 @@ def test_business_rules(s, f):
 
     s.check("retire the asset", api.post(f"/api/v1/assets/{aid}/retire", {"reason": "QA"}))
     s.check("retiring twice is refused", api.post(f"/api/v1/assets/{aid}/retire", {"reason": "QA"}), 400)
-    s.check("selling a retired asset is refused",
-            api.post(f"/api/v1/assets/{aid}/sell", {"salePrice": 10}), 400)
+    # Retiring kit and then selling it is the ordinary end of an asset's life.
+    # This used to be refused, which left the only route to "sold" running
+    # through an asset still in service.
+    s.check("a retired asset can still be sold",
+            api.post(f"/api/v1/assets/{aid}/sell", {"salePrice": 10}))
+    s.assert_("and it lands in the sold state",
+              jbody(api.get(f"/api/v1/assets/{aid}")[1]).get("status") == "Sold")
 
     b = s.check("create an asset to sell", api.post("/api/v1/assets", {
         "name": f"Deep Sell {t}", "assetTypeId": f["atA"]["id"]}), 201)
@@ -946,35 +951,23 @@ def test_legacy_path_aliases(s):
     would have broken every old client with nothing to catch it — the handler
     behind them being well tested says nothing about the alias resolving.
     """
-    s.section("Legacy path aliases")
+    s.section("Legacy path aliases are gone")
     api, t = s.api, s.tag
 
-    ALIASES = [
-        ("/api/v1/asset-types", "/api/v1/assettypes", {"name": f"Alias AType {t}"}),
-        ("/api/v1/certificate-types", "/api/v1/certificatetypes", {"name": f"Alias CType {t}"}),
-        ("/api/v1/application-types", "/api/v1/applicationtypes", {"name": f"Alias AppType {t}"}),
-    ]
-    for canonical, legacy, payload in ALIASES:
-        made = s.check(f"create via {legacy}", api.post(legacy, payload), 201)
-        if not made:
-            continue
-        rid = made["id"]
-        s.check(f"list via {legacy}", api.get(f"{legacy}?pageSize=100&{q(search=t)}"))
-        s.check(f"read one via {legacy}", api.get(f"{legacy}/{rid}"))
-        s.check(f"read custom fields via {legacy}", api.get(f"{legacy}/{rid}/customfields"))
-        s.check(f"update via {legacy}", api.put(f"{legacy}/{rid}", {"name": payload["name"] + " edited"}))
+    # These concatenated paths were kept as aliases from an early version. The
+    # frontend never used them and no external consumer exists, so they were
+    # retired — surface that answers is surface that has to be secured, tested
+    # and kept working. This asserts they are actually gone rather than quietly
+    # still serving.
+    for legacy in ("/api/v1/assettypes", "/api/v1/certificatetypes",
+                   "/api/v1/applicationtypes", "/api/v1/auditlogs"):
+        st, _ = api.get(legacy)
+        s.assert_(f"{legacy} no longer answers", st == 404, f"got {st}")
 
-        # A record created through the alias must be visible on the canonical
-        # path: they are the same handler, not two stores.
-        listed = ids_of(jbody(api.get(f"{canonical}?pageSize=100&{q(search=t)}")[1]))
-        s.assert_(f"{legacy} and {canonical} are the same resource", rid in listed)
-
-        s.check(f"archive via {legacy}", api.delete(f"{legacy}/{rid}"), (200, 204))
-        s.check(f"restore via {legacy}", api.post(f"{legacy}/{rid}/restore"))
-        s.check(f"bulk-archive via {legacy}", api.post(f"{legacy}/bulk-archive", {"ids": [rid]}))
-
-    s.check("audit log via its legacy path", api.get("/api/v1/auditlogs?pageSize=5"))
-    s.raw("audit log export via its legacy path", api.get("/api/v1/auditlogs/export"))
+    # And the canonical paths still do.
+    for canonical in ("/api/v1/asset-types", "/api/v1/certificate-types",
+                      "/api/v1/application-types", "/api/v1/audit-logs"):
+        s.check(f"{canonical} still answers", api.get(f"{canonical}?pageSize=5"))
 
 
 def test_bulk_operations(s, f):

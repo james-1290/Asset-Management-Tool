@@ -8,7 +8,6 @@ import java.util.*
 data class AssetDto(
     val id: UUID,
     val name: String,
-    val assetTag: String? = null,
     val serialNumber: String?,
     val status: String,
     val assetTypeId: UUID,

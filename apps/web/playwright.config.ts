@@ -2,6 +2,17 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
+  /*
+   * The exhaustive control pass is excluded from the default run.
+   *
+   * It clicks all 757 controls on all 16 screens and adds about ten minutes,
+   * which earned its place while the app was still turning up defects that only
+   * appear when a control is actually used — the Assets "Archived" toggle wired
+   * to a parameter the API ignored being the example. It is a build-out tool
+   * rather than a per-commit gate: run it with `npm run test:exhaustive` after
+   * broad UI work, or when a screen has been reworked.
+   */
+  testIgnore: ["**/exhaustive.spec.ts"],
   timeout: 30000,
   /*
    * One worker, deliberately.
