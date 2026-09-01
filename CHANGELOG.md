@@ -1,5 +1,45 @@
 # Changelog
 
+## 2026-09-01 — An action-and-variation matrix, and the archived assets nobody could reach
+
+The eighth sweep was static: every handler read, every class of defect probed,
+and the existing suites trusted for behaviour. That is not the same as putting
+every action through every variation, and reporting it as such was wrong.
+
+`scripts/qa/api_matrix.py` is the missing half. It runs **147 variations** and
+asserts the resulting *state*, not the status code: an asset checked out, checked
+out again while already out, checked in, checked in again when it is not out,
+reassigned to somebody else, retired, sold, archived, restored, bulk-edited,
+bulk-archived with one bad id in the batch; a person created, edited, moved
+between locations, given two assets, one returned, the other transferred away,
+offboarded, archived and restored; a licence with two seats given to two people,
+refused to a third, released and given away again, archived only once its seats
+are free. "Every endpoint reached" counted `POST /assets/{id}/checkout` as
+covered. It says nothing about any of that.
+
+It found this on its first run.
+
+**An archived asset could not be found, and so could never be restored.** The
+assets list ignored `includeArchived` — the parameter the Assets screen has
+always sent for its own "Archived" toggle. Archiving an asset removed it from the
+only place it could be found; the restore endpoint worked perfectly and could not
+be reached. Every other collection honoured the parameter, which is why nothing
+else caught it.
+
+The browser suite passed the entire time. `uniformity.spec.ts` asserted that each
+list "offers a way to restore" by checking the toggle was *visible*. It now
+clicks it, waits for the request, and asserts the filter reaches the API — the
+difference between a control existing and a control working.
+
+Two more things the matrix pinned rather than found: the seat limit was being
+"tested" by handing the same person a second seat, which is refused as a
+duplicate and proves nothing about the limit; and `assetTag` exists in the
+database, the entity, the read DTO and the frontend type, but no endpoint can set
+it and no screen shows it — a placeholder for the deferred barcode feature, left
+in place deliberately and now written down.
+
+The matrix runs in the sweep and in CI.
+
 ## 2026-09-01 — Eighth sweep: measured instead of asserted
 
 The seventh sweep was called complete after a handful of lenses and two known

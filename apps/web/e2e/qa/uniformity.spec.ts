@@ -157,10 +157,27 @@ test.describe("List pages keep the shared design", () => {
     // did, on five of these lists, which is exactly the gap this pins.
     for (const list of LISTS.filter((l) => l.archives)) {
       await visit(page, list.path);
+      const toggle = page.getByRole("button", { name: "Show archived" });
+      await expect(toggle, `${list.path} should offer the archived filter`).toBeVisible({ timeout: 10000 });
+
+      // And the toggle has to *work*. Checking only that the control exists is
+      // how the Assets list shipped a filter the API ignored: archiving an asset
+      // removed it from the one place it could be found, so it could never be
+      // restored, and this spec passed the whole time.
+      await toggle.click();
+      await page.waitForLoadState("networkidle");
       await expect(
-        page.getByRole("button", { name: "Show archived" }),
-        `${list.path} should offer the archived filter`,
-      ).toBeVisible({ timeout: 10000 });
+        page,
+        `${list.path}: the archived filter should reach the URL`,
+      ).toHaveURL(/includeArchived=true/, { timeout: 10000 });
+
+      const request = page.waitForRequest(
+        (r) => r.url().includes("includeArchived=true"),
+        { timeout: 10000 },
+      );
+      await page.reload();
+      await request;
+      await toggle.click();
     }
     w.assertClean("archived toggles");
   });

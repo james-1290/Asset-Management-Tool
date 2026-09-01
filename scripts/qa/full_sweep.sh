@@ -130,6 +130,7 @@ step "Frontend typecheck"   bash -c "cd '$ROOT/apps/web' && npx tsc -b --noEmit"
 step "Frontend production build" bash -c "cd '$ROOT/apps/web' && npm run build"
 step "API smoke suite"      bash -c "cd '$ROOT' && python3 scripts/qa/api_smoke.py"
 step "API deep suite"       bash -c "cd '$ROOT' && python3 scripts/qa/api_deep.py"
+step "API action matrix"    python3 "$ROOT/scripts/qa/api_matrix.py"
 step "Browser suite (dev server)" bash -c "cd '$ROOT/apps/web' && ./node_modules/.bin/playwright test --reporter=line"
 step "Browser suite (production build)" run_preview_suite
 

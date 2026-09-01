@@ -155,7 +155,7 @@ count behind it is an opinion.
 | 11.2 | Character encoding end to end, including Excel's conventions | Fixed — both import and export were wrong |
 | 11.3 | Timezone handling consistent | Fixed — alerts used the server's local zone |
 | 11.4 | Money and rounding consistent | OK — one depreciation calculator, 2dp |
-| 11.5 | Soft delete is reversible everywhere it is offered | Fixed — twice; the API, then the five lists with no control |
+| 11.5 | Soft delete is reversible everywhere it is offered | Fixed — a **third** time, and the worst of them. The assets list ignored `includeArchived`, the parameter its own screen has always sent, so an archived asset vanished from the only place it could be found and could never be restored through the UI. Every other collection honoured it. The browser spec passed throughout because it checked the toggle *existed*; it now checks the toggle *works*. |
 | 11.6 | Scheduled work is safe when the app runs on more than one instance | Fixed — every instance sent the alerts |
 
 ## 12. Performance
@@ -192,6 +192,7 @@ count behind it is an opinion.
 | 14.7 | Every endpoint reached by a suite | Fixed — measured, not assumed: 27 of 212 had never been reached (26 legacy aliases, 1 real). Now 212/212, enforced by the sweep |
 | 14.8 | Every GUI control named by a spec | Fixed — 25 controls no spec had ever named (dashboard drill-downs, column sort headers, report tabs, three filters). Now 552/552 |
 | 14.9 | Line and branch coverage measured | Fixed — **backend 82.7% lines, 52.7% branches** with the running API included (the test JVM alone reads 27%, which is why it had to be merged). **Frontend unit tests 11.9%**, scoped to pure logic on purpose — the screens are covered behaviourally by 14.8. Reported, never gated: a coverage target rewards tests written to raise a number. Branch coverage is the honest weak spot: error paths |
+| 14.10 | Every action is exercised in every variation, not merely reached | Fixed — `scripts/qa/api_matrix.py`. "Every endpoint reached" counted `POST /assets/{id}/checkout` as covered while saying nothing about checking out an asset that is already out, checking in one that is not out, or reassigning it to someone else. **147 variations** across assets, people, applications, certificates, locations, the catalogue types and the cross-cutting features, asserting resulting state rather than status codes. It found the archived-assets defect on its first run. |
 
 ## 15. Operability and compliance
 

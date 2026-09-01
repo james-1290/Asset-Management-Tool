@@ -139,6 +139,9 @@ jobs:
       - name: API deep suite — every endpoint behaves
         run: python3 scripts/qa/api_deep.py
 
+      - name: API action matrix — every action, in every variation
+        run: python3 scripts/qa/api_matrix.py
+
       - name: Start the web app
         working-directory: apps/web
         run: |

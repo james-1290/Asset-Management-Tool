@@ -85,7 +85,8 @@ class AssetsController(
         @RequestParam(required = false) costMin: BigDecimal?,
         @RequestParam(required = false) costMax: BigDecimal?,
         @RequestParam(required = false) unassigned: Boolean?,
-        @RequestParam(required = false) createdAfter: String?
+        @RequestParam(required = false) createdAfter: String?,
+        @RequestParam(defaultValue = "false") includeArchived: Boolean
     ): ResponseEntity<Any> {
         val p = maxOf(1, page)
         val ps = pageSize.coerceIn(1, 100)
@@ -99,7 +100,8 @@ class AssetsController(
 
         val spec = buildFilteredSpec(search, status, includeStatuses, typeId,
             locationId, assignedPersonId, purchaseDateFrom, purchaseDateTo,
-            warrantyExpiryFrom, warrantyExpiryTo, costMin, costMax, unassigned, createdAfter)
+            warrantyExpiryFrom, warrantyExpiryTo, costMin, costMax, unassigned, createdAfter,
+            includeArchived)
             // Fetch the to-one relations the row DTO reads, to avoid an N+1 per row.
             .and(withFetch("assetType", "location", "assignedPerson", "assetModel"))
         val pageReq = PageRequest.of(p - 1, ps, sortOf(sortBy, sortDir))
@@ -1190,12 +1192,19 @@ class AssetsController(
         costMin: BigDecimal? = null,
         costMax: BigDecimal? = null,
         unassigned: Boolean? = null,
-        createdAfter: String? = null
+        createdAfter: String? = null,
+        includeArchived: Boolean = false
     ): Specification<Asset> = Specification { root, _, cb ->
         val predicates = mutableListOf<Predicate>()
 
-        // Always exclude archived
-        predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+        // Archived assets are hidden unless asked for. The Assets screen has always
+        // sent `includeArchived`, and this list has always ignored it — which left
+        // an archived asset invisible in the only place it could be found, and so
+        // impossible to restore from the UI even though the endpoint exists. Every
+        // other collection already honoured this parameter.
+        if (!includeArchived) {
+            predicates.add(cb.equal(root.get<Boolean>("isArchived"), false))
+        }
 
         // Type filter
         if (typeId != null)
