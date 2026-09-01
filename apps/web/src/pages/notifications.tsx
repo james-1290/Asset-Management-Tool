@@ -239,13 +239,14 @@ function NotificationList({
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   // Marking read or dismissing can shrink the list under the reader's feet, so
-  // don't strand them on a page past the end.
+  // don't strand the reader on a page past the end.
   //
   // Adjusted during render rather than from an effect: the effect version
-  // committed a render showing an empty page and only then corrected it, which
-  // is the flash the lint rule is about. The page number cannot simply be
-  // derived, because it is the query's *input* and the bound comes back in the
-  // query's result.
+  // committed a render of an empty page and only then corrected it, which is the
+  // flash the lint rule names. It cannot be a plain derived value either — the
+  // page number is the query's *input*, and the bound only comes back in the
+  // query's result, so clamping at the point of use would leave the request and
+  // the display disagreeing.
   const [lastTotalPages, setLastTotalPages] = useState(totalPages);
   if (totalPages !== lastTotalPages) {
     setLastTotalPages(totalPages);

@@ -35,6 +35,16 @@ through the router, which React forbids during render; an image fetch is
 genuinely asynchronous; two dialogs reset their form on open. Each now says which
 of those it is.
 
+**A second one, caught by CI rather than by me.** The notification spec passed
+locally on every run — full database, wiped database, and with enough
+notifications to span two pages — and failed on CI. The uploaded page snapshot
+said why: it was waiting for a second "Open menu" button on a list that had one
+row. The spec counted the menus, then clicked `nth(1)`; marking a row read
+refetches the list and can drop that row out of the Current tab, so the count was
+already stale when the click went out. It re-resolves `first()` at each step now.
+Worth noting the shape — `if (await x.count() > n)` followed by a positional
+click — because it reads as defensive and is the opposite.
+
 **A flaky test, diagnosed rather than re-run.** The attachments spec had failed
 twice across many runs and passed on every re-run, which is the shape of a test
 people learn to ignore. It matched the file name anywhere on the page — and both

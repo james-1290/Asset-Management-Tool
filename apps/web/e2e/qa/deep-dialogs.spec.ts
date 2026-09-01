@@ -332,12 +332,22 @@ test.describe("Notification actions", () => {
         { timeout: 15000 })
       .toBeLessThan(before);
 
-    // Snooze and dismiss are on the same menu, on a different row.
+    // Snooze and dismiss are on the same menu.
+    //
+    // Deliberately acting on whichever row is *currently* first rather than on
+    // `nth(1)`: marking one read refetches the list and can drop that row out of
+    // the Current tab, so a count taken a moment earlier can be stale by the time
+    // the click lands. That check-then-act gap is what failed on CI — the test
+    // waited 30s for a second "Open menu" button on a list that now had one row.
+    // Re-resolving `first()` at each step lets Playwright wait for whatever is
+    // actually there.
     const menus = page.getByRole("button", { name: /open menu/i });
-    if (await menus.count() > 1) {
-      await menus.nth(1).click();
+    if (await menus.count() > 0) {
+      await menus.first().click();
       await page.getByRole("menuitem", { name: /snooze 1 day/i }).click();
-      await menus.nth(1).click();
+    }
+    if (await menus.count() > 0) {
+      await menus.first().click();
       await page.getByRole("menuitem", { name: /dismiss/i }).click();
     }
     w.assertClean("notification actions");
