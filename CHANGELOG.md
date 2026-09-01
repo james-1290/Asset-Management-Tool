@@ -1,5 +1,61 @@
 # Changelog
 
+## 2026-09-01 — Eighth sweep: measured instead of asserted
+
+The seventh sweep was called complete after a handful of lenses and two known
+gaps. Most of the 89 rows were never touched, which is why it finished quickly.
+This one starts from the subjects — 484 files, 56k lines, 186 handlers, 10
+collections — and prints what it cannot prove.
+
+`scripts/qa/sweep_audit.py` is the new part: it walks every handler in every
+controller and gives each one a verdict on authorization, request validation,
+audit logging, transaction scope, and version checking. It found its own false
+positives first (class-level `@PreAuthorize` covers a handler; a service may be
+what writes the audit entry), because a tool that cannot be trusted is worse than
+none.
+
+Seven defects, all verified against the running app rather than by reading.
+
+**Eleven write endpoints emitted no audit entry** — against an explicit product
+rule. Counted, not inferred: four writes produced zero rows. Alert-rule changes
+and notification dismiss/snooze are now audited, because they change or suppress
+what the system warns about. Saved views and mark-as-read stay unaudited
+deliberately, and the reason is written down.
+
+**`user-notifications` answered 403 on ownership checks**, which confirms the row
+exists. Saved views and alert rules were fixed for exactly this reason in an
+earlier sweep; these three were missed. Now 404.
+
+**Three collections accepted a blank name.** Seven of ten refused it; asset
+types, certificate types and application types created an unnamed row. Saved
+views were worse — a blank entity type and a `configuration` that was not JSON
+were both accepted, and the UI parses that field in a try/catch, so the row did
+nothing, silently, every time it was applied.
+
+**Over-length input was reported as a conflict.** Every
+`DataIntegrityViolationException` mapped to 409 "the record may already exist", so
+a 300-character name came back as a duplicate. Length and foreign-key violations
+now answer 400 and say what to do.
+
+**Every descending sort was a filesort — and the indexes were not the problem.**
+`sortOf` appended a fixed-ascending `id` tie-break for stable pagination. MySQL
+will read a composite index backwards for `col DESC, id DESC`, but a mixed
+`col DESC, id ASC` it cannot, so it sorted the entire filtered set. Measured on
+200,000 rows against the real `(is_archived, name)` index shape: `Backward index
+scan` versus `Using filesort` over 99,999 rows. The tie-break now follows the sort
+direction in all seven controllers. No migration: InnoDB already appends the
+primary key to every secondary index, so the existing indexes were always capable
+of serving these sorts — the query simply asked for an order none of them could
+provide. The audit log's default sort is `timestamp DESC`, and "newest first" is
+the most common thing anyone asks a list for.
+
+Measured clean, with counts rather than opinions: authorization on all 186
+handlers; no N+1 on any of 15 list endpoints (query count flat from pageSize 1 to
+50); archive-and-restore round-trips and detail endpoints on all 10 collections;
+0 unmapped database columns; 0 unused config keys; 0 dead enum values; 0 dead DTO
+fields; npm audit clean for shipped and dev dependencies; no secrets in tracked
+files; sort parameters allow-listed with a safe default.
+
 ## 2026-09-01 — The set-state-in-effect suppressions, and a flaky test that was lying about why
 
 Three suppressions were on the list to fix. There were **eleven**, most of them

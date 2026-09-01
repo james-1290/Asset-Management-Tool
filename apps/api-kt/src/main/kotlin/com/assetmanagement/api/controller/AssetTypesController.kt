@@ -88,6 +88,12 @@ class AssetTypesController(
     @PostMapping
     @Transactional
     fun create(@RequestBody request: CreateAssetTypeRequest): ResponseEntity<Any> {
+        // Every other collection refuses a blank name; these three did not,
+        // so an unnamed asset type could be created and would render as an empty row.
+        if (request.name.isBlank())
+            return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
+        if (request.name.length > 255)
+            return ResponseEntity.badRequest().body(mapOf("error" to "Name must be 255 characters or fewer."))
         val type = AssetType(name = request.name, description = request.description,
             defaultDepreciationMonths = request.defaultDepreciationMonths, nameTemplate = request.nameTemplate)
         assetTypeRepository.save(type)
@@ -101,6 +107,12 @@ class AssetTypesController(
     @PutMapping("/{id}")
     @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateAssetTypeRequest): ResponseEntity<Any> {
+        // Every other collection refuses a blank name; these three did not,
+        // so an unnamed asset type could be created and would render as an empty row.
+        if (request.name.isBlank())
+            return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
+        if (request.name.length > 255)
+            return ResponseEntity.badRequest().body(mapOf("error" to "Name must be 255 characters or fewer."))
         val type = assetTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
 
         versionConflict(request.entityVersion, type.entityVersion)?.let { return it }

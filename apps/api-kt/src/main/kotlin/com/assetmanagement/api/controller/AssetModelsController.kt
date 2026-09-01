@@ -76,7 +76,7 @@ class AssetModelsController(
             "updatedat" -> "updatedAt"
             else -> "name"
         }
-        val pageable = PageRequest.of(p - 1, ps, Sort.by(dir, sortProp).and(Sort.by(Sort.Direction.ASC, "id")))
+        val pageable = PageRequest.of(p - 1, ps, Sort.by(dir, sortProp).and(Sort.by(dir, "id")))
 
         val spec = Specification<AssetModel> { root, _, cb ->
             val predicates = mutableListOf<Predicate>()
