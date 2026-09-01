@@ -16,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import org.springframework.transaction.annotation.Transactional
 
 @RestController
 @RequestMapping(value = ["/api/v1/audit-logs", "/api/v1/auditlogs"]) // legacy concatenated path kept as an alias
@@ -26,6 +27,9 @@ class AuditLogsController(
     private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
 
     @GetMapping
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int, @RequestParam(defaultValue = "25") pageSize: Int,
         @RequestParam(required = false) entityType: String?, @RequestParam(required = false) action: String?,
@@ -42,7 +46,9 @@ class AuditLogsController(
     }
 
     @GetMapping("/export")
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun export(
         @RequestParam(required = false) entityType: String?, @RequestParam(required = false) action: String?,
         @RequestParam(required = false) search: String?, @RequestParam(defaultValue = "timestamp") sortBy: String,

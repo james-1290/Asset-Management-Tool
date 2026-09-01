@@ -21,6 +21,16 @@ export DOCKER_API_VERSION="${DOCKER_API_VERSION:-1.44}"
 # be measured rather than assumed.
 COVERAGE_FILE="/tmp/qa-endpoint-coverage-$LABEL.txt"
 
+# A full cycle runs for tens of minutes. If the machine sleeps partway through,
+# Chromium fails with ERR_NETWORK_IO_SUSPENDED / ERR_NETWORK_CHANGED and the
+# browser specs time out — producing a different set of "failures" on every run
+# that look like real defects and are not. Re-exec under caffeinate so the
+# machine stays awake for the duration.
+if [[ "$(uname)" == "Darwin" && -z "${QA_CAFFEINATED:-}" ]] && command -v caffeinate >/dev/null; then
+  export QA_CAFFEINATED=1
+  exec caffeinate -dimsu "$0" "$@"
+fi
+
 fail=0
 declare -a RESULTS=()
 

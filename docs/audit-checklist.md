@@ -97,6 +97,10 @@ count behind it is an opinion.
 | 6.2 | Backend dependency advisories | Fixed — nothing watched them; Dependabot added |
 | 6.3 | CI actions pinned so a moved tag cannot change the build | Fixed — were tags, now commit SHAs |
 | 6.4 | Dependency licences compatible with distribution | OK — all permissive (MIT/ISC/Apache/BSD/MPL); no GPL, AGPL or SSPL |
+| 6.5 | After a major framework upgrade, behaviour changes that still compile | Fixed — Boot 4 silently dropped Flyway auto-config, moved Jackson to `tools.jackson`, and Hibernate 7 stopped tolerating lazy reads outside a session (22 endpoints 500ing). None was a compile error. Run the deep API suite against the built jar, not just `./gradlew test`. |
+| 6.6 | Features disabled by default are still exercised somewhere | Fixed — the OpenAPI spec is off unless `SWAGGER_ENABLED` is set, so no suite ever built it and Boot 4 broke it unnoticed; a test now enables it. Anything behind a default-off flag has the same blind spot. |
+| 6.7 | QA results are trustworthy — no environmental failures read as defects | Fixed — a sleeping machine made the browser suite fail differently on every run (`ERR_NETWORK_IO_SUSPENDED`, 30s timeouts); the sweep now runs under `caffeinate`. |
+| 6.8 | Every check the docs claim to run actually runs | **GAP** — `npm run deadcode` is listed in docs/qa.md as one of the suites, but `knip` is in no dependency list (so the script fails on a clean checkout) and neither the sweep nor CI invokes it. The dead-code check has not been running at all. Not fixed here: unrelated to the framework upgrade. |
 
 ## 7. Authentication and session (A07)
 

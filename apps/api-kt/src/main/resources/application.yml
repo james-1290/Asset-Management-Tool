@@ -61,8 +61,9 @@ spring:
       # logs, and identity comes from Entra alone.
       - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   jackson:
-    serialization:
-      write-dates-as-timestamps: false
+    # `serialization.write-dates-as-timestamps` moved out of SerializationFeature
+    # in Jackson 3 and has no property equivalent in Boot 4; it is set explicitly
+    # in JacksonConfig instead.
     default-property-inclusion: non_null
 
 

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*
 import java.net.URI
 import java.time.Instant
 import java.util.UUID
+import org.springframework.transaction.annotation.Transactional
 
 @RestController
 @RequestMapping("/api/v1/alert-rules")
@@ -17,6 +18,9 @@ class UserAlertRulesController(
     private val currentUserService: CurrentUserService
 ) {
     @GetMapping
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun getAll(): ResponseEntity<List<UserAlertRuleDto>> {
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
         val rules = userAlertRuleRepository.findByUserIdOrderByCreatedAtDesc(userId)

@@ -280,6 +280,9 @@ class CertificatesController(
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun getAll(
         @RequestParam(defaultValue = "1") page: Int,
         @RequestParam(defaultValue = "25") pageSize: Int,
@@ -368,6 +371,9 @@ class CertificatesController(
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{id}")
+    // `toDto` walks the lazy certificateType association, so the mapping has to
+    // happen inside a session. Open-session-in-view is off by design.
+    @Transactional(readOnly = true)
     fun getById(@PathVariable id: UUID): ResponseEntity<CertificateDto> {
         val certificate = certificateRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()

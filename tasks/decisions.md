@@ -236,3 +236,37 @@ authorisation with none of that, and are correct immediately on sign-in.
 - Users appear in the database only after their first sign-in. This is
   acceptable because assets are assigned to **People**, a separate table, so a
   person can hold assets without ever having logged in.
+
+---
+
+## ADR-015: Read handlers that map entities to DTOs must be `@Transactional(readOnly = true)`
+
+**Date**: 2026-08-31
+**Status**: Accepted
+
+**Context**: `spring.jpa.open-in-view` is `false` (deliberately — OSIV holds a
+database connection for the whole request and hides N+1 queries behind lazy
+loads that happen during serialisation). Spring Data's repository methods open
+and close their own transaction, so an entity returned from `findById` is
+detached by the time a handler maps it. Hibernate 6 quietly initialised such a
+proxy anyway; **Hibernate 7 (Spring Boot 4) throws `LazyInitializationException`**.
+
+The Boot 4 upgrade turned that into 500s on 23 read endpoints at once — every
+handler that walked a lazy `assetType`, `certificateType` or `person` while
+building its DTO. Only one of them was covered by a test.
+
+**Decision**: any handler that maps an entity to a DTO carries
+`@Transactional(readOnly = true)`. The alternative — turning OSIV back on —
+would fix the symptom by restoring the behaviour we rejected, and would keep the
+N+1s invisible.
+
+**Consequences**:
+
+- New read endpoints need the annotation. Omitting it fails at *runtime*, not
+  compile time, and only on a path that touches an uninitialised association —
+  so it will not necessarily show up in review or in a partial test run.
+- The deep API suite is the backstop: it exercises every endpoint against the
+  built jar, which is how four of the 23 were found.
+- Fetch-joining in the query (`FetchSpecs.withFetch`) remains the better answer
+  for list endpoints, because it also removes the N+1. The annotation is the
+  floor, not the goal.

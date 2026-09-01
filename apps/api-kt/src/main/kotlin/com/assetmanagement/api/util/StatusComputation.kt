@@ -47,7 +47,7 @@ fun computeStatus(storedStatus: String, expiryDate: LocalDate?, pendingDays: Lon
  * - requested == [active]         → stored Active and not yet Expired/PendingRenewal
  * - anything else                 → a plain equality on [requested]
  */
-fun <T> computedStatusPredicates(
+fun <T : Any> computedStatusPredicates(
     root: Root<T>,
     cb: CriteriaBuilder,
     requested: Enum<*>,
@@ -110,7 +110,7 @@ fun <T> computedStatusPredicates(
  * the column reads on screen. Pass an unsorted `Pageable` when using this, or
  * Spring Data's own `Sort` will be appended ahead of it.
  */
-fun <T> orderByComputedStatus(
+fun <T : Any> orderByComputedStatus(
     statuses: List<Enum<*>>,
     active: Enum<*>,
     expired: Enum<*>,

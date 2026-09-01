@@ -53,6 +53,17 @@ role, and anonymous.
   images without alt text, unlabelled fields, and pages without exactly one
   `h1`. It is a floor, not a substitute for testing with real assistive
   technology.
+- **The OpenAPI spec is only checked by a test, not by the suites.** springdoc
+  is off unless `SWAGGER_ENABLED` is set, so every suite runs with the docs
+  disabled and would never notice them broken —
+  `OpenApiDocsIntegrationTest` switches them on for one test so the spec is
+  built on every run. The smoke suite reports a skip when it finds them off.
+- **The sweep holds the machine awake** (`caffeinate`). A cycle runs for tens of
+  minutes, and if the machine sleeps partway through, Chromium reports
+  `ERR_NETWORK_IO_SUSPENDED` or `ERR_NETWORK_CHANGED` and the specs time out.
+  That produces a *different* handful of failures on each run, which read as
+  real defects and are not. If browser failures are all timeouts and network
+  errors, and the run took far longer than usual, suspect this before the code.
 - **The browser suite is run twice** by the sweep: against the Vite dev server,
   and against `vite preview`, which serves the built bundle with the real
   production header suite including the CSP. Only the second would catch a CSP

@@ -548,6 +548,24 @@ def main():
     else:
         r.skip("no-role refusal", "could not sign in as 'norole'")
 
+    # -------------------------------------------------------------- OpenAPI
+    # The docs are off unless SWAGGER_ENABLED is set, so a normal run has
+    # nothing to check here. That is exactly why springdoc went unexercised and
+    # the Spring Boot 4 upgrade broke it unnoticed — the guarantee that the spec
+    # still builds lives in OpenApiDocsIntegrationTest, which switches the docs
+    # on for one test. This checks the deployed-with-docs case when it applies.
+    print("\n-- OpenAPI documentation --")
+    st, body = api.get("/v3/api-docs")
+    if st == 404:
+        r.skip("OpenAPI", "docs disabled (SWAGGER_ENABLED unset); covered by OpenApiDocsIntegrationTest")
+    else:
+        (r.ok if st == 200 else r.fail)("GET /v3/api-docs serves the generated spec", f"{st}")
+        if st == 200 and isinstance(body, dict):
+            paths = body.get("paths") or {}
+            (r.ok if len(paths) > 100 else r.fail)(
+                "the spec documents the API's paths", f"{len(paths)} paths")
+        check("GET /swagger-ui/index.html", api.get("/swagger-ui/index.html"))
+
     # ----------------------------------------------------------------- SCIM
     print("\n-- SCIM provisioning --")
     scim = Api(args.base)

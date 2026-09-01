@@ -16,7 +16,7 @@ class DatabaseSeeder(
 
     private val log = LoggerFactory.getLogger(DatabaseSeeder::class.java)
 
-    override fun run(vararg args: String?) {
+    override fun run(vararg args: String) {
         seedRoles()
         seedDefaultSettings()
     }

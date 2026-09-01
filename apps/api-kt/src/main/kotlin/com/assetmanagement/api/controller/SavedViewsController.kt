@@ -19,6 +19,9 @@ class SavedViewsController(
 ) {
 
     @GetMapping
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun getAll(@RequestParam entityType: String): ResponseEntity<Any> {
         if (entityType.isBlank()) return ResponseEntity.badRequest().body(mapOf("error" to "entityType is required"))
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()

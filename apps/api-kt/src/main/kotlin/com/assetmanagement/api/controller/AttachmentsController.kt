@@ -18,6 +18,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.*
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.transaction.annotation.Transactional
 
 @RestController
 @RequestMapping("/api/v1/attachments")
@@ -142,6 +143,9 @@ class AttachmentsController(
 
     @PreAuthorize("hasAnyRole('Admin','Operator','User')")
     @GetMapping("/{entityType}/{entityId}")
+    // Maps entities to DTOs, which walks lazy associations; open-session-in-view
+    // is off, so the mapping has to happen inside a session.
+    @Transactional(readOnly = true)
     fun list(
         @PathVariable entityType: String,
         @PathVariable entityId: UUID

@@ -55,7 +55,7 @@ interface PersonRepository : JpaRepository<Person, UUID>, JpaSpecificationExecut
 
 /** Base for the entity-type repositories consumed by the generic archivable-type controller. */
 @org.springframework.data.repository.NoRepositoryBean
-interface ArchivableTypeRepository<E> : JpaRepository<E, UUID>, JpaSpecificationExecutor<E>
+interface ArchivableTypeRepository<E : Any> : JpaRepository<E, UUID>, JpaSpecificationExecutor<E>
 
 @Repository
 interface AssetTypeRepository : ArchivableTypeRepository<AssetType>
