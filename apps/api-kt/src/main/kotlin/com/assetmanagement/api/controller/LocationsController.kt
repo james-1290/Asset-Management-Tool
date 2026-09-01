@@ -175,7 +175,8 @@ class LocationsController(
     @PostMapping
     @Transactional
     fun create(@Valid @RequestBody request: CreateLocationRequest): ResponseEntity<LocationDto> {
-        val location = Location(name = request.name, address = request.address, city = request.city, country = request.country)
+        val location =
+            Location(name = request.name, address = request.address, city = request.city, country = request.country)
         locationRepository.save(location)
 
         auditService.log(AuditEntry("Created", "Location", location.id.toString(), location.name,

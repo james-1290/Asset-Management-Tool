@@ -73,5 +73,4 @@ class RateLimitFilter(
 
         filterChain.doFilter(request, response)
     }
-
 }

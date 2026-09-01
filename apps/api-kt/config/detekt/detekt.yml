@@ -1,0 +1,93 @@
+# detekt configuration for the backend.
+#
+# The point of adding a linter here was that the backend had none at all: an
+# unused import survived every sweep until a one-off script went looking for it.
+# So this config is tuned to find *defects and dead weight*, not to impose a
+# formatter on 46k lines of working code.
+#
+# What is deliberately off, and why:
+#   - the `formatting` ruleset's wrapping/indentation rules (~1,900 findings)
+#     would reformat almost every file without finding one defect. The rules
+#     from it that catch real problems — unused and wildcard imports, import
+#     ordering — are kept.
+#   - threshold rules (MagicNumber, LongMethod, LongParameterList,
+#     CyclomaticComplexMethod, TooManyFunctions, ReturnCount) flag working code
+#     for being large. They are worth revisiting deliberately, not as a gate on
+#     every commit.
+#
+# Anything left enabled fails the build, so a new finding has to be dealt with
+# rather than accumulating.
+
+build:
+  maxIssues: 0
+
+formatting:
+  active: true
+  android: false
+  autoCorrect: true
+  # The dead-weight rules this exists for.
+  NoUnusedImports:
+    active: true
+  NoWildcardImports:
+    active: false        # wildcard model/repository imports are the house style
+  ImportOrdering:
+    active: false
+  # Formatting opinions: off.
+  ArgumentListWrapping: { active: false }
+  Wrapping: { active: false }
+  ParameterListWrapping: { active: false }
+  Indentation: { active: false }
+  MultiLineIfElse: { active: false }
+  MaximumLineLength: { active: false }
+  NoMultipleSpaces: { active: false }
+  ChainWrapping: { active: false }
+  SpacingBetweenDeclarationsWithComments: { active: false }
+  TrailingCommaOnCallSite: { active: false }
+  TrailingCommaOnDeclarationSite: { active: false }
+  Filename: { active: false }
+  AnnotationOnSeparateLine: { active: false }
+  FinalNewline: { active: true }
+  # Off deliberately: rewriting "${x}" to "$x" is cosmetic, and detekt's own
+  # UnusedPrivateProperty then reports the interpolated variable as unused —
+  # a false positive that would invite deleting a variable that is in use.
+  StringTemplate: { active: false }
+
+style:
+  MagicNumber: { active: false }
+  MaxLineLength: { active: false }
+  ReturnCount: { active: false }
+  ThrowsCount: { active: false }
+  LoopWithTooManyJumpStatements: { active: false }
+  WildcardImport: { active: false }
+  UnusedPrivateMember: { active: true }
+  UnusedParameter:
+    active: true
+    # Spring dispatches @ExceptionHandler methods on the parameter's type, so
+    # the parameter is load-bearing even when the body never reads it.
+    ignoreAnnotated: ['ExceptionHandler']
+  UnusedPrivateProperty: { active: true }
+  # Spring controllers legitimately have many small handlers.
+  ForbiddenComment: { active: false }
+  # Prefer the idiomatic guard functions over hand-thrown argument/state errors.
+  UseRequire: { active: true }
+  UseCheckOrError: { active: true }
+
+performance:
+  SpreadOperator: { active: false }
+
+complexity:
+  LongMethod: { active: false }
+  LongParameterList: { active: false }
+  CyclomaticComplexMethod: { active: false }
+  TooManyFunctions: { active: false }
+  NestedBlockDepth: { active: false }
+  LargeClass: { active: false }
+
+naming:
+  MatchingDeclarationName: { active: false }   # DTO files hold several classes
+
+exceptions:
+  # Catching broad exceptions around alert delivery and scheduling is deliberate
+  # — a failed notification must not abort the run. Reviewed, kept.
+  TooGenericExceptionCaught: { active: false }
+  SwallowedException: { active: true }

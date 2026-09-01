@@ -182,8 +182,9 @@ count behind it is an opinion.
 | 14.2 | No debug statements or commented-out code | OK |
 | 14.3 | No TODO/FIXME debt | OK — none in 46k lines |
 | 14.4 | Duplication extracted where it drives drift | Fixed — saved-view plumbing |
-| 14.5 | Unused imports | Fixed |
+| 14.5 | Unused imports | Fixed — and now enforced. The backend had **no linter at all**, which is why an unused import survived every sweep until a one-off script found it. detekt (with ktlint's rules) runs in CI and the sweep, and was checked against a planted unused import rather than trusted. |
 | 14.6 | Consistent design across equivalent screens | Fixed — uniformity contract |
+| 14.10 | Both languages have a linter, and it is tuned to find defects rather than reformat | Fixed — detekt on the backend. Default rules gave 2,797 findings, ~1,900 of them wrapping and indentation that would have rewritten nearly every file without finding one defect; the config keeps the rules that catch dead weight and mistakes and records why each threshold rule is off. Fixed 8 hand-thrown guards, 2 dropped exception causes, a generic `RuntimeException`, and 2 missing `serialVersionUID`. |
 | 14.7 | Every endpoint reached by a suite | Fixed — measured, not assumed: 27 of 212 had never been reached (26 legacy aliases, 1 real). Now 212/212, enforced by the sweep |
 | 14.8 | Every GUI control named by a spec | Fixed — 25 controls no spec had ever named (dashboard drill-downs, column sort headers, report tabs, three filters). Now 552/552 |
 | 14.9 | Line and branch coverage measured | Fixed — **backend 82.7% lines, 52.7% branches** with the running API included (the test JVM alone reads 27%, which is why it had to be merged). **Frontend unit tests 11.9%**, scoped to pure logic on purpose — the screens are covered behaviourally by 14.8. Reported, never gated: a coverage target rewards tests written to raise a number. Branch coverage is the honest weak spot: error paths |

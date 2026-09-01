@@ -80,9 +80,7 @@ class ScimService(
         val existing = scimUser.externalId?.let { userRepository.findByExternalId(it) }
             ?: userRepository.findByUsername(username)
             ?: userRepository.findByEmail(email)
-        if (existing != null) {
-            throw IllegalStateException("User already exists: $username")
-        }
+        check(existing == null) { "User already exists: $username" }
         val displayName = scimUser.displayName
             ?: scimUser.name?.formatted
             ?: listOfNotNull(scimUser.name?.givenName, scimUser.name?.familyName).joinToString(" ").ifBlank { username }

@@ -37,12 +37,10 @@ class ReportsController(
      *  `to` is exclusive (parsed date + 1 day) to keep `< :rangeTo` inclusive of the to-day. */
     private fun parseDateRange(from: String?, to: String?): Pair<LocalDate?, LocalDate?> {
         val fromDate = from?.let {
-            try { LocalDate.parse(it) }
-            catch (_: Exception) { throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid from date: $it") }
+            try { LocalDate.parse(it) } catch (_: Exception) { throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid from date: $it") }
         }
         val toDate = to?.let {
-            try { LocalDate.parse(it).plusDays(1) }
-            catch (_: Exception) { throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid to date: $it") }
+            try { LocalDate.parse(it).plusDays(1) } catch (_: Exception) { throw org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid to date: $it") }
         }
         return Pair(fromDate, toDate)
     }

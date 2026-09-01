@@ -80,7 +80,7 @@ class EasyAuthPrincipalFilter(
         try {
             easyAuthUserService.resolve(principal)
         } catch (e: DataIntegrityViolationException) {
-            log.debug("Lost a provisioning race for externalId={}, retrying", principal.externalId)
+            log.debug("Lost a provisioning race for externalId={}, retrying", principal.externalId, e)
             easyAuthUserService.resolve(principal)
         }
 

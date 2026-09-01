@@ -33,6 +33,7 @@ interface RoleRepository : JpaRepository<Role, UUID> {
 @Repository
 interface UserRoleRepository : JpaRepository<UserRole, UserRoleId> {
     fun findByUserId(userId: UUID): List<UserRole>
+
     @Modifying
     fun deleteByUserIdAndRoleId(userId: UUID, roleId: UUID)
 }

@@ -119,6 +119,7 @@ step "Wipe database"        wipe_db
 step "Rebuild + restart API (Flyway migrates from clean)" restart_api
 step "Backend tests"        bash -c "cd '$ROOT/apps/api-kt' && ./gradlew test"
 step "Frontend unit tests"  bash -c "cd '$ROOT/apps/web' && npm run test -- --run"
+step "Backend lint"         bash -c "cd '$ROOT/apps/api-kt' && ./gradlew detekt"
 step "Frontend lint"        bash -c "cd '$ROOT/apps/web' && npm run lint"
 step "Frontend dead code"   bash -c "cd '$ROOT/apps/web' && npm run deadcode"
 # `tsc --noEmit` (without -b) compiled *nothing* here and always exited 0: the

@@ -64,7 +64,7 @@ class AzureBlobStorageService(
 
     override fun load(key: String): InputStream {
         val blob = container.getBlobClient(StorageKeys.validate(key))
-        if (!blob.exists()) throw IllegalArgumentException("File not found: $key")
+        require(blob.exists()) { "File not found: $key" }
         return blob.openInputStream()
     }
 

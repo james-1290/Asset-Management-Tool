@@ -33,7 +33,8 @@ class SavedViewsController(
     @PostMapping
     fun create(@RequestBody request: CreateSavedViewRequest): ResponseEntity<Any> {
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
-        val view = SavedView(userId = userId, entityType = request.entityType, name = request.name, configuration = request.configuration)
+        val view =
+            SavedView(userId = userId, entityType = request.entityType, name = request.name, configuration = request.configuration)
         savedViewRepository.save(view)
         return ResponseEntity.created(URI("/api/v1/saved-views?entityType=${view.entityType}")).body(view.toDto())
     }

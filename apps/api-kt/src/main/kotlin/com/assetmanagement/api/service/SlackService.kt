@@ -47,9 +47,7 @@ class SlackService(
 
     fun sendTestMessage() {
         val webhookUrl = getWebhookUrl()
-        if (webhookUrl.isBlank()) {
-            throw IllegalStateException("Slack webhook URL is not configured")
-        }
+        check(webhookUrl.isNotBlank()) { "Slack webhook URL is not configured" }
 
         val payload = """
             {
@@ -99,9 +97,7 @@ class SlackService(
         // Send remaining items to global webhook
         val totalRemaining = remainingWarranty.size + remainingCertificate.size + remainingLicence.size
         if (totalRemaining > 0) {
-            if (globalWebhookUrl.isBlank()) {
-                throw IllegalStateException("Slack webhook URL is not configured")
-            }
+            check(globalWebhookUrl.isNotBlank()) { "Slack webhook URL is not configured" }
 
             val blocks = mutableListOf<String>()
 
@@ -205,18 +201,20 @@ class SlackService(
 
     private fun postToSlack(webhookUrl: String, payload: String) {
         // Validate webhook URL to prevent SSRF — only allow Slack domains
-        val url = try { java.net.URI(webhookUrl) } catch (e: Exception) {
-            throw IllegalArgumentException("Invalid webhook URL")
+        val url = try {
+            java.net.URI(webhookUrl)
+        } catch (e: java.net.URISyntaxException) {
+            throw IllegalArgumentException("Invalid webhook URL", e)
+        } catch (e: IllegalArgumentException) {
+            throw IllegalArgumentException("Invalid webhook URL", e)
         }
         // Exact host match (a suffix check like endsWith("slack.com") would allow
         // evilslack.com / notslack.com). Slack incoming webhooks are always hooks.slack.com.
         val host = url.host?.lowercase()
-        if (host != "hooks.slack.com" && host?.endsWith(".slack.com") != true) {
-            throw IllegalArgumentException("Webhook URL must be a Slack domain (hooks.slack.com)")
+        require(host == "hooks.slack.com" || host?.endsWith(".slack.com") == true) {
+            "Webhook URL must be a Slack domain (hooks.slack.com)"
         }
-        if (!"https".equals(url.scheme, ignoreCase = true)) {
-            throw IllegalArgumentException("Webhook URL must use HTTPS")
-        }
+        require("https".equals(url.scheme, ignoreCase = true)) { "Webhook URL must use HTTPS" }
 
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_JSON
@@ -224,7 +222,7 @@ class SlackService(
 
         val response = restTemplate.postForEntity(webhookUrl, entity, String::class.java)
         if (!response.statusCode.is2xxSuccessful) {
-            throw RuntimeException("Slack webhook returned ${response.statusCode}: ${response.body}")
+            error("Slack webhook returned ${response.statusCode}: ${response.body}")
         }
     }
 

@@ -736,8 +736,12 @@ class ApplicationsController(
 
         for (appId in request.ids) {
             val app = entityMap[appId]
-            if (app == null || app.isArchived || app.personId != null ||
-                seatAssignmentRepository.countByApplicationId(app.id) > 0) {
+            // An application can only be archived if it exists, is not already
+            // archived, and nobody still holds it — neither directly nor through
+            // a seat.
+            val stillInUse = app != null &&
+                (app.personId != null || seatAssignmentRepository.countByApplicationId(app.id) > 0)
+            if (app == null || app.isArchived || stillInUse) {
                 failed++
                 continue
             }

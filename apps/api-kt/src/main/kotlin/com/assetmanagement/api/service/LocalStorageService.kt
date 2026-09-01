@@ -53,9 +53,7 @@ class LocalStorageService(
 
     override fun load(key: String): InputStream {
         val path = resolvePath(key)
-        if (!Files.exists(path)) {
-            throw IllegalArgumentException("File not found: $key")
-        }
+        require(Files.exists(path)) { "File not found: $key" }
         return Files.newInputStream(path)
     }
 
@@ -68,9 +66,7 @@ class LocalStorageService(
         StorageKeys.validate(key)
         val basePath = Paths.get(uploadDir).toAbsolutePath().normalize()
         val resolved = basePath.resolve(key).normalize()
-        if (!resolved.startsWith(basePath)) {
-            throw IllegalArgumentException("Invalid storage key: path traversal detected")
-        }
+        require(resolved.startsWith(basePath)) { "Invalid storage key: path traversal detected" }
         return resolved
     }
 }
