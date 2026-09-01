@@ -4,6 +4,8 @@ import java.time.ZoneOffset
 import com.assetmanagement.api.dto.*
 import com.assetmanagement.api.model.UserNotification
 import com.assetmanagement.api.repository.UserNotificationRepository
+import com.assetmanagement.api.service.AuditEntry
+import com.assetmanagement.api.service.AuditService
 import com.assetmanagement.api.service.CurrentUserService
 import jakarta.persistence.criteria.Predicate
 import org.springframework.data.domain.PageRequest
@@ -20,7 +22,8 @@ import org.springframework.transaction.annotation.Transactional
 @RequestMapping("/api/v1/user-notifications")
 class UserNotificationsController(
     private val userNotificationRepository: UserNotificationRepository,
-    private val currentUserService: CurrentUserService
+    private val currentUserService: CurrentUserService,
+    private val auditService: AuditService
 ) {
     @GetMapping
     // Maps entities to DTOs, which walks lazy associations; open-session-in-view
@@ -66,7 +69,10 @@ class UserNotificationsController(
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
         val notif = userNotificationRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
-        if (notif.userId != userId) return ResponseEntity.status(403).build()
+        // 404, not 403: a 403 confirms the notification exists, which lets someone
+        // probe for other users' rows. Matches SavedViewsController and
+        // UserAlertRulesController.
+        if (notif.userId != userId) return ResponseEntity.notFound().build()
         notif.isRead = true
         notif.readAt = Instant.now()
         userNotificationRepository.save(notif)
@@ -78,10 +84,17 @@ class UserNotificationsController(
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
         val notif = userNotificationRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
-        if (notif.userId != userId) return ResponseEntity.status(403).build()
+        // 404, not 403: a 403 confirms the notification exists, which lets someone
+        // probe for other users' rows. Matches SavedViewsController and
+        // UserAlertRulesController.
+        if (notif.userId != userId) return ResponseEntity.notFound().build()
         notif.isDismissed = true
         notif.dismissedAt = Instant.now()
         userNotificationRepository.save(notif)
+        // Dismissing and snoozing suppress a warning about something expiring, so
+        // they are auditable. Marking one read is not: it changes nothing about
+        // what the system will tell you, and it happens in bulk.
+        audit("Dismissed", notif, "Dismissed notification \"${notif.title}\"")
         return ResponseEntity.ok(notif.toDto())
     }
 
@@ -90,7 +103,10 @@ class UserNotificationsController(
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
         val notif = userNotificationRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
-        if (notif.userId != userId) return ResponseEntity.status(403).build()
+        // 404, not 403: a 403 confirms the notification exists, which lets someone
+        // probe for other users' rows. Matches SavedViewsController and
+        // UserAlertRulesController.
+        if (notif.userId != userId) return ResponseEntity.notFound().build()
         val now = Instant.now()
         notif.snoozedUntil = when (request.duration) {
             "1d" -> now.plus(1, ChronoUnit.DAYS)
@@ -100,6 +116,7 @@ class UserNotificationsController(
             else -> return ResponseEntity.badRequest().body(mapOf("error" to "Invalid duration. Use: 1d, 3d, 1w, until_expiry"))
         }
         userNotificationRepository.save(notif)
+        audit("Snoozed", notif, "Snoozed notification \"${notif.title}\" until ${notif.snoozedUntil}")
         return ResponseEntity.ok(notif.toDto())
     }
 
@@ -127,4 +144,11 @@ class UserNotificationsController(
         readAt = readAt, isDismissed = isDismissed, dismissedAt = dismissedAt,
         snoozedUntil = snoozedUntil, createdAt = createdAt
     )
+
+    private fun audit(action: String, notif: UserNotification, details: String) {
+        auditService.log(AuditEntry(
+            action, "Notification", notif.id.toString(), notif.title, details,
+            currentUserService.userId, currentUserService.userName,
+        ))
+    }
 }

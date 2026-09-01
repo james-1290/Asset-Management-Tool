@@ -117,7 +117,14 @@ class AuditLogsController(
             "action" -> "action"; "entitytype" -> "entityType"; "entityname" -> "entityName"; "actorname" -> "actorName"
             else -> "timestamp"
         }
-        return Sort.by(dir, prop).and(Sort.by(Sort.Direction.ASC, "id"))
+        // The tie-break follows the sort direction. Fixed to ASC it made every
+        // *descending* sort a filesort: MySQL can read a composite index backwards
+        // for "col DESC, id DESC", but a mixed "col DESC, id ASC" it cannot, so it
+        // sorted the whole filtered set. Measured on 200k rows against the real
+        // index shape (is_archived, name): "Backward index scan" versus "Using
+        // filesort" over 99,999 rows. `id` is unique, so pagination stays
+        // deterministic in either direction.
+        return Sort.by(dir, prop).and(Sort.by(dir, "id"))
     }
 
     private fun AuditLog.toDto() = AuditLogDto(id, actorName, action, entityType, entityId, entityName, source.name, details, timestamp)

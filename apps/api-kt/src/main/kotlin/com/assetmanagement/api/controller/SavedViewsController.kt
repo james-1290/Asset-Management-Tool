@@ -33,6 +33,7 @@ class SavedViewsController(
     @PostMapping
     fun create(@RequestBody request: CreateSavedViewRequest): ResponseEntity<Any> {
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
+        invalid(request.entityType, request.name, request.configuration)?.let { return it }
         val view =
             SavedView(userId = userId, entityType = request.entityType, name = request.name, configuration = request.configuration)
         savedViewRepository.save(view)
@@ -42,6 +43,7 @@ class SavedViewsController(
     @PutMapping("/{id}")
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateSavedViewRequest): ResponseEntity<Any> {
         val userId = currentUserService.userId ?: return ResponseEntity.status(401).build()
+        invalid(null, request.name, request.configuration)?.let { return it }
         val view = savedViewRepository.findById(id).orElse(null)
         if (view == null || view.userId != userId) return ResponseEntity.notFound().build()
         view.name = request.name; view.configuration = request.configuration; view.updatedAt = Instant.now()
@@ -75,4 +77,30 @@ class SavedViewsController(
     }
 
     private fun SavedView.toDto() = SavedViewDto(id, entityType, name, isDefault, configuration, createdAt, updatedAt)
+
+    /**
+     * A saved view is only useful if the client can read it back. The write path
+     * accepted a blank name, a blank entity type, and a `configuration` that was
+     * not JSON at all — and the UI parses that field inside a try/catch, so a bad
+     * row does nothing, silently, every time it is applied.
+     */
+    private fun invalid(entityType: String?, name: String, configuration: String): ResponseEntity<Any>? {
+        if (name.isBlank())
+            return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
+        if (name.length > 255)
+            return ResponseEntity.badRequest().body(mapOf("error" to "Name must be 255 characters or fewer."))
+        if (entityType != null && entityType.isBlank())
+            return ResponseEntity.badRequest().body(mapOf("error" to "Entity type is required."))
+        try {
+            tools.jackson.databind.json.JsonMapper.builder().build().readTree(configuration)
+        } catch (e: tools.jackson.core.JacksonException) {
+            // The parser's own message says where it broke, which is the only
+            // useful thing to tell a caller that sent malformed JSON.
+            return ResponseEntity.badRequest().body(mapOf(
+                "error" to "Configuration must be valid JSON.",
+                "message" to (e.originalMessage ?: "unparseable"),
+            ))
+        }
+        return null
+    }
 }

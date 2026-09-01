@@ -76,8 +76,26 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException::class)
     fun handleDataIntegrity(ex: DataIntegrityViolationException): ResponseEntity<Map<String, Any>> {
-        return ResponseEntity.status(409)
-            .body(mapOf("error" to "A data conflict occurred. The record may already exist or reference invalid data."))
+        // Three different faults arrive here and only one of them is a conflict.
+        // Answering 409 "A data conflict occurred" to all three told someone who
+        // typed a too-long name that their record already existed.
+        val detail = (ex.mostSpecificCause.message ?: "").lowercase()
+        return when {
+            "too long" in detail || "data truncation" in detail || "value too long" in detail ->
+                ResponseEntity.status(400).body(mapOf(
+                    "error" to "A value is too long for its field.",
+                    "message" to "Shorten the value and try again.",
+                ))
+            "foreign key" in detail ->
+                ResponseEntity.status(400).body(mapOf(
+                    "error" to "A referenced record does not exist.",
+                    "message" to "Check the linked record and try again.",
+                ))
+            else ->
+                ResponseEntity.status(409).body(mapOf(
+                    "error" to "A data conflict occurred. The record may already exist.",
+                ))
+        }
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException::class)

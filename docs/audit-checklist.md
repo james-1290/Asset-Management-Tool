@@ -42,7 +42,7 @@ count behind it is an opinion.
 |---|---|---|
 | 1.1 | Every endpoint has an authorization rule; none rely on being unlinked | OK — all 178 probed as Admin/Operator/User/no-role/anonymous |
 | 1.2 | Object-level authorization: one user cannot read or change another's records | OK — saved views, alert rules, notifications all scoped by owner |
-| 1.3 | Consistent not-found vs forbidden, so existence cannot be probed | Fixed — alert rules returned 403 where saved views returned 404 |
+| 1.3 | Consistent not-found vs forbidden, so existence cannot be probed | Fixed — twice. Saved views and alert rules were corrected earlier; `user-notifications` still answered **403** on all three ownership checks, which confirms the row exists. Now 404, matching the others. |
 | 1.4 | Role escalation: a lower role cannot reach a higher role's function | OK — full role matrix in `api_deep.py` |
 | 1.5 | Path traversal in any user-controlled path segment or filename | OK — entity type allow-listed, id is a UUID, filename strips separators and `..` |
 | 1.6 | CORS origins are explicit, not reflected or wildcarded with credentials | OK — explicit list, `allowCredentials = false` |
@@ -69,6 +69,8 @@ count behind it is an opinion.
 | 3.5 | Log injection — user input cannot forge log lines | OK — SLF4J placeholders throughout; the one caller-supplied header (`X-Request-Id`) is charset-validated |
 | 3.6 | Header injection via user-controlled response headers | OK — export filenames are literals; attachment names URL-encoded |
 | 3.7 | Command injection — no shell invocation with user input | OK — no process execution anywhere |
+| 3.8 | Required fields cannot be blank or over-length | Fixed — 7 of 10 collections refused a blank name; asset types, certificate types and application types did not, so an unnamed row could be created. Saved views also accepted a blank entity type and a `configuration` that was not JSON — which the UI parses inside a try/catch, so the row silently did nothing forever. |
+| 3.9 | Constraint violations map to the right status and message | Fixed — every `DataIntegrityViolationException` became 409 "A data conflict occurred. The record may already exist", so someone who typed a 300-character name was told their record already existed. Length and foreign-key violations now answer 400 with what to do. |
 
 ## 4. Insecure design (A04)
 
@@ -133,7 +135,7 @@ count behind it is an opinion.
 
 | # | Check | Verdict |
 |---|---|---|
-| 9.1 | Every write is audited | Fixed — alert sends were not |
+| 9.1 | Every write is audited | Fixed — again. A previous sweep found alert *sends* unaudited; this one found **11 write endpoints** emitting nothing, verified by counting rows (4 writes → 0 entries). Alert-rule changes and notification dismiss/snooze are now audited, because they change or suppress what the system warns about. Saved views and mark-as-read stay unaudited deliberately: neither changes what anyone is told, and both happen in bulk. `scripts/qa/sweep_audit.py` now checks this per handler. |
 | 9.2 | Requests correlatable across log lines | Fixed — request id added |
 | 9.3 | Personal data not written to logs | Fixed — an email address was logged on every personal alert. SCIM still logs a username once per provisioning event, kept deliberately for diagnosis and noted in operations.md |
 | 9.4 | Health endpoint reports readiness, not just liveness | Fixed — container health check added |
@@ -153,7 +155,7 @@ count behind it is an opinion.
 | 11.2 | Character encoding end to end, including Excel's conventions | Fixed — both import and export were wrong |
 | 11.3 | Timezone handling consistent | Fixed — alerts used the server's local zone |
 | 11.4 | Money and rounding consistent | OK — one depreciation calculator, 2dp |
-| 11.5 | Soft delete is reversible everywhere it is offered | Fixed — twice; the API, then the five lists with no control |
+| 11.5 | Soft delete is reversible everywhere it is offered | Fixed — a **third** time, and the worst of them. The assets list ignored `includeArchived`, the parameter its own screen has always sent, so an archived asset vanished from the only place it could be found and could never be restored through the UI. Every other collection honoured it. The browser spec passed throughout because it checked the toggle *existed*; it now checks the toggle *works*. |
 | 11.6 | Scheduled work is safe when the app runs on more than one instance | Fixed — every instance sent the alerts |
 
 ## 12. Performance
@@ -162,7 +164,7 @@ count behind it is an opinion.
 |---|---|---|
 | 12.1 | No unbounded queries | Fixed |
 | 12.2 | N+1 queries on list and detail paths | OK — fetch joins; sub-lists capped |
-| 12.3 | Indexes cover the columns actually filtered and sorted | OK — composite `(is_archived, sort column)` indexes in V017. One exception by nature: sorting by *computed* status uses a CASE expression and cannot use an index, so it filesorts |
+| 12.3 | Indexes cover the columns actually filtered and sorted | Fixed — the indexes were fine; the *query* could not use them. `sortOf` appended a fixed-ascending `id` tie-break, so every **descending** sort became a filesort: MySQL reads a composite index backwards for `col DESC, id DESC` but not for a mixed `col DESC, id ASC`. Measured on 200k rows against the real `(is_archived, name)` shape — `Backward index scan` versus `Using filesort` over 99,999 rows. The tie-break now follows the direction, in all 7 controllers. No migration needed: InnoDB already appends the primary key to every secondary index. |
 | 12.4 | Frontend bundle split so first paint is not the whole app | Fixed — 393 KB → 131 KB gzipped |
 | 12.5 | Connection pool sized and bounded | OK — Hikari sized, with connection timeout and max-lifetime below MySQL's wait_timeout |
 
@@ -190,6 +192,9 @@ count behind it is an opinion.
 | 14.7 | Every endpoint reached by a suite | Fixed — measured, not assumed: 27 of 212 had never been reached (26 legacy aliases, 1 real). Now 212/212, enforced by the sweep |
 | 14.8 | Every GUI control named by a spec | Fixed — 25 controls no spec had ever named (dashboard drill-downs, column sort headers, report tabs, three filters). Now 552/552 |
 | 14.9 | Line and branch coverage measured | Fixed — **backend 82.7% lines, 52.7% branches** with the running API included (the test JVM alone reads 27%, which is why it had to be merged). **Frontend unit tests 11.9%**, scoped to pure logic on purpose — the screens are covered behaviourally by 14.8. Reported, never gated: a coverage target rewards tests written to raise a number. Branch coverage is the honest weak spot: error paths |
+| 14.10 | Every action is exercised in every variation, not merely reached | Fixed — `scripts/qa/api_matrix.py`. "Every endpoint reached" counted `POST /assets/{id}/checkout` as covered while saying nothing about checking out an asset that is already out, checking in one that is not out, or reassigning it to someone else. **147 variations** across assets, people, applications, certificates, locations, the catalogue types and the cross-cutting features, asserting resulting state rather than status codes. It found the archived-assets defect on its first run. |
+| 14.11 | The same, through the browser | Fixed — `e2e/qa/matrix.spec.ts`. The 102 existing specs cover the happy path of nearly every screen; these cover what happens on the second attempt, the invalid attempt and the cancelled one: a blank required field keeps the dialog open on every create form, a cancelled dialog leaves nothing behind, **all eight archivable lists** archive a row and restore it again through the UI, an asset is assigned then reassigned to somebody else, an empty result says so, and two tabs editing one record produce a conflict message a person can read rather than "Failed to update". |
+| 14.12 | Every control is *operated*, not merely named by a spec | Fixed — `e2e/qa/exhaustive.spec.ts` clicks **757 controls across all 16 screens** and asserts the app answered: no console error, no failed request, and a heading, dialog or menu still on screen. Naming was the weaker standard that let the Assets "Archived" toggle ship wired to a parameter the API ignored — a spec named it and only checked it was visible. Costs ~10 minutes in the browser suite; the 5 controls it cannot click are dropdown options that close with their menu. |
 
 ## 15. Operability and compliance
 

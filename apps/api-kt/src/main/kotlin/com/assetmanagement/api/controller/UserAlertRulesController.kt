@@ -10,12 +10,15 @@ import java.net.URI
 import java.time.Instant
 import java.util.UUID
 import org.springframework.transaction.annotation.Transactional
+import com.assetmanagement.api.service.AuditEntry
+import com.assetmanagement.api.service.AuditService
 
 @RestController
 @RequestMapping("/api/v1/alert-rules")
 class UserAlertRulesController(
     private val userAlertRuleRepository: UserAlertRuleRepository,
-    private val currentUserService: CurrentUserService
+    private val currentUserService: CurrentUserService,
+    private val auditService: AuditService
 ) {
     @GetMapping
     // Maps entities to DTOs, which walks lazy associations; open-session-in-view
@@ -38,6 +41,9 @@ class UserAlertRulesController(
             notifyEmail = request.notifyEmail
         )
         val saved = userAlertRuleRepository.save(rule)
+        // An alert rule decides what this account is warned about, so changing one
+        // is an auditable act — the same reason the alert *sends* are audited.
+        audit("Created", saved.id, saved.name, "Created alert rule \"${saved.name}\"")
         return ResponseEntity.created(URI("/api/v1/alert-rules/${saved.id}")).body(saved.toDto())
     }
 
@@ -56,6 +62,8 @@ class UserAlertRulesController(
         rule.isActive = request.isActive
         rule.updatedAt = Instant.now()
         userAlertRuleRepository.save(rule)
+        audit("Updated", rule.id, rule.name,
+            "Updated alert rule \"${rule.name}\" (active=${rule.isActive}, thresholds=${rule.thresholds})")
         return ResponseEntity.ok(rule.toDto())
     }
 
@@ -68,6 +76,7 @@ class UserAlertRulesController(
         // probe for other users' rules. Matches SavedViewsController.
         if (rule.userId != userId) return ResponseEntity.notFound().build()
         userAlertRuleRepository.delete(rule)
+        audit("Deleted", rule.id, rule.name, "Deleted alert rule \"${rule.name}\"")
         return ResponseEntity.noContent().build()
     }
 
@@ -76,4 +85,11 @@ class UserAlertRulesController(
         conditions = conditions, notifyEmail = notifyEmail, isActive = isActive,
         createdAt = createdAt, updatedAt = updatedAt
     )
+
+    private fun audit(action: String, id: UUID, name: String, details: String) {
+        auditService.log(AuditEntry(
+            action, "AlertRule", id.toString(), name, details,
+            currentUserService.userId, currentUserService.userName,
+        ))
+    }
 }

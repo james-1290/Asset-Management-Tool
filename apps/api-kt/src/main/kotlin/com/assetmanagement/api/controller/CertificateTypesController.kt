@@ -87,6 +87,12 @@ class CertificateTypesController(
     @PostMapping
     @Transactional
     fun create(@RequestBody request: CreateCertificateTypeRequest): ResponseEntity<Any> {
+        // Every other collection refuses a blank name; these three did not,
+        // so an unnamed certificate type could be created and would render as an empty row.
+        if (request.name.isBlank())
+            return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
+        if (request.name.length > 255)
+            return ResponseEntity.badRequest().body(mapOf("error" to "Name must be 255 characters or fewer."))
         val type = CertificateType(name = request.name, description = request.description)
         certificateTypeRepository.save(type)
         customFieldDefinitionService.createDefinitions(request.customFields, newDefinition(type.id))
@@ -99,6 +105,12 @@ class CertificateTypesController(
     @PutMapping("/{id}")
     @Transactional
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateCertificateTypeRequest): ResponseEntity<Any> {
+        // Every other collection refuses a blank name; these three did not,
+        // so an unnamed certificate type could be created and would render as an empty row.
+        if (request.name.isBlank())
+            return ResponseEntity.badRequest().body(mapOf("error" to "Name is required."))
+        if (request.name.length > 255)
+            return ResponseEntity.badRequest().body(mapOf("error" to "Name must be 255 characters or fewer."))
         val type = certificateTypeRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
 
         versionConflict(request.entityVersion, type.entityVersion)?.let { return it }

@@ -1,5 +1,167 @@
 # Changelog
 
+## 2026-09-01 — Operating every control, not naming it
+
+`gui_coverage.py` asked whether some spec *names* each control. Naming is the
+weaker standard, and it is precisely what let the Assets list ship an "Archived"
+toggle wired to a parameter the API ignored: a spec named the toggle and asserted
+it was visible.
+
+`e2e/qa/exhaustive.spec.ts` operates them instead. It tags every visible, enabled
+control in the DOM, clicks each one, and asserts the app answered — no console
+error, no failed request, and a heading, dialog or menu still on screen.
+
+**757 controls across all sixteen screens. None broke its page.**
+
+    /                27      /asset-types        52
+    /assets          64      /certificate-types  50
+    /certificates    63      /application-types  50
+    /applications    59      /asset-models       96
+    /people          57      /asset-templates    65
+    /locations       50      /reports            22
+    /audit-log       49      /tools/import       14
+    /settings        21      /notifications      18
+
+The first attempt matched controls by accessible name and operated 17 of 58 on
+the assets screen — names wrap, repeat, and change as the page re-renders, so it
+silently skipped two thirds of the page and passed. Tagging each control in the
+DOM and clicking the tag, re-tagging after every click, is what makes the number
+mean something. An exhaustive pass that quietly skips most of its subject is
+worse than none, because it reports a figure nobody checks.
+
+Five controls cannot be clicked: dropdown options that close along with their
+menu. They are reported rather than hidden.
+
+This costs about ten minutes in the browser suite, which is a real price on every
+pull request. It is worth it while the app is still finding defects of the kind
+that only appear when a control is actually used.
+
+## 2026-09-01 — The GUI matrix: the second attempt, the invalid one, the cancelled one
+
+The API matrix covered every action in every variation. The browser suite still
+covered mostly happy paths — 102 specs that create, edit and act, and rarely ask
+what happens the second time or when the input is wrong.
+
+`e2e/qa/matrix.spec.ts` covers that ground:
+
+- a blank required field keeps the create dialog open on every form, and saves
+  nothing
+- a cancelled dialog leaves no record behind
+- **all eight archivable lists** archive a row and restore it again *through the
+  UI* — the journey that was impossible for assets until this morning
+- an asset is checked out, checked in, and checked out again to a different
+  person, with the current holder read from the list row rather than the detail
+  page, because the history timeline legitimately still names the previous one
+- a filter matching nothing shows an empty state rather than a bare table
+- two tabs edit the same record and the second save says *"modified by another
+  user"* — the end-to-end proof that the conflict message now reaches a person,
+  which it did not before `errorMessage()`
+
+Four of the six failed on their first run, and all four were the harness: a
+`<main>` nested inside a `<main>`, a helper that waits for a dialog to close
+being used where the dialog must stay open, an asset type that could not be
+archived because it was legitimately in use, and an assertion that the previous
+holder's name had vanished from a page that correctly keeps it in history.
+
+One small inconsistency found on the way: the confirm button in create dialogs is
+labelled "Create" on some forms and "Add Asset Type" on others.
+
+## 2026-09-01 — An action-and-variation matrix, and the archived assets nobody could reach
+
+The eighth sweep was static: every handler read, every class of defect probed,
+and the existing suites trusted for behaviour. That is not the same as putting
+every action through every variation, and reporting it as such was wrong.
+
+`scripts/qa/api_matrix.py` is the missing half. It runs **147 variations** and
+asserts the resulting *state*, not the status code: an asset checked out, checked
+out again while already out, checked in, checked in again when it is not out,
+reassigned to somebody else, retired, sold, archived, restored, bulk-edited,
+bulk-archived with one bad id in the batch; a person created, edited, moved
+between locations, given two assets, one returned, the other transferred away,
+offboarded, archived and restored; a licence with two seats given to two people,
+refused to a third, released and given away again, archived only once its seats
+are free. "Every endpoint reached" counted `POST /assets/{id}/checkout` as
+covered. It says nothing about any of that.
+
+It found this on its first run.
+
+**An archived asset could not be found, and so could never be restored.** The
+assets list ignored `includeArchived` — the parameter the Assets screen has
+always sent for its own "Archived" toggle. Archiving an asset removed it from the
+only place it could be found; the restore endpoint worked perfectly and could not
+be reached. Every other collection honoured the parameter, which is why nothing
+else caught it.
+
+The browser suite passed the entire time. `uniformity.spec.ts` asserted that each
+list "offers a way to restore" by checking the toggle was *visible*. It now
+clicks it, waits for the request, and asserts the filter reaches the API — the
+difference between a control existing and a control working.
+
+Two more things the matrix pinned rather than found: the seat limit was being
+"tested" by handing the same person a second seat, which is refused as a
+duplicate and proves nothing about the limit; and `assetTag` exists in the
+database, the entity, the read DTO and the frontend type, but no endpoint can set
+it and no screen shows it — a placeholder for the deferred barcode feature, left
+in place deliberately and now written down.
+
+The matrix runs in the sweep and in CI.
+
+## 2026-09-01 — Eighth sweep: measured instead of asserted
+
+The seventh sweep was called complete after a handful of lenses and two known
+gaps. Most of the 89 rows were never touched, which is why it finished quickly.
+This one starts from the subjects — 484 files, 56k lines, 186 handlers, 10
+collections — and prints what it cannot prove.
+
+`scripts/qa/sweep_audit.py` is the new part: it walks every handler in every
+controller and gives each one a verdict on authorization, request validation,
+audit logging, transaction scope, and version checking. It found its own false
+positives first (class-level `@PreAuthorize` covers a handler; a service may be
+what writes the audit entry), because a tool that cannot be trusted is worse than
+none.
+
+Seven defects, all verified against the running app rather than by reading.
+
+**Eleven write endpoints emitted no audit entry** — against an explicit product
+rule. Counted, not inferred: four writes produced zero rows. Alert-rule changes
+and notification dismiss/snooze are now audited, because they change or suppress
+what the system warns about. Saved views and mark-as-read stay unaudited
+deliberately, and the reason is written down.
+
+**`user-notifications` answered 403 on ownership checks**, which confirms the row
+exists. Saved views and alert rules were fixed for exactly this reason in an
+earlier sweep; these three were missed. Now 404.
+
+**Three collections accepted a blank name.** Seven of ten refused it; asset
+types, certificate types and application types created an unnamed row. Saved
+views were worse — a blank entity type and a `configuration` that was not JSON
+were both accepted, and the UI parses that field in a try/catch, so the row did
+nothing, silently, every time it was applied.
+
+**Over-length input was reported as a conflict.** Every
+`DataIntegrityViolationException` mapped to 409 "the record may already exist", so
+a 300-character name came back as a duplicate. Length and foreign-key violations
+now answer 400 and say what to do.
+
+**Every descending sort was a filesort — and the indexes were not the problem.**
+`sortOf` appended a fixed-ascending `id` tie-break for stable pagination. MySQL
+will read a composite index backwards for `col DESC, id DESC`, but a mixed
+`col DESC, id ASC` it cannot, so it sorted the entire filtered set. Measured on
+200,000 rows against the real `(is_archived, name)` index shape: `Backward index
+scan` versus `Using filesort` over 99,999 rows. The tie-break now follows the sort
+direction in all seven controllers. No migration: InnoDB already appends the
+primary key to every secondary index, so the existing indexes were always capable
+of serving these sorts — the query simply asked for an order none of them could
+provide. The audit log's default sort is `timestamp DESC`, and "newest first" is
+the most common thing anyone asks a list for.
+
+Measured clean, with counts rather than opinions: authorization on all 186
+handlers; no N+1 on any of 15 list endpoints (query count flat from pageSize 1 to
+50); archive-and-restore round-trips and detail endpoints on all 10 collections;
+0 unmapped database columns; 0 unused config keys; 0 dead enum values; 0 dead DTO
+fields; npm audit clean for shipped and dev dependencies; no secrets in tracked
+files; sort parameters allow-listed with a safe default.
+
 ## 2026-09-01 — The set-state-in-effect suppressions, and a flaky test that was lying about why
 
 Three suppressions were on the list to fix. There were **eleven**, most of them
