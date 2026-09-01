@@ -252,7 +252,7 @@ a row whenever a new class of defect is found, so the next sweep starts from it.
 
 ## Tests
 
-- Backend: `cd apps/api-kt && ./gradlew test` (JUnit unit tests + Testcontainers integration suite; needs Docker. Locally may require `DOCKER_API_VERSION=1.44`).
+- Backend: `cd apps/api-kt && ./gradlew test` (JUnit unit tests + Testcontainers integration suite; needs Docker). `DOCKER_API_VERSION=1.44` was required on Testcontainers 1.x with Docker Engine 29+; 2.x negotiates correctly and it is no longer needed.
 - Frontend unit: `cd apps/web && npm run test` (Vitest).
 - Frontend e2e: `cd apps/web && npx playwright test` (needs the dev server on :5173 and the API on :5115 running).
 - Full QA sweep from a clean database: `scripts/qa/full_sweep.sh` — wipes the schema, restarts the API, then runs backend, frontend, both API suites and the browser suite (against the dev server *and* the production build). See `docs/qa.md`, including what these suites deliberately do not cover.

@@ -14,8 +14,9 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 LABEL="${1:-sweep}"
 export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@21}"
-# Docker Engine 29 rejects the API version docker-java negotiates by default.
-export DOCKER_API_VERSION="${DOCKER_API_VERSION:-1.44}"
+# Testcontainers 2.x negotiates the Docker API version correctly, so this is no
+# longer needed; honoured only if the caller sets it (older daemons).
+[ -n "${DOCKER_API_VERSION:-}" ] && export DOCKER_API_VERSION
 
 # Where the API records the routes it actually serves, so endpoint coverage can
 # be measured rather than assumed.

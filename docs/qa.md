@@ -37,10 +37,12 @@ role, and anonymous.
 
 ## Notes on running it
 
-- **Testcontainers needs `DOCKER_API_VERSION=1.44`** on Docker Engine 29+, which
-  rejects the API version docker-java negotiates by default. Without it every
-  integration test fails at startup with "Could not find a valid Docker
-  environment", which looks like a code failure and is not.
+- **`DOCKER_API_VERSION=1.44` is no longer needed.** On Testcontainers 1.x with
+  Docker Engine 29+ the daemon rejected the API version docker-java negotiated,
+  and every integration test failed at startup with "Could not find a valid
+  Docker environment" — which looked like a code failure and was not.
+  Testcontainers 2.x negotiates correctly; the build still honours the variable
+  if it is set, for anyone on an older daemon.
 - **The browser suite runs with a single worker,** deliberately. Every spec
   shares one database and several change state that is global to the signed-in
   user (alert settings, saved views, theme). In parallel the suite failed a
