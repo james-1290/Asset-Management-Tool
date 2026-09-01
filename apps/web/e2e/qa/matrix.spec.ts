@@ -236,7 +236,7 @@ test.describe("GUI matrix — variations", () => {
     const w = new PageWatcher(page);
     await signIn(page);
     const tag = uid();
-    const s = await seed(page, tag);
+    await seed(page, tag);
     const name = `MX Loc ${tag}`;
 
     // Open the same record in two tabs and save from both. The second save must

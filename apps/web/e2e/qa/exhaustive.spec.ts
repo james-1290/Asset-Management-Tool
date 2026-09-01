@@ -98,13 +98,11 @@ test.describe("Exhaustive control pass", () => {
       const broken: string[] = [];
       const unclickable: string[] = [];
       let operated = 0;
-      let total = 0;
 
       // Re-tag on every iteration: the previous click may have re-rendered the
       // page, and a stale handle would silently skip the rest of the screen.
       for (let guard = 0; guard < 300; guard++) {
         const remaining = await tagRemaining(page, done, SKIP.source);
-        if (guard === 0) total = remaining.length;
         if (!remaining.length) break;
 
         const { key, name } = remaining[0];
