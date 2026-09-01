@@ -1,5 +1,58 @@
 # Changelog
 
+## 2026-09-01 — The set-state-in-effect suppressions, and a flaky test that was lying about why
+
+Three suppressions were on the list to fix. There were **eleven**, most of them
+older than the ESLint 10 upgrade that surfaced the rule — the row said three
+because that is how many the upgrade newly reported, not how many existed.
+
+**Three were real defects.** Each rendered once with the wrong value and then
+immediately re-rendered, which is the flash the rule exists to catch:
+
+- the list search box synchronised to the URL from an effect. It now adjusts
+  during render, React's documented pattern for state derived from a changing
+  input.
+- the notifications page clamped a past-the-end page number from an effect,
+  committing a render of an empty page before correcting it. The page number
+  cannot simply be derived — it is the query's input and the bound comes back in
+  the result — so it too is adjusted during render.
+- the assets list copied custom-field column defaults into state once the
+  definitions loaded, showing the columns and then hiding them. The value that
+  did this already existed as `defaultColumnVisibility`; the table now layers the
+  user's explicit choices over it. That also stops a saved view recording column
+  choices the user never made.
+
+**Four were the same code in four places.** `audit-log`, `asset-types`,
+`application-types` and `certificate-types` each kept a private copy of the
+saved-view plumbing, including its effect — they had never been migrated to
+`useSavedViewState`. They use the shared hook now, which removes about 180 lines
+and leaves one suppression where there were five. The copies had already drifted:
+the audit log's reset cleared the entity-type and action filters, but a saved
+view never captured them.
+
+**Five remain, and should.** Applying a saved view writes the query string
+through the router, which React forbids during render; an image fetch is
+genuinely asynchronous; two dialogs reset their form on open. Each now says which
+of those it is.
+
+**A second one, caught by CI rather than by me.** The notification spec passed
+locally on every run — full database, wiped database, and with enough
+notifications to span two pages — and failed on CI. The uploaded page snapshot
+said why: it was waiting for a second "Open menu" button on a list that had one
+row. The spec counted the menus, then clicked `nth(1)`; marking a row read
+refetches the list and can drop that row out of the Current tab, so the count was
+already stale when the click went out. It re-resolves `first()` at each step now.
+Worth noting the shape — `if (await x.count() > n)` followed by a positional
+click — because it reads as defensive and is the opposite.
+
+**A flaky test, diagnosed rather than re-run.** The attachments spec had failed
+twice across many runs and passed on every re-run, which is the shape of a test
+people learn to ignore. It matched the file name anywhere on the page — and both
+uploading and deleting raise a toast *containing the file name*, rendered in a
+portal outside `<main>`. So the row locator could resolve against the toast and
+click its buttons instead of the row's. Scoped to `main`, it went from 6.0s to
+1.8s, because what it had been waiting for was the toast disappearing.
+
 ## 2026-09-01 — A linter for the backend, and the SSRF guard that had no test
 
 The backend had no linter at all. That is how an unused import survived every

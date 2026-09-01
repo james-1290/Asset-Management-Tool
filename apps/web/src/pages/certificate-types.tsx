@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { getApiErrorMessage, errorMessage} from "../lib/api-client";
 import { Plus, Trash2 } from "lucide-react";
@@ -27,9 +27,10 @@ import { BulkActionBar } from "../components/bulk-action-bar";
 import type { CertificateType } from "../types/certificate-type";
 import { certificateTypeSchema, type CertificateTypeFormValues } from "../lib/schemas/certificate-type";
 import { SavedViewSelector } from "../components/saved-view-selector";
-import { useSavedViews } from "../hooks/use-saved-views";
-import type { SavedView, ViewConfiguration } from "../types/saved-view";
 import { useAuth } from "@/contexts/auth-context";
+import { useSavedViewState } from "../hooks/use-saved-view-state";
+
+const SAVED_VIEW_FILTER_KEYS = ["includeArchived"] as const;
 
 const SORT_FIELD_MAP: Record<string, string> = {
   name: "name",
@@ -87,10 +88,7 @@ export default function CertificateTypesPage() {
   const [bulkArchiveOpen, setBulkArchiveOpen] = useState(false);
 
   // Saved views
-  const { data: savedViews = [] } = useSavedViews("certificate-types");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [activeViewId, setActiveViewId] = useState<string | null>(null);
-  const defaultViewApplied = useRef(false);
 
   // Stable, so the columns memo that depends on it isn't rebuilt every render.
   const handleRestore = useCallback((id: string, name: string) => {
@@ -131,55 +129,21 @@ export default function CertificateTypesPage() {
     });
   }
 
-  const applyView = useCallback((view: SavedView) => {
-    try {
-      const config: ViewConfiguration = JSON.parse(view.configuration);
-      setColumnVisibility(config.columnVisibility ?? {});
-      setActiveViewId(view.id);
-      setSearchParams((prev) => {
-        if (config.sortBy) prev.set("sortBy", config.sortBy);
-        if (config.sortDir) prev.set("sortDir", config.sortDir);
-        if (config.search) { prev.set("search", config.search); setSearchInput(config.search); }
-        else { prev.delete("search"); setSearchInput(""); }
-        if (config.pageSize) prev.set("pageSize", String(config.pageSize));
-        prev.set("page", "1");
-        return prev;
-      });
-    } catch { /* invalid config */ }
-  }, [setSearchParams, setSearchInput]);
-
-  // Apply default saved view on first load. Applying the default view setStates
-  // synchronously here, which is the intended one-shot sync.
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    if (defaultViewApplied.current || savedViews.length === 0) return;
-    defaultViewApplied.current = true;
-    const defaultView = savedViews.find((v) => v.isDefault);
-    if (defaultView) applyView(defaultView);
-  }, [savedViews, applyView]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  function handleResetToDefault() {
-    setColumnVisibility({});
-    setActiveViewId(null);
-    setSearchParams((prev) => {
-      prev.delete("search");
-      prev.set("sortBy", "name");
-      prev.set("sortDir", "asc");
-      prev.set("page", "1");
-      return prev;
+  // The saved-view plumbing shared with every other list page. This page kept a
+  // near-copy of it, including the one-shot effect that applies a default view.
+  const { activeViewId, applyView, handleResetToDefault, getCurrentConfiguration } =
+    useSavedViewState({
+      entityType: "certificate-types",
+      filterKeys: SAVED_VIEW_FILTER_KEYS,
+      defaultSortBy: "name",
+      defaultSortDir: "asc",
+      searchParams,
+      setSearchParams,
+      setSearchInput,
+      columnVisibility,
+      setColumnVisibility,
+      pageSize,
     });
-    setSearchInput("");
-  }
-
-
-  const getCurrentConfiguration = useCallback((): ViewConfiguration => ({
-    columnVisibility,
-    sortBy: sortByParam,
-    sortDir: sortDirParam,
-    search: searchParam || undefined,
-    pageSize,
-  }), [columnVisibility, sortByParam, sortDirParam, searchParam, pageSize]);
 
   function handleFormSubmit(values: CertificateTypeFormValues) {
     const customFields = (values.customFields ?? []).map((cf, i) => ({

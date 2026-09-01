@@ -105,9 +105,16 @@ export function useSavedViewState({
 
   // Apply the user's default view the first time the list is opened.
   //
-  // This is state arriving from an external system: the views are fetched from
-  // the server, so the default cannot be known at first render and has to be
-  // applied once it lands. The ref makes it happen exactly once per mount.
+  // This is the one place in the app where `set-state-in-effect` is suppressed
+  // for saved views, and every list page now routes through it — four pages used
+  // to carry their own copy of this effect.
+  //
+  // The suppression is correct rather than convenient. Applying a view is an
+  // *action*, not derived state: it writes the query string through the router
+  // as well as setting local state, and a router update during render is exactly
+  // what React forbids. The views are fetched, so the default cannot be known at
+  // first render, and the ref makes it happen once per mount rather than on
+  // every change to the list.
   useEffect(() => {
     if (defaultViewApplied.current || savedViews.length === 0) return;
     defaultViewApplied.current = true;

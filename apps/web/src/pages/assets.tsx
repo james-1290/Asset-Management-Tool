@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Archive, RefreshCw, Pencil } from "lucide-react";
 import { assetsApi } from "../lib/api/assets";
@@ -238,22 +238,16 @@ export default function AssetsPage() {
       pageSize,
     });
 
-  // When custom field defs load, hide them by default
-  useEffect(() => {
-    if (allCustomFieldDefs.length === 0) return;
-  // Reacts to data that arrives asynchronously; removing the effect needs a
-  // real refactor, tracked separately rather than folded into a dependency
-  // upgrade.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-    setColumnVisibility((prev) => {
-      const next = { ...prev };
-      for (const cf of allCustomFieldDefs) {
-        const key = `cf_${cf.id}`;
-        if (!(key in next)) next[key] = false;
-      }
-      return next;
-    });
-  }, [allCustomFieldDefs]);
+  // Custom field columns start hidden. This layers the user's explicit choices
+  // over the defaults at render time instead of copying the defaults into state
+  // from an effect once the definitions load — that version rendered the table
+  // with the columns visible and then immediately re-rendered without them, and
+  // it wrote defaults into the state a saved view captures, so a view recorded
+  // choices the user never made.
+  const effectiveColumnVisibility = useMemo<VisibilityState>(
+    () => ({ ...defaultColumnVisibility, ...columnVisibility }),
+    [defaultColumnVisibility, columnVisibility],
+  );
 
 
   const handleStatusChange = useCallback(
@@ -544,7 +538,7 @@ export default function AssetsPage() {
         columns={columns}
         data={pagedResult?.items ?? []}
         variant="borderless"
-        columnVisibility={columnVisibility}
+        columnVisibility={effectiveColumnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
