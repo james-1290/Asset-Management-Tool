@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-09-01 — Nine dependency updates, batched
+
+React 19.2.0 -> 19.2.8 and its types, Playwright 1.58.2 -> 1.62.1, Tailwind
+4.1.18 -> 4.3.3, opencsv 5.9 -> 5.12.0, microsoft-graph 6.21.0 -> 6.67.0, and
+the four GitHub Actions (checkout v7.0.1, setup-java v6.0.0, setup-node v7.0.0,
+upload-artifact v7.0.1).
+
+Two things the individual Dependabot PRs would have got wrong:
+
+- **Tailwind would have been left mismatched.** #259 bumped `tailwindcss` to
+  4.3.3 but not `@tailwindcss/vite`, which stays in lockstep with it and would
+  have remained on 4.1.18.
+- **The Actions bumps would have unpinned them.** Actions here are pinned to
+  commit SHAs, not tags, so a moved tag cannot change the build. Dependabot's
+  PRs move the SHA and the comment together, but each had to be resolved through
+  the API and checked rather than taken on trust.
+
+Not included: the tooling group (#254) carries TypeScript 5.9 -> 7.0, Vite
+7 -> 8 and ESLint 9 -> 10 — three majors in the compiler and build chain, which
+deserve their own pass rather than a batch.
 ## 2026-09-01 — lucide-react 1.x, and a check for icons that quietly stop drawing
 
 lucide-react 0.563.0 -> 1.35.0, a major version. All 117 icons the app imports

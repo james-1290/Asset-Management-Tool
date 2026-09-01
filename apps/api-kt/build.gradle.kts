@@ -46,7 +46,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-flyway")
 
     // Microsoft Graph API (email via Entra ID)
-    implementation("com.microsoft.graph:microsoft-graph:6.21.0")
+    implementation("com.microsoft.graph:microsoft-graph:6.67.0")
     implementation("com.azure:azure-identity:1.15.0")
 
     // Azure Blob Storage for attachments: App Service container storage is
@@ -54,7 +54,7 @@ dependencies {
     implementation("com.azure:azure-storage-blob:12.29.0")
 
     // CSV
-    implementation("com.opencsv:opencsv:5.9")
+    implementation("com.opencsv:opencsv:5.12.0")
 
     // File content detection
     implementation("org.apache.tika:tika-core:2.9.1")
