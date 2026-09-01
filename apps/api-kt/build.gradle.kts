@@ -7,6 +7,9 @@ plugins {
     kotlin("jvm") version "2.4.10"
     kotlin("plugin.spring") version "2.4.10"
     kotlin("plugin.jpa") version "2.4.10"
+    // Static analysis for Kotlin. The backend had no linter at all, which is how
+    // an unused import survived until a one-off script went looking for it.
+    id("io.gitlab.arturbosch.detekt") version "1.23.8"
 }
 
 group = "com.assetmanagement"
@@ -68,6 +71,15 @@ dependencies {
 
     // BCrypt (included via spring-security)
 
+    // ktlint's formatting rules, run through detekt so there is one tool and
+    // one report rather than two.
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
+    // detekt is built against Kotlin 2.0.21 and refuses to run on the project's
+    // 2.4.10 compiler. Pin the embeddable compiler it expects for detekt's own
+    // classpath only; it does not affect how the app is compiled.
+    detekt("io.gitlab.arturbosch.detekt:detekt-cli:1.23.8")
+    detekt("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.0.21")
+
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     // Spring Boot 4 split the monolith: RestTemplate and RestTemplateBuilder now
@@ -96,6 +108,17 @@ tasks.withType<Test> {
     // Desktop, whose MinAPIVersion can reject docker-java's default negotiation),
     // pin docker-java's API version. Unset in CI, so default negotiation is used.
     System.getenv("DOCKER_API_VERSION")?.let { systemProperty("api.version", it) }
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    // Formatting findings that are left enabled are all mechanical, so let the
+    // tool apply them rather than hand-editing whitespace.
+    autoCorrect = true
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+    // Tests are linted too: an unused import or a swallowed exception matters
+    // just as much there.
+    source.setFrom(files("src/main/kotlin", "src/test/kotlin"))
 }
 
 jacoco {

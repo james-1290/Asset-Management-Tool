@@ -1,5 +1,46 @@
 # Changelog
 
+## 2026-09-01 — A linter for the backend, and the SSRF guard that had no test
+
+The backend had no linter at all. That is how an unused import survived every
+sweep until a one-off script went looking for it, and it is the last of the two
+gaps the seventh sweep left open.
+
+detekt now runs in CI and in the sweep, with ktlint's rules folded in so there is
+one tool and one report. Two things were worth doing carefully rather than
+quickly:
+
+**It is tuned to find defects, not to reformat.** The default ruleset produced
+**2,797 findings**, about 1,900 of them wrapping and indentation — enough to
+rewrite nearly every file in the repository without finding a single defect. The
+config keeps what catches dead weight and mistakes, switches off the threshold
+rules that flag working code for being large, and says why for each. That left 38
+real findings, then 2.
+
+**It was checked, not trusted.** A planted unused import is reported and fails
+the build — the same defect that motivated the tool. Given that this sweep found
+a typecheck step which could never fail, a linter assumed to work would have been
+the same mistake twice.
+
+What it found, all fixed: eight hand-thrown `IllegalArgumentException` /
+`IllegalStateException` guards that should be `require`/`check`; two caught
+exceptions whose cause was discarded (a provisioning-race retry and a malformed
+webhook URL); a generic `RuntimeException` for a failed Slack delivery; two JPA
+composite-key classes missing `serialVersionUID`; a four-clause condition in bulk
+archive, now a named `stillInUse`; and a `default_` parameter name.
+
+**The SSRF allow-list had no test.** Rewriting those guards meant touching the
+host allow-list and HTTPS check that stop an administrator-supplied webhook URL
+being pointed at an internal address — security-critical logic that had only ever
+been verified by reading it. `SlackWebhookUrlTest` now pins the rejections:
+look-alike hosts (`evilslack.com`, `hooks.slack.com.attacker.test`), cloud
+metadata and private addresses, plain HTTP, and malformed input.
+
+One rule is off for a reason worth recording: `StringTemplate` rewrites `"${x}"`
+to `"$x"`, after which detekt's own `UnusedPrivateProperty` reports the
+interpolated variable as unused. Following that would mean deleting a variable
+that is in use.
+
 ## 2026-09-01 — Optimistic locking wired through, and the message that never reached anyone
 
 Two defects, one of them mine.

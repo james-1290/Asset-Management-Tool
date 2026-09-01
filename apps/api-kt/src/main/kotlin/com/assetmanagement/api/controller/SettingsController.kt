@@ -31,8 +31,8 @@ class SettingsController(
     private fun maskWebhookUrl(value: String): String =
         if (value.length > 20) value.substring(0, 20) + "..." else value
 
-    private fun getSetting(key: String, default_: String = ""): String =
-        systemSettingRepository.findByKey(key)?.value ?: default_
+    private fun getSetting(key: String, fallback: String = ""): String =
+        systemSettingRepository.findByKey(key)?.value ?: fallback
 
     private fun setSetting(key: String, value: String, updatedBy: String) {
         val setting = systemSettingRepository.findByKey(key)
@@ -61,7 +61,6 @@ class SettingsController(
     @PreAuthorize("hasRole('Admin')")
     @org.springframework.transaction.annotation.Transactional
     fun updateSystem(@RequestBody request: SystemSettingsDto): ResponseEntity<Any> {
-
         val userName = currentUserService.userName
         setSetting("org.name", request.orgName, userName)
         setSetting("org.currency", request.currency, userName)
@@ -116,7 +115,6 @@ class SettingsController(
     @PreAuthorize("hasRole('Admin')")
     @org.springframework.transaction.annotation.Transactional
     fun updateAlerts(@RequestBody request: AlertSettingsDto): ResponseEntity<Any> {
-
         val userName = currentUserService.userName
         setSetting("alerts.warranty.enabled", request.warrantyEnabled.toString().lowercase(), userName)
         setSetting("alerts.certificate.enabled", request.certificateEnabled.toString().lowercase(), userName)

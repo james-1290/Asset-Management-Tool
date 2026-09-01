@@ -7,7 +7,13 @@ import java.util.*
 data class UserRoleId(
     var userId: UUID = UUID.randomUUID(),
     var roleId: UUID = UUID.randomUUID()
-) : Serializable
+) : Serializable {
+    // JPA composite key: pinning the id keeps a serialised key readable across
+    // recompiles instead of depending on a generated value.
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 @Entity
 @Table(name = "user_roles")

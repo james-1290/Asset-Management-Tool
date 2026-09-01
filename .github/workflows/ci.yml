@@ -39,6 +39,8 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew build --no-daemon
+      - name: Lint (detekt)
+        run: ./gradlew detekt --no-daemon
 
   frontend:
     name: Frontend (React) — build & test

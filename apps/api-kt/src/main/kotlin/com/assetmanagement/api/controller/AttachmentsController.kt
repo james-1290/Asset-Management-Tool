@@ -103,8 +103,8 @@ class AttachmentsController(
             return ResponseEntity.badRequest().body(mapOf("error" to "File extension not allowed"))
         }
 
-        val storedFileName = "${UUID.randomUUID()}-${originalFileName}"
-        val storageKey = "${entityType}/${entityId}/${storedFileName}"
+        val storedFileName = "${UUID.randomUUID()}-$originalFileName"
+        val storageKey = "$entityType/$entityId/$storedFileName"
 
         storageService.store(storageKey, file.inputStream, file.size)
 
