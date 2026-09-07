@@ -67,7 +67,7 @@ dependencies {
     // routes register, but /v3/api-docs throws while building the spec. Swagger
     // is disabled by default (SWAGGER_ENABLED), so nothing surfaces that until
     // someone turns it on — OpenApiDocsIntegrationTest pins it instead.
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
 
     // BCrypt (included via spring-security)
 
