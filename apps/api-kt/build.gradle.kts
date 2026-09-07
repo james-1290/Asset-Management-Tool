@@ -50,7 +50,7 @@ dependencies {
 
     // Microsoft Graph API (email via Entra ID)
     implementation("com.microsoft.graph:microsoft-graph:6.67.0")
-    implementation("com.azure:azure-identity:1.15.0")
+    implementation("com.azure:azure-identity:1.18.6")
 
     // Azure Blob Storage for attachments: App Service container storage is
     // ephemeral, so uploads cannot live on local disk in a real deployment.
