@@ -49,7 +49,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-flyway")
 
     // Microsoft Graph API (email via Entra ID)
-    implementation("com.microsoft.graph:microsoft-graph:6.67.0")
+    implementation("com.microsoft.graph:microsoft-graph:6.69.0")
     implementation("com.azure:azure-identity:1.15.0")
 
     // Azure Blob Storage for attachments: App Service container storage is
